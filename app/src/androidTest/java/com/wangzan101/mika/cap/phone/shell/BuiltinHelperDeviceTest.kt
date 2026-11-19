@@ -74,7 +74,9 @@ class BuiltinHelperDeviceTest {
             android.os.ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(cmd)).use { it.readBytes() }
         }
         try {
-            command("mkdir -p $dir/subdir; printf bridge > $dir/sample.txt")
+            // executeShellCommand 不经过 sh，不能直接用 ';' 和 '>'；借助 ${IFS} 在 sh -c 单参数里分隔。
+            command("mkdir -p $dir/subdir")
+            command("sh -c printf\${IFS}bridge>$dir/sample.txt")
             hintStore.save(com.wangzan101.mika.settings.DeviceDirectory(dir, "Test", "Files", "user"))
             assertTrue(testHub.syncDeviceFiles())
             assertEquals("denied", shell.listFiles(dir, null, 128).getString("status"))
@@ -131,14 +133,16 @@ class BuiltinHelperDeviceTest {
             assertEquals("denied", shell.openFile("/dev/null").getString("status"))
             assertEquals("denied", shell.openFile("/data/data/file").getString("status"))
             assertEquals("not_found", shell.openFile("$dir/missing").getString("status"))
-            assertEquals("denied", shell.listFiles("$dir/sample.txt", null, 128).getString("status"))
+            assertEquals("not_directory", shell.listFiles("$dir/sample.txt", null, 128).getString("status"))
             assertEquals("invalid", shell.listFiles("relative", null, 128).getString("status"))
             val first = shell.listFiles(dir, null, 1)
             assertEquals(listOf("sample.txt"), first.getStringArrayList("names"))
             val second = shell.listFiles(dir, first.getString("next"), 1)
             assertEquals(listOf("subdir"), second.getStringArrayList("names"))
             assertNull(second.getString("next"))
-            command("printf nested > $dir/subdir/Report.PDF; ln -s /data/local/tmp $dir/escape; ln -s $dir/subdir $dir/alias")
+            command("sh -c printf\${IFS}nested>$dir/subdir/Report.PDF")
+            command("ln -s /data/local/tmp $dir/escape")
+            command("ln -s $dir/subdir $dir/alias")
             if (shell.listFiles(dir, null, 128).getStringArrayList("names")!!.contains("alias")) {
                 val invalidPolicy = shell.setDeviceFilePolicy(1, "test-link", 1, arrayOf("$dir/alias"), booleanArrayOf(true))
                 assertEquals("invalid", invalidPolicy.getString("status"))
