@@ -1,8 +1,8 @@
 outcome: Succeeded(answer=知乎热榜第一是「今日话题」, verified=true, note=null, sources=[AnswerSource(obsId=2, kind=read, place=https://www.zhihu.com/hot, title=知乎, step=2, mediaIds=[], source=web)], unconfirmed=[], reviewed=true)
 
 ## main #1
-system: len=20404 #336b14a4 | You are Mika, the user's personal assistant on their phone. Your job is to get ⏎…
-tools: #744936f6 [wait, ask_user, request_confirmation, end_not_done, knowledge_search, knowledge_read, skill_search, skill_read, phone_list_apps, phone_launch_app, phone_set_alarm, phone_set_timer, phone_add_calendar_event, phone_calendar_bulk_insert, web_navigate, web_read_page, run_command]
+system: len=20359 #a9e488fc | You are Mika, the user's personal assistant on their phone. Your job is to get ⏎…
+tools: #bee90c6c [wait, ask_user, request_confirmation, end_not_done, knowledge_search, knowledge_read, skill_search, skill_read, phone_list_apps, phone_launch_app, phone_set_alarm, phone_set_timer, phone_add_calendar_event, phone_calendar_bulk_insert, web_navigate, web_read_page, run_command]
 user:
   text #110070e4 | 用网页看一下知乎热榜
 user:
@@ -12,8 +12,8 @@ user:
   ctx:runtime_state source="runtime" #7d60ad60 | Current place: no screen or page read yet ⏎…
 
 ## main #2
-system: len=34096 #df3ef96a | You are Mika, the user's personal assistant on their phone. Your job is to get ⏎…
-tools: #4ff32fba [wait, ask_user, request_confirmation, end_not_done, knowledge_search, knowledge_read, skill_search, skill_read, view_past_screens, hand_to_user, handle_obstacle, phone_list_apps, phone_launch_app, phone_set_alarm, phone_set_timer, phone_add_calendar_event, phone_calendar_bulk_insert, web_observe, web_list_elements, web_screenshot, web_tap, web_scroll, web_swipe, web_type_text, web_clear_text, web_back, web_press_key, web_diagnose, web_navigate, web_read_page, web_evaluate_js, web_tabs, web_downloads, web_upload, web_site_mode, web_script, web_interact, web_capture, web_wait_for, web_keep_open, run_command]
+system: len=33881 #246b1040 | You are Mika, the user's personal assistant on their phone. Your job is to get ⏎…
+tools: #f66a573d [wait, ask_user, request_confirmation, end_not_done, knowledge_search, knowledge_read, skill_search, skill_read, view_past_screens, hand_to_user, handle_obstacle, phone_list_apps, phone_launch_app, phone_set_alarm, phone_set_timer, phone_add_calendar_event, phone_calendar_bulk_insert, web_observe, web_list_elements, web_screenshot, web_tap, web_scroll, web_swipe, web_type_text, web_clear_text, web_back, web_press_key, web_diagnose, web_navigate, web_read_page, web_evaluate_js, web_tabs, web_downloads, web_upload, web_site_mode, web_script, web_interact, web_capture, web_wait_for, web_keep_open, run_command]
 … 3 messages unchanged
 assistant:
   call main_1 web_navigate {"url":"https://www.zhihu.com/hot"}
