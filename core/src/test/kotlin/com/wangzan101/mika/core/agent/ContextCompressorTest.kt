@@ -96,6 +96,32 @@ class ContextCompressorTest {
         assertTrue(s, "Step 1 phone_tap(按钮1) → applied" in s && "Step 28 phone_tap(按钮28) → applied" in s && "Step 29" !in s)
     }
 
+    @Test fun keepsTheAskUserRoundEvenWhenATaskProgressCallComesFirst() {
+        // #714 lets a round carry a task_progress call ahead of the one action that
+        // actually runs. The compressor must judge the round by that action, not
+        // by the progress report, or the user's answer is folded away.
+        val ask = listOf(
+            Message(Role.Assistant, listOf(
+                Part.ToolCall("p1", "task_progress", """{"updates":[]}"""),
+                Part.ToolCall("a1", "ask_user", """{"question":"Continue?"}"""),
+            ), Author.Mika),
+            Message(Role.Tool, listOf(
+                Part.ToolResult("p1", """{"ok":true}""", isError = false),
+                Part.ToolResult("a1", """{"answer":"yes"}""", isError = false),
+            ), Author.Mika),
+        )
+        val h = head + taps(30) + ask + taps(20)
+        val c = ContextCompressor(TOOLS).compress(h, contextTokens = justOver(h))
+        assertTrue(
+            "the ask_user round was folded",
+            c.messages.any { m -> m.parts.any { it is Part.ToolCall && it.name == "ask_user" } },
+        )
+        assertTrue(
+            "the user's answer was folded",
+            c.messages.any { m -> m.parts.any { it is Part.ToolResult && it.callId == "a1" } },
+        )
+    }
+
     @Test fun appendOnlyBetweenCompactions() {
         val all = head + taps(120)
         fun h(n: Int) = all.take(head.size + 2 * n)

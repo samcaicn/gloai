@@ -183,8 +183,9 @@ class ContextCompressor(
         starts.takeWhile { it < cut }.forEachIndexed { k, start ->
             val end = starts.getOrElse(k + 1) { pruned.size }
             val round = pruned.subList(start, end)
-            // 每轮只执行第一个调用,其余都以 parallel_tool_call_skipped 退回,所以按第一个调用判断要不要保留
-            val call = round.first().parts.filterIsInstance<Part.ToolCall>().firstOrNull()
+            // 一轮最多执行一个动作,但误写成调用的 task_progress 可能排在它前面:
+            // 按真正执行的动作判断要不要保留,否则会把这轮连同用户回答一起折掉。
+            val call = round.first().parts.firstActionCall()
             if (tools.verb(call?.name) in PINNED_VERBS || (anchor >= 0 && k >= anchor && screenRounds[k] != ScreenKind.NONE)) {
                 closeBlock()
                 out += round
