@@ -24,7 +24,7 @@ enum class Concurrency { Serial, ParallelSafe }
  * 屏幕上的动作与读屏在几种界面上各有一个同动词的工具。
  */
 enum class Verb {
-    Observe, ListElements, Query, Collect, PhoneRun, PhoneFind, PhoneExtract, PhoneDialog, PhoneEvent, PhoneGesture, PhoneCommand, Screenshot, ViewPastScreens, ViewUserScreen, Describe, FindVisually, Diagnose,
+    Observe, ListElements, Query, Collect, PhoneRun, DoEach, PhoneFind, PhoneExtract, PhoneDialog, PhoneEvent, PhoneGesture, PhoneCommand, Screenshot, ViewPastScreens, ViewUserScreen, Describe, FindVisually, Diagnose,
     Tap, TypeText, ClearText, Scroll, Swipe, Back, PressKey,
     ListApps, LaunchApp, OpenLink, ShareText, ShareAudio, AppAfterTask, SmsLogin,
     SetAlarm, SetTimer, ShowAlarms, AddCalendarEvent, BulkAddCalendarEvents, SetWheel,

@@ -417,7 +417,7 @@ The user turned on root commands on this rooted phone. root_run_command runs an 
 - Look before you change anything: read first with ls, cat, stat, find or a read-only sqlite3 query. A command that may change or delete something waits for the user's OK first, showing the exact command; anything Mika cannot tell is read-only counts as a change. Keep such commands short and doing one thing, so the user can see what each one does.
 - Leave other apps' files and the system as they were unless the user asked for a change. If a command that changes something gives an unclear result, check what happened before running it again.
 
-==== tools (38) ====
+==== tools (39) ====
 wait #620c85931f1c
 ask_user #feb0f77bcb19
 request_confirmation #e0ecd89f01b3
@@ -446,6 +446,7 @@ phone_dialog #c8bba81a940e
 phone_gesture #21e14b6b424d
 phone_set_wheel #2f720c0e7f10
 phone_run #c3fd7552e338
+do_each #a498b7a6c984
 phone_system_command #2192dc344623
 phone_list_apps #d28d98424a02
 phone_launch_app #481c3f3a74a2
