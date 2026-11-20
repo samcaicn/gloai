@@ -29,6 +29,10 @@ class CallTelecomAccessTest {
             result.verificationFailure(readBack, false))
     }
 
+    @Test fun defaultAppOpAcceptsAnEffectivePackageGrant() {
+        assertEquals(null, CallTelecomCommandOutcome.OK.verificationFailure("default", true))
+    }
+
     @Test fun failedReadbackIsNotReportedAsPermissionDenied() {
         assertEquals("授权命令已执行，但无法读回通话管理权限状态，请重试",
             CallTelecomCommandOutcome.OK.verificationFailure(null, false))
