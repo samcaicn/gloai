@@ -133,6 +133,13 @@ object TriggerRuntime {
         engine(context, store).rearm(System.currentTimeMillis())
     }
 
+    /** The service can stop after a result is persisted while outcome judging still runs in the app scope. */
+    @Synchronized fun recoverAfterServiceStop(context: Context) {
+        val store = store(context)
+        recoverActive(context, store, "task service stopped before result confirmation")
+        rearm(context)
+    }
+
     @Synchronized fun checked(context: Context, key: String, goal: String, threadId: String, outcome: ConditionOutcome) {
         val store = store(context)
         val window = store.windows().firstOrNull { it.key == key && it.state == TriggerWindowState.Dispatched } ?: return
@@ -203,22 +210,27 @@ object TriggerRuntime {
     private fun store(context: Context): FileTriggerStore {
         val store = FileTriggerStore(File(context.filesDir, "triggers-v3.json"))
         if (!recovered) {
-            store.windows().filter { it.state in setOf(TriggerWindowState.Claimed,
-                TriggerWindowState.Dispatched, TriggerWindowState.ActionDispatched) }.forEach {
-                val trigger = store.get(it.triggerId)
-                if (trigger?.reminderText != null) {
-                    runCatching { deliverReminder(context, store, trigger, it.key) }
-                        .onFailure { error -> store.mark(it.key, TriggerWindowState.Unknown, error::class.simpleName) }
-                } else {
-                    store.mark(it.key, TriggerWindowState.Unknown, "process restarted before result was confirmed")
-                    if (trigger != null && !hasSavedResult(context, it.key))
-                        runCatching { reportUncertain(context, trigger, it.key) }
-                            .onFailure { error -> Log.w("MikaTrigger", "could not report recovered task", error) }
-                }
-            }
+            recoverActive(context, store, "process restarted before result was confirmed")
             recovered = true
         }
         return store
+    }
+
+    private fun recoverActive(context: Context, store: FileTriggerStore, reason: String) {
+        store.windows().filter { it.state in setOf(
+            TriggerWindowState.Claimed, TriggerWindowState.Dispatched, TriggerWindowState.ActionDispatched,
+        ) }.forEach {
+            val trigger = store.get(it.triggerId)
+            if (trigger?.reminderText != null) {
+                runCatching { deliverReminder(context, store, trigger, it.key) }
+                    .onFailure { error -> store.mark(it.key, TriggerWindowState.Unknown, error::class.simpleName) }
+            } else {
+                store.mark(it.key, TriggerWindowState.Unknown, reason)
+                if (trigger != null && !hasSavedResult(context, it.key))
+                    runCatching { reportUncertain(context, trigger, it.key) }
+                        .onFailure { error -> Log.w("MikaTrigger", "could not report recovered task", error) }
+            }
+        }
     }
 
     private fun engine(context: Context, store: FileTriggerStore) = TriggerEngine(store,
@@ -256,7 +268,7 @@ object TriggerRuntime {
     }
 
     private fun hasSavedResult(context: Context, key: String): Boolean =
-        FileRunStateStore(File(context.filesDir, "runs-v3.json")).all().any {
+        (context.applicationContext as MikaApp).runStore.all().any {
             it.triggerWindowKey == key && it.reply != null
         }
 

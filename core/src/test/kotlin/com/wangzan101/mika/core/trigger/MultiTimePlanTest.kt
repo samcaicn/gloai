@@ -36,6 +36,11 @@ class MultiTimePlanTest {
         assertEquals(at("2026-11-13T00:00:00Z"), plan.nextAtMs)
         assertEquals(at("2026-11-13T12:00:00Z"), upcoming(plan, now, 2)[1])
         val rescheduled = plan.rescheduledTo(at("2026-11-13T01:30:00Z"))
-        assertEquals(listOf("09:30"), rescheduled.calendarClocks())
+        assertEquals(listOf("09:30", "20:00"), rescheduled.calendarClocks())
+        assertEquals(listOf(
+            at("2026-11-13T01:30:00Z"),
+            at("2026-11-13T12:00:00Z"),
+            at("2026-11-16T01:30:00Z"),
+        ), upcoming(rescheduled, at("2026-11-13T01:30:00Z"), 3))
     }
 }

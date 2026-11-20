@@ -26,7 +26,10 @@ import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.personal.PersonalTask
+import com.wangzan101.mika.core.trigger.TriggerDefinition
+import com.wangzan101.mika.core.trigger.TriggerWindowState
 import com.wangzan101.mika.core.verify.Verifier
+import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.shell.IMikaShell
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -386,6 +389,42 @@ class TaskServiceTest {
         } finally {
             access.settings.setEnabled(wasEnabled)
             sh("input keyevent KEYCODE_WAKEUP")
+        }
+    }
+
+    @Test
+    fun scheduledPartialOutcomeKeepsOneShotPlan() {
+        val id = "test-partial-trigger-${System.nanoTime()}"
+        val plan = TriggerDefinition(id, "thread-$id", "执行部分结果测试", System.currentTimeMillis() + 86_400_000)
+        val judge = object : ChatModel {
+            override val capabilities = Capabilities(toolCalls = false, vision = false, contextTokens = 8_000, reasoning = false)
+            override suspend fun complete(system: String, messages: List<Message>, tools: List<ToolSpec>): ModelReply =
+                ModelReply(listOf(Part.Text("""{"outcome":"partial","reason":"只完成了一部分"}""")), StopReason.EndTurn, null)
+        }
+        started++
+        testTasks.lightModelFactory = { _, _ -> judge }
+        val flags = FeatureFlags.get(context)
+        val oldQuit = flags.quitRequested()
+        flags.setQuitRequested(false)
+        try {
+            TriggerRuntime.schedule(context, plan)
+            TriggerRuntime.runNow(context, id)
+            assertEquals(1, model.awaitCall().number)
+            model.answer("已完成一部分")
+
+            val key = pollUntil(5_000) {
+                TriggerRuntime.snapshot(context).windows.firstOrNull { it.triggerId == id }?.key
+            } ?: error("trigger window was not created")
+            val failed = pollUntil(20_000) {
+                TriggerRuntime.snapshot(context).windows.firstOrNull { it.key == key }?.state
+                    ?.takeIf { it == TriggerWindowState.Failed }
+            }
+            assertEquals(TriggerWindowState.Failed, failed)
+            assertNotNull(TriggerRuntime.list(context).singleOrNull { it.id == id })
+        } finally {
+            TriggerRuntime.remove(context, id)
+            testTasks.lightModelFactory = TaskEnvironment.defaultLightModelFactory
+            flags.setQuitRequested(oldQuit)
         }
     }
 

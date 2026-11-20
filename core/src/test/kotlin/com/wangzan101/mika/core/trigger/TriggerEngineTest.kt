@@ -2,6 +2,7 @@ package com.wangzan101.mika.core.trigger
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
@@ -95,6 +96,21 @@ class TriggerEngineTest {
         store.mark("once:100", TriggerWindowState.Delivered)
         store.retireDeliveredOneShots()
         assertEquals(null, store.get("once"))
+    }
+
+    @Test fun partialOutcomeAfterDeliveryKeepsOneShotAndStopsRetryAlarm() {
+        val store = MemoryTriggerStore()
+        store.upsert(TriggerDefinition("once", "t", "do", 100))
+        var armed: Long? = null
+        val engine = TriggerEngine(store, { armed = it }) { _, _ -> }
+
+        engine.fire(100)
+        assertEquals(TriggerWindowState.Dispatched, store.windows().single().state)
+        assertTrue(store.mark("once:100", TriggerWindowState.Failed, "only part completed"))
+
+        engine.rearm(200)
+        assertEquals(null, armed)
+        assertNotNull(store.get("once"))
     }
 
     @Test fun restartMarksUncertainClaimAndRearmsOverdueWindowOnce() {

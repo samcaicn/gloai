@@ -254,8 +254,9 @@ fun TriggerDefinition.rescheduledTo(nextAtMs: Long): TriggerDefinition {
     val local = calendarZone?.let { zone ->
         CALENDAR_CLOCK.format(Instant.ofEpochMilli(nextAtMs).atZone(ZoneId.of(zone)))
     }
-    return copy(nextAtMs = nextAtMs, enabled = true, calendarTime = if (calendarTime != null) local else null,
-        calendarTimes = emptyList())
+    val times = if (calendarTime == null) emptyList()
+        else normalizedCalendarTimes(listOfNotNull(local) + calendarTimes.drop(1))
+    return copy(nextAtMs = nextAtMs, enabled = true, calendarTime = times.firstOrNull(), calendarTimes = times)
 }
 
 /** 编辑/创建时预览:首个不早于 [afterMs] 的触发也计入,再按计划自身的时区与重复规则递进。 */
