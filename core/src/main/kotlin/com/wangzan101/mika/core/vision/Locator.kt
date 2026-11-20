@@ -126,11 +126,13 @@ class Locator(private val screen: ScreenPort, private val vision: VisionService,
     }
 
     private suspend fun visionOnce(target: String, text: String?, elements: List<UiElement>?, synced: Boolean, shot: Shot.Ok, locatePrompt: String, confirmPrompt: String): LocateResult {
-        val box = try {
-            parseBox(vision.ask(locatePrompt, if (text != null) "$target (label: \"$text\")" else target, listOf(shot.png)))
+        val located = try {
+            vision.askWithGrounding(locatePrompt, if (text != null) "$target (label: \"$text\")" else target, listOf(shot.png))
         } catch (e: CancellationException) { throw e } catch (e: Exception) {
             return LocateResult.NotFound("vision_unavailable", "Locating by sight failed this time. ${m.notFoundNext}")
-        } ?: return LocateResult.NotFound("not_found", "The described element was not found on the screen. ${m.notFoundNext}")
+        }
+        val box = parseBox(located.text)
+            ?: return LocateResult.NotFound("not_found", "The described element was not found on the screen. ${m.notFoundNext}")
 
         if (text != null && box.seen != null && disagree(box.seen, text)) {
             return LocateResult.NotFound("name_mismatch", "The closest match reads \"${box.seen.take(40)}\", not \"$text\", so it was not used. ${m.notFoundNext}")
@@ -153,8 +155,8 @@ class Locator(private val screen: ScreenPort, private val vision: VisionService,
         val nameChecked = occupant != null && occupant.name.isNotBlank()
         // 定位准度没验证过的模型:只靠看图的框要有佐证——框中心的元素就是要找的字(上面已核过名字),或再框一次、复看两次都确认且看到的一致。
         // 树不能用、或缺了一块而要找的不在树里时,没有东西可对照:照样交出去,标明没佐证,点完由效果说话
-        val visionOnly = !vision.groundingVerified && !nameChecked && nothingToCheckAgainst(text)
-        if (!vision.groundingVerified && !nameChecked && !visionOnly) {
+        val visionOnly = !located.groundingVerified && !nameChecked && nothingToCheckAgainst(text)
+        if (!located.groundingVerified && !nameChecked && !visionOnly) {
             val again = try {
                 secondLook(target, text, box, shot.png, locatePrompt, confirmPrompt)
             } catch (e: CancellationException) { throw e } catch (e: Exception) {

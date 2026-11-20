@@ -275,6 +275,25 @@ class LocatorTest {
     /** 树够用的一屏:八个有名字的按钮,都不在要找的框里。 */
     private fun adequate() = LocScreen((1..8).map { uiEl("@e$it", "设置项$it", listOf(0, 300 + it * 70, 999, 360 + it * 70)) })
 
+    @Test fun verifiedConfirmationCannotCertifyUnverifiedCoordinates() = runTest {
+        val box = ModelReply(listOf(Part.Text("""{"bbox_2d":[0,100,1000,161],"seen":"WLAN"}""")), StopReason.EndTurn, null)
+        val primary = FakeModel(box, ModelError.Auth(), box, ModelError.Auth(), groundingVerified = false)
+        val backup = says("是", "是")
+        val service = VisionService(primary, JvmTestImageOps, listOf(backup))
+        found(Locator(adequate(), service, LocateRegistry(), ScreenFamily("phone", "p")).locate("WLAN 那一行", null))
+        assertEquals(4, primary.requests.size)
+        assertEquals(2, backup.requests.size)
+    }
+
+    @Test fun unusedUnverifiedBackupDoesNotDowngradeVerifiedCoordinates() = runTest {
+        val primary = says("""{"bbox_2d":[0,100,1000,161],"seen":"WLAN"}""", "是")
+        val backup = unverified()
+        val service = VisionService(primary, JvmTestImageOps, listOf(backup))
+        found(Locator(adequate(), service, LocateRegistry(), ScreenFamily("phone", "p")).locate("WLAN 那一行", null))
+        assertEquals(2, primary.requests.size)
+        assertTrue(backup.requests.isEmpty())
+    }
+
     @Test fun unverifiedVisionBoxNeedsSecondConsistentLook() = runTest {
         val box = """{"bbox_2d":[0,100,1000,161],"seen":"WLAN"}"""
         // 再框一次、看到的一致、两次复看都确认:交出去

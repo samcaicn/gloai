@@ -30,14 +30,20 @@ class VisionService(
     /** 视觉模型链：主模型 + 所有备援模型 */
     val chain: List<ChatModel> = listOf(model) + fallbacks
 
-    /** 当前链路上是否有经过定位准度验证的模型 */
-    val groundingVerified: Boolean get() = chain.any { it.capabilities.groundingVerified }
+    /** 不区分实际应答模型时,只有整条链均已验证才可承诺定位可信。 */
+    val groundingVerified: Boolean get() = chain.all { it.capabilities.groundingVerified }
+
+    data class Answer(val text: String, val groundingVerified: Boolean)
 
     /**
      * 不带工具的一次调用。
      * 当主视觉模型抛出 [ModelError] 时，若链路上有备援模型，自动切换并继续执行。
      */
-    suspend fun ask(system: String, text: String, images: List<ByteArray>): String {
+    suspend fun ask(system: String, text: String, images: List<ByteArray>): String =
+        askWithGrounding(system, text, images).text
+
+    /** 可信度随本次回答返回,并发或后续复看不能改变坐标所属模型的属性。 */
+    suspend fun askWithGrounding(system: String, text: String, images: List<ByteArray>): Answer {
         val parts = listOf(Part.Text(text)) + images.map { ModelImage.part(it, ops) }
         val messages = listOf(Message(Role.User, parts, Author.Mika))
         var lastError: ModelError? = null
@@ -48,7 +54,7 @@ class VisionService(
                 val reply = candidate.complete(system, messages, emptyList())
                 val answer = reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }
                 if (answer.isBlank()) throw ModelError.BadResponse("视觉模型没有给出回答")
-                return answer
+                return Answer(answer, candidate.capabilities.groundingVerified)
             } catch (e: ModelError) {
                 lastError = e
                 val next = chain.getOrNull(i + 1)
