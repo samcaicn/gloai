@@ -501,7 +501,6 @@ fun ChatScreen(
                             .testTag("chat-usage-title").padding(horizontal = 14.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(ChatCopy.APP_TITLE, style = MikaType.Title, color = c.ink, maxLines = 1)
-                            Icon(MikaIcons.Chevron, null, Modifier.size(14.dp).rotate(90f), tint = c.ink2)
                         }
                     }
                     GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
@@ -1224,6 +1223,8 @@ private fun StepLine(steps: List<StepRow>, actions: Map<Int, List<StepAction>>, 
     var all by rememberSaveable { mutableStateOf(!live) }
     // 哪几步点开了:按这一屏里的序号记,列表变长也不乱
     val expanded = remember { mutableStateMapOf<Int, Boolean>() }
+    // 步数多到值得收起来(超过这一屏列出的最近几步)时,才给「展开/收起」的开关
+    val collapsible = steps.size > ChatCopy.VISIBLE_STEPS
     val hidden = if (all) 0 else (steps.size - ChatCopy.VISIBLE_STEPS).coerceAtLeast(0)
     Column(
         Modifier.padding(top = 6.dp).fillMaxWidth().drawBehind {
@@ -1231,8 +1232,10 @@ private fun StepLine(steps: List<StepRow>, actions: Map<Int, List<StepAction>>, 
             drawLine(c.hair, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.5.dp.toPx())
         },
     ) {
-        if (hidden > 0) {
-            StepItem(ChatCopy.earlierSteps(hidden), "", Dot.Dim, current = false, link = true, onClick = { all = true })
+        // 顶部开关:折叠时「前面还有 N 步」,展开时「收起」,点一下来回切
+        if (collapsible) {
+            val label = if (all) stringResource(R.string.collapse) else ChatCopy.earlierSteps(hidden)
+            StepItem(label, "", Dot.Dim, current = false, link = true, onClick = { all = !all })
         }
         steps.drop(hidden).forEachIndexed { i, row ->
             val key = hidden + i
@@ -1251,6 +1254,10 @@ private fun StepLine(steps: List<StepRow>, actions: Map<Int, List<StepAction>>, 
                 // 有具体动作才点得开:点开看这一步实际做了什么、对什么、结果如何
                 onClick = if (detail.isEmpty()) null else ({ expanded[key] = !open }),
             )
+        }
+        // 底部「收起」:展开后步数一多,滑到最下面不用再爬回去也能收
+        if (all && collapsible) {
+            StepItem(stringResource(R.string.collapse), "", Dot.Dim, current = false, link = true, onClick = { all = false })
         }
     }
 }
@@ -1426,8 +1433,6 @@ private fun StatusCard(
         is ExchangeStatus.Done -> Box(Modifier.padding(bottom = 12.dp)) {
             AnswerArea(key, status.answer, Modifier.fillMaxWidth().answerSurface()) {
                 Column {
-                    if (runId != null) Text(goal, Modifier.padding(bottom = 12.dp), style = MikaType.BodyStrong,
-                        color = MikaTheme.colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     status.unverifiedLine?.let { line ->
                         Row(Modifier.padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.size(18.dp).background(MikaTheme.colors.warnSoft, CircleShape), contentAlignment = Alignment.Center) {
