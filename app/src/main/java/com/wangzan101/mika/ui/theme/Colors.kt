@@ -21,6 +21,8 @@ class MikaColors(
     val ink: Color,
     val ink2: Color,
     val ink3: Color,
+    /** 正文与辅助之间:比正文淡一点点的字(插话收成小字后用它)。 */
+    val inkSoft: Color,
     /** 分隔线。 */
     val hair: Color,
     /** 卡片描边。 */
@@ -64,7 +66,7 @@ class MikaColors(
 ) {
     /** 换一种强调色,其余不变;淡底的透明度和原来一样(浅色 10%、深色 16%)。 */
     fun withAccent(accent: Color, onAccent: Color) = MikaColors(
-        bg = bg, surface = surface, fill = fill, ink = ink, ink2 = ink2, ink3 = ink3, hair = hair, edge = edge,
+        bg = bg, surface = surface, fill = fill, ink = ink, ink2 = ink2, ink3 = ink3, inkSoft = inkSoft, hair = hair, edge = edge,
         accent = accent, accentSoft = accent.copy(alpha = if (isDark) 0x29 / 255f else 0x1A / 255f), onAccent = onAccent,
         ok = ok, okSoft = okSoft, warn = warn, warnSolid = warnSolid, warnSoft = warnSoft, bad = bad, badSoft = badSoft,
         neutralSoft = neutralSoft, answer = answer, greySoft = greySoft, glass = glass, glassEdge = glassEdge,
@@ -80,6 +82,7 @@ val LightColors = MikaColors(
     ink = Color(0xFF1C1C1E),
     ink2 = Color(0xFF5F6068),
     ink3 = Color(0xFF9A9BA3),
+    inkSoft = Color(0xFF4A4A50),
     hair = Color(0x12000000),
     edge = Color(0x0D000000),
     accent = Color(0xFF0A7CFF),
@@ -113,6 +116,7 @@ val DarkColors = MikaColors(
     ink = Color(0xFFF2F2F4),
     ink2 = Color(0xFFA4A5AD),
     ink3 = Color(0xFF6C6D75),
+    inkSoft = Color(0xFFC6C6CD),
     hair = Color(0x14FFFFFF),
     edge = Color(0x0FFFFFFF),
     accent = Color(0xFF3D97FF),

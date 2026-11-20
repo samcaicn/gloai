@@ -29,7 +29,7 @@ class TaskGoalProgressTest {
                 TaskState.Running(4, action, "phone_observe", progress, narration = action))
         }
         val ex = mutableStateOf(running(setOf(1), false, "打开店铺页"))
-        compose.setContent { MikaTheme { WorkBlock(ex.value, true, false) {} } }
+        compose.setContent { MikaTheme { WorkBlock(ex.value, emptyList(), true, false) {} } }
         compose.onNodeWithText("打开店铺页").assertIsDisplayed()
         compose.onNodeWithText("已确认目标 1/3").performClick()
         compose.onNodeWithText("✓  确认地址").assertIsDisplayed()

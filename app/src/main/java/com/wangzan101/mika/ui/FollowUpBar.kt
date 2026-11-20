@@ -86,14 +86,14 @@ private fun PendingRow(
         Text(
             ChatCopy.plainTitle(item.text),
             Modifier.weight(1f, fill = false).testTag("follow-up-bubble")
-                .background(c.accent, MikaShapes.UserBubble).clip(MikaShapes.UserBubble)
+                .background(c.accent.copy(alpha = 0.14f), MikaShapes.UserBubble).clip(MikaShapes.UserBubble)
                 .combinedClickable(
                     onLongClickLabel = stringResource(R.string.drawer_actions),
                     onLongClick = { onActions(item) },
                     onClick = {},
                 )
                 .padding(horizontal = 14.dp, vertical = 10.dp),
-            style = MikaType.Body, color = c.onAccent, maxLines = 3, overflow = TextOverflow.Ellipsis,
+            style = MikaType.Body, color = c.ink, maxLines = 3, overflow = TextOverflow.Ellipsis,
         )
         if (canGuide) {
             Box(
@@ -106,7 +106,7 @@ private fun PendingRow(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    MikaIcons.Steer, stringResource(R.string.follow_up_steer),
+                    MikaIcons.Forward, stringResource(R.string.follow_up_steer),
                     Modifier.size(18.dp), tint = c.ink3,
                 )
             }

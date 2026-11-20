@@ -17,14 +17,14 @@ internal fun chatItemKeys(
     if (exchanges.isEmpty() && !hasBlocked) add("empty")
     exchanges.forEachIndexed { index, ex ->
         if (ex.goal.isNotEmpty()) add("u$index")
+        val active = ex.status.isActive()
         val answering = ex.status == ExchangeStatus.Working && !ex.draft.isNullOrBlank()
-        if (if (ex.status.isActive()) !answering else ex.steps.isNotEmpty() || ex.recordedRun != null) add("s$index")
-        val (joined, waiting) = steersAroundDraft(ex.steers)
-        (joined + waiting).forEach { note ->
-            if (!note.finished.isNullOrBlank()) add("a$index-${note.id}")
-            if (!note.interrupted.isNullOrBlank()) add("i$index-${note.id}")
-            add("m$index-${note.id}")
+        val showSteps = active && !answering
+        // 没在跑步骤(结束了、或在写总结)时,插话收成紧跟用户消息下面的小字
+        if (!showSteps) {
+            ex.steers.filterNot { it.state == SteerState.Withdrawn }.forEach { note -> add("m$index-${note.id}") }
         }
+        if (showSteps) add("s$index")
         if (!ex.draft.isNullOrBlank()) add("d$index")
         add("r$index")
         if (KeptRow.of(ex, kept) != null) add("k$index")
@@ -53,22 +53,11 @@ internal fun chatTargetKey(exchanges: List<Exchange>, target: ChatTarget): Strin
     return when (target) {
         is ChatTarget.Message -> {
             val note = target.steerIndex?.let { visibleSteer(ex, it) }
-            if (target.steerIndex != null) {
-                if (note != null) "m$turn-${note.id}" else turnStartKey(turn, ex)
-            } else {
-                turnStartKey(turn, ex)
-            }
+            val showSteps = ex.status.isActive() && !(ex.status == ExchangeStatus.Working && !ex.draft.isNullOrBlank())
+            // 插话在工作时是步骤里的一步(无独立行),收成小字后(结束/写总结)才有独立行可跳
+            if (target.steerIndex != null && note != null && !showSteps) "m$turn-${note.id}" else turnStartKey(turn, ex)
         }
-        is ChatTarget.Reply -> {
-            val note = visibleSteer(ex, target.steerIndex)
-            val key = when {
-                note == null -> null
-                target.interrupted && !note.interrupted.isNullOrBlank() -> "i$turn-${note.id}"
-                !target.interrupted && !note.finished.isNullOrBlank() -> "a$turn-${note.id}"
-                else -> null
-            }
-            key ?: turnStartKey(turn, ex)
-        }
+        is ChatTarget.Reply -> turnStartKey(turn, ex)
         is ChatTarget.Files -> if (ex.files.isNotEmpty()) "f$turn" else turnStartKey(turn, ex)
         is ChatTarget.Status -> "r$turn"
     }

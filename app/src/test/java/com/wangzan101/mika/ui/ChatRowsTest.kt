@@ -35,9 +35,9 @@ class ChatRowsTest {
         val working = Exchange("问", emptyList(), ExchangeStatus.Working, live = true, draft = "正在回答")
         assertEquals(3, count(listOf(working)))
         val done = working.copy(status = ExchangeStatus.Done("回答", null), draft = null, runId = "run")
-        assertEquals(3, count(listOf(done)))
-        assertEquals(4, count(listOf(done), phoneSetupNeeded = true))
-        assertEquals(5, count(listOf(done), phoneSetupNeeded = true, hasBlocked = true))
+        assertEquals(2, count(listOf(done)))
+        assertEquals(3, count(listOf(done), phoneSetupNeeded = true))
+        assertEquals(4, count(listOf(done), phoneSetupNeeded = true, hasBlocked = true))
     }
 
     @Test
@@ -52,7 +52,7 @@ class ChatRowsTest {
             files = listOf(SharedFile("a.txt", 1L, "a.txt", "content://a")),
         )
         assertEquals(
-            listOf("u0", "s0", "a0-s1", "i0-s1", "m0-s1", "r0", "f0"),
+            listOf("u0", "m0-s1", "r0", "f0"),
             chatItemKeys(listOf(done), kept = null, phoneSetupNeeded = false, hasBlocked = false),
         )
     }
@@ -68,8 +68,8 @@ class ChatRowsTest {
         val list = listOf(done)
         assertEquals("u0", chatTargetKey(list, ChatTarget.Message(0, null)))
         assertEquals("m0-s1", chatTargetKey(list, ChatTarget.Message(0, 0)))
-        assertEquals("a0-s1", chatTargetKey(list, ChatTarget.Reply(0, 0, interrupted = false)))
-        assertEquals("i0-s1", chatTargetKey(list, ChatTarget.Reply(0, 0, interrupted = true)))
+        assertEquals("u0", chatTargetKey(list, ChatTarget.Reply(0, 0, interrupted = false)))
+        assertEquals("u0", chatTargetKey(list, ChatTarget.Reply(0, 0, interrupted = true)))
         assertEquals("f0", chatTargetKey(list, ChatTarget.Files(0)))
         assertEquals("r0", chatTargetKey(list, ChatTarget.Status(0)))
         assertNull(chatTargetKey(list, ChatTarget.Message(1, null)))
