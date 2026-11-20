@@ -1972,8 +1972,8 @@ internal fun Composer(
                         Icon(MikaIcons.Mic, hint, Modifier.size(MikaSize.Icon), tint = c.ink)
                     }
                 }
-                // 任务在跑时停止一直在;写了字再多一个发送,发出去的话交给当前任务
-                if (busy) {
+                // 任务在跑时没字就停止;写了字停止让位给发送,发出去的话交给当前任务
+                if (busy && !canSend) {
                     Box(
                         Modifier.size(MikaSize.IconButton).background(c.ink, CircleShape).clip(CircleShape)
                             .clickable(onClickLabel = stringResource(R.string.chat_stop), onClick = onStop),
