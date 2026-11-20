@@ -23,6 +23,10 @@ import com.wangzan101.mika.core.model.GeminiTtsModel
 import com.wangzan101.mika.core.model.OpenAiSpeechModel
 import com.wangzan101.mika.core.model.TtsCapabilities
 import com.wangzan101.mika.core.model.TtsModel
+import com.wangzan101.mika.core.model.GeminiImageModel
+import com.wangzan101.mika.core.model.ImageCapabilities
+import com.wangzan101.mika.core.model.ImageModel
+import com.wangzan101.mika.core.model.OpenAiImagesModel
 import com.wangzan101.mika.core.model.ListFailure
 import com.wangzan101.mika.core.model.ListedModel
 import com.wangzan101.mika.core.model.Message
@@ -989,6 +993,21 @@ class ProviderStore(
         return when (choice.protocol) {
             TtsProtocol.OpenAiSpeech -> OpenAiSpeechModel(p.baseUrl, key, choice.model, capabilities, client, header)
             TtsProtocol.GeminiTts -> GeminiTtsModel(p.baseUrl, key.orEmpty(), choice.model, capabilities, client, header)
+        }
+    }
+
+    /**
+     * 图片生成用的模型:地址、Key、请求头都取这家服务商;不套对话模型的计量(图片用量由调用方另记)。
+     * 服务商、模型或协议缺失时为 null。图比一句话慢,读超时放到 180 秒。
+     */
+    fun imageModel(choice: ImageChoice, capabilities: ImageCapabilities): ImageModel? {
+        val p = provider(choice.providerId) ?: return null
+        val client = modelHttp.newBuilder().readTimeout(180, TimeUnit.SECONDS).build()
+        val header = headers(p.sessionHeader, ModelSession.fresh())
+        val key = providerKey(p.id)
+        return when (choice.protocol) {
+            ImageProtocol.OpenAiImages -> OpenAiImagesModel(p.baseUrl, key, choice.model, capabilities, client, header)
+            ImageProtocol.GeminiImage -> GeminiImageModel(p.baseUrl, key.orEmpty(), choice.model, capabilities, client, header)
         }
     }
 

@@ -108,6 +108,8 @@ fun ModelSetupScreen(
     onOpenSpeech: (() -> Unit)? = null,
     /** 设置里点「声音模型」卡片去设置页;上手流程不传,卡片就不出现。 */
     onOpenVoice: (() -> Unit)? = null,
+    /** 设置里点「图片模型」卡片去设置页;上手流程不传,卡片就不出现。 */
+    onOpenImage: (() -> Unit)? = null,
     /** 设置里查看 Token 用量;上手流程不传。 */
     onOpenUsage: (() -> Unit)? = null,
 ) {
@@ -313,6 +315,8 @@ class ModelSetupActions(
     val openSpeech: (() -> Unit)? = null,
     /** 打开「声音模型」设置页;为 null 时不显示这张卡(上手流程)。 */
     val openVoice: (() -> Unit)? = null,
+    /** 打开「图片模型」设置页;为 null 时不显示这张卡(上手流程)。 */
+    val openImage: (() -> Unit)? = null,
     /** 打开 Token 用量;为 null 时不显示入口(上手流程)。 */
     val openUsage: (() -> Unit)? = null,
     /** Independent opt-in decision service; the three model roles remain unchanged. */
@@ -375,6 +379,7 @@ fun ModelSetupContent(ui: ModelSetupUi, onboarding: Boolean, actions: ModelSetup
                     }
                     RolesSection(ui, onPick, actions.setReasoningEffort, actions.setModelContext)
                     SpeechVoiceSection(ui, actions.openSpeech, actions.openVoice)
+                    ImageModelSection(ui, actions.openImage)
                     actions.openDecision?.let { openDecision ->
                         GroupCard {
                             ListRow(MikaIcons.Route, stringResource(R.string.jev_title), stringResource(R.string.jev_row_sub),
@@ -757,6 +762,18 @@ private fun SpeechVoiceSection(ui: ModelSetupUi, onSpeech: (() -> Unit)?, onVoic
         }
         if (onVoice != null) {
             ListRow(ModelsCopy.VOICE_ICON, stringResource(R.string.role_voice), onClick = onVoice) { RowChevron() }
+        }
+    }
+}
+
+/** 图片模型:生成/改图用的模型,和语音一样单独一行。 */
+@Composable
+private fun ImageModelSection(ui: ModelSetupUi, onImage: (() -> Unit)?) {
+    if (onImage == null) return
+    GroupCard {
+        ListRow(ModelsCopy.IMAGE_ICON, stringResource(R.string.role_image), subtitle = stringResource(R.string.role_image_what), first = true, onClick = onImage) {
+            RowValue(ModelsCopy.imageLine(ui).title)
+            RowChevron()
         }
     }
 }

@@ -1,0 +1,1 @@
+Make a picture from a text brief; it is written under /workspace/out/images/ and shown in the chat. Use image_edit to change an existing image. The image tools also cover saving a picture to the gallery (when the user allowed it) and preparing it for a web file control.

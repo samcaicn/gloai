@@ -8,6 +8,7 @@ import com.wangzan101.mika.core.usage.ConversationUsage
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.settings.PersonaStore
 import com.wangzan101.mika.core.chat.GeneratedAudio
+import com.wangzan101.mika.core.chat.GeneratedPhoto
 import com.wangzan101.mika.core.memory.MemoryNote
 import com.wangzan101.mika.core.memory.NoteKind
 import com.wangzan101.mika.core.skills.SkillNote
@@ -632,6 +633,7 @@ class ConversationStore(
                 keptPageClosed = field("keptPageClosed"),
                 atMs = field("atMs")?.toLongOrNull(),
                 audios = objects(o, "audios").mapNotNull(::audioOf),
+                photos = objects(o, "photos").mapNotNull(::photoOf),
                 verified = field("verified")?.toBooleanStrictOrNull(),
                 remoteTaskId = field("remoteTaskId"),
                 outcomeSystemType = field("outcomeSystemType"),
@@ -655,6 +657,11 @@ class ConversationStore(
     private fun audioOf(o: JsonObject): GeneratedAudio? {
         val path = str(o, "path") ?: return null
         return GeneratedAudio(path, str(o, "durationMs")?.toLongOrNull(), str(o, "text"), str(o, "atMs")?.toLongOrNull())
+    }
+
+    private fun photoOf(o: JsonObject): GeneratedPhoto? {
+        val path = str(o, "path") ?: return null
+        return GeneratedPhoto(path, str(o, "width")?.toIntOrNull() ?: 0, str(o, "height")?.toIntOrNull() ?: 0, str(o, "prompt"), str(o, "atMs")?.toLongOrNull())
     }
 
     @Synchronized
@@ -725,6 +732,13 @@ class ConversationStore(
                     buildJsonObject {
                         put("path", a.path); a.durationMs?.let { d -> put("durationMs", d) }
                         a.text?.let { t -> put("text", t) }; a.atMs?.let { t -> put("atMs", t) }
+                    }
+                }))
+                if (it.photos.isNotEmpty()) put("photos", JsonArray(it.photos.map { p ->
+                    buildJsonObject {
+                        put("path", p.path); put("width", p.width); put("height", p.height)
+                        p.prompt?.let { text -> put("prompt", text) }
+                        p.atMs?.let { t -> put("atMs", t) }
                     }
                 }))
                 if (it.skillNotes.isNotEmpty()) put("skillNotes", JsonArray(it.skillNotes.map { n ->

@@ -74,7 +74,12 @@ class AndroidBranchWorkspace(
                 val dstDir = dirs.workspace(dst)
                 val inbox = copyInboxTree(srcDir, dstDir, maxBytes) ?: return@withContext null
                 val audio = copyGeneratedAudioTree(srcDir, dstDir, maxBytes) ?: return@withContext inbox
-                BranchCopyResult(inbox.copied + audio.copied, inbox.skipped + audio.skipped, inbox.truncated || audio.truncated)
+                val images = copyGeneratedImagesTree(srcDir, dstDir, maxBytes) ?: return@withContext inbox
+                BranchCopyResult(
+                    copied = inbox.copied + audio.copied + images.copied,
+                    skipped = inbox.skipped + audio.skipped + images.skipped,
+                    truncated = inbox.truncated || audio.truncated || images.truncated,
+                )
             }
         }
 
@@ -189,20 +194,28 @@ internal fun copyRetryAttachments(
 private class RetryLimitException : IOException()
 
 /**
- * 把 [source]/inbox 复制到 [target]/inbox:只收普通文件,不跟随符号链接,路径规范化后必须仍在各自 inbox 下;
+ * 把 [source]/inbox 复制到 [target]/inbox:只收普通文件,不跟随符号链接,路径规范化后必须仍在各自目录下;
  * 先复制到 target/.inbox-tmp-<uuid>,全部成功后再改名。超过 [maxBytes] 就中止、删掉临时目录,返回
  * `BranchCopyResult(copied = 0, truncated = true)`,不留半成品。
  * 源没有 inbox 返回 null;目标已有 inbox 不覆盖,返回 `BranchCopyResult(copied = 0, skipped = 1)`;
  * 复制中出错也返回 null。不拿树锁,手机实现在锁里调它。
  */
-internal fun copyInboxTree(source: File, target: File, maxBytes: Long): BranchCopyResult? {
-    val sourceInbox = File(source, INBOX)
-    if (!sourceInbox.isDirectory || Files.isSymbolicLink(sourceInbox.toPath())) return null
-    val sourceRoot = sourceInbox.canonicalFile.toPath()
+internal fun copyInboxTree(source: File, target: File, maxBytes: Long): BranchCopyResult? =
+    copyTree(source, target, INBOX, maxBytes, ".inbox-tmp-")
+
+/** 分支时把这一轮生成的图也带上:复制 [source]/out/images 到 [target]/out/images(规则同 inbox)。 */
+internal fun copyGeneratedImagesTree(source: File, target: File, maxBytes: Long): BranchCopyResult? =
+    copyTree(source, target, "out/images", maxBytes, ".images-tmp-")
+
+private fun copyTree(source: File, target: File, sub: String, maxBytes: Long, tmpPrefix: String): BranchCopyResult? {
+    val sourceDir = File(source, sub)
+    if (!sourceDir.isDirectory || Files.isSymbolicLink(sourceDir.toPath())) return null
+    val sourceRoot = sourceDir.canonicalFile.toPath()
     if (!target.isDirectory && !target.mkdirs()) return null
-    val dest = File(target, INBOX)
+    val dest = File(target, sub)
     if (dest.exists() || Files.isSymbolicLink(dest.toPath())) return BranchCopyResult(copied = 0, skipped = 1)
-    val tmp = File(target, ".inbox-tmp-${UUID.randomUUID()}")
+    dest.parentFile?.let { mkdirs(it.toPath()) }
+    val tmp = File(target, "$tmpPrefix${UUID.randomUUID()}")
     if (!tmp.mkdirs()) return null
     val tmpRoot = tmp.canonicalFile.toPath()
     var copied = 0
@@ -249,7 +262,7 @@ internal fun copyInboxTree(source: File, target: File, maxBytes: Long): BranchCo
     }
 
     try {
-        walk(sourceInbox, Paths.get(""))
+        walk(sourceDir, Paths.get(""))
     } catch (e: Exception) {
         tmp.deleteRecursively()
         return null

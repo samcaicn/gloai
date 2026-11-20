@@ -147,6 +147,14 @@ class AppAccessScreenPort(
         return inner.shareAudio(packageName, path, text)
     }
 
+    /** 能不能分享图片只看里面那个端口有没有实现,不碰界面;真正的分享按目标 App 过名单。 */
+    override val canShareImage: Boolean get() = inner.canShareImage
+
+    override suspend fun shareImage(packageName: String, path: String, text: String?): ActionResult {
+        target(packageName)
+        return inner.shareImage(packageName, path, text)
+    }
+
     /** 指定了 App 的在这里看;没指定的由端口按名单挑接手的 App(由谁打开只有端口知道)。 */
     override suspend fun openLink(action: String?, uri: String?, packageName: String?): ActionResult {
         packageName?.let(::target)

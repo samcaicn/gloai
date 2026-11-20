@@ -53,6 +53,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,11 +78,13 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.wangzan101.mika.ui.components.ButtonKind
+import com.wangzan101.mika.core.chat.GeneratedPhoto
 import com.wangzan101.mika.ui.components.ButtonSize
 import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.components.cardSurface
 import com.wangzan101.mika.ui.theme.MikaColors
 import com.wangzan101.mika.ui.theme.MikaIcons
+import kotlinx.coroutines.launch
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.ui.theme.MikaRadius
@@ -449,9 +452,45 @@ private fun SentPhotos(photos: List<AttachmentMessage.Item>, conversationId: Str
     }
 }
 
+/**
+ * Mika 生成的照片:和用户附件一样的格子(1 张一大张,2 张并排,3 张起三列),点开在 App 的查看页看。
+ * 路径来自工具结果,不解析回答文字;conversationId 为 null(旧记录没有对话)时不解码。
+ */
 @Composable
-private fun SentFileCard(f: AttachmentMessage.Item, maxWidth: Dp, onClick: () -> Unit) {
+internal fun GeneratedPhotos(photos: List<GeneratedPhoto>, conversationId: String?, maxWidth: Dp) {
+    if (conversationId == null || photos.isEmpty()) return
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val c = MikaTheme.colors
+    val cols = PhotoGrid.columns(photos.size)
+    val gap = 4.dp
+    val cell = minOf(if (cols == 1) SingleWidth else if (cols == 2) 118.dp else 96.dp, maxWidth)
+    val px = with(LocalDensity.current) { cell.roundToPx() }.coerceAtLeast(64)
+    Column(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(gap)) {
+        photos.chunked(cols).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                row.forEach { p ->
+                    val thumb = rememberAttachImage(AttachImage.Sent(conversationId, p.path), px)
+                    Box(
+                        Modifier.testTag("generated-photo").size(cell).clip(GridPhotoShape).background(c.fill)
+                            .clickable(role = Role.Image, onClickLabel = stringResource(R.string.attach_view_large)) {
+                                scope.launch {
+                                    if (!AttachFiles.openSent(context, conversationId, p.path)) {
+                                        Toast.makeText(context, AttachCopy.GONE, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                    ) {
+                        thumb?.let { Image(it, p.path.substringAfterLast('/'), Modifier.matchParentSize(), contentScale = ContentScale.Crop) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SentFileCard(f: AttachmentMessage.Item, maxWidth: Dp, onClick: () -> Unit) {    val c = MikaTheme.colors
     Row(
         Modifier.testTag("sent-file").widthIn(min = minOf(220.dp, maxWidth), max = maxWidth).cardSurface(c, FileCardShape).clip(FileCardShape)
             .clickable(onClickLabel = stringResource(R.string.chat_open), role = Role.Button, onClick = onClick)

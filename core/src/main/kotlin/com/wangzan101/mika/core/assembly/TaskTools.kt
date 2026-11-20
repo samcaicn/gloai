@@ -136,6 +136,14 @@ fun toolDispatcher(
     audioSpeakTool: Boolean = false,
     /** 音频转写;为空时不装转写能力(没配置服务商转写模型)。 */
     transcribe: com.wangzan101.mika.core.cap.transcribe.TranscribePort? = null,
+    /** 图片生成/改图/存相册;为空时不装图片能力(没配置图片模型或用户没打开)。 */
+    image: com.wangzan101.mika.core.cap.image.ImagePort? = null,
+    /** 用户允许保存图片到相册;默认关。 */
+    imageSaveEnabled: Boolean = false,
+    /** 每次保存前是否问用户;默认问。 */
+    imageAskBeforeSave: Boolean = true,
+    /** 每个任务最多生成几张;超过后工具拒绝,不去花服务商的钱。 */
+    imageMaxPerTask: Int = 8,
     /** 以 root 跑命令(已 root 的手机上用户打开了「允许 Mika 执行 root 命令」才给);为空时 root 工具不登记。 */
     root: RootPort? = null,
     /** 用户配置并启用的通用网页搜索;为空时保持原有浏览器搜索路径。 */
@@ -192,6 +200,13 @@ fun toolDispatcher(
         object : CapabilityProvider {
             override val id = com.wangzan101.mika.core.cap.audio.AUDIO
             override fun open(spec: RunSpec) = com.wangzan101.mika.core.cap.audio.AudioCapability(port, audioSaveEnabled, audioAskBeforeSave, audioSpeakTool)
+        }
+    }) + listOfNotNull(image?.let { port ->
+        object : CapabilityProvider {
+            override val id = com.wangzan101.mika.core.cap.image.IMAGE
+            override fun open(spec: RunSpec) = com.wangzan101.mika.core.cap.image.ImageCapability(
+                port, imageSaveEnabled, imageAskBeforeSave, imageMaxPerTask,
+            )
         }
     }) + listOfNotNull(root?.let { port ->
         object : CapabilityProvider {
@@ -261,7 +276,7 @@ fun recordedTools(): ToolIndex = legacyNames().let { legacy -> ToolIndex(allTool
 
 /** Mika 所有可能提供的工具,按发给模型的顺序。 */
 internal fun allTools(): List<AgentTool> =
-    GeneralGroup.tools + PhoneCapability.tools() + WebGroup.tools + SandboxGroup.tools + com.wangzan101.mika.core.cap.audio.AudioGroup.tools + com.wangzan101.mika.core.cap.transcribe.TranscribeGroup.tools + RootGroup.tools + com.wangzan101.mika.core.calls.callAgentTools + com.wangzan101.mika.core.cap.devicefiles.DeviceFilesGroup.tools
+    GeneralGroup.tools + PhoneCapability.tools() + WebGroup.tools + SandboxGroup.tools + com.wangzan101.mika.core.cap.audio.AudioGroup.tools + com.wangzan101.mika.core.cap.transcribe.TranscribeGroup.tools + com.wangzan101.mika.core.cap.image.ImageGroup.tools + RootGroup.tools + com.wangzan101.mika.core.calls.callAgentTools + com.wangzan101.mika.core.cap.devicefiles.DeviceFilesGroup.tools
 
 /** Mika 所有可能提供的工具的声明。 */
 fun knownTools(): ToolIndex = ToolIndex(allTools())

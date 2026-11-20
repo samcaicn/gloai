@@ -269,6 +269,8 @@ class TaskRun(
     val sharedFiles: StateFlow<List<SharedFile>> get() = runState.sharedFiles
     /** 本任务生成并留在工作区里的音频;结束时随这一轮存进对话。 */
     val audios: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedAudio>> get() = runState.audios
+    /** 本任务生成并留在工作区里的图;结束时随这一轮存进对话。 */
+    val photos: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedPhoto>> get() = runState.photos
     val takeoverStage: StateFlow<Takeover.Stage> get() = runState.takeoverStage
     val frames: StateFlow<Bitmap?> get() = runState.frames
     /** 个人助手的缩略图只收本任务获准展示的手机画面。 */
@@ -410,6 +412,39 @@ class TaskRun(
      * 本任务的音频端口:用户配置并打开了声音模型、且这是手机上开始的任务时才建。
      * 定时、远程、子任务、条件检查没有它,音频工具也就不会发给模型。
      */
+    private val imageSettings by lazy { com.wangzan101.mika.settings.ImageModelSettings.get(service) }
+
+    /** 本任务的图片端口:用户配置并打开了图片模型、且这是手机上开始的任务时才建。 */
+    private val imagePort by lazy {
+        val state = imageSettings.state.value
+        val choice = state.choice
+        if (!state.enabled || choice == null || provenance.origin != RunOrigin.Ui) null
+        else imageSettings.capabilities()?.let { caps ->
+            com.wangzan101.mika.settings.ProviderStore.get(service).imageModel(choice, caps)?.let { model ->
+                com.wangzan101.mika.media.AndroidImagePort(service, conversationId, model, caps, onGenerated = runState::addPhoto, onSaved = runState::addSaved)
+            }
+        }
+    }
+
+    /** 把工作区里的一张图复制成别的 App 可读的 content URI(分享用);越界、不是图片、太大时为 null。 */
+    private suspend fun shareWorkspaceImage(path: String): com.wangzan101.mika.media.ShareableFile? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val trimmed = path.trim()
+        val prefix = com.wangzan101.mika.core.workspace.SandboxPaths.WORKSPACE + "/"
+        if (!trimmed.startsWith(prefix)) return@withContext null
+        val rel = trimmed.removePrefix(prefix)
+        if (rel.isEmpty() || rel.split('/').any { it.isEmpty() || it == "." || it == ".." }) return@withContext null
+        val dirs = com.wangzan101.mika.cap.sandbox.SandboxDirs(service)
+        val bytes = dirs.tree.shared {
+            dirs.gate.openRead(dirs.workspace(com.wangzan101.mika.chat.WorkspaceResolver.resolveFor(service, conversationId)), rel).use { g ->
+                if (g.size > 20L * 1024 * 1024) null else g.read(0, g.size.toInt())
+            }
+        } ?: return@withContext null
+        val opts = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+        val mime = opts.outMimeType?.takeIf { it.startsWith("image/") } ?: return@withContext null
+        com.wangzan101.mika.media.ShareFileExporter(service).save(bytes, mime, trimmed.substringAfterLast('/'))
+    }
+
     private val audioPort by lazy {
         val state = audioSettings.state.value
         val choice = state.choice
@@ -432,6 +467,8 @@ class TaskRun(
 
     /** 音频能力把一段音频存进了音乐库:当作这一轮导出的文件,聊天里出现卡片。 */
     fun addSavedAudio(s: com.wangzan101.mika.core.model.SavedAudio) = runState.addSavedAudio(s)
+
+    fun addSaved(s: com.wangzan101.mika.core.cap.image.SavedImage) = runState.addSaved(s)
 
     fun clearTakeoverStage() = runState.clearTakeoverStage()
 
@@ -705,6 +742,7 @@ class TaskRun(
                     notOpened = muter::notOpened,
                     appAccess = appAccess,
                     shareAudioFile = { path -> phoneRuntime.shareWorkspaceAudio(path) },
+                    shareImageFile = { path -> shareWorkspaceImage(path) },
                 )
                 val side0 = PhoneSide(shell, a11y, screen, agentDisplay, muter)
                 phone = side0
@@ -972,6 +1010,10 @@ class TaskRun(
                         resolveWorkspace = { workspaceKey }, conversationIdFor = { conversationId })
                 } else null,
                 audio = audioPort,
+                image = imagePort,
+                imageSaveEnabled = imageSettings.state.value.saveEnabled,
+                imageAskBeforeSave = imageSettings.state.value.askBeforeSave,
+                imageMaxPerTask = imageSettings.state.value.maxPerTask,
                 transcribe = transcribePort,
                 audioSaveEnabled = audioSettings.state.value.saveEnabled,
                 audioAskBeforeSave = audioSettings.state.value.askBeforeSave,

@@ -51,7 +51,7 @@ class PromptLayoutTest {
     /** 入口工具(能力那一组收着时也提供的)各有一份短说明,没有多余的;短说明只点名本任务登记的工具。 */
     @Test fun everyEntryToolHasShortDescription() {
         val entries = allTools().filter { it.entry != null }.map { it.name }
-        assertEquals(setOf("phone_launch_app", "phone_list_apps", "phone_set_alarm", "phone_set_timer", "phone_add_calendar_event", "phone_calendar_bulk_insert", "web_navigate", "web_read_page", "run_command", "list_folder_files", "audio_generate", "audio_transcribe", "speak"), entries.toSet())
+        assertEquals(setOf("phone_launch_app", "phone_list_apps", "phone_set_alarm", "phone_set_timer", "phone_add_calendar_event", "phone_calendar_bulk_insert", "web_navigate", "web_read_page", "run_command", "list_folder_files", "audio_generate", "audio_transcribe", "speak", "image_generate"), entries.toSet())
         assertEquals(entries.map { "$it.md" }.toSet(), files("entries"))
         for (e in entries) {
             val text = File(root, "entries/$e.md").readText()
@@ -62,7 +62,7 @@ class PromptLayoutTest {
 
     @Test fun noOrphanFiles() {
         assertEquals(setOf("identity.md", "principles.md"), files("system"))
-        assertEquals((listOf("phone", "app-access", "batch", "web", "sandbox", "audio", "transcribe", "general", "inline-screen", "channels", "groups", "handover", "root", "device_files")).map { "$it.md" }.toSet(), files("capabilities"))
+        assertEquals((listOf("phone", "app-access", "batch", "web", "sandbox", "audio", "transcribe", "image", "general", "inline-screen", "channels", "groups", "handover", "root", "device_files")).map { "$it.md" }.toSet(), files("capabilities"))
         assertEquals(Feedback.FILES.map { "$it.md" }.toSet(), files("feedback"))
         val roles = setOf("app_classifier", "describe", "intent_gate", "task_stages", "intent_decision", "locate", "memory_extract", "route_match", "route_decision", "skill_draft", "app_knowledge", "app_knowledge_input", "verifier", "outcome_judge", "user_screen", "view_image", "stop_summary", "conversation_title", "teach_skill", "notice_triage", "notice_learn", "notice_notes", "notice_day", "notice_week", "notice_month")
         assertEquals(roles.map { "$it.md" }.toSet(), files("roles"))

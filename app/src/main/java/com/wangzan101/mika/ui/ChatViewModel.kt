@@ -198,6 +198,8 @@ data class Exchange(
     val files: List<SharedFile> = emptyList(),
     /** 这一轮 Mika 生成并留在工作区里的音频,显示成音频卡片。 */
     val audios: List<com.wangzan101.mika.core.chat.GeneratedAudio> = emptyList(),
+    /** 这一轮 Mika 生成并留在工作区里的图,显示成照片格子。 */
+    val photos: List<com.wangzan101.mika.core.chat.GeneratedPhoto> = emptyList(),
     /** 这次打开 App 后开始跟的时刻(毫秒);不知道时为 0。 */
     val startedAt: Long = 0L,
     /** 结束时算出的用时;没结束或不知道开始时刻时为 null。 */
@@ -452,6 +454,8 @@ class ChatViewModel(
     private val sharedFiles: StateFlow<List<SharedFile>> = MutableStateFlow(emptyList()),
     /** 当前任务生成并留在工作区里的音频;任务开始时由服务清空。 */
     private val generatedAudios: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedAudio>> = MutableStateFlow(emptyList()),
+    /** 当前任务生成并留在工作区里的图;任务开始时由服务清空。 */
+    private val generatedPhotos: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedPhoto>> = MutableStateFlow(emptyList()),
     /** 把选中的文件(内容 URI 字符串)复制进对话工作区的 inbox/。 */
     private val importAttachments: suspend (conversationId: String, uris: List<String>) -> ImportResult = { _, _ -> ImportResult(emptyList(), emptyList()) },
     /** 读出选中文件(内容 URI 字符串)的名字、大小和是不是照片;读盘的活由调用方放到后台线程。 */
@@ -780,6 +784,7 @@ class ChatViewModel(
         scope.launch { sharedFiles.collect { if (ownTask()) onSharedFiles(it) } }
         scope.launch { autoRead.collect { if (!it) autoReadKey = null } }
         scope.launch { generatedAudios.collect { if (ownTask()) onAudios(it) } }
+        scope.launch { generatedPhotos.collect { if (ownTask()) onPhotos(it) } }
         scope.launch { runNotes.collect { notes -> _ui.update { ui -> ui.copy(exchanges = ui.exchanges.map { withNotes(it, notes) }) } } }
         scope.launch { activities.collect { if (ownTask()) onActivities(it) } }
         scope.launch { steers.collect { if (ownTask()) onSteers(it) } }
@@ -930,6 +935,15 @@ class ChatViewModel(
         _ui.update { ui ->
             val exchanges = ui.exchanges.toMutableList()
             if (liveIndex in exchanges.indices) exchanges[liveIndex] = exchanges[liveIndex].copy(files = files)
+            ui.copy(exchanges = exchanges)
+        }
+    }
+
+    private fun onPhotos(photos: List<com.wangzan101.mika.core.chat.GeneratedPhoto>) {
+        if (liveIndex < 0) return
+        _ui.update { ui ->
+            val exchanges = ui.exchanges.toMutableList()
+            if (liveIndex in exchanges.indices) exchanges[liveIndex] = exchanges[liveIndex].copy(photos = photos)
             ui.copy(exchanges = exchanges)
         }
     }
@@ -1590,6 +1604,7 @@ class ChatViewModel(
         _ui.update { it.copy(takeoverStage = takeoverStage.value) }
         onSharedFiles(sharedFiles.value)
         onAudios(generatedAudios.value)
+        onPhotos(generatedPhotos.value)
         onActivities(activities.value)
         onSteers(steers.value)
         onState(shown.second)
@@ -2246,7 +2261,8 @@ class ChatViewModel(
                 val goal = it.conversationId?.let(runGoal).orEmpty()
                 val files = if (ownTask()) sharedFiles.value else emptyList()
                 val audios = if (ownTask()) generatedAudios.value else emptyList()
-                val ex = Exchange(goal, emptyList(), ExchangeStatus.Working, live = true, files = files, audios = audios, startedAt = clock())
+                val photos = if (ownTask()) generatedPhotos.value else emptyList()
+                val ex = Exchange(goal, emptyList(), ExchangeStatus.Working, live = true, files = files, audios = audios, photos = photos, startedAt = clock())
                 it.copy(exchanges = it.exchanges + ex,
                     followUpMode = when {
                         it.attachments.isNotEmpty() -> FollowUpMode.Queue
@@ -2461,6 +2477,7 @@ class ChatViewModel(
             return Exchange(t.userText, emptyList(), status, live = false, runId = t.runId,
                 memoryNotes = t.memoryNotes, usedMemory = t.usedMemory, skillNotes = t.skillNotes,
                 audios = t.audios,
+                photos = t.photos,
                 keptPage = t.keptPage, keptPageClosed = t.keptPageClosed,
                 steers = t.steers.mapIndexed { i, text ->
                     SteerNote("turn-$i", text, SteerState.Joined, t.interruptedReplies.getOrNull(i)?.takeIf(String::isNotEmpty),
@@ -2554,6 +2571,7 @@ class ToolLabels(private val tools: ToolIndex, private val legacy: LegacyNames =
             "打开 App" to R.string.tool_open_app,
             "分享文字到 App" to R.string.tool_share_text,
             "分享音频到 App" to R.string.tool_share_audio,
+            "分享图片到 App" to R.string.tool_share_image,
             "生成语音" to R.string.tool_audio_generate,
             "保存音频" to R.string.tool_audio_save,
             "转写音频" to R.string.tool_audio_transcribe,
@@ -2591,6 +2609,9 @@ class ToolLabels(private val tools: ToolIndex, private val legacy: LegacyNames =
             "搜索文件" to R.string.tool_search_files,
             "导出文件" to R.string.tool_export_file,
             "查看授权文件夹" to R.string.tool_list_folder_files,
+            "生成图片" to R.string.tool_image_generate,
+            "修改图片" to R.string.tool_image_edit,
+            "保存图片" to R.string.tool_image_save,
             "打开网页" to R.string.tool_open_page,
             "搜索网页" to R.string.web_search_action,
             "切换网页标签" to R.string.tool_switch_tab,

@@ -14,8 +14,16 @@ import com.wangzan101.mika.core.testing.WEB_SCRIPT_TOOL
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.assembly.allTools
 import com.wangzan101.mika.core.cap.audio.AudioPort
+import com.wangzan101.mika.core.cap.image.ImagePort
+import com.wangzan101.mika.core.cap.image.SavedImage
+import com.wangzan101.mika.core.cap.image.StoredImage
 import com.wangzan101.mika.core.cap.transcribe.TranscribePort
 import com.wangzan101.mika.core.cap.transcribe.Transcript
+import com.wangzan101.mika.core.model.GeneratedImage
+import com.wangzan101.mika.core.model.ImageCapabilities
+import com.wangzan101.mika.core.model.ImageReference
+import com.wangzan101.mika.core.model.ImageRequest
+import com.wangzan101.mika.core.model.ImageResponse
 import com.wangzan101.mika.core.model.SavedAudio
 import com.wangzan101.mika.core.model.StoredAudio
 import com.wangzan101.mika.core.model.TtsCapabilities
@@ -30,7 +38,7 @@ class ToolRiskTest {
 
     /** 原来要过锁屏/暂停关卡的工具表。 */
     private val oldWriting = both("tap", "scroll", "swipe", "type_text", "clear_text", "back", "press_key", "diagnose") + setOf(
-        "phone_launch_app", "phone_share_text", "phone_share_audio", "phone_gesture", "phone_sms_login", "hand_to_user",
+        "phone_launch_app", "phone_share_text", "phone_share_audio", "phone_share_image", "phone_gesture", "phone_sms_login", "hand_to_user",
         "phone_set_alarm", "phone_set_timer", "phone_show_alarms", "phone_add_calendar_event", "phone_set_wheel",
         "web_navigate", "web_tabs", "web_upload", "web_interact", "web_site_mode", "phone_open_link", "web_keep_open", "phone_app_after_task",
     )
@@ -65,6 +73,15 @@ class ToolRiskTest {
         override suspend fun speak(request: TtsRequest) {}
     }
 
+    private object NoImagePort : ImagePort {
+        override val modelName = "test-image"
+        override val capabilities = ImageCapabilities(supportsEdit = true, maxReferences = 1, maxCount = 1)
+        override suspend fun generate(request: ImageRequest) = ImageResponse(emptyList())
+        override suspend fun readReference(path: String) = ImageReference(ByteArray(0), "image/png")
+        override suspend fun store(image: GeneratedImage, nameHint: String?, prompt: String) = StoredImage("/workspace/out/images/x.png", 0, 0, 0)
+        override suspend fun saveToGallery(path: String, name: String?) = SavedImage("Pictures/Mika/x.png", "content://x", 0)
+    }
+
     @Test fun readCallsRefuseWhatTheOldListsRefused() = runTest {
         val refused = oldWriting + oldSandbox + WEB_SCRIPT_TOOL +
             setOf("phone_find", "phone_collect", "phone_dialog", "phone_run", "phone_system_command", "phone_calendar_bulk_insert", "schedule_task", "spawn_agent", "settings_set", "root_run_command", "web_search",
@@ -72,10 +89,12 @@ class ToolRiskTest {
                 "mika_open_in_browser", "mika_search_in_browser", "mika_login_site", "mika_confirm_login", "mika_favorites",
                 "phone_call_state", "phone_call_dial", "phone_call_answer", "phone_call_hangup", "phone_call_takeover",
                 "list_device_files", "copy_device_file", "search_device_files", "list_device_directory_hints", "update_device_directory_description",
-                "audio_generate", "audio_save", "audio_transcribe", "speak")
+                "audio_generate", "audio_save", "audio_transcribe", "speak",
+                "image_generate", "image_edit", "image_save")
         assertEquals(refused, allTools().filter { !it.readOnly }.map { it.name }.toSet())
         // root 命令、通话工具都只在给了端口时登记:各给一个,所有工具都在
-        val d = toolDispatcher(FakeScreen(), audio = NoAudioPort, audioSaveEnabled = true, audioSpeakTool = true, transcribe = NoTranscribePort, root = object : com.wangzan101.mika.core.cap.root.RootPort {
+        val d = toolDispatcher(FakeScreen(), audio = NoAudioPort, audioSaveEnabled = true, audioSpeakTool = true, transcribe = NoTranscribePort,
+            image = NoImagePort, imageSaveEnabled = true, root = object : com.wangzan101.mika.core.cap.root.RootPort {
             override suspend fun run(command: String, timeoutMs: Long) = com.wangzan101.mika.core.cap.root.RootRun.Unavailable
         }, deviceFiles = object : com.wangzan101.mika.core.cap.devicefiles.DeviceFilesPort {
             override suspend fun search(query: com.wangzan101.mika.core.cap.devicefiles.DeviceFileSearchQuery): com.wangzan101.mika.core.cap.devicefiles.DeviceFileSearchResult = error("read call reached device files")

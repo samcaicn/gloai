@@ -95,6 +95,9 @@ class TaskCenterState {
     /** 显示中的任务到此刻生成的音频;结束时随这一轮存进对话。 */
     val _audios = MutableStateFlow<List<com.wangzan101.mika.core.chat.GeneratedAudio>>(emptyList())
     val audios: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedAudio>> = _audios.asStateFlow()
+    /** 显示中的任务到此刻生成的图;结束时随这一轮存进对话。 */
+    val _photos = MutableStateFlow<List<com.wangzan101.mika.core.chat.GeneratedPhoto>>(emptyList())
+    val photos: StateFlow<List<com.wangzan101.mika.core.chat.GeneratedPhoto>> = _photos.asStateFlow()
     val _endedRunId = MutableStateFlow<String?>(null)
     val endedRunId: StateFlow<String?> = _endedRunId.asStateFlow()
     val _endedRunIds = MutableStateFlow<Map<String, String?>>(emptyMap())
