@@ -226,6 +226,15 @@ class BackupEngine(
             throw BackupException("This install already has chats and providers; import needs Replace all")
         }
         val byPath = payloads.toMap()
+        // Validate all destination paths before staging, and snapshot obsolete files
+        // before temporary imports appear in the tree. Excluded data stays outside
+        // the replacement scope, just as it is outside the export scope.
+        val targets = manifest.entries.associate { it.path to targetFile(it.path) }
+        val obsolete = if (replace) {
+            val retained = targets.values.toSet()
+            val prefs = sharedPrefsDir.listFiles()?.filter { it.isFile && it.name.endsWith(".xml") }.orEmpty()
+            (collectFiles().map { it.second } + prefs).filter { it.canonicalFile !in retained }
+        } else emptyList()
         // Stage every entry before replacing anything: a corrupt payload or a full
         // disk then fails with the install's existing data untouched.
         val staged = mutableListOf<Pair<File, File>>()
@@ -233,7 +242,7 @@ class BackupEngine(
             manifest.entries.forEach { info ->
                 val bytes = byPath[info.path]
                     ?: throw BackupException("Backup is missing ${info.path}")
-                val target = targetFile(info.path)
+                val target = targets.getValue(info.path)
                 val out: ByteArray = when {
                     info.path.removePrefix("files/") == PROVIDER_KEYS_PATH -> {
                         val alias = info.alias ?: PROVIDER_KEYS_ALIAS
@@ -268,6 +277,10 @@ class BackupEngine(
                     throw BackupException("Could not replace ${target.name}")
                 }
                 if (!tmp.renameTo(target)) throw BackupException("Could not write ${target.name}")
+            }
+            // Do not delete old-only data if validation, encryption or staging fails.
+            obsolete.forEach { old ->
+                if (old.exists() && !old.delete()) throw BackupException("Could not remove ${old.name}")
             }
         } catch (e: Exception) {
             staged.forEach { (tmp, _) -> tmp.delete() }
