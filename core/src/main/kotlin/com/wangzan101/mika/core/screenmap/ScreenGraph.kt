@@ -1,8 +1,12 @@
 package com.wangzan101.mika.core.screenmap
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
 /**
  * 一张 App 的屏图：节点 = 结构页，边 = 点击导航。由运行记录确定性重建，`nodes` 键是屏 id。
  */
+@Serializable
 data class ScreenGraph(val app: String, val nodes: Map<String, ScreenNode>) {
     fun nodes(): List<ScreenNode> = nodes.values.toList()
 
@@ -39,4 +43,10 @@ data class ScreenGraph(val app: String, val nodes: Map<String, ScreenNode>) {
             return i
         }
     }
+}
+
+object ScreenGraphCodec {
+    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    fun encode(g: ScreenGraph): String = json.encodeToString(ScreenGraph.serializer(), g)
+    fun decode(s: String): ScreenGraph = json.decodeFromString(ScreenGraph.serializer(), s)
 }
