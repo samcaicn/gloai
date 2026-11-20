@@ -143,6 +143,35 @@ class PhoneAutomationToolsTest {
         assertTrue(result["text"]!!.jsonPrimitive.content.contains("群聊消息正文"))
     }
 
+    @Test fun collectFallsBackToElementsWhenTreeHasNoText() = runTest {
+        val dispatcher = toolDispatcher(FakeScreen())
+        dispatcher.ctx.sub = SubActions {
+            // 骨架 tree:只有 role/ref/children,没有 text/bounds(和 UiTreeJson 骨架一致)
+            val tree = JsonArray(listOf(buildJsonObject {
+                put("id", 1); put("type", "application"); put("layer", 0)
+                put("nodes", JsonArray(listOf(buildJsonObject {
+                    put("role", "RecyclerView"); put("scrollable", true)
+                    put("children", JsonArray(listOf(
+                        buildJsonObject { put("role", "TextView"); put("ref", "@e1") },
+                        buildJsonObject { put("role", "TextView"); put("ref", "@e2") },
+                    )))
+                })))
+            }))
+            val elements = listOf("第一条" to 100, "第二条" to 200).map { (name, y) -> buildJsonObject {
+                put("name", name)
+                put("center", buildJsonObject { put("x", 500); put("y", y + 25) })
+                put("size", JsonArray(listOf(800, 50).map(::JsonPrimitive)))
+            } }
+            ToolExecution(buildJsonObject {
+                put("ok", true); put("currentApp", "com.example.app"); put("snapshotId", "p1")
+                put("tree", tree); put("elements", JsonArray(elements))
+            })
+        }
+        val args = Args(PhoneCollect.def, Json.parseToJsonElement("""{"direction":"down","pages":1}""").jsonObject)
+        val result = PhoneCollect.execute(args, dispatcher.ctx).content
+        assertTrue(result["text"]!!.jsonPrimitive.content.contains("第一条\n第二条"))
+    }
+
     @Test fun runResolvesTargetsAgainAndStopsOnAmbiguity() = runTest {
         val dispatcher = toolDispatcher(FakeScreen())
         val calls = mutableListOf<String>()
