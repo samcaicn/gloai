@@ -184,6 +184,29 @@ class TriagePlannerTest {
         assertEquals(TriageCounts(), p.counts())
     }
 
+    @Test fun surfaceForANoticeUpdatedDuringTheRequestIsJudgedAgainSooner() {
+        val p = planner()
+        val v1 = rec("k", "com.a", t0)
+        p.sync(snap(v1), t0)
+        p.begin("com.a")
+        val v2 = v1.copy(postedAtMs = t0 + 5)
+        p.sync(snap(v2), t0 + 5)
+        p.finish(mapOf("k" to surface), t0 + 6)
+        p.sync(snap(v2), t0 + 6)
+        // 结果记在发出去的那次上,对不上新的发出时间:提醒出不来
+        assertEquals(TriageMark.Done(t0, surface), p.marks()["k"])
+        assertEquals(0, NoticeHints().apply { sync(listOf(v2), p.marks(), triageOn = true) }.state.value.unseen)
+        // 所以不按「已经标出来了」冷却 30 分钟,和忽略、记下一样 2 分钟后再判新内容
+        val at = t0 + 6 + min(2)
+        assertEquals(TriagePlan.WaitUntil(at), p.plan(true, false, true, t0 + 6))
+        assertEquals(TriagePlan.WaitUntil(at + W), p.plan(true, false, true, at))
+        assertEquals(TriagePlan.Send("com.a"), p.plan(true, false, true, at + W))
+        assertEquals(listOf("k"), p.begin("com.a").map { it.record.key })
+        p.finish(mapOf("k" to surface), at + W)
+        p.sync(snap(v2), at + W)
+        assertEquals(1, NoticeHints().apply { sync(listOf(v2), p.marks(), triageOn = true) }.state.value.unseen)
+    }
+
     // ---- 冷却 ----
 
     private val remember = TriageVerdict(TriageDecision.Remember, "r")

@@ -40,8 +40,9 @@ data class TriageCounts(val pending: Int = 0, val judged: Int = 0, val failed: I
  * 一次只有一批在发;锁屏或关掉时调用方取消请求并 [abort],这一批照旧待判定,不算失败。
  *
  * 冷却:聊天类 App 每来一句就把同一条通知(同一个键)重发一遍。一个键判过之后,它的更新不马上待判定,先等到冷却结束
- * (从这次判定算起;时长只看我们自己的判定和次数,见 [cooldownMs]),到点有新内容才待判定、照常凑批,一次请求就带上
- * 这期间攒下的文字。冷却不计时:到点由 [plan] 给出 [TriagePlan.WaitUntil],调用方只在解锁时计时。
+ * (从这次判定算起;时长只看我们自己的判定和次数,见 [cooldownMs];判成值得提醒、请求期间又更新了的按忽略、记下算,
+ * 见 [finish]),到点有新内容才待判定、照常凑批,一次请求就带上这期间攒下的文字。冷却不计时:到点由 [plan] 给出
+ * [TriagePlan.WaitUntil],调用方只在解锁时计时。
  * 用户处理了这条(收件箱里没了这个键:点开、划掉、不再勾选这个 App、清空)就忘掉它的冷却和次数,以后同一个键从头算。
  *
  * 失败也要停一段:失败的请求一样算进每天的请求次数,坏掉的模型加上一直在说话的聊天,不停就会每 20 秒发一次。
@@ -153,6 +154,8 @@ class TriagePlanner(
      * 这一批判完了:只记还在收件箱里的;这个 App 当天判成值得提醒的会话(不同的键)到了上限后,新的键再判成值得提醒的
      * 按忽略记(内置说明);今天已经算过的键照样提醒。结果记在发出去的那个
      * 发出时间上;请求期间又更新了的,照样从现在开始冷却(否则一直在说话的聊天会每批都重来一遍),新内容等冷却到点再判。
+     * 这时判成值得提醒的,结果对不上新的发出时间,提醒出不来([NoticeHints] 只认对得上的),冷却按忽略、记下的逐级时长算,
+     * 不按「已经标出来了」的 [SURFACE_COOLDOWN_MS]。
      * 先 [sync] 一次,收件箱在请求期间的变化才算得上。
      */
     fun finish(verdicts: Map<String, TriageVerdict>, nowMs: Long) {
@@ -172,8 +175,11 @@ class TriagePlanner(
             }
             marks[key] = TriageMark.Done(posted, v)
             val n = (cools[key]?.verdicts ?: 0) + 1
+            val updated = record.postedAtMs != posted
+            val wait = if (updated && v.decision == TriageDecision.Surface) cooldownMs(TriageDecision.Ignore, n)
+                else cooldownMs(v.decision, n)
             // 判成功了:失败次数清零
-            cools[key] = Cool(nowMs + cooldownMs(v.decision, n), n, newerAtMs = nowMs.takeIf { record.postedAtMs != posted })
+            cools[key] = Cool(nowMs + wait, n, newerAtMs = nowMs.takeIf { updated })
         }
     }
 
