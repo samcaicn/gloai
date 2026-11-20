@@ -41,6 +41,7 @@ import org.commonmark.node.Text
 import org.commonmark.node.ThematicBreak
 import org.commonmark.parser.Parser
 import com.wangzan101.mika.ui.theme.LightColors
+import java.net.URLDecoder
 import com.wangzan101.mika.ui.theme.MikaColors
 
 /** 回答里的 Markdown 解析成的显示模型:块级结构 + 带样式的行内文字。纯数据,不依赖界面。 */
@@ -99,7 +100,11 @@ object MarkdownModel {
      */
     fun toPlainText(markdown: String): String = blocksText(parse(markdown)).trim()
 
-    /** 回复里 Markdown 图片 `![..]` 与链接 `[..]` 的地址中以 `/workspace` 开头者,按出现顺序去重返回。 */
+    /**
+     * 回复里 Markdown 图片 `![..]` 与链接 `[..]` 的地址中以 `/workspace` 开头者,按出现顺序去重返回。
+     * 地址里的百分号转义解出来(带空格、非 ASCII 的文件名按 CommonMark 要写成 `%20`、`%E6` 这样的形式);
+     * 解不了的非法序列原样保留,字面 `+` 也不是空格。
+     */
     fun workspaceRefs(markdown: String): List<String> = try {
         val out = LinkedHashSet<String>()
         fun visit(n: Node) {
@@ -108,7 +113,7 @@ object MarkdownModel {
                 is Link -> n.destination
                 else -> null
             }
-            if (dest != null && dest.startsWith("/workspace")) out.add(dest)
+            if (dest != null && dest.startsWith("/workspace")) out.add(percentDecoded(dest))
             var c = n.firstChild
             while (c != null) { visit(c); c = c.next }
         }
@@ -119,6 +124,10 @@ object MarkdownModel {
     } catch (e: StackOverflowError) {
         emptyList()
     }
+
+    /** 链接地址是按 URI 规则写的:合法 `%HH` 按 UTF-8 解;非法转义不动,`+` 是文件名里的字面加号,不当空格。 */
+    private fun percentDecoded(dest: String): String =
+        runCatching { URLDecoder.decode(dest.replace("+", "%2B"), "UTF-8") }.getOrDefault(dest)
 
     private fun blocksText(blocks: List<MdBlock>, sep: String = "\n\n"): String = blocks.mapNotNull { b ->
         when (b) {

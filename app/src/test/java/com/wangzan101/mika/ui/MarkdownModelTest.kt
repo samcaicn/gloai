@@ -147,4 +147,25 @@ class MarkdownModelTest {
     fun workspaceRefsDeduplicates() {
         assertEquals(listOf("/workspace/a.png"), MarkdownModel.workspaceRefs("![x](/workspace/a.png) ![y](/workspace/a.png)"))
     }
+
+    @Test
+    fun workspaceRefsDecodesPercentEscapes() {
+        assertEquals(
+            listOf("/workspace/my report.csv", "/workspace/报告.png"),
+            MarkdownModel.workspaceRefs("[a](/workspace/my%20report.csv) ![图](/workspace/%E6%8A%A5%E5%91%8A.png)"),
+        )
+        // 同一个文件一个编码一个裸写,解码后只留一张卡
+        assertEquals(
+            listOf("/workspace/a b.png"),
+            MarkdownModel.workspaceRefs("![x](/workspace/a%20b.png) ![y](</workspace/a b.png>)"),
+        )
+    }
+
+    @Test
+    fun workspaceRefsKeepsLiteralPlusAndInvalidEscape() {
+        assertEquals(
+            listOf("/workspace/a+b.png", "/workspace/100%.csv"),
+            MarkdownModel.workspaceRefs("[a](/workspace/a+b.png) [b](</workspace/100%.csv>)"),
+        )
+    }
 }

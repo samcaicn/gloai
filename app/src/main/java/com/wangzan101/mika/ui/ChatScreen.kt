@@ -954,6 +954,7 @@ private fun LazyListScope.exchange(
     item("r$index") {
         JumpHighlight(highlightKey == "r$index", reduceMotion) {
             StatusCard(ex.status, stage, vm, ex.recordedRun, loadSource, openSource, openRun, "r$index",
+                conversationId = conversationId,
                 recover = recover, goal = ex.goal, openReport = openReport, openPlayback = openPlayback)
         }
     }
@@ -1348,9 +1349,13 @@ private fun StatusCard(
     openRun: (String) -> Unit,
     /** 回答的长按菜单认这一条用的(见 [MessageArea])。 */
     key: String,
+    /** 回答里的 /workspace 引用卡片点开要走这个对话的工作区(见 [FinishedReply])。 */
+    conversationId: String?,
     recover: (Boolean) -> Unit = {},
     goal: String, openReport: (String) -> Unit, openPlayback: (String) -> Unit,
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var shareRequest by remember { mutableStateOf<ShareRequest?>(null) }
     ShareCardHost(shareRequest, onDone = { shareRequest = null })
     when (status) {
@@ -1413,6 +1418,10 @@ private fun StatusCard(
                         }
                     }
                     MarkdownText(status.answer, AnswerText.copy(color = MikaTheme.colors.ink))
+                    OutputRefs(status.answer, conversationId) { item ->
+                        val id = conversationId ?: return@OutputRefs
+                        scope.launch { if (!AttachFiles.openSent(context, id, item.path)) Toast.makeText(context, AttachCopy.GONE, Toast.LENGTH_SHORT).show() }
+                    }
                     ReplyActions(runId, status.answer, goal, vm, { shareRequest = ShareRequest(goal, status.answer) }, openRun, loadSource, openSource, status.evidence, openReport, openPlayback)
                 }
             }
@@ -1435,7 +1444,13 @@ private fun StatusCard(
             status.summary?.let { summary ->
                 Box(Modifier.padding(top = 8.dp)) {
                     AnswerArea(key, summary, Modifier.fillMaxWidth().answerSurface()) {
-                        MarkdownText(summary, AnswerText.copy(color = MikaTheme.colors.ink))
+                        Column {
+                            MarkdownText(summary, AnswerText.copy(color = MikaTheme.colors.ink))
+                            OutputRefs(summary, conversationId) { item ->
+                                val id = conversationId ?: return@OutputRefs
+                                scope.launch { if (!AttachFiles.openSent(context, id, item.path)) Toast.makeText(context, AttachCopy.GONE, Toast.LENGTH_SHORT).show() }
+                            }
+                        }
                     }
                 }
             }
