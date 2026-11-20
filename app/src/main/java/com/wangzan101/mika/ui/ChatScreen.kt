@@ -6,6 +6,7 @@ import com.wangzan101.mika.cap.sandbox.AttachmentFailureReason
 import com.wangzan101.mika.core.agent.GoalChecklist
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.AttachedPage
+import com.wangzan101.mika.core.record.RunMetrics
 import com.wangzan101.mika.ui.components.DirectionalIcon
 import com.wangzan101.mika.ui.components.GlassSurface
 import com.wangzan101.mika.ui.components.keepsKeyboard
@@ -115,11 +116,9 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
@@ -448,7 +447,7 @@ fun ChatScreen(
                 ui.exchanges.forEachIndexed { i, ex ->
                     val backgroundNote = i == ui.exchanges.lastIndex && ui.operatingPhone
                     exchange(
-                        i, ex, ui.conversationId, ui.takeoverStage, vm, reduceMotion, backgroundNote, openRun, loadSource, openSource, kept,
+                        i, ex, ui.conversationId, ui.takeoverStage, vm, reduceMotion, backgroundNote, runMetrics, openRun, loadSource, openSource, kept,
                         highlightKey = highlightKey,
                         recover = { resume ->
                             val label = if (resume) R.string.chat_resume_request else R.string.chat_restart_request
@@ -926,6 +925,7 @@ private fun JumpHighlight(active: Boolean, reduceMotion: Boolean, content: @Comp
 
 private fun LazyListScope.exchange(
     index: Int, ex: Exchange, conversationId: String?, stage: Takeover.Stage, vm: ChatViewModel, reduceMotion: Boolean, backgroundNote: Boolean,
+    runMetrics: Map<String, RunMetrics>,
     openRun: (String) -> Unit, loadSource: suspend (String) -> EvidenceSource?, openSource: (String?, String?) -> Unit,
     kept: KeptPage? = null,
     /** 从搜索或文件库跳过来时要高亮的行 key。 */
@@ -971,7 +971,7 @@ private fun LazyListScope.exchange(
     waiting.forEach(::steer)
     item("r$index") {
         JumpHighlight(highlightKey == "r$index", reduceMotion) {
-            StatusCard(ex.status, stage, vm, ex.recordedRun, loadSource, openSource, openRun, "r$index",
+            StatusCard(ex.status, stage, vm, ex.recordedRun, ex.elapsedMs, ex.recordedRun?.let { runMetrics[it]?.tokens }, loadSource, openSource, openRun, "r$index",
                 conversationId = conversationId,
                 recover = recover, goal = ex.goal, openReport = openReport, openPlayback = openPlayback)
         }
@@ -1142,8 +1142,10 @@ internal fun WorkBlock(ex: Exchange, reduceMotion: Boolean, backgroundNote: Bool
     val paused = ChatCopy.paused(ex.status)
     val elapsed = rememberElapsed(ex.startedAt)
     Column(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+        TurnMeta(elapsed, tokens = null)
+        Spacer(Modifier.height(3.dp))
         Row(
-            Modifier.fillMaxWidth().heightIn(min = 28.dp),
+            Modifier.fillMaxWidth().heightIn(min = 24.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -1155,18 +1157,19 @@ internal fun WorkBlock(ex: Exchange, reduceMotion: Boolean, backgroundNote: Bool
                 ChatCopy.progressLine(ex), Modifier.weight(1f), style = NowText, color = c.ink,
                 maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
-            if (elapsed != null) Text(ChatCopy.clock(elapsed), style = ClockText, color = c.ink3)
         }
         ex.goals?.let { GoalChecklistRow(it, ex.runId) }
         if (ex.steps.isNotEmpty()) StepLine(ex.steps, ex.stepActions, live = true, paused = paused)
         // 跑的时候就能进运行过程(页面按秒接着长);结束后收进「做了 N 步 · 查看过程」那一行
         ex.recordedRun?.let { id ->
-            Text(
-                stringResource(R.string.chat_view_process),
+            Row(
                 Modifier.padding(top = 2.dp).clip(MikaShapes.Pill).clickable(role = Role.Button) { openRun(id) }
                     .padding(horizontal = 4.dp, vertical = 4.dp).testTag("work-view-process"),
-                style = DoneText.copy(fontStyle = FontStyle.Italic, textDecoration = TextDecoration.Underline), color = c.ink3,
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(stringResource(R.string.chat_view_process), style = DoneText, color = c.ink3)
+                DirectionalIcon(MikaIcons.Chevron, null, Modifier.size(12.dp), tint = c.ink3)
+            }
         }
         if (backgroundNote) {
             Row(
@@ -1176,6 +1179,23 @@ internal fun WorkBlock(ex: Exchange, reduceMotion: Boolean, backgroundNote: Bool
                 Icon(MikaIcons.Eye, null, Modifier.size(15.dp), tint = c.ink3)
                 Text(ChatCopy.BACKGROUND_NOTE, style = NoteText, color = c.ink3)
             }
+        }
+    }
+}
+
+/** 回答/干活头部那行:「Mika · 0:42 · 1.2 万 Token」;[elapsed]/[tokens] 为 null 时略去对应段。 */
+@Composable
+private fun TurnMeta(elapsed: Long?, tokens: Long?) {
+    val c = MikaTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Text(ChatCopy.APP_TITLE, style = TurnNameText, color = c.ink)
+        if (elapsed != null) {
+            Text("·", style = ClockText, color = c.ink3)
+            Text(ChatCopy.clock(elapsed), style = ClockText, color = c.ink3)
+        }
+        if (tokens != null && tokens > 0) {
+            Text("·", style = ClockText, color = c.ink3)
+            Text(ChatTokensCopy.amount(tokens), style = ClockText, color = c.ink3)
         }
     }
 }
@@ -1371,6 +1391,7 @@ fun takeoverReasonLabel(reason: String): Int? = when (reason) {
 @Composable
 private fun StatusCard(
     status: ExchangeStatus, stage: Takeover.Stage, vm: ChatViewModel, runId: String?,
+    elapsedMs: Long?, tokens: Long?,
     loadSource: suspend (String) -> EvidenceSource?, openSource: (String?, String?) -> Unit,
     openRun: (String) -> Unit,
     /** 回答的长按菜单认这一条用的(见 [MessageArea])。 */
@@ -1433,6 +1454,7 @@ private fun StatusCard(
         is ExchangeStatus.Done -> Box(Modifier.padding(bottom = 12.dp)) {
             AnswerArea(key, status.answer, Modifier.fillMaxWidth().answerSurface()) {
                 Column {
+                    TurnMeta(elapsedMs, tokens)
                     status.unverifiedLine?.let { line ->
                         Row(Modifier.padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.size(18.dp).background(MikaTheme.colors.warnSoft, CircleShape), contentAlignment = Alignment.Center) {
@@ -2009,6 +2031,7 @@ private val BubbleText = MikaType.Body
 /** 回答:正文字号,行距放宽到 1.7。 */
 private val AnswerText = MikaType.Body
 private val NowText = MikaType.Value.copy(fontWeight = FontWeight.Medium)
+private val TurnNameText = MikaType.Label.copy(fontWeight = FontWeight.SemiBold)
 private val ClockText = MikaType.Hint.copy(fontFeatureSettings = "tnum")
 private val StepText = MikaType.Body
 private val StepCurrentText = MikaType.Body.copy(fontWeight = FontWeight.Medium)
