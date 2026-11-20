@@ -52,9 +52,10 @@ internal fun strArray(d: String, max: Int) = buildJsonObject {
 }
 
 /**
- * 每个工具附带的 reason(用意说明)的说法:界面上把它当这一步的说明给用户看,所以和给用户的话一样用用户最近那句话的语言写。
+ * 每个工具附带的 reason(用意说明)的说法。完整语义(为什么、给用户看、用用户语言)已在 principles 里写一次,
+ * 这里只留一个把字段和「这一步的标签」挂上钩的短指针,免得同一段话在几十个工具的 schema 里重复。
  */
-internal const val REASON_NOTE = "Optional short note on why you are calling this, in the user's language; shown to the user as the step label."
+internal const val REASON_NOTE = "Short note shown to the user as the step label."
 
 internal const val COORD = "Normalized 0-999 (0,0 is top-left, 999,999 is bottom-right) over the latest screen."
 internal const val REF = "Element ref such as @e3 from the latest read of this screen; must be paired with its snapshotId."
