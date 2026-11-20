@@ -27,13 +27,13 @@ class KeyRotationModelsTest {
                 val keys = mutableListOf("keyA", "keyB", "keyC")
                 val rejected = mutableListOf<String>()
                 val next = { keys.firstOrNull() }
-                val reject: (String, Long?) -> Unit = { key, _ ->
+                val reject: (String, Long?, Int) -> Unit = { key, _, _ ->
                     rejected += key
                     keys.remove(key)
                 }
                 val model: StreamingChatModel = if (gemini)
-                    GeminiModel(server.url("/").toString(), "", "m", caps, OkHttpClient(), keySupplier = next, onRateLimit = reject)
-                else OpenAiCompatModel(server.url("/v1").toString(), null, "m", caps, OkHttpClient(), keySupplier = next, onRateLimit = reject)
+                    GeminiModel(server.url("/").toString(), "", "m", caps, OkHttpClient(), keySupplier = next, onKeyRejected = reject)
+                else OpenAiCompatModel(server.url("/v1").toString(), null, "m", caps, OkHttpClient(), keySupplier = next, onKeyRejected = reject)
                 val chunks = mutableListOf<String>()
                 val reply = if (streaming) model.completeStreaming("s", emptyList(), emptyList(), chunks::add)
                     else model.complete("s", emptyList(), emptyList())
@@ -54,7 +54,7 @@ class KeyRotationModelsTest {
         var pick = 0
         val response = requestWithKeyRotation(
             nextKey = { listOf("A", "B", "A")[pick++] },
-            rejected = { key, _ -> rejected += key },
+            rejected = { key, _, _ -> rejected += key },
         ) { key -> attempted += key; RawResponse(401, null, "{}") }
         assertEquals(401, response.status)
         assertEquals(listOf("A", "B"), attempted)

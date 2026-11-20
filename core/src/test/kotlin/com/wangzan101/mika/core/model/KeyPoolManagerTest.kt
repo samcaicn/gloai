@@ -100,6 +100,48 @@ class KeyPoolManagerTest {
     }
 
     @Test
+    fun rejected401MarksExhaustedInsteadOfCooldown() {
+        var fakeTime = 1000L
+        val manager = KeyPoolManager(clock = { fakeTime }, defaultCooldownMs = 10_000L)
+
+        manager.register("provider1", "badKey, goodKey")
+        assertEquals("badKey", manager.getActiveKey("provider1"))
+
+        // 坏 key 撞 401:是耗尽,不是限流冷却
+        manager.markRejected("provider1", "badKey", status = 401, retryAfterMs = 5_000L)
+        assertEquals("goodKey", manager.getActiveKey("provider1"))
+
+        // 冷却时长过去也不会复活(耗尽是永久的)
+        fakeTime += 100_000L
+        assertEquals("goodKey", manager.getActiveKey("provider1"))
+    }
+
+    @Test
+    fun rejected403MarksExhausted() {
+        val manager = KeyPoolManager()
+        manager.register("provider1", "bannedKey, goodKey")
+        manager.getActiveKey("provider1") // badKey 轮到 bannedKey
+
+        manager.markRejected("provider1", "bannedKey", status = 403)
+        assertEquals("goodKey", manager.getActiveKey("provider1"))
+    }
+
+    @Test
+    fun rejected429StillCooldownsAndRecovers() {
+        var fakeTime = 1000L
+        val manager = KeyPoolManager(clock = { fakeTime }, defaultCooldownMs = 10_000L)
+
+        manager.register("provider1", "key1, key2")
+        assertEquals("key1", manager.getActiveKey("provider1"))
+
+        // 429 仍是临时冷却,冷却期满回到轮询
+        manager.markRejected("provider1", "key1", status = 429, retryAfterMs = 5_000L)
+        assertEquals("key2", manager.getActiveKey("provider1"))
+        fakeTime += 6_000L
+        assertEquals("key1", manager.getActiveKey("provider1"))
+    }
+
+    @Test
     fun circuitBreakerTripsAndProbes() {
         var fakeTime = 1000L
         val breaker = CircuitBreaker(

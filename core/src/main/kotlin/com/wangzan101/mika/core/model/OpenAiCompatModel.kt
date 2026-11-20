@@ -42,7 +42,8 @@ class OpenAiCompatModel(
     /** 用户选的思考强度(`reasoning_effort`);null 不发。 */
     private val reasoningEffort: String? = null,
     private val keySupplier: (() -> String?)? = null,
-    private val onRateLimit: ((key: String, retryAfterMs: Long?) -> Unit)? = null,
+    /** 密钥被上游拒绝(429/401/403)时带上 HTTP 状态码回调;接线处按状态决定冷却(429)还是标耗尽(401/403)。 */
+    private val onKeyRejected: ((key: String, retryAfterMs: Long?, status: Int) -> Unit)? = null,
 ) : StreamingChatModel {
     override val name: String get() = model
     private val endpoint = baseUrl.trimEnd('/') + "/chat/completions"
@@ -59,7 +60,7 @@ class OpenAiCompatModel(
     }
 
     override suspend fun complete(system: String, messages: List<Message>, tools: List<ToolSpec>): ModelReply {
-        val response = requestWithKeyRotation(::resolveKey, onRateLimit) { key ->
+        val response = requestWithKeyRotation(::resolveKey, onKeyRejected) { key ->
             HttpSupport.execute(http, request(system, messages, tools, stream = false, key = key))
         }
         val (status, retryAfter, text) = response
@@ -75,7 +76,7 @@ class OpenAiCompatModel(
         system: String, messages: List<Message>, tools: List<ToolSpec>, onText: (String) -> Unit,
     ): ModelReply {
         var stream = OpenAiStream(onText, ::parseUsage, ::thinking)
-        val response = requestWithKeyRotation(::resolveKey, onRateLimit) { key ->
+        val response = requestWithKeyRotation(::resolveKey, onKeyRejected) { key ->
             stream = OpenAiStream(onText, ::parseUsage, ::thinking)
             var raw = HttpSupport.stream(http, request(system, messages, tools, stream = true, key = key), stream::accept)
             if (raw.status == 400 && raw.body.contains("stream_options")) {

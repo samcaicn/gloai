@@ -1224,8 +1224,8 @@ class ProviderStore(
                     baseUrl, apiKey, cfg.model, cfg.capabilities, http, endpoint?.reasoningField, setup.headers,
                     reasoningEffort = setup.reasoningEffort,
                     keySupplier = { activeApiKey(cfg.providerId) },
-                    onRateLimit = { key, retryMs ->
-                        KeyPoolManager.shared.markRateLimited(cfg.providerId, key, retryMs)
+                    onKeyRejected = { key, retryMs, status ->
+                        KeyPoolManager.shared.markRejected(cfg.providerId, key, status, retryMs)
                     }
                 )
             ProviderConfig.Kind.Anthropic -> AnthropicModel(
@@ -1238,8 +1238,8 @@ class ProviderStore(
                     baseUrl, apiKey.orEmpty(), cfg.model, cfg.capabilities, http, setup.headers, setup.maxOutputTokens,
                     reasoningEffort = setup.reasoningEffort,
                     keySupplier = { activeApiKey(cfg.providerId) },
-                    onRateLimit = { key, retryMs ->
-                        KeyPoolManager.shared.markRateLimited(cfg.providerId, key, retryMs)
+                    onKeyRejected = { key, retryMs, status ->
+                        KeyPoolManager.shared.markRejected(cfg.providerId, key, status, retryMs)
                     }
                 )
             ProviderConfig.Kind.OpenAiResponses ->

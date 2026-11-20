@@ -44,6 +44,38 @@ class OpenAiCompatModelTest {
         assertEquals(0, server.requestCount)
     }
 
+    /** 密钥被拒的回调要带上 HTTP 状态码(接线处据此区分 429 冷却与 401/403 耗尽),并就地换下一把 key 重试。 */
+    @Test fun keyRejectionCallbackCarriesStatusAndRotates() = runTest {
+        server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":{"message":"bad key"}}"""))
+        server.enqueue(ok("""{"choices":[{"message":{"content":"hi"}}]}"""))
+        val keys = ArrayDeque(listOf("sk-bad", "sk-good"))
+        val rejected = mutableListOf<Triple<String, Long?, Int>>()
+        val m = OpenAiCompatModel(
+            server.url("/v1").toString().trimEnd('/'), "sk-static", "m", caps(), OkHttpClient(),
+            keySupplier = { keys.removeFirstOrNull() },
+            onKeyRejected = { key, retryMs, status -> rejected += Triple(key, retryMs, status) },
+        )
+        val r = m.complete("sys", user, emptyList())
+        assertEquals(listOf(Triple("sk-bad", null, 401)), rejected)
+        assertEquals("Bearer sk-bad", server.takeRequest().getHeader("Authorization"))
+        assertEquals("Bearer sk-good", server.takeRequest().getHeader("Authorization"))
+        assertEquals("hi", r.parts.filterIsInstance<Part.Text>().joinToString("") { it.text })
+    }
+
+    @Test fun keyRejectionCallbackReportsRateLimitStatus() = runTest {
+        server.enqueue(MockResponse().setResponseCode(429).setHeader("retry-after", "7"))
+        server.enqueue(ok("""{"choices":[{"message":{"content":"hi"}}]}"""))
+        val keys = ArrayDeque(listOf("sk-a", "sk-b"))
+        val rejected = mutableListOf<Triple<String, Long?, Int>>()
+        val m = OpenAiCompatModel(
+            server.url("/v1").toString().trimEnd('/'), null, "m", caps(), OkHttpClient(),
+            keySupplier = { keys.removeFirstOrNull() },
+            onKeyRejected = { key, retryMs, status -> rejected += Triple(key, retryMs, status) },
+        )
+        m.complete("sys", user, emptyList())
+        assertEquals(listOf(Triple("sk-a", 7_000L, 429)), rejected)
+    }
+
     @Test fun parsesToolCalls() = runTest {
         server.enqueue(ok("""{"choices":[{"finish_reason":"tool_calls","message":{"content":null,"tool_calls":[{"id":"c1","type":"function","function":{"name":"phone_tap","arguments":"{\"ref\":\"a1\"}"}}]}}],"usage":{"prompt_tokens":10,"completion_tokens":3,"prompt_tokens_details":{"cached_tokens":4}}}"""))
         val r = model().complete("sys", user, listOf(ToolSpec("phone_tap", "d", """{"type":"object"}""")))
