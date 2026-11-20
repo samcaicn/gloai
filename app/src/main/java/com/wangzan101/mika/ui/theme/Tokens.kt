@@ -87,5 +87,7 @@ object MikaShapes {
     val AnswerBubble = RoundedCornerShape(MikaRadius.Bubble, MikaRadius.Bubble, MikaRadius.Bubble, MikaRadius.BubbleTail)
     val Button = RoundedCornerShape(MikaRadius.Button)
     val Tile = RoundedCornerShape(MikaRadius.Tile)
+    /** 输入栏外壳:固定圆角,多行时圆角不变(不像 [Pill] 那样随高度变圆)。 */
+    val Composer = RoundedCornerShape(MikaRadius.Sheet)
     val Pill = CircleShape
 }
