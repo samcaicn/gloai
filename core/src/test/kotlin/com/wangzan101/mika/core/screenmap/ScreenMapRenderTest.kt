@@ -49,4 +49,25 @@ class ScreenMapRenderTest {
     @Test fun renderMapEmptyGraphIsEmpty() {
         assertEquals("", ScreenMapRender.renderMap(ScreenGraph("x", emptyMap()), null))
     }
+
+    @Test fun renderMapForRecognizesCurrentScreen() {
+        val s = ScreenMapRender.renderMapFor(graph(), setOf("主页", "设置"))
+        assertTrue(s!!.contains("现在在「主页、设置」屏"))
+        assertTrue(s.contains("点「设置」→ 关于本机"))
+    }
+
+    @Test fun renderMapForUnrecognizedGivesListOnly() {
+        val s = ScreenMapRender.renderMapFor(graph(), setOf("别的字"))
+        assertTrue(s!!.contains("屏（2）"))
+        assertFalse(s.contains("现在在"))
+    }
+
+    @Test fun renderMapForNullGraphIsNull() {
+        assertEquals(null, ScreenMapRender.renderMapFor(null, setOf("主页")))
+        assertEquals(null, ScreenMapRender.renderMapFor(ScreenGraph("x", emptyMap()), setOf("主页")))
+    }
+
+    @Test fun renderMapForUnreadScreenIsNull() {
+        assertEquals(null, ScreenMapRender.renderMapFor(graph(), null))
+    }
 }

@@ -12,6 +12,17 @@ object ScreenMapRender {
     }
 
     /**
+     * 进入某 App 时给模型的屏图：有图才给，读不到屏([skeletonTexts] 为 null)不给；
+     * 认得出当前屏就带「你在哪 + 从这怎么走」，认不出只给屏清单。
+     */
+    fun renderMapFor(graph: ScreenGraph?, skeletonTexts: Set<String>?): String? {
+        if (graph == null || graph.nodes.isEmpty()) return null
+        if (skeletonTexts == null) return null
+        val currentId = ScreenRecognizer.identify(skeletonTexts, graph.nodes())?.id
+        return renderMap(graph, currentId)
+    }
+
+    /**
      * 屏清单 + 从当前屏出发的路。超 [maxScreens] 截屏清单、超 [maxChars] 截整段。
      * 图空返回空串。
      */
