@@ -204,6 +204,31 @@ class BackupEngineTest {
         assertTrue(dstPrefs.listFiles().isNullOrEmpty())
     }
 
+    @Test fun aFailedImportLeavesExistingFilesUntouched() {
+        val srcFiles = tmp.newFolder("src-files")
+        val srcPrefs = tmp.newFolder("src-prefs")
+        buildSource(srcFiles, srcPrefs)
+        val entries = readZip(exportBytes(srcFiles, srcPrefs)).toMutableMap()
+        // Valid ZIP, valid manifest entry list, but the payload cannot be imported.
+        entries["files/settings/provider-keys.json"] = "not-json".toByteArray(Charsets.UTF_8)
+        val broken = writeZip(entries)
+
+        val dstFiles = tmp.newFolder("dst-files")
+        val dstPrefs = tmp.newFolder("dst-prefs")
+        dstFiles.write("settings/mcp.json", "OLD")
+        try {
+            engine(dstFiles, dstPrefs, importCipher).import(ByteArrayInputStream(broken), replace = true)
+            fail("a corrupt payload must fail the import")
+        } catch (_: BackupException) {
+            // expected
+        }
+
+        assertEquals("OLD", File(dstFiles, "settings/mcp.json").readText())
+        assertTrue(
+            (dstFiles.walkTopDown().filter { it.isFile && it.name.endsWith(".import-tmp") }.toList()).isEmpty(),
+        )
+    }
+
     @Test fun unknownFutureFormatVersionIsRefused() {
         val srcFiles = tmp.newFolder("src-files")
         val srcPrefs = tmp.newFolder("src-prefs")
