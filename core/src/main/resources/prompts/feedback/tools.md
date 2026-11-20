@@ -46,7 +46,7 @@ You have done the same action on the same target {{count}} times.
 The last {{count}} actions changed nothing in the interface.
 
 ## guard.same_state
-You have come back to the same state of the interface {{count}} times without reaching anything new. If you are deliberately going through items one by one, carry on.
+You have come back to the same state of the interface {{count}} times without reaching anything new. If you are deliberately going through items one by one, put the remaining items in one do_each call instead of doing them one at a time.
 
 ## guard.state_cycle
 You are going round the same {{states}} states of the interface ({{count}} rounds).

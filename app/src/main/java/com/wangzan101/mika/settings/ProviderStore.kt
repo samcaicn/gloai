@@ -186,6 +186,12 @@ internal val MODEL_READ_TIMEOUT_SECONDS = 1..(Int.MAX_VALUE / 1_000)
 internal const val MAX_MAIN_FALLBACKS = 2
 internal const val MAX_FALLBACKS = 2
 
+/**
+ * 临时:真机验证「折叠后任务还能干完」之前,给所有模型每 16 轮折一次历史(超出 keepRecent 后);
+ * 验证通过后改为设置项或按模型调,再删掉这个常量。
+ */
+internal const val TEMP_COMPACTION_EVERY_ROUNDS = 16
+
 /** 留空的窗口沿用所选模型配置，留空的触发点交给核心自动计算，留空的读超时用全局默认(120 秒)。 */
 data class ModelContextSettings(val windowTokens: Int? = null, val triggerTokens: Int? = null, val readTimeoutSeconds: Int? = null) {
     fun limits(modelWindow: Int): ContextLimits = ContextLimits.of(windowTokens ?: modelWindow, triggerTokens)
@@ -794,9 +800,12 @@ class ProviderStore(
         val source = UsageSource(cfg.providerId, p?.name ?: cfg.name, cfg.model, purpose,
             deepSeekDirect = DeepSeekPriceTable.isOfficialEndpoint(adapterFor(cfg, listed?.endpoint).second))
         val settings = p?.contextSettings?.get(cfg.model)
-        val configured = if (settings == null) cfg else cfg.copy(capabilities = cfg.capabilities.copy(
+        val configured = if (settings == null) cfg.copy(capabilities = cfg.capabilities.copy(
+            compactionEveryRounds = TEMP_COMPACTION_EVERY_ROUNDS,
+        )) else cfg.copy(capabilities = cfg.capabilities.copy(
             contextTokens = settings.windowTokens ?: cfg.capabilities.contextTokens,
             compactionTriggerTokens = settings.triggerTokens,
+            compactionEveryRounds = TEMP_COMPACTION_EVERY_ROUNDS,
         ))
         val roleEffort = _roles.value.reasoningEffort(role)
         // 主动能力:思考取服务商写明的最低档;回复短的那两种请求另设上限(见 ProactiveModelSetup)
@@ -847,9 +856,12 @@ class ProviderStore(
         val listed = listedOf(raw)
         val settings = p?.contextSettings?.get(raw.model)
         val adjusted = asRole(raw, role)
-        val configured = if (settings == null) adjusted else adjusted.copy(capabilities = adjusted.capabilities.copy(
+        val configured = if (settings == null) adjusted.copy(capabilities = adjusted.capabilities.copy(
+            compactionEveryRounds = TEMP_COMPACTION_EVERY_ROUNDS,
+        )) else adjusted.copy(capabilities = adjusted.capabilities.copy(
             contextTokens = settings.windowTokens ?: adjusted.capabilities.contextTokens,
             compactionTriggerTokens = settings.triggerTokens,
+            compactionEveryRounds = TEMP_COMPACTION_EVERY_ROUNDS,
         ))
         val roleEffort = _roles.value.reasoningEffort(role)
         val effort = roleEffort?.takeIf { ReasoningOptions.of(configured, listed)?.levels?.contains(it) == true }

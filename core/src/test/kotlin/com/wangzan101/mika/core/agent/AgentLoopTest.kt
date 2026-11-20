@@ -972,8 +972,9 @@ class AgentLoopTest {
         val l = AgentLoop(m, toolDispatcher(screen), "BASE", 60)
         com.wangzan101.mika.core.testing.assertAnswered(DONE, l.run("长任务"))
         assertEquals(60, m.requests.size)
-        val observation = m.requests[1][2].results().single().content
-        assertTrue("observation should be about 6000+ chars, was ${observation.length}", observation.length >= 6000)
+        // 读一次屏验证观察确实有 ~6000 字:手机那组展开后这一读会被压缩裁成占位,不能看发给模型的那份
+        val rawObservation = com.wangzan101.mika.core.uistate.ScreenJson.elements(screen.snapshot(), Int.MAX_VALUE).first
+        assertTrue("observation should be about 6000+ chars, was ${rawObservation.toString().length}", rawObservation.toString().length >= 6000)
         val worst = m.requests.maxOf { TokenEstimate.of(it) }
         assertTrue("sent about $worst tokens", worst * ContextCompressor.UNCALIBRATED_SCALE <= ContextLimits.of(32_000).usable)
         // 只裁旧读屏已经超出预算(压缩器只在超出时才折叠),折叠后回到预算内
