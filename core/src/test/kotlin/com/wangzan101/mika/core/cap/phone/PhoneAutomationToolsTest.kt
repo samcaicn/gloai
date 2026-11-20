@@ -83,7 +83,9 @@ class PhoneAutomationToolsTest {
                 ToolExecution(buildJsonObject { put("ok", true) })
             } else {
                 val names = pages[reads++].mapIndexed { index, name -> buildJsonObject {
-                    put("name", name); put("bounds", JsonArray(listOf(0, 100 + index * 100, 999, 190 + index * 100).map(::JsonPrimitive)))
+                    put("name", name)
+                    put("center", buildJsonObject { put("x", 500); put("y", 145 + index * 100) })
+                    put("size", JsonArray(listOf(999, 90).map(::JsonPrimitive)))
                 } }
                 ToolExecution(buildJsonObject {
                     put("ok", true); put("currentApp", "com.example.app"); put("snapshotId", "p$reads")
@@ -105,7 +107,8 @@ class PhoneAutomationToolsTest {
         dispatcher.ctx.sub = SubActions {
             val elements = listOf("第一条" to 100, "第三条" to 300).map { (name, y) -> buildJsonObject {
                 put("name", name)
-                put("bounds", JsonArray(listOf(100, y, 900, y + 50).map(::JsonPrimitive)))
+                put("center", buildJsonObject { put("x", 500); put("y", y + 25) })
+                put("size", JsonArray(listOf(800, 50).map(::JsonPrimitive)))
             } }
             ToolExecution(buildJsonObject {
                 put("ok", true); put("currentApp", "com.example.app"); put("snapshotId", "p1")

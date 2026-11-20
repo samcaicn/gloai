@@ -154,7 +154,7 @@ internal object PhoneCollect : PhoneTool {
         }
         if (out.isEmpty()) (content["elements"] as? JsonArray)?.forEach { element ->
             val obj = element as? JsonObject ?: return@forEach
-            if (obj["secret"] != JsonPrimitive(true)) add((obj["name"] as? JsonPrimitive)?.contentOrNull, obj["bounds"] as? JsonArray)
+            if (obj["secret"] != JsonPrimitive(true)) add((obj["name"] as? JsonPrimitive)?.contentOrNull, boundsFromCenter(obj))
         }
         // OCR 只包含树里缺失的文字；与树文本按屏幕位置合并，群聊才不会把补出的消息都放到末尾。
         (content["visibleText"] as? JsonArray)?.forEach { entry ->
@@ -166,6 +166,18 @@ internal object PhoneCollect : PhoneTool {
             val previous = sorted.getOrNull(index - 1)
             previous == null || previous.text != line.text || minOf(previous.bottom, line.bottom) <= maxOf(previous.top, line.top)
         }.map(Line::text)
+    }
+
+    /** 由元素列表的 center+size 重建 bounds=[l,t,r,b](0–999),供回退路径复用统一的位置归并逻辑。 */
+    private fun boundsFromCenter(obj: JsonObject): JsonArray? {
+        val c = obj["center"] as? JsonObject
+        val s = obj["size"] as? JsonArray
+        val cx = (c?.get("x") as? JsonPrimitive)?.intOrNull
+        val cy = (c?.get("y") as? JsonPrimitive)?.intOrNull
+        val w = (s?.getOrNull(0) as? JsonPrimitive)?.intOrNull
+        val h = (s?.getOrNull(1) as? JsonPrimitive)?.intOrNull
+        if (cx == null || cy == null || w == null || h == null) return null
+        return JsonArray(listOf(JsonPrimitive(cx - w / 2), JsonPrimitive(cy - h / 2), JsonPrimitive(cx + w / 2), JsonPrimitive(cy + h / 2)))
     }
 
     private fun failure(error: String) = ToolExecution(buildJsonObject { put("ok", false); put("error", error) })
