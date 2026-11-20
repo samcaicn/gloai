@@ -146,11 +146,12 @@ class ContextBuilder(
         return fit(listOf(knowledgePiece(e, note, withLinks))).firstOrNull()?.message()
     }
 
-    /** 某 App 的屏图(页面结构):接在 APP.md 之后、作为参考资料;同一 App 只给一次。 */
-    fun screenMap(app: String, map: String): Message? {
-        if (!screenMapped.add(app)) return null
-        return Piece(ContextKind.ScreenMap, app, body = map).message()
-    }
+    /** 该 App 是不是第一次试注屏图;第一次记下并返回 true,之后返回 false(去重在前,别每步都读屏读盘)。 */
+    fun firstScreenMapAttempt(app: String): Boolean = screenMapped.add(app)
+
+    /** 某 App 的屏图(页面结构):接在 APP.md 之后、作为参考资料。 */
+    fun screenMap(app: String, map: String): Message =
+        Piece(ContextKind.ScreenMap, app, body = map).message()
 
     /** 用户发来的一屏的详情(屏上的字、编号);不进预算,和那句话一样留着。 */
     fun userScreen(source: String, body: String): Message = Piece(ContextKind.UserScreen, source, body = body).message()

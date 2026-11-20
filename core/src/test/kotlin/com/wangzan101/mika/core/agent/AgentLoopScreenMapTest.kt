@@ -20,8 +20,12 @@ import org.junit.Test
 
 /** 带固定元素的一屏,peek 也返回同一屏,认屏认得出。 */
 private class MapScreen(private val els: List<UiElement>, private val pkg: String = "p.a") : ScreenPort by FakeScreen() {
+    var peekCount = 0
     override suspend fun snapshot() = ScreenSnapshot("s", pkg, els, 1080, 2400)
-    override suspend fun peek() = ScreenSnapshot("peek", pkg, els, 1080, 2400)
+    override suspend fun peek(): ScreenSnapshot {
+        peekCount++
+        return ScreenSnapshot("peek", pkg, els, 1080, 2400)
+    }
 }
 
 private class MemMapStore(private val graphs: Map<String, ScreenGraph>) : ScreenMapStore {
@@ -86,6 +90,15 @@ class AgentLoopScreenMapTest {
         val msgs = run(unreadable, MemMapStore(mapOf("p.a" to graph)),
             reply(call("phone_observe")), reply(call("phone_list_elements")), finish)
         assertEquals(0, msgs.screenMaps().size)
+    }
+
+    @Test fun doesNotReReadScreenAfterInjection() {
+        // 注过一次屏图之后,同 App 后续步骤不再读屏读盘(去重在前,别每步都 peek)
+        val screen = MapScreen(listOf(el("@h", "首页"), el("@m", "我的")))
+        val msgs = run(screen, MemMapStore(mapOf("p.a" to graph)),
+            reply(call("phone_observe")), reply(call("phone_list_elements")), finish)
+        assertEquals(1, msgs.screenMaps().size)
+        assertEquals(1, screen.peekCount)
     }
 
     @Test fun screenMapSurvivesCompression() {

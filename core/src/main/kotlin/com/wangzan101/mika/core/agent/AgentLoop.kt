@@ -831,13 +831,13 @@ class AgentLoop(
             history += m
             if (e?.trial == true) emit(RunEvent.State(now(), "knowledge_trial_used", e.name))
         }
-        val graph = pkg?.let { screenMaps?.load(it) }
-        // 没接线或该 App 没图就不读屏(peek 只在真要用图时才做,别白白多读一屏)
-        if (graph != null && graph.nodes.isNotEmpty()) {
-            val skeleton = pkg?.let { tools.interfaces.peek()?.let { s -> RouteAnchors.texts(s).toSet() } }
-            ScreenMapRender.renderMapFor(graph, skeleton)?.let { map ->
-                ctx.screenMap(pkg ?: "", map)?.let { history += it }
-            }
+        // 屏图只试一次:去重在前,没接线、试过或没图都不再读屏读盘
+        if (pkg == null || screenMaps == null || !ctx.firstScreenMapAttempt(pkg)) return
+        val graph = screenMaps.load(pkg)
+        if (graph == null || graph.nodes.isEmpty()) return
+        val skeleton = tools.interfaces.peek()?.let { s -> RouteAnchors.texts(s).toSet() }
+        ScreenMapRender.renderMapFor(graph, skeleton)?.let { map ->
+            history += ctx.screenMap(pkg, map)
         }
     }
 
