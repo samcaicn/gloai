@@ -181,6 +181,11 @@ class ConversationStore(
         return (unsaved + saved).drop(offset).take(limit).toList()
     }
 
+    /** 只读控制台用:最近的对话(不含归档),连同轮数一起返回。 */
+    @Synchronized
+    fun listForConsole(limit: Int): List<ConversationSummary> =
+        listPage(0, limit).map { s -> s.copy(turnCount = read(file(s.id))?.size ?: 0) }
+
     private data class FirstMessage(val modified: Long, val size: Long, val text: String?)
     private val firstMessages = mutableMapOf<String, FirstMessage>()
 
@@ -569,6 +574,10 @@ class ConversationStore(
     @Synchronized
     fun turns(conversationId: String): List<Turn> = records(conversationId).map { it.first }
 
+    /** 这个对话存过内容(有对话文件);空编号、读不到为 false。 */
+    @Synchronized
+    fun exists(conversationId: String): Boolean = file(conversationId).isFile
+
     /** 每一轮连同这一轮导出的文件(文件卡片)。 */
     @Synchronized
     fun records(conversationId: String): List<Pair<Turn, List<SharedFile>>> {
@@ -782,6 +791,8 @@ data class ConversationSummary(
     val restoredAt: Long? = null,
     /** 所属项目编号;独立对话为 null。 */
     val projectId: String? = null,
+    /** 这个对话已有的轮数;只读控制台查询时填,普通列表为 0。 */
+    val turnCount: Int = 0,
 )
 
 /** 对话用的人格和切换记录;人格本身在 PersonaStore 里,这里只存 id。 */

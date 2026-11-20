@@ -7,7 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.net.InetAddress
 
-/** HTTP 与 MCP 每次请求都从同一个已认证归属构造任务服务,避免某条协议路径绕过任务、文件或导出权限。 */
+/**
+ * HTTP 与 MCP 每次请求都从同一个已认证归属构造任务服务,避免某条协议路径绕过任务、文件或导出权限。
+ * 只读 Web 控制台([RemoteCompanion])与任务 API 并列,同样走这里的认证入口。
+ */
 class RemoteEndpoints(
     private val tasks: RemoteTasks,
     private val serverVersion: String,
@@ -16,7 +19,9 @@ class RemoteEndpoints(
     private val history: RemoteHistory? = null,
     private val records: RunExportSource? = null,
     private val calls: com.wangzan101.mika.core.calls.PhoneCallPort? = null,
+    private val companion: RemoteCompanion? = null,
 ) {
+    private val companionApi = companion?.let(::CompanionApi)
     private val clients = LinkedHashMap<String, Long>()
     private val mutable = MutableStateFlow(RemoteActivity())
     val activity = mutable.asStateFlow()
@@ -31,7 +36,8 @@ class RemoteEndpoints(
         if (req.path == McpRpc.PATH) return rpc.handle(req)
         if (req.path == RemoteTaskApi.ROOT || req.path.startsWith("${RemoteTaskApi.ROOT}/")) {
             seen(req.remote, req.header("x-mika-client")?.take(64))
-            val api = RemoteTaskApi(service, serverVersion, device.takeIf { deviceAccess }, history.takeIf { historyAccess })
+            if (companionApi != null && CompanionApi.owns(req.path)) return companionApi.handle(req)
+            val api = RemoteTaskApi(service, serverVersion, device.takeIf { deviceAccess }, history.takeIf { historyAccess }, companion = companion != null)
             return api.handle(req)
         }
         return RemoteTaskApi.error(404, "not_found", "No such endpoint")

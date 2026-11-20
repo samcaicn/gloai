@@ -24,6 +24,7 @@ class RemoteTaskApi(
     private val serverVersion: String,
     private val device: DeviceAccess? = null,
     private val history: RemoteHistory? = null,
+    private val companion: Boolean = false,
 ) {
     fun handle(req: HttpRequest): HttpResponse = try {
         req.header("accept")?.lowercase()?.let {
@@ -75,6 +76,7 @@ class RemoteTaskApi(
                     if (service.fileAccess != null) add("task_files")
                     if (service.exportEnabled) add("run_export")
                     if (history != null) add("history")
+                    if (companion) { add("conversations"); add("running") }
                 }
                 if (history != null) put("history_enabled", history.enabled)
                 putJsonObject("limits") {

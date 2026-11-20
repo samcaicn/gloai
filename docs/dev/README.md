@@ -31,6 +31,7 @@
 | [personal-agent.md](personal-agent.md) | 长期个人主会话、独立任务委派与结果回流 |
 | [remote-mcp.md](remote-mcp.md) | 自托管远程 CLI / MCP 的部署、手机鉴权和断线语义 |
 | [teach-mika.md](teach-mika.md) | 人工示范怎样收成待确认的知识型技能 |
+| [anywhere.md](anywhere.md) | 只读 Web 控制台的手机端端点：对话与运行状态的契约、安全边界、已知限制与验证 |
 
 ## 仓库里别处的开发文档
 
