@@ -581,6 +581,8 @@ class TaskRun(
                 !ProviderStore.get(service).roles.value.sameModel(ModelRole.Main, ModelRole.Light)
             }
             val vision = env.visionModelFactory(service, session)
+            val visionFallbacks = env.visionFallbackFactory(service, session)
+            val lightFallbacks = env.lightFallbackFactory(service, session)
 
             val (knowledge, skills) = withContext(Dispatchers.IO) {
                 // 用户对某个 App/站点的补充放在私有目录 personal/apps、personal/sites 下
@@ -920,7 +922,12 @@ class TaskRun(
             val selfPort = if (provenance.origin == RunOrigin.Ui && !conditionCheck) {
                 (service.application as? MikaApp)?.let { app -> com.wangzan101.mika.self.AndroidSelfPort(app, conversationId, key) }
             } else null
-            val tools = toolDispatcher(privatePhone, model.capabilities.vision, catalog, recordFrames = true, vision = vision?.let { VisionService(it, BitmapImageOps) },
+            val tools = toolDispatcher(privatePhone, model.capabilities.vision, catalog, recordFrames = true,
+                vision = vision?.let {
+                    VisionService(it, BitmapImageOps, fallbacks = visionFallbacks, onModelSwitch = { from, to, _ ->
+                        sink.event(RunEvent.State(System.currentTimeMillis(), "vision_fallback", "${from.name} -> ${to.name}"))
+                    })
+                },
                 smsLogin = if (provenance.origin == RunOrigin.Ui && !conditionCheck && !runSpec.readOnly) {
                     com.wangzan101.mika.cap.phone.sms.AndroidSmsLogin(service, phoneServices.smsLogin, appAccess,
                         accessedPhone, privatePhone) { phone?.screen }.also { smsLogin = it }
@@ -1042,7 +1049,7 @@ class TaskRun(
                 flags = speed,
                 // 只在 lightSteps 打开、轻量模型能调工具且与主模型不是同一份配置时生效
                 modelFallbacks = chainModels, modelChainProviderIds = chainProviderIds,
-                router = routedLight?.let { ModelRouter(model, it) },
+                router = routedLight?.let { ModelRouter(model, it, fallbacks = lightFallbacks) },
                 intentJudge = if (provenance.origin == RunOrigin.Ui) light ?: model else null,
                 intentDecision = if (provenance.origin == RunOrigin.Ui) decision else null,
                 // 选路线是辅助判断:用轻量模型,没配用主模型

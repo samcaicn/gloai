@@ -34,6 +34,10 @@ class TaskEnvironment {
     @Volatile var lightModelFactory: (Context, ModelSession) -> ChatModel? = defaultLightModelFactory
     /** 视觉模型(核查时看截图);设置里没有能看图的模型时为空。 */
     @Volatile var visionModelFactory: (Context, ModelSession) -> ChatModel? = defaultVisionModelFactory
+    /** 视觉模型备援链 */
+    @Volatile var visionFallbackFactory: (Context, ModelSession) -> List<ChatModel> = defaultVisionFallbackFactory
+    /** 轻量模型备援链 */
+    @Volatile var lightFallbackFactory: (Context, ModelSession) -> List<ChatModel> = defaultLightFallbackFactory
     /** 独立的决策接口,不占主/视觉/轻量用途。测试可注入;替换主模型时不隐式调用真实决策服务。 */
     @Volatile var decisionModelFactory: (Context) -> DecisionModel? = defaultDecisionModelFactory
 
@@ -53,6 +57,8 @@ class TaskEnvironment {
         val defaultModelFactory: (Context, ModelSession) -> ChatModel? = { c, s -> ProviderStore.get(c).modelFor(ModelRole.Main, s) }
         val defaultLightModelFactory: (Context, ModelSession) -> ChatModel? = { c, s -> ProviderStore.get(c).modelFor(ModelRole.Light, s) }
         val defaultVisionModelFactory: (Context, ModelSession) -> ChatModel? = { c, s -> ProviderStore.get(c).modelFor(ModelRole.Vision, s) }
+        val defaultVisionFallbackFactory: (Context, ModelSession) -> List<ChatModel> = { c, s -> ProviderStore.get(c).visionFallbackChain(s) }
+        val defaultLightFallbackFactory: (Context, ModelSession) -> List<ChatModel> = { c, s -> ProviderStore.get(c).lightFallbackChain(s) }
         val defaultDecisionModelFactory: (Context) -> DecisionModel? = { c -> DecisionSettings.get(c).createModel() }
 
         fun of(context: Context): TaskEnvironment = (context.applicationContext as Owner).tasks

@@ -80,6 +80,22 @@ If you need a proxy to reach a model service but don't want a system-wide VPN, e
 - `https://` proxies (an encrypted connection to the proxy itself) are only used by commands in Files & computing environment; Mika's own connections stay direct. Use `http://` or `socks5://` to cover everything.
 - The in-app browser uses the proxy only if the phone's WebView supports a per-app proxy, and it can't use a SOCKS proxy that needs a login. In those cases the settings row says the browser connects directly.
 
+## API key pool and auto-rotation
+
+You can add multiple API keys for any provider by separating them with newlines, commas, or semicolons in the API key field, or using the "Add API Key" button under the provider's details page.
+
+- **Round-robin load balancing**: When multiple healthy keys are active, Mika rotates requests evenly across the pool, multiplying your rate limit and token throughput.
+- **Sub-50ms failover on rate limits**: If a key hits an `HTTP 429` (rate limit) or `401`/`403` (quota exhausted or invalid), Mika traps the failure, puts the affected key on a temporary cooldown (honoring the server's `Retry-After` header or a default 60s cooldown), and seamlessly swaps to the next key in `<50ms` without interrupting your task.
+- **Auto-unfreeze**: Once a key's cooldown period ends, it automatically returns to active rotation.
+
+## Multi-model waterfall and fallback
+
+To prevent tasks from failing when a provider encounters capacity outages, service degradations, or prompt token limits (e.g. `HTTP 413` or `5xx` errors):
+
+- Mika supports configuring secondary and tertiary fallback models under each role.
+- If all keys for your primary model fail or the provider is temporarily unavailable, execution cascades down your waterfall chain automatically.
+- Once primary keys recover from their cooldown, subsequent tasks automatically ascend back to your primary model.
+
 ## ChatGPT reports a workspace access error after switching accounts
 
 If the browser says the app is only available to members of its workspace and shows `3p_login_workspace_scope_denied`, first check that you selected the ChatGPT account and workspace originally used to authorize it. The error means the current sign-in does not meet the app registration's workspace scope; it does not by itself establish a wrong password or exhausted plan usage.

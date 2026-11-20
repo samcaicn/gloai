@@ -41,11 +41,15 @@ class OpenAiCompatModel(
     private val headers: Map<String, String> = emptyMap(),
     /** 用户选的思考强度(`reasoning_effort`);null 不发。 */
     private val reasoningEffort: String? = null,
+    private val keySupplier: (() -> String?)? = null,
+    private val onRateLimit: ((key: String, retryAfterMs: Long?) -> Unit)? = null,
 ) : StreamingChatModel {
     override val name: String get() = model
     private val endpoint = baseUrl.trimEnd('/') + "/chat/completions"
     private val declaredVia = ReasoningVia.ofField(reasoningField)
     private val json = Json { ignoreUnknownKeys = true }
+
+    private fun resolveKey(): String? = keySupplier?.invoke()?.takeIf { it.isNotBlank() } ?: apiKey
 
     private companion object {
         val MARKABLE_ROLES = setOf("system", "user", "tool")
@@ -55,8 +59,23 @@ class OpenAiCompatModel(
     }
 
     override suspend fun complete(system: String, messages: List<Message>, tools: List<ToolSpec>): ModelReply {
-        val response = HttpSupport.execute(http, request(system, messages, tools, stream = false))
+        val key = resolveKey()
+        val response = HttpSupport.execute(http, request(system, messages, tools, stream = false, key = key))
         val (status, retryAfter, text) = response
+        if ((status == 429 || status == 401 || status == 403) && onRateLimit != null && key != null) {
+            onRateLimit.invoke(key, HttpSupport.retryAfterMs(retryAfter, text))
+            val nextKey = resolveKey()
+            if (nextKey != null && nextKey != key) {
+                val r2 = HttpSupport.execute(http, request(system, messages, tools, stream = false, key = nextKey))
+                if (r2.status in 200..299) {
+                    if (!looksLikeEvents(r2.body)) return parse(r2.body)
+                    val s2 = OpenAiStream({}, ::parseUsage, ::thinking)
+                    r2.replay(eventsOf(r2.body), s2::accept)
+                    return s2.finish()
+                }
+                if (r2.status !in 200..299) throw mapError(r2.status, r2.retryAfter, r2.body)
+            }
+        }
         if (status !in 200..299) throw mapError(status, retryAfter, text)
         // 有的兼容端点不守 OpenAI 的默认值:没让流式也照样回 SSE(本地、局域网上的自建服务常见)。按流读完再拼,别把 `data:` 当成坏 JSON。
         if (!looksLikeEvents(text)) return parse(text)
@@ -68,12 +87,27 @@ class OpenAiCompatModel(
     override suspend fun completeStreaming(
         system: String, messages: List<Message>, tools: List<ToolSpec>, onText: (String) -> Unit,
     ): ModelReply {
+        val key = resolveKey()
         var stream = OpenAiStream(onText, ::parseUsage, ::thinking)
-        var response = HttpSupport.stream(http, request(system, messages, tools, stream = true), stream::accept)
+        var response = HttpSupport.stream(http, request(system, messages, tools, stream = true, key = key), stream::accept)
         if (response.status == 400 && response.body.contains("stream_options")) {
             // 一些兼容端点能流式生成，却没有用量选项。
             stream = OpenAiStream(onText, ::parseUsage, ::thinking)
-            response = HttpSupport.stream(http, request(system, messages, tools, stream = true, includeUsage = false), stream::accept)
+            response = HttpSupport.stream(http, request(system, messages, tools, stream = true, includeUsage = false, key = key), stream::accept)
+        }
+        if ((response.status == 429 || response.status == 401 || response.status == 403) && onRateLimit != null && key != null) {
+            onRateLimit.invoke(key, HttpSupport.retryAfterMs(response.retryAfter, response.body))
+            val nextKey = resolveKey()
+            if (nextKey != null && nextKey != key) {
+                var s2 = OpenAiStream(onText, ::parseUsage, ::thinking)
+                var r2 = HttpSupport.stream(http, request(system, messages, tools, stream = true, key = nextKey), s2::accept)
+                if (r2.status == 400 && r2.body.contains("stream_options")) {
+                    s2 = OpenAiStream(onText, ::parseUsage, ::thinking)
+                    r2 = HttpSupport.stream(http, request(system, messages, tools, stream = true, includeUsage = false, key = nextKey), s2::accept)
+                }
+                if (r2.status in 200..299) return s2.finish()
+                if (r2.status !in 200..299) throw mapError(r2.status, r2.retryAfter, r2.body)
+            }
         }
         val (status, retryAfter, text) = response
         if (status !in 200..299) {
@@ -89,7 +123,7 @@ class OpenAiCompatModel(
         return stream.finish()
     }
 
-    private suspend fun request(system: String, messages: List<Message>, tools: List<ToolSpec>, stream: Boolean, includeUsage: Boolean = true): Request {
+    private suspend fun request(system: String, messages: List<Message>, tools: List<ToolSpec>, stream: Boolean, includeUsage: Boolean = true, key: String? = resolveKey()): Request {
         val payload = buildJsonObject {
             put("model", model)
             reasoningEffort?.let { put("reasoning_effort", it) }
@@ -110,7 +144,7 @@ class OpenAiCompatModel(
         return Request.Builder().url(endpoint)
             .withHeaders(headers)
             .header("Accept", if (stream) "text/event-stream" else "application/json")
-            .apply { if (!apiKey.isNullOrEmpty()) headerOrReject("Authorization", "Bearer $apiKey") }
+            .apply { if (!key.isNullOrEmpty()) headerOrReject("Authorization", "Bearer $key") }
             .postInference(InferenceProtocol.Chat, payload)
             .build()
     }

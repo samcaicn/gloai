@@ -3,6 +3,7 @@ package com.wangzan101.mika.ui
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.core.model.ApiKeyText
+import com.wangzan101.mika.core.model.KeyPoolManager
 import com.wangzan101.mika.core.model.ListFailure
 import com.wangzan101.mika.core.net.ProxyFailure
 import com.wangzan101.mika.core.model.Capabilities
@@ -208,6 +209,7 @@ data class ModelSetupUi(
     val configs: List<ProviderConfig> = emptyList(),
     val roles: RoleChoices = RoleChoices(),
     val keyed: Set<String> = emptySet(),
+    val providerKeyMap: Map<String, List<String>> = emptyMap(),
     val listing: Map<String, ListState> = emptyMap(),
     /** ChatGPT 服务商的账号;没有这家时为 null。 */
     val chatGptAccount: ChatGptAccount? = null,
@@ -398,6 +400,7 @@ class ModelSetupViewModel(
         return ui.copy(
             providers = providers, configs = store.configs.value, roles = store.roles.value,
             keyed = providers.filter { store.hasKey(it.id) }.map { it.id }.toSet(),
+            providerKeyMap = providers.associate { it.id to store.providerKeys(it.id) },
             chatGptAccount = store.chatGptProvider()?.let { p ->
                 store.chatGptSession(p.id).let { ChatGptAccount(it?.email.orEmpty(), it?.signedIn == true) }
             },
@@ -593,7 +596,9 @@ class ModelSetupViewModel(
         val accepted = ApiKeyText.accept(raw)
         if (accepted.notice == ApiKeyText.Notice.IllegalCharacters) return null
         val key = accepted.text.trim()
-        return if (ApiKeyText.isHeaderLegal(key)) key else null
+        if (key.isEmpty()) return ""
+        val parsed = KeyPoolManager.shared.parseKeys(key)
+        return if (parsed.isNotEmpty() && parsed.all { ApiKeyText.isHeaderLegal(it) }) key else null
     }
 
     /** 表单上的 Key 放不进请求头:标红,停在表单上,不发请求。 */
@@ -993,8 +998,8 @@ class ModelSetupViewModel(
         }
     }
 
-    /** 把 [providerId] 下的 [model] 设为第 [slot] 位主模型备援(项目 3):备好配置再记位子,和选主模型同一条建配置的路。记不上位就不清提示,让用户知道没设成。 */
-    fun pickFallback(slot: Int, providerId: String, model: String) {
+    /** 把 [providerId] 下的 [model] 设为指定角色的第 [slot] 位备援。 */
+    fun pickFallback(role: ModelRole, slot: Int, providerId: String, model: String) {
         val m = model.trim()
         if (m.isEmpty()) return
         scope.launch {
@@ -1002,18 +1007,23 @@ class ModelSetupViewModel(
             withContext(io) {
                 val p = store.provider(providerId) ?: return@withContext
                 val caps = ModelOptions.ofProvider(p, store.list()).firstOrNull { it.id == m }?.capabilities ?: ModelOptions.baseOf(p)
-                ok = store.ensureConfigId(p.id, m, caps)?.let { store.setMainFallback(slot, it) } == true
+                val targetCaps = if (role == ModelRole.Vision) caps.copy(vision = true) else caps.copy(toolCalls = true)
+                ok = store.ensureConfigId(p.id, m, targetCaps)?.let { store.setFallback(role, slot, it) } == true
             }
             _state.update { snapshot(if (ok) it.copy(probeNote = null, pickToProbe = null) else it.copy(probeNote = tr(R.string.main_fallback_failed))) }
         }
     }
 
-    /** 备援手填(或在没试通过的那家选):先试调用,通了才设上;规矩和主模型手填一样(还要会调用工具)。 */
-    fun pickFallbackManual(slot: Int, providerId: String, model: String, onPicked: () -> Unit = {}) {
+    /** 兼容旧方法调用 */
+    fun pickFallback(slot: Int, providerId: String, model: String) =
+        pickFallback(ModelRole.Main, slot, providerId, model)
+
+    /** 备援手填(或在没试通过的那家选):先试调用,通了才设上。 */
+    fun pickFallbackManual(role: ModelRole, slot: Int, providerId: String, model: String, onPicked: () -> Unit = {}) {
         val m = model.trim()
         if (m.isEmpty() || _state.value.manualPick[providerId] == ListState.Running) return
         val p = store.provider(providerId) ?: return
-        if (store.isMainModel(providerId, m)) {
+        if (store.isMainModel(providerId, m) && role == ModelRole.Main) {
             _state.update { it.copy(manualPick = it.manualPick + (providerId to ListState.Failed(tr(R.string.main_fallback_is_main)))) }
             return
         }
@@ -1022,7 +1032,7 @@ class ModelSetupViewModel(
             val outcome = probeSaved(p, m)
             val problem = when {
                 outcome is ProbeOutcome.Failed -> outcome.message
-                outcome is ProbeOutcome.NoToolCall -> tr(R.string.model_probe_no_tools_pick, m)
+                outcome is ProbeOutcome.NoToolCall && role != ModelRole.Vision -> tr(R.string.model_probe_no_tools_pick, m)
                 else -> null
             }
             if (problem != null) {
@@ -1035,7 +1045,8 @@ class ModelSetupViewModel(
                 if (p.models.orEmpty().none { it.id == m }) store.markTyped(p.id, m)
                 store.provider(p.id)?.let { fresh ->
                     val caps = ModelOptions.ofProvider(fresh, store.list()).firstOrNull { it.id == m }?.capabilities ?: ModelOptions.baseOf(fresh)
-                    ok = store.ensureConfigId(fresh.id, m, caps)?.let { store.setMainFallback(slot, it) } == true
+                    val targetCaps = if (role == ModelRole.Vision) caps.copy(vision = true) else caps.copy(toolCalls = true)
+                    ok = store.ensureConfigId(fresh.id, m, targetCaps)?.let { store.setFallback(role, slot, it) } == true
                 }
             }
             if (!ok) {
@@ -1047,13 +1058,20 @@ class ModelSetupViewModel(
         }
     }
 
-    /** 撤掉第 [slot] 位主模型备援(项目 3)。 */
-    fun clearFallback(slot: Int) {
+    /** 兼容旧方法调用 */
+    fun pickFallbackManual(slot: Int, providerId: String, model: String, onPicked: () -> Unit = {}) =
+        pickFallbackManual(ModelRole.Main, slot, providerId, model, onPicked)
+
+    /** 撤掉指定角色的第 [slot] 位备援。 */
+    fun clearFallback(role: ModelRole, slot: Int) {
         scope.launch {
-            withContext(io) { store.setMainFallback(slot, null) }
+            withContext(io) { store.setFallback(role, slot, null) }
             sync()
         }
     }
+
+    /** 撤掉第 [slot] 位主模型备援(项目 3)。 */
+    fun clearFallback(slot: Int) = clearFallback(ModelRole.Main, slot)
 
     /** 看图、轻量的固定选项:「用主模型」或(只有看图)「不用」。 */
     fun choose(role: ModelRole, choice: RoleChoice) {
@@ -1235,6 +1253,41 @@ class ModelSetupViewModel(
             }
             refreshJobs.remove(providerId)?.cancel()
             refresh(providerId)
+            sync()
+        }
+    }
+
+    fun addProviderKey(providerId: String, apiKey: String) {
+        val k = headerKey(apiKey) ?: return
+        if (k.isEmpty()) return
+        scope.launch {
+            try {
+                withContext(io) { store.addProviderKey(providerId, k) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update { it.copy(listing = it.listing + (providerId to ListState.Failed(listFailureText(e)))) }
+                return@launch
+            }
+            refreshJobs.remove(providerId)?.cancel()
+            refresh(providerId)
+            sync()
+        }
+    }
+
+    fun removeProviderKey(providerId: String, keyToRemove: String) {
+        scope.launch {
+            try {
+                withContext(io) { store.removeProviderKey(providerId, keyToRemove) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update { it.copy(listing = it.listing + (providerId to ListState.Failed(listFailureText(e)))) }
+                return@launch
+            }
+            refreshJobs.remove(providerId)?.cancel()
+            refresh(providerId)
+            sync()
         }
     }
 

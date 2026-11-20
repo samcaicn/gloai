@@ -44,6 +44,24 @@ class VisionServiceTest {
         }
     }
 
+    @Test fun fallsBackToNextVisionModelOnModelError() = runTest {
+        val primary = FakeModel(ModelError.RateLimited(null))
+        val backup = FakeModel(ModelReply(listOf(Part.Text("备援识别结果")), StopReason.EndTurn, null))
+        var switched = false
+        val service = VisionService(
+            model = primary,
+            ops = ops,
+            fallbacks = listOf(backup),
+            onModelSwitch = { _, _, err ->
+                switched = true
+                assertTrue(err is ModelError.RateLimited)
+            }
+        )
+        val result = service.ask("SYS", "看", listOf(small))
+        assertEquals("备援识别结果", result)
+        assertTrue(switched)
+    }
+
     @Test fun blankReplyIsBadResponse() = runTest {
         val m = FakeModel(ModelReply(listOf(Part.Text("  ")), StopReason.EndTurn, null))
         try {

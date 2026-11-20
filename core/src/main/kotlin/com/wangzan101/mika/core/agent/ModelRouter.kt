@@ -20,16 +20,45 @@ data class StepContext(
 /**
  * 实验开关 lightSteps 的分工:简单步给轻量模型,其余给主模型。
  * 轻量模型没配、不支持工具调用时恒用主模型。一步出了错误、守卫提示或画面没变,接下来 [TROUBLE_STEPS] 步强制主模型。
+ *
+ * 现已支持轻量模型多级备援 (Light Waterfall Chain):
+ * 当前轻量模型遇限流或故障时，优先平滑降级至下一个轻量备援模型，全部备援耗尽后才回退至主模型。
  */
-class ModelRouter(private val main: ChatModel, private val light: ChatModel?) {
+class ModelRouter(
+    private val main: ChatModel,
+    private val light: ChatModel?,
+    private val fallbacks: List<ChatModel> = emptyList(),
+) {
+    private val lightChain: List<ChatModel> = listOfNotNull(light) + fallbacks
+    private var lightIndex = 0
     private var forcedMain = 0
     private var disabled = false
 
-    /** 轻量模型能不能接手机步;不能时 lightSteps 不生效。 */
-    val active: Boolean get() = !disabled && light != null && light.capabilities.toolCalls
+    /** 当前活跃的轻量模型 */
+    val currentLight: ChatModel? get() = lightChain.getOrNull(lightIndex)
 
-    /** 轻量模型出了重试也没用的错(Key、额度、模型名、请求不对):余下都用主模型。一个 router 只服务一次任务。 */
-    fun disable() { disabled = true }
+    /** 轻量模型能不能接手机步;不能时 lightSteps 不生效。 */
+    val active: Boolean get() = !disabled && currentLight?.capabilities?.toolCalls == true
+
+    /**
+     * 轻量模型出了重试也没用的错(Key、额度、模型名、请求不对):
+     * 若有备援轻量模型，切换到下一个备援；否则余下都用主模型。
+     */
+    fun disable() {
+        if (!switchToNextLight()) {
+            disabled = true
+        }
+    }
+
+    /** 尝试切到下一个轻量备援模型，成功返回 true，无更多备援返回 false */
+    fun switchToNextLight(): Boolean {
+        if (lightIndex + 1 < lightChain.size) {
+            lightIndex++
+            return true
+        }
+        disabled = true
+        return false
+    }
 
     fun pick(ctx: StepContext): ChatModel {
         if (!ctx.lastOk || ctx.lastHadGuard || ctx.lastChanged == false) noteTrouble()
@@ -37,7 +66,7 @@ class ModelRouter(private val main: ChatModel, private val light: ChatModel?) {
             forcedMain--
             return main
         }
-        val l = light?.takeIf { active } ?: return main
+        val l = currentLight?.takeIf { active } ?: return main
         val simple = ctx.step > 1 && !ctx.lastWasRecovery && ctx.sameAppAsLast && (!ctx.hasImages || l.capabilities.vision)
         return if (simple) l else main
     }
@@ -45,7 +74,7 @@ class ModelRouter(private val main: ChatModel, private val light: ChatModel?) {
     /** 出了状况(含轻量模型调用失败、回复被改派给主模型):之后 [TROUBLE_STEPS] 步用主模型。 */
     fun noteTrouble() { forcedMain = TROUBLE_STEPS }
 
-    fun isLight(m: ChatModel): Boolean = light != null && m === light
+    fun isLight(m: ChatModel): Boolean = lightChain.any { it === m }
 
     companion object {
         const val TROUBLE_STEPS = 2
