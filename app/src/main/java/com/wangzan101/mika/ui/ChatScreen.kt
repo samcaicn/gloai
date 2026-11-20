@@ -20,6 +20,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -1133,7 +1134,7 @@ private fun Modifier.answerSurface(): Modifier =
 // ---------- 进度 ----------
 
 /**
- * 进行中:一行状态(转圈 + 此刻的进展 + 用时),下面一条竖线步骤(做完的灰点、当前的蓝点;停下来等你时当前步是橙点)。
+ * 进行中:一行状态(呼吸点 + 此刻的进展 + 用时),下面一条竖线步骤(做完的灰点、当前的蓝点;停下来等你时当前步是橙点)。
  * 在后台操作手机时最下面一行小字。
  */
 @Composable
@@ -1146,13 +1147,10 @@ internal fun WorkBlock(ex: Exchange, reduceMotion: Boolean, backgroundNote: Bool
         Spacer(Modifier.height(3.dp))
         Row(
             Modifier.fillMaxWidth().heightIn(min = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Spinner(
-                Modifier.size(16.dp), spinning = !paused && !reduceMotion,
-                track = if (paused) c.warnSoft else c.accentSoft, head = if (paused) c.warnSolid else c.accent,
-            )
+            BreathingDot(paused, reduceMotion)
             Text(
                 ChatCopy.progressLine(ex), Modifier.weight(1f), style = NowText, color = c.ink,
                 maxLines = 2, overflow = TextOverflow.Ellipsis,
@@ -1249,7 +1247,7 @@ private fun StepLine(steps: List<StepRow>, actions: Map<Int, List<StepAction>>, 
     Column(
         Modifier.padding(top = 6.dp).fillMaxWidth().drawBehind {
             val x = StepRail.toPx()
-            drawLine(c.hair, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.5.dp.toPx())
+            drawLine(c.hair, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.dp.toPx())
         },
     ) {
         // 顶部开关:折叠时「前面还有 N 步」,展开时「收起」,点一下来回切
@@ -1329,7 +1327,7 @@ private fun StepItem(
     }
 }
 
-/** 步骤点:8dp 实心;当前步外面一圈 3dp 的淡色光环。 */
+/** 步骤点:6dp 实心;当前步外面一圈 3dp 的淡色光环。 */
 @Composable
 private fun StepDot(dot: Dot) {
     val c = MikaTheme.colors
@@ -1342,13 +1340,13 @@ private fun StepDot(dot: Dot) {
     // 底色先盖住竖线,点才是干净的
     val bg = c.bg
     Box(
-        Modifier.size(14.dp).drawBehind {
+        Modifier.size(12.dp).drawBehind {
             val center = Offset(size.width / 2, size.height / 2)
             if (ring != null) {
-                drawCircle(bg, 7.dp.toPx(), center)
-                drawCircle(ring, 7.dp.toPx(), center)
+                drawCircle(bg, 6.dp.toPx(), center)
+                drawCircle(ring, 6.dp.toPx(), center)
             }
-            drawCircle(fill, 4.dp.toPx(), center)
+            drawCircle(fill, 3.dp.toPx(), center)
         },
     )
 }
@@ -1367,6 +1365,22 @@ internal fun Spinner(modifier: Modifier, spinning: Boolean, track: Color, head: 
                 Brush.sweepGradient(0f to Color.Transparent, 0.62f to Color.Transparent, 0.63f to head, 0.88f to head, 0.89f to Color.Transparent),
                 CircleShape,
             ),
+    )
+}
+
+/** 干活那行「活着」的信号:一颗呼吸的小点(淡→实、微微放大);停下来等你时变橙、静止。 */
+@Composable
+private fun BreathingDot(paused: Boolean, reduceMotion: Boolean) {
+    val c = MikaTheme.colors
+    val active = !paused && !reduceMotion
+    val breathe = if (active) rememberInfiniteTransition(label = "breathe").animateFloat(
+        0f, 1f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "breathe",
+    ).value else 1f
+    val scale = if (active) 0.8f + 0.38f * breathe else 1f
+    val alpha = if (active) 0.28f + 0.72f * breathe else 1f
+    Box(
+        Modifier.padding(top = 5.dp).size(9.dp).graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha }
+            .background(if (paused) c.warnSolid else c.accent, CircleShape),
     )
 }
 
@@ -2030,11 +2044,11 @@ private val SuggestionText = MikaType.Body.copy(fontWeight = FontWeight.Medium)
 private val BubbleText = MikaType.Body
 /** 回答:正文字号,行距放宽到 1.7。 */
 private val AnswerText = MikaType.Body
-private val NowText = MikaType.Value.copy(fontWeight = FontWeight.Medium)
+private val NowText = MikaType.Value
 private val TurnNameText = MikaType.Label.copy(fontWeight = FontWeight.SemiBold)
 private val ClockText = MikaType.Hint.copy(fontFeatureSettings = "tnum")
-private val StepText = MikaType.Body
-private val StepCurrentText = MikaType.Body.copy(fontWeight = FontWeight.Medium)
+private val StepText = MikaType.Caption
+private val StepCurrentText = MikaType.Caption.copy(fontWeight = FontWeight.Medium)
 private val NoteText = MikaType.Hint
 private val DoneText = MikaType.Caption
 private val NeedTitle = MikaType.Value.copy(fontWeight = FontWeight.SemiBold)
