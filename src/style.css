@@ -817,3 +817,29 @@ body.ov-open { overflow: hidden; }
 .lw-result { min-height: 16px; margin: 10px 0 8px; font-size: 12px; line-height: 1.5; }
 .lw-result.ok { color: var(--accent-deep); }
 .lw-result.err { color: var(--err); }
+
+/* ============================================================
+   权限交互重构（2026-11-20）
+   ============================================================ */
+/* 顶栏徽标里的角色标签：文字 + 颜色双编码，不只靠颜色传达 */
+.conn-badge .conn-role {
+  margin-left: 7px; padding: 1px 6px; border-radius: 5px;
+  font-size: 11px; line-height: 1.5;
+  background: var(--accent-soft); color: var(--accent-dark);
+  border: 1px solid var(--accent-line);
+}
+.conn-badge.off .conn-role { display: none; }
+
+/* 配对工具条：搜索框 + 未保存提示 */
+.pair-tools { display: flex; align-items: center; gap: 12px; margin: 10px 0 2px; }
+.pair-tools .input { flex: 1; min-width: 0; }
+.pair-dirty { font-size: 12px; color: transparent; white-space: nowrap; transition: color .2s; }
+.pair-dirty.dirty { color: var(--warn); font-weight: 600; }
+.pair-filter-empty { padding: 18px; text-align: center; }
+
+/* 写回面板：记住手机号勾选 */
+.lw-remember {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px; color: var(--text-dim); cursor: pointer;
+}
+.lw-remember input { width: auto; margin: 0; accent-color: var(--accent-deep); }

@@ -17,6 +17,7 @@ import {
   IlinkEvent,
 } from "./ilink";
 import { CHANNELS, ChannelKey, channelsApi, ChannelTargets, memberCacheLabel, onRosterUpdated } from "./channels";
+import { gatewayStatus, refreshGateway } from "./perm";
 
 let g: (id: string) => HTMLElement | null = (id) => document.getElementById(id);
 let targets: ChannelTargets | null = null;
@@ -208,11 +209,11 @@ async function refreshTargets(force = false) {
   applySavedSelections();
 }
 
-async function refreshGatewayStatus() {
+async function refreshGatewayStatus(force = false) {
   const box = g("ia-gw-status");
   if (!box) return;
   try {
-    const s: AiGatewayStatus = await aiGatewayApi.status();
+    const s: AiGatewayStatus = force ? await refreshGateway() : await gatewayStatus();
     const c = s.channels || {};
     // role 仅描述登录账号，不参与可用性判定：PC 端登录团长账号是正常态。
     const role = s.role === "leader" ? "团长账号登录" : s.role === "member" ? "团员账号登录" : s.role === "deputy" ? "团副账号登录" : "已登录";
@@ -504,13 +505,13 @@ function wire() {
     void refreshTargets(true);
     void refreshCacheStatus();
   });
-  g("ia-gw-refresh")?.addEventListener("click", () => void refreshGatewayStatus());
+  g("ia-gw-refresh")?.addEventListener("click", () => void refreshGatewayStatus(true));
   g("ia-gw-status")?.addEventListener("click", async (ev) => {
     if (!(ev.target as HTMLElement)?.closest("#ia-gw-fault-reset")) return;
     try {
       await aiGatewayApi.faultReset();
       toast("已解除熔断，下一次写请求将立即发出");
-      await refreshGatewayStatus();
+      await refreshGatewayStatus(true);
     } catch (e: any) {
       toast("解除失败：" + (e?.message || e), false);
     }

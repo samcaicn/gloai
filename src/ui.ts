@@ -10,16 +10,23 @@ import { renderMemberQr } from "./memberqr";
 import { renderOrdersPage } from "./orderspage";
 import { renderInteractPage } from "./interact";
 import { overlayHtml, openOverlay, closeOverlay, wireOverlayClose, bindOverlayEsc } from "./overlay";
+import { gatewayStatus, invalidateGateway, refreshGateway, onGatewayChange, roleText, rememberLeaderTel, rememberedLeaderTel } from "./perm";
 import { listen } from "@tauri-apps/api/event";
 
 interface AppState {
   connection: Record<string, any>;
   params: Record<string, any>;
+  role: string;      // 统一权限态：leader / member / deputy / ""
+  quotaLeft: number | null;
+  leaderName: string;
 }
 
 const state: AppState = {
   connection: defaultConnection(),
   params: defaultParams(),
+  role: "",
+  quotaLeft: null,
+  leaderName: "",
 };
 
 // 自动保存防抖句柄（字段改动 500ms 后落盘）
@@ -94,7 +101,7 @@ function escapeHtml(s: string): string {
 }
 
 // 写回「每人每日免费条数」到服务端 D1。团员号无权限，必须用团长凭证；
-// 凭证只从浮层输入框读取、不进 state 也不落盘，用完即弃。
+// 手机号可记住（方便少打一项），密码只从浮层读取、不进 state、永不落盘，用完即清。
 async function onWriteDailyLimit() {
   const tel = ($("limit-tel")?.value || "").trim();
   const pwd = $("limit-pwd")?.value || "";
@@ -117,7 +124,13 @@ async function onWriteDailyLimit() {
       const local = $("fld-dailyLimit");
       if (local) local.value = String(res.limit);
     }
-    // 凭证用完即清，绝不留存在内存 DOM 里
+    // 记住手机号（用户勾选项）；密码永不留存
+    const remember = ($("limit-remember") as HTMLInputElement | null)?.checked;
+    rememberLeaderTel(remember ? tel : "");
+    // 写回后权限态强制回源（配额 limit 可能变化），刷新徽标
+    void refreshGateway().catch(() => {});
+    void syncPermBadge(true);
+    // 密码用完即清，绝不留存在内存 DOM 里
     if ($("limit-pwd")) $("limit-pwd")!.value = "";
   } catch (e: any) {
     setLimitResult(`写回失败：${e?.message || e}`, false);
@@ -134,16 +147,37 @@ function setLimitResult(msg: string, ok: boolean) {
   el.className = `lw-result ${ok ? "ok" : "err"}`;
 }
 
+/** 从统一权限中心读取角色/配额/团长，刷新顶栏徽标与写回面板提示（局部更新）。 */
+async function syncPermBadge(force = false) {
+  if (!state.connection.token) {
+    state.role = ""; state.quotaLeft = null; state.leaderName = "";
+    updateConnBadge();
+    return;
+  }
+  try {
+    const s = await gatewayStatus(force);
+    state.role = s.role || "";
+    state.quotaLeft = s.quota?.left ?? null;
+    state.leaderName = s.leader?.name || "";
+    updateConnBadge();
+  } catch {
+    // 权限态拉取失败不影响连接徽标（连接本身仍成立）
+    updateConnBadge();
+  }
+}
+
 /** 顶栏常驻连接态：任意页签都能一眼看到是否已连接，点击直接进连接设置。 */
 function updateConnBadge() {
   const el = document.getElementById("conn-badge");
   if (!el) return;
   const on = !!state.connection.token;
   const tel = state.connection.telephone || "";
+  const role = on && state.role ? `<span class="conn-role">${escapeHtml(roleText(state.role))}</span>` : "";
   el.className = `conn-badge ${on ? "on" : "off"}`;
-  el.innerHTML = `<span class="conn-dot ${on ? "on" : "off"}"></span>${on ? escapeHtml(tel || "已连接") : "未连接"}`;
+  el.innerHTML = `<span class="conn-dot ${on ? "on" : "off"}"></span>${on ? escapeHtml(tel || "已连接") : "未连接"}${role}`;
+  const quota = state.quotaLeft !== null ? ` · 今日剩余 ${state.quotaLeft} 条` : "";
   el.title = on
-    ? `已连接 ${state.connection.base_url || ""} · 点击管理连接`
+    ? `${roleText(state.role)} · ${state.leaderName ? `团长「${state.leaderName}」` : tel}${quota} · 点击管理连接`
     : "未连接 · 点击登录并连接";
   el.setAttribute("aria-label", el.title);
 }
@@ -279,11 +313,11 @@ function render() {
   const limitWritebackPanel = `
     <div class="limit-writeback" id="limit-writeback">
       <div class="lw-title">写回服务端（每人每日免费条数）</div>
-      <p class="lw-hint">上方的数字只存本机。真正生效的限额在服务端，需用<b>团长账号</b>登录写回。凭证仅本次使用，不保存。</p>
+      <p class="lw-hint">上方数字只存本机；真正生效的限额在服务端，需用<b>团长账号</b>登录写回。密码仅本次使用，绝不保存。${state.quotaLeft !== null ? ` 当前服务端今日剩余 <b>${state.quotaLeft}</b> 条。` : ""}</p>
       <div class="fields">
         <div class="field">
           <div class="field-label">团长手机号<span class="hint">有管理权限的团长账号，非当前团员号</span></div>
-          <input type="text" id="limit-tel" inputmode="tel" placeholder="团长手机号"/>
+          <input type="text" id="limit-tel" inputmode="tel" autocomplete="username" placeholder="团长手机号" value="${escapeHtml(rememberedLeaderTel())}"/>
         </div>
         <div class="field">
           <div class="field-label">团长密码<span class="hint">仅用于本次写回，不写入配置文件</span></div>
@@ -293,6 +327,7 @@ function render() {
           <div class="field-label">每日条数<span class="hint">1 ~ 999999，默认 3999</span></div>
           <input type="number" id="limit-value" value="${state.params.dailyLimit ?? 3999}" step="1" min="1" max="999999"/>
         </div>
+        <label class="lw-remember"><input type="checkbox" id="limit-remember" ${rememberedLeaderTel() ? "checked" : ""}/> 记住团长手机号（不保存密码）</label>
       </div>
       <div id="limit-result" class="lw-result"></div>
       <div class="btn-row"><button class="btn primary small" id="btn-limit-writeback" type="button">写回服务端</button></div>
@@ -360,6 +395,9 @@ function render() {
   renderOrdersPage(document.getElementById("page-orders") as HTMLElement);
   renderInteractPage(document.getElementById("page-interact") as HTMLElement);
   void loadSwitches();
+  // 统一权限态：初始化拉一次（命中缓存则 0 网络），订阅变化后局部刷新徽标
+  void syncPermBadge();
+  onGatewayChange(() => { void syncPermBadge(); });
 
   app.querySelectorAll<HTMLElement>("[data-tab]").forEach((btn) =>
     btn.addEventListener("click", () => setActiveTab(btn.dataset.tab as TabKey))
@@ -581,10 +619,12 @@ async function onLogin() {
     toast("登录成功，正在后台加载数据…");
     refreshStatusBar();
     notifyLoginChanged(true);
+    // 登录成功 → 权限态强制回源（角色/配额/渠道），并广播给所有订阅页
+    void refreshGateway().catch(() => {});
+    void syncPermBadge(true);
     // 并行加载，不阻塞 UI
     Promise.all([syncRemote(), loadSwitches()]).then(() => {
-      const role = res.account?.role ? `（角色：${res.account.role}）` : "";
-      toast(`登录成功${role}，所有页面已就绪`);
+      toast(`登录成功（${roleText(res.account?.role)}），所有页面已就绪`);
     }).catch(() => {
       toast("数据加载部分失败，可手动刷新", false);
     });
@@ -626,6 +666,8 @@ async function onLogout() {
     const savedConn = { base_url: state.connection.base_url, telephone: "", token: "" };
     await kv.patch({ connection: savedConn, ...state.params });
   } catch {}
+  state.role = ""; state.quotaLeft = null; state.leaderName = "";
+  invalidateGateway();
   refreshStatusBar();
   notifyLoginChanged(false);
   toast("已登出");
@@ -635,6 +677,8 @@ async function onLogout() {
 function onSessionExpired(msg: string) {
   toast("登录已失效，请重新登录", false);
   state.connection.token = "";
+  state.role = ""; state.quotaLeft = null; state.leaderName = "";
+  invalidateGateway();
   refreshStatusBar();
   notifyLoginChanged(false);
   openOverlay("ov-login");

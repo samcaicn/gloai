@@ -64,6 +64,10 @@ let started = false;
 
 // 配对区块临时数据（保存时复用，避免二次拉取微信会话列表）
 let pairingTargets: any = null;
+// 配对搜索关键字（纯前端过滤，0 网络）
+let pairQuery = "";
+// 未保存变更检测：以「已保存的 wxid 映射」为基线，与当前下拉选择比对
+let pairSavedMap: Record<string, any> = {};
 
 function esc(s: string): string {
   return (s || "").replace(/[&<>"']/g, (c) =>
@@ -113,11 +117,16 @@ export async function renderMemberQr(root: HTMLElement) {
         <div class="row-between">
           <h2>团员 ↔ 微信私聊/群聊 配对</h2>
           <div>
+            <button class="btn small" id="mq-pair-match">按名称自动匹配</button>
             <button class="btn small" id="mq-pair-refresh">刷新列表</button>
             <button class="btn small primary" id="mq-pair-save">保存配对</button>
           </div>
         </div>
-        <p class="hint">身份模型：每个微信私聊 / 群聊就是 1 个团员。在此把「团员名册」与「微信会话」手动配对，配对后系统能精确识别「这条微信消息来自哪个团员」，图片支付校验也会据此比对<b>该团员</b>的订单金额。</p>
+        <p class="hint">身份模型：每个微信私聊 / 群聊就是 1 个团员。配对后系统能精确识别「这条微信消息来自哪个团员」，图片支付校验据此比对<b>该团员</b>的订单金额。</p>
+        <div class="pair-tools">
+          <input type="search" id="mq-pair-search" class="input" placeholder="搜索团员名 / 已有配对…" aria-label="搜索团员或配对"/>
+          <span id="mq-pair-dirty" class="pair-dirty" aria-live="polite"></span>
+        </div>
         <div class="hint" id="mq-pair-note"></div>
         <div id="mq-pair-list" class="pair-list">
           <div class="empty">加载中…</div>
@@ -140,6 +149,13 @@ export async function renderMemberQr(root: HTMLElement) {
   g("mq-gen-all")?.addEventListener("click", genAllRosterQr);
   g("mq-pair-refresh")?.addEventListener("click", () => void loadPairing(true));
   g("mq-pair-save")?.addEventListener("click", savePairing);
+  g("mq-pair-match")?.addEventListener("click", autoMatchByName);
+  g("mq-pair-search")?.addEventListener("input", (e) => {
+    pairQuery = (e.target as HTMLInputElement).value.trim().toLowerCase();
+    applyPairFilter();
+  });
+  // 下拉变更 → 标记未保存（委托，避免每行重复绑定）
+  g("mq-pair-list")?.addEventListener("change", () => updateDirtyFlag());
 
   if (!started) {
     started = true;
@@ -182,11 +198,12 @@ export async function renderMemberQr(root: HTMLElement) {
       void refreshAccounts();
       void loadPairing();
     });
-    // 定时刷新已绑定账号状态（捕获会话过期等）+ 绑定总览
+    // 定时刷新已绑定账号状态（捕获会话过期等）。
+    // refreshAccounts() 内部已顺带 refreshBindStatus(online)，这里只调一次，
+    // 避免每 6s 打两次 ilink_list_accounts（历史 bug：两个函数各自 listAccounts）。
     setInterval(() => {
       if (document.visibilityState === "visible") {
-        refreshAccounts();
-        refreshBindStatus();
+        void refreshAccounts();
       }
     }, 6000);
   }
@@ -649,6 +666,7 @@ async function loadPairing(force = false) {
       api.wechatPairingGet().catch(() => ({})),
     ]);
     pairingTargets = targets;
+    pairSavedMap = { ...(pairing || {}) }; // 保存时的比对基线
     const members: any[] = (targets?.member || []).map((m: any) => ({
       id: String(m.id),
       name: m.name || m.realName || "",
@@ -686,9 +704,11 @@ async function loadPairing(force = false) {
         const curLabel = cur?.wxname
           ? `${esc(cur.wxname)}${cur?.is_group ? "（群）" : ""}`
           : "未配对";
+        const pName = pairMemberName(m);
+        const searchBlob = [pName, m.realName, m.telephoneMask, curLabel].filter(Boolean).join(" ");
         return `
-        <div class="pair-row" data-mid="${esc(mid)}">
-          <div class="pair-name">${esc(pairMemberName(m))}${m.realName && m.realName !== pairMemberName(m) ? `<span class="pair-sub">（${esc(m.realName)}）</span>` : ""}</div>
+        <div class="pair-row" data-mid="${esc(mid)}" data-name="${esc(pName)}" data-search="${esc(searchBlob)}">
+          <div class="pair-name">${esc(pName)}${m.realName && m.realName !== pName ? `<span class="pair-sub">（${esc(m.realName)}）</span>` : ""}</div>
           <select class="input pair-sel" data-mid="${esc(mid)}">
             <option value="">— 未配对 —</option>
             ${optsPrivate ? `<optgroup label="微信私聊">${optsPrivate}</optgroup>` : ""}
@@ -713,12 +733,88 @@ async function loadPairing(force = false) {
       stateEl.textContent = `已配对 ${n} / ${members.length} 名团员${wxPart} · ${memberCacheLabel(targets?.member_cache)}`;
     }
     if (targets?.member_note && note && !note.textContent) note.textContent = targets.member_note;
+    applyPairFilter();
+    updateDirtyFlag();
   } catch (e: any) {
     const msg = e?.message || String(e);
     if (box) box.innerHTML = `<div class="empty">加载失败：${esc(msg)}</div>`;
     if (stateEl) stateEl.textContent = "";
     if (note) note.textContent = /未登录|失效|token|会话/i.test(msg) ? "请先到首页登录团长账号" : "";
   }
+}
+
+/** 纯前端过滤配对行：匹配团员名（含真实姓名/手机尾号）或当前配对会话名，0 网络。 */
+function applyPairFilter() {
+  const box = g("mq-pair-list");
+  if (!box) return;
+  const rows = box.querySelectorAll<HTMLElement>(".pair-row");
+  let shown = 0;
+  rows.forEach((row) => {
+    const hay = (row.dataset.search || "").toLowerCase();
+    const hit = !pairQuery || hay.includes(pairQuery);
+    row.style.display = hit ? "" : "none";
+    if (hit) shown++;
+  });
+  let empty = box.querySelector<HTMLElement>(".pair-filter-empty");
+  if (pairQuery && shown === 0) {
+    if (!empty) {
+      empty = document.createElement("div");
+      empty.className = "empty pair-filter-empty";
+      empty.textContent = `没有匹配「${pairQuery}」的团员`;
+      box.appendChild(empty);
+    }
+  } else if (empty) {
+    empty.remove();
+  }
+}
+
+/** 比较当前下拉选择与保存基线，提示「有未保存的修改」，避免用户改完直接切页丢失。 */
+function updateDirtyFlag() {
+  const el = g("mq-pair-dirty");
+  if (!el) return;
+  const box = g("mq-pair-list");
+  let dirty = 0;
+  box?.querySelectorAll<HTMLElement>(".pair-row").forEach((row) => {
+    const mid = row.getAttribute("data-mid") || "";
+    const sel = row.querySelector<HTMLSelectElement>(".pair-sel");
+    const cur = sel?.value || "";
+    const saved = pairSavedMap[mid]?.wxid || "";
+    if (cur !== saved) dirty++;
+  });
+  if (dirty > 0) {
+    el.textContent = `● ${dirty} 项未保存`;
+    el.classList.add("dirty");
+  } else {
+    el.textContent = "";
+    el.classList.remove("dirty");
+  }
+}
+
+/** 一键按名称匹配：把每个未配对团员的名册名与微信会话名做包含匹配，能匹配上的自动选中。 */
+function autoMatchByName() {
+  const box = g("mq-pair-list");
+  if (!box || !pairingTargets) {
+    toast("请先刷新列表", false);
+    return;
+  }
+  const wxAll: any[] = [...(pairingTargets.wx_private || []), ...(pairingTargets.wx_group || [])];
+  let matched = 0;
+  box.querySelectorAll<HTMLElement>(".pair-row").forEach((row) => {
+    const sel = row.querySelector<HTMLSelectElement>(".pair-sel");
+    if (!sel || sel.value) return; // 已配对的不动
+    const name = (row.getAttribute("data-name") || "").replace(/[（(].*?[)）]/g, "").trim();
+    if (!name) return;
+    const hit = wxAll.find((s) => {
+      const wn = String(s.name || "").trim();
+      return wn && (wn.includes(name) || name.includes(wn));
+    });
+    if (hit) {
+      sel.value = String(hit.id || "");
+      matched++;
+    }
+  });
+  updateDirtyFlag();
+  toast(matched ? `已按名称匹配 ${matched} 项，检查后点「保存配对」` : "没有可按名称自动匹配的新团员", matched > 0);
 }
 
 async function savePairing() {
@@ -751,6 +847,8 @@ async function savePairing() {
   });
   try {
     await api.wechatPairingSet(map);
+    pairSavedMap = { ...map }; // 更新基线，脏标记归零
+    updateDirtyFlag();
     if (stateEl) stateEl.textContent = `已保存 ${saved} 条配对（本机持久化，升级/重启有效）`;
     toast(`已保存 ${saved} 条团员 ↔ 微信会话配对`);
   } catch (e: any) {

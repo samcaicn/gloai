@@ -15,6 +15,7 @@ import {
   AutoReplyTestResult,
 } from "./ilink";
 import { overlayHtml, openOverlay, wireOverlayClose, bindOverlayEsc } from "./overlay";
+import { gatewayStatus, refreshGateway } from "./perm";
 
 const MON_TYPES = ["text", "voice", "image", "video", "file", "link", "quote", "merge", "emotion"];
 const MON_LABELS: Record<string, string> = {
@@ -425,11 +426,11 @@ async function saveListenList() {
 
 // ---------------- AI 消息网关状态 ----------------
 
-async function loadGatewayStatus() {
+async function loadGatewayStatus(force = false) {
   const box = g("gw-status");
   if (!box) return;
   try {
-    const s = await aiGatewayApi.status();
+    const s = force ? await refreshGateway() : await gatewayStatus();
     const c = s.channels || {};
     // role 只是登录账号的角色，不参与可用性判定：PC 端登录团长账号是正常态。
     const roleTxt = s.role === "leader" ? "团长账号登录" : s.role === "member" ? "团员账号登录" : s.role === "deputy" ? "团副账号登录" : "已登录";
@@ -531,7 +532,7 @@ function wire() {
   });
   g("listen-save")?.addEventListener("click", saveListenList);
   g("rl-save")?.addEventListener("click", saveRules);
-  g("gw-refresh")?.addEventListener("click", () => void loadGatewayStatus());
+  g("gw-refresh")?.addEventListener("click", () => void loadGatewayStatus(true));
   g("sf-refresh")?.addEventListener("click", () => void loadSafetyStatus());
   g("sf-resume")?.addEventListener("click", async () => {
     try {
@@ -549,7 +550,7 @@ function wire() {
     try {
       await aiGatewayApi.faultReset();
       toast("已解除熔断，下一次写请求将立即发出");
-      await loadGatewayStatus();
+      await loadGatewayStatus(true);
     } catch (e: any) {
       toast("解除失败：" + (e?.message || e), false);
     }

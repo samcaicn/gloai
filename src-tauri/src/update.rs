@@ -132,14 +132,15 @@ fn update_dirs(app: &tauri::AppHandle) -> Result<(PathBuf, PathBuf, PathBuf), St
     Ok((temp, staged, dir))
 }
 
-/// 下载到文件（3 次重试，流式写盘）。
-async fn download_to(url: &str, dest: &PathBuf) -> Result<u64, String> {    let mut last_err = String::new();
-    for attempt in 0..3 {
+/// 下载到文件（可配置重试次数，流式写盘）。
+async fn download_to(url: &str, dest: &PathBuf, attempts: u32) -> Result<u64, String> {
+    let mut last_err = String::new();
+    for attempt in 0..attempts {
         match try_download(url, dest).await {
             Ok(n) => return Ok(n),
             Err(e) => {
                 last_err = e;
-                if attempt < 2 {
+                if attempt + 1 < attempts {
                     tokio::time::sleep(Duration::from_secs(3 * (attempt as u64 + 1))).await;
                 }
             }
@@ -148,20 +149,43 @@ async fn download_to(url: &str, dest: &PathBuf) -> Result<u64, String> {    let 
     Err(last_err)
 }
 
-/// 下载（3 次重试）× 镜像回退：主 URL 不通则依次尝试 gh-proxy 镜像拼接。
+/// 下载 × 镜像回退（提速）：
+///   直连源国内常被黑洞挂起，用 client_short()（15s）且只试 1 次，快速失败；
+///   镜像源可达性高，用常规 120s 客户端 + 2 次重试保证弱网下能下完 16MB。
+/// 原实现对所有源一视同仁地 3×120s，导致直连不通时静默更新白等约 2 分钟才切镜像。
 async fn download_via(url: &str, dest: &PathBuf) -> Result<u64, String> {
-    let mut last = format!("所有下载源（含镜像）均失败");
-    for u in with_mirrors(url) {
-        match download_to(&u, dest).await {
+    let candidates = with_mirrors(url);
+    let mut last = "所有下载源（含镜像）均失败".to_string();
+    for (i, u) in candidates.iter().enumerate() {
+        let is_direct = i == 0;
+        let result = if is_direct {
+            try_download_short(u, dest).await
+        } else {
+            download_to(u, dest, 3).await
+        };
+        match result {
             Ok(n) => return Ok(n),
-            Err(e) => last = e,
+            Err(e) => {
+                eprintln!("[auto-update] 下载源 {} 失败: {}",
+                    if is_direct { "直连" } else { "镜像" }, e);
+                last = e;
+            }
         }
     }
     Err(last)
 }
 
+/// 短超时单次下载（直连快速探测用，命中则 16MB 也能在 15s 内下完）。
+async fn try_download_short(url: &str, dest: &PathBuf) -> Result<u64, String> {
+    download_stream(client_short(), url, dest).await
+}
+
 async fn try_download(url: &str, dest: &PathBuf) -> Result<u64, String> {
-    let resp = client()
+    download_stream(client(), url, dest).await
+}
+
+async fn download_stream(cli: reqwest::Client, url: &str, dest: &PathBuf) -> Result<u64, String> {
+    let resp = cli
         .get(url)
         .send()
         .await
