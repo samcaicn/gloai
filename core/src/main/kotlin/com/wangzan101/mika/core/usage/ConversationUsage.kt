@@ -43,7 +43,7 @@ data class RequestComposition(
                                 (it == ContextKind.RuntimeState && part === message.parts.last() && message.parts.size > 1)
                         }
                         when (kind) {
-                            ContextKind.Memory, ContextKind.AppKnowledge, ContextKind.SiteKnowledge, ContextKind.SkillsIndex -> references += size
+                            ContextKind.Memory, ContextKind.AppKnowledge, ContextKind.SiteKnowledge, ContextKind.SkillsIndex, ContextKind.ScreenMap -> references += size
                             ContextKind.UserScreen -> toolsAndMedia += size
                             ContextKind.Notice, ContextKind.Channel, ContextKind.RuntimeState, ContextKind.Observed -> runtime += size
                             ContextKind.PriorTurns -> dialogue += size

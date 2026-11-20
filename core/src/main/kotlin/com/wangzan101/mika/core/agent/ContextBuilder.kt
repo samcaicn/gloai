@@ -46,6 +46,8 @@ enum class ContextKind(val wire: String, val layer: ContextLayer, val trust: Tru
     Observed("observed", ContextLayer.Task, Trust.Observed, pinned = true),
     AppKnowledge("app_knowledge", ContextLayer.Knowledge, Trust.Reference, pinned = true),
     SiteKnowledge("site_knowledge", ContextLayer.Knowledge, Trust.Reference, pinned = true),
+    /** 某 App 的屏图(页面结构,见 [com.wangzan101.mika.core.screenmap]);和 APP.md 一样是参考资料,折叠时保留。 */
+    ScreenMap("screen_map", ContextLayer.Knowledge, Trust.Reference, pinned = true),
     SkillsIndex("skills_index", ContextLayer.Skills, Trust.Reference, pinned = true),
     Channel("channel", ContextLayer.Runtime, Trust.Runtime, pinned = true),
     /** 用户发来的此刻的屏幕(见 [com.wangzan101.mika.core.userscreen.UserScreenPrompt]):紧跟在那句话后面,压缩时保留。 */
@@ -94,6 +96,7 @@ class ContextBuilder(
     private val used = mutableMapOf<ContextLayer, Int>()
     private var usedTotal = 0
     private val injected = mutableSetOf<Pair<String, Surface>>()
+    private val screenMapped = mutableSetOf<String>()
 
     /**
      * 开局:之前几轮、记忆、任务原话、可用渠道、参考资料、知识与技能索引,按这个顺序。
@@ -142,6 +145,13 @@ class ContextBuilder(
         if (injected.size >= budget.maxKnowledge || !injected.add(e.name to e.surface)) return null
         return fit(listOf(knowledgePiece(e, note, withLinks))).firstOrNull()?.message()
     }
+
+    /** 该 App 是不是第一次试注屏图;第一次记下并返回 true,之后返回 false(去重在前,别每步都读屏读盘)。 */
+    fun firstScreenMapAttempt(app: String): Boolean = screenMapped.add(app)
+
+    /** 某 App 的屏图(页面结构):接在 APP.md 之后、作为参考资料。 */
+    fun screenMap(app: String, map: String): Message =
+        Piece(ContextKind.ScreenMap, app, body = map).message()
 
     /** 用户发来的一屏的详情(屏上的字、编号);不进预算,和那句话一样留着。 */
     fun userScreen(source: String, body: String): Message = Piece(ContextKind.UserScreen, source, body = body).message()

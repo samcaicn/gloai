@@ -125,6 +125,9 @@ Step {{step}} was run, but the expected change did not show: expected {{expected
 ## replay.diverged_skipped
 Step {{step}} expected {{expected}}, actually read {{seen}}{{error}} (this step was not run). Continue from the current screen or page.
 
+## replay.screen_map
+{{map}}
+
 ## replay.error_code
 ; error code: {{code}}
 

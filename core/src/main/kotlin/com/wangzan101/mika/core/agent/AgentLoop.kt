@@ -62,6 +62,10 @@ import com.wangzan101.mika.core.tool.ToolDispatcher
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.replay.RouteMatcher
+import com.wangzan101.mika.core.replay.RouteAnchors
+import com.wangzan101.mika.core.screenmap.ScreenMapRender
+import com.wangzan101.mika.core.screenmap.ScreenMapStore
+import com.wangzan101.mika.core.uistate.interfaces
 import com.wangzan101.mika.core.verify.Verifier
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CancellationException
@@ -132,6 +136,8 @@ class AgentLoop(
     private val maxSteps: Int = DEFAULT_MAX_STEPS,
     private val gate: suspend (setWaiting: (TaskState?) -> Unit) -> Unit = {},
     private val knowledge: KnowledgeStore? = null,
+    /** 各 App 的屏图(页面结构);为 null 时不注入。进入有图的 App 时随 APP.md 一起给。 */
+    private val screenMaps: ScreenMapStore? = null,
     sink: RunSink = RunSink.NONE,
     /** 已安装 App(包名, 显示名),只用于按任务文字挑参考资料;取不到时按空列表处理。 */
     private val installedApps: suspend () -> List<Pair<String, String>> = { emptyList() },
@@ -796,9 +802,9 @@ class AgentLoop(
                     exec.images.mapIndexed { i, img -> tools.modelImage(img, if (offScreen) null else exec.imageIds.getOrNull(i)) }, Author.Mika)
             }
             for (lookup in NoticePolicy.knowledgeAfter(verb, exec.place, !isError)) when (lookup) {
-                is KnowledgeLookup.App -> knowledge?.byPackage(lookup.pkg).let { injectKnowledge(history, it) }
+                is KnowledgeLookup.App -> injectKnowledge(history, knowledge?.byPackage(lookup.pkg), lookup.pkg)
                 // 同一份知识不会重复注入
-                is KnowledgeLookup.Site -> if (visitedSites.add(lookup.host)) knowledge?.byDomain(lookup.host).let { injectKnowledge(history, it) }
+                is KnowledgeLookup.Site -> if (visitedSites.add(lookup.host)) injectKnowledge(history, knowledge?.byDomain(lookup.host), null)
             }
             if (progress.plan.complete) return finalTurn(task, history, specs, step + 1, labels, place, recorder, facts(), inbox, progress, Closeout.Completed)
             if (noNewData) return finalTurn(task, history, specs, step + 1, labels, place, recorder, facts(), inbox, progress, Closeout.NoNewData)
@@ -818,12 +824,20 @@ class AgentLoop(
             content["id"]?.jsonPrimitive?.content ?: "", content["kind"]?.jsonPrimitive?.content ?: "", content["status"]?.jsonPrimitive?.content ?: ""))
     }
 
-    /** 前台 App/站点的参考资料补进历史(确定性,不靠关键词猜);技能开局已全部列出,这里不再补。 */
-    private fun injectKnowledge(history: MutableList<Message>, e: KnowledgeEntry?) {
+    /** 前台 App/站点的参考资料补进历史(确定性,不靠关键词猜);技能开局已全部列出,这里不再补。有屏图的 App 再随 APP.md 接一段页面结构。 */
+    private suspend fun injectKnowledge(history: MutableList<Message>, e: KnowledgeEntry?, pkg: String?) {
         ctx.knowledge(e, toolsNote(tools.scriptsOffered()), flags.deepLinks)?.let { m ->
             if (flags.deepLinks && e!!.links.isNotEmpty()) tools.allowLinks(e.links)
             history += m
             if (e?.trial == true) emit(RunEvent.State(now(), "knowledge_trial_used", e.name))
+        }
+        // 屏图只试一次:去重在前,没接线、试过或没图都不再读屏读盘
+        if (pkg == null || screenMaps == null || !ctx.firstScreenMapAttempt(pkg)) return
+        val graph = screenMaps.load(pkg)
+        if (graph == null || graph.nodes.isEmpty()) return
+        val skeleton = tools.interfaces.peek()?.let { s -> RouteAnchors.texts(s).toSet() }
+        ScreenMapRender.renderMapFor(graph, skeleton)?.let { map ->
+            history += ctx.screenMap(pkg, map)
         }
     }
 

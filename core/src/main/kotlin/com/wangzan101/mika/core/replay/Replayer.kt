@@ -11,6 +11,9 @@ import com.wangzan101.mika.core.uistate.ScreenSnapshot
 import com.wangzan101.mika.core.uistate.UiElement
 import com.wangzan101.mika.core.uistate.interfaces
 import com.wangzan101.mika.core.tool.ToolDispatcher
+import com.wangzan101.mika.core.screenmap.ScreenGraph
+import com.wangzan101.mika.core.screenmap.ScreenMapRender
+import com.wangzan101.mika.core.screenmap.ScreenRecognizer
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -31,6 +34,8 @@ sealed interface ReplayOutcome {
      */
     data class Diverged(
         override val done: Int, val expected: String, val seen: String, val executed: Boolean = false, val error: String? = null,
+        /** 落在哪屏、从这屏能去哪（有屏图时给；交还文案用）。 */
+        val screenMap: String? = null,
     ) : ReplayOutcome
     /** 下一步是不可逆操作(或判不清),停在它之前交还模型走正常确认流程。 */
     data class StoppedForConfirmation(override val done: Int) : ReplayOutcome
@@ -47,6 +52,8 @@ class Replayer(
     private val gate: suspend () -> Unit,
     private val sink: RunSink,
     private val clock: () -> Long = System::currentTimeMillis,
+    /** 本 App 的屏图（有则接图核对；没有退回现状）。 */
+    private val graph: ScreenGraph? = null,
 ) {
     private var seq = 0
 
@@ -57,9 +64,9 @@ class Replayer(
             emit(RunEvent.Replay(clock(), choice.route.id, i + 1, total, matched, Redactor.text(detail)))
 
         for ((i, step) in steps.withIndex()) {
-            fun diverged(why: String, seen: String, executed: Boolean = false, error: String? = null): ReplayOutcome {
+            fun diverged(why: String, seen: String, executed: Boolean = false, error: String? = null, screenMap: String? = null): ReplayOutcome {
                 event(i, false, why)
-                return ReplayOutcome.Diverged(i, describe(step, choice.slots) + " ($why)", seen, executed, error)
+                return ReplayOutcome.Diverged(i, describe(step, choice.slots) + " ($why)", seen, executed, error, screenMap)
             }
             val verb = tools.index[step.tool]?.takeIf { it.routable }?.verb ?: return diverged("not a replayable action", "")
             // 锁屏、被拿走时先等;等完再读屏,核对和执行都按等完之后的一屏(执行入口不再等第二次)
@@ -119,6 +126,22 @@ class Replayer(
                 (effective && verb in OPENS) ||
                 step.after.texts.any { it in shown }
             if (!landed) return diverged("no expected change after the action", now, executed = true)
+            // 屏图核对：changed=true 也可能落到错屏，认出落屏和预期屏比对；落错屏重读一次（过渡期读屏可能没跟上导航），仍错才交还
+            val g = graph
+            if (g != null && step.after.texts.isNotEmpty()) {
+                val expected = ScreenRecognizer.identify(step.after.texts.toSet(), g.nodes())
+                if (expected != null) {
+                    var landedId = fresh?.let { ScreenRecognizer.identify(RouteAnchors.texts(it).toSet(), g.nodes())?.id }
+                    if (landedId != expected.id) {
+                        val retry = tools.interfaces.peek()
+                        landedId = retry?.let { ScreenRecognizer.identify(RouteAnchors.texts(it).toSet(), g.nodes())?.id }
+                        if (landedId != expected.id) {
+                            val pos = ScreenMapRender.renderPosition(g, landedId)
+                            return diverged("landed on a different screen", pos.ifEmpty { now }, executed = true, screenMap = ScreenMapRender.renderMap(g, landedId))
+                        }
+                    }
+                }
+            }
             event(i, true, describe(step, choice.slots))
         }
         return ReplayOutcome.Completed(total)
