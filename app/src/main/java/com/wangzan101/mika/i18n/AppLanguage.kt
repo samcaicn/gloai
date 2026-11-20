@@ -41,6 +41,16 @@ enum class AppLanguage(val tag: String?, val speechTag: String?) {
     companion object {
         private const val PREFS = "app_language"
         private const val KEY_TAG = "tag"
+        private const val KEY_PROMPTED = "language_prompted"
+
+        /** 是否已经向用户展示过初次/更新语言选择提示。 */
+        fun hasPrompted(context: Context): Boolean =
+            context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_PROMPTED, false)
+
+        /** 标记已提示或已设置，不再主动弹出询问。 */
+        fun markPrompted(context: Context) {
+            context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_PROMPTED, true).apply()
+        }
 
         /** 安卓 12 及以前选定的语言;null 表示跟随系统。进程里读一次,换的时候更新。 */
         @Volatile
@@ -61,6 +71,17 @@ enum class AppLanguage(val tag: String?, val speechTag: String?) {
                 legacy(context)
             },
         )
+
+        /**
+         * 实际生效的语言:选定语言直接返回;跟随系统时按系统当前语言映射到支持的某一项
+         * (中文按文字体系分简繁,不支持的落英文)。给界面上写停驻说明、语言指令等要用到
+         * 确定语言标签、又拿不到用户明确选择的地方,避免把「跟随系统」当成中文。
+         */
+        fun resolved(context: Context): AppLanguage {
+            val cur = current(context)
+            if (cur != System) return cur
+            return fromTag(Locale.getDefault().toLanguageTag())
+        }
 
         /** 语言标签对应哪一项:见 [fromTag];标签里没写文字体系时,按 ICU 的常见写法补出来。 */
         fun fromTag(tag: String?): AppLanguage = fromTag(tag) { ULocale.addLikelySubtags(ULocale.forLanguageTag(it)).script }
@@ -87,6 +108,7 @@ enum class AppLanguage(val tag: String?, val speechTag: String?) {
 
         /** 换语言并重建界面。安卓 13 起交给系统(系统自己重建);之前记在本地,重建 [context] 所在的界面。 */
         fun set(context: Context, language: AppLanguage) {
+            markPrompted(context)
             if (systemManaged) {
                 context.getSystemService(LocaleManager::class.java).applicationLocales =
                     language.tag?.let(LocaleList::forLanguageTags) ?: LocaleList.getEmptyLocaleList()

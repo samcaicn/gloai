@@ -3,6 +3,11 @@
     <string name="settings_personal_start">Abrir o assistente pessoal ao iniciar</string>
     <string name="settings_personal_start_sub">Usar o assistente pessoal como tela inicial do Mika</string>
     <string name="language_title">Idioma</string>
+    <string name="language_prompt_title">Idioma</string>
+    <string name="language_prompt_hint">Escolha o idioma que o Mika usará para pensar, narrar etapas e responder.</string>
+    <string name="language_search_hint">Pesquisar idioma</string>
+    <string name="language_prompt_confirm">Confirmar</string>
+    <string name="language_prompt_dismiss">Agora não</string>
     <string name="language_system">Seguir o sistema</string>
     <string name="language_system_detail">Usa o idioma do sistema se o Mika o tiver; caso contrário, inglês</string>
     <string name="settings_language_appearance">Idioma e aparência</string>

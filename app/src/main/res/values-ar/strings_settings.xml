@@ -3,6 +3,11 @@
     <string name="settings_personal_start">فتح المساعد الشخصي عند التشغيل</string>
     <string name="settings_personal_start_sub">استخدام المساعد الشخصي كشاشة Mika الأولى</string>
     <string name="language_title">اللغة</string>
+    <string name="language_prompt_title">اللغة</string>
+    <string name="language_prompt_hint">اختر اللغة التي يستخدمها Mika للتفكير وشرح الخطوات والردود.</string>
+    <string name="language_search_hint">البحث عن لغة</string>
+    <string name="language_prompt_confirm">تأكيد</string>
+    <string name="language_prompt_dismiss">ليس الآن</string>
     <string name="language_system">اتباع لغة النظام</string>
     <string name="language_system_detail">يستخدم لغة النظام إذا كانت Mika تدعمها، وإلا يستخدم الإنجليزية</string>
     <string name="settings_language_appearance">اللغة والمظهر</string>

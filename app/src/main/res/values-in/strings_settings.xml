@@ -3,6 +3,11 @@
     <string name="settings_personal_start">Buka asisten pribadi saat aplikasi dimulai</string>
     <string name="settings_personal_start_sub">Jadikan asisten pribadi sebagai layar awal Mika</string>
     <string name="language_title">Bahasa</string>
+    <string name="language_prompt_title">Bahasa</string>
+    <string name="language_prompt_hint">Pilih bahasa yang digunakan Mika untuk berpikir, narasi langkah, dan menjawab.</string>
+    <string name="language_search_hint">Cari bahasa</string>
+    <string name="language_prompt_confirm">Konfirmasi</string>
+    <string name="language_prompt_dismiss">Nanti saja</string>
     <string name="language_system">Ikuti sistem</string>
     <string name="language_system_detail">Memakai bahasa sistem Anda jika Mika mendukungnya, jika tidak memakai bahasa Inggris</string>
     <string name="settings_language_appearance">Bahasa &amp; tampilan</string>

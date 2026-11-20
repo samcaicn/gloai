@@ -152,4 +152,18 @@ class StopSummaryTest {
         assertEquals(null, Conversation.stopSummary(old))
         assertEquals("已经停下。看完了网络、蓝牙;显示、声音还没看。", Conversation.stopSummary(stopped))
     }
+
+    @Test fun stopSummarySupportsMultipleLanguagesWithoutBias() {
+        val enText = StopSummary.plain("Send messages to jobs", greeting, null, ::label, ::app, language = "en")
+        assertTrue(enText, enText.startsWith("Stopped. Actions before stop:"))
+        assertTrue(enText, enText.contains("Visited: jobs.example.com"))
+
+        val jaText = StopSummary.plain("メッセージを送信", greeting, null, ::label, ::app, language = "ja")
+        assertTrue(jaText, jaText.startsWith("停止しました。停止前:"))
+        assertTrue(jaText, jaText.contains("アクセス先: jobs.example.com"))
+
+        val esText = StopSummary.plain("Enviar mensajes", greeting, null, ::label, ::app, language = "es")
+        assertTrue(esText, esText.startsWith("Detenida. Antes de detener:"))
+        assertTrue(esText, esText.contains("Visitado: jobs.example.com"))
+    }
 }

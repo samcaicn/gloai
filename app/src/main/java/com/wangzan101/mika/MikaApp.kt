@@ -246,6 +246,7 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             override fun actionFailed(key: String, reason: String) = TriggerRuntime.actionFailed(app, key, reason)
         }, conversations, scope, records = com.wangzan101.mika.record.RunStore(app).reader(), label = labels::label,
             appLabel = { com.wangzan101.mika.confirm.ConfirmationNotifier.appLabel(app, it) },
+            languageTag = { com.wangzan101.mika.i18n.AppLanguage.resolved(app).tag },
             scheduledLocalChannel = localChannel(scheduled = true))
     }
 

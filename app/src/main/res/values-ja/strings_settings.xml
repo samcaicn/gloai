@@ -3,6 +3,11 @@
     <string name="settings_personal_start">起動時にパーソナルアシスタントを開く</string>
     <string name="settings_personal_start_sub">Mika の最初の画面をパーソナルアシスタントにする</string>
     <string name="language_title">言語</string>
+    <string name="language_prompt_title">言語設定</string>
+    <string name="language_prompt_hint">Mika が思考、手順の解説、回答に使用する言語を選択してください。</string>
+    <string name="language_search_hint">言語を検索</string>
+    <string name="language_prompt_confirm">設定</string>
+    <string name="language_prompt_dismiss">後で</string>
     <string name="language_system">システムに合わせる</string>
     <string name="language_system_detail">Mika が対応していればシステムの言語を使い、対応していなければ英語を使います</string>
     <string name="settings_language_appearance">言語と外観</string>

@@ -7,6 +7,17 @@ import androidx.compose.ui.semantics.semantics
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural
 import com.wangzan101.mika.R
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -67,6 +78,15 @@ import com.wangzan101.mika.settings.ScheduledQuietHours
 import com.wangzan101.mika.settings.SystemStatus
 import com.wangzan101.mika.settings.notificationOverview
 import com.wangzan101.mika.task.ParallelLimit
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.material3.Icon
+import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.components.FooterNote
 import com.wangzan101.mika.ui.components.DetailNote
 import com.wangzan101.mika.ui.components.GroupCard
@@ -757,6 +777,7 @@ fun CapsuleScreen(
 }
 
 /** 设置 › 语言:跟随系统、简体中文、繁體中文、English;选了马上换,界面跟着重建。 */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LanguageScreen(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -771,7 +792,9 @@ fun LanguageScreen(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onB
             if (!SkinImage.import(context, uri)) Toast.makeText(context, R.string.skin_failed, Toast.LENGTH_SHORT).show()
         }
     }
-    PageScaffold(stringResource(R.string.appearance_title), onBack) {
+    val focusManager = LocalFocusManager.current
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    PageScaffold(stringResource(R.string.appearance_title), onBack, modifier = Modifier.imePadding()) {
         // 语言和外观放在同一页:都是「界面长什么样」
         GroupLabel(stringResource(R.string.appearance_group))
         GroupCard {
@@ -811,12 +834,80 @@ fun LanguageScreen(language: AppLanguage, onLanguage: (AppLanguage) -> Unit, onB
             if (skin.active) SkinControls(skin, flags::setSkin, onClear = { SkinImage.clear(context) })
         }
         GroupLabel(stringResource(R.string.language_title))
-        GroupCard {
-            AppLanguage.entries.forEachIndexed { i, l ->
-                RadioRow(
-                    languageLabel(l), selected = l == language, onClick = { if (l != language) onLanguage(l) },
-                    subtitle = if (l == AppLanguage.System) stringResource(R.string.language_system_detail) else null, first = i == 0,
+        var langQuery by remember { mutableStateOf("") }
+        var langSearchFocused by remember { mutableStateOf(false) }
+        val c = MikaTheme.colors
+        val filteredLanguages = remember(langQuery) { filterLanguages(langQuery) }
+
+        LaunchedEffect(langSearchFocused, langQuery) {
+            if (langSearchFocused || langQuery.isNotEmpty()) {
+                bringIntoViewRequester.bringIntoView()
+            }
+        }
+
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+                .height(36.dp)
+                .clip(MikaShapes.Pill)
+                .background(c.fill)
+                .then(if (langSearchFocused) Modifier.border(1.dp, c.accent, MikaShapes.Pill) else Modifier)
+                .padding(horizontal = 10.dp)
+                .bringIntoViewRequester(bringIntoViewRequester),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(MikaIcons.Search, null, Modifier.size(16.dp), tint = c.ink3)
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                if (langQuery.isEmpty()) {
+                    Text(stringResource(R.string.language_search_hint), style = MikaType.Caption, color = c.ink3, maxLines = 1)
+                }
+                BasicTextField(
+                    value = langQuery,
+                    onValueChange = { langQuery = it },
+                    modifier = Modifier.fillMaxWidth().onFocusChanged { langSearchFocused = it.isFocused },
+                    singleLine = true,
+                    textStyle = MikaType.Caption.copy(color = c.ink),
+                    cursorBrush = SolidColor(c.accent),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                 )
+            }
+            if (langQuery.isNotEmpty()) {
+                Box(
+                    Modifier.size(22.dp).clip(CircleShape).clickable {
+                        langQuery = ""
+                        focusManager.clearFocus()
+                    },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(MikaIcons.Close, null, Modifier.size(12.dp), tint = c.ink3)
+                }
+            }
+        }
+        GroupCard(Modifier.animateContentSize()) {
+            if (filteredLanguages.isEmpty()) {
+                Box(
+                    Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        stringResource(R.string.file_library_empty),
+                        style = MikaType.Caption,
+                        color = c.ink3,
+                    )
+                }
+            } else {
+                filteredLanguages.forEachIndexed { i, l ->
+                    RadioRow(
+                        languageLabel(l), selected = l == language, onClick = {
+                            if (l != language) onLanguage(l)
+                            focusManager.clearFocus()
+                        },
+                        first = i == 0,
+                    )
+                }
             }
         }
     }

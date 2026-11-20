@@ -3,6 +3,11 @@
     <string name="settings_personal_start">Открывать личного помощника при запуске</string>
     <string name="settings_personal_start_sub">Сделать личного помощника стартовым экраном Mika</string>
     <string name="language_title">Язык</string>
+    <string name="language_prompt_title">Язык</string>
+    <string name="language_prompt_hint">Выберите язык, который Mika будет использовать для размышлений, пояснений и ответов.</string>
+    <string name="language_search_hint">Поиск языка</string>
+    <string name="language_prompt_confirm">Подтвердить</string>
+    <string name="language_prompt_dismiss">Не сейчас</string>
     <string name="language_system">Как в системе</string>
     <string name="language_system_detail">Используется язык системы, если Mika его знает, иначе английский</string>
     <string name="settings_language_appearance">Язык и оформление</string>

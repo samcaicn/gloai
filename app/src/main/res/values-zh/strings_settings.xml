@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="language_title">语言</string>
+    <string name="language_prompt_title">语言偏好</string>
+    <string name="language_prompt_hint">选择 Mika 进行思考、执行步骤旁白与回复的语言。</string>
+    <string name="language_search_hint">搜索语言</string>
+    <string name="language_prompt_confirm">确定</string>
+    <string name="language_prompt_dismiss">暂不设置</string>
     <string name="language_system">跟随系统</string>
     <string name="language_system_detail">系统语言 Mika 有译文时用它,没有时用英文</string>
     <string name="settings_language_appearance">语言与外观</string>

@@ -4,6 +4,7 @@ import com.wangzan101.mika.R
 import com.wangzan101.mika.cap.web.KeptPage
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural
+import com.wangzan101.mika.i18n.uiLocale
 import com.wangzan101.mika.core.assembly.legacyNames
 import com.wangzan101.mika.core.tool.LegacyNames
 import com.wangzan101.mika.chat.BranchCopyResult
@@ -131,7 +132,19 @@ data class StepAction(val label: String, val target: String?, val effect: String
  */
 data class StepRow(val step: Int, val title: String, val subtitle: String, val state: StepState, val reason: String = "") {
     /** 这一步在界面上的说法:模型自己的话,没有时用工具的说法。 */
-    val text: String get() = reason.ifEmpty { title }
+    val text: String get() = if (shouldHideRawReason(reason)) title else reason.ifEmpty { title }
+
+    companion object {
+        /**
+         * 当界面语言为非中文环境（如当前语言为英文），而模型未遵循指令输出了包含中文字符的用意时，
+         * 避免在界面上展示突兀的生硬中文，回退为已本地化的动作标题（如 Tap · WeChat）。
+         */
+        internal fun shouldHideRawReason(reason: String, isChineseLocale: Boolean = uiLocale().language == "zh"): Boolean {
+            if (reason.isEmpty()) return false
+            if (isChineseLocale) return false
+            return reason.any { it in '\u4e00'..'\u9fa5' }
+        }
+    }
 }
 
 sealed interface ExchangeStatus {
@@ -2471,7 +2484,16 @@ class ChatViewModel(
             val status = when (t.status) {
                 "succeeded" -> answerParts(t.outcome).let { (a, e) -> ExchangeStatus.Done(a, e) }
                 "unverified" -> answerParts(t.outcome).let { (a, e) -> ExchangeStatus.Done(a, e, verified = false, note = t.note, unconfirmed = t.unconfirmed) }
-                "cancelled" -> ExchangeStatus.Cancelled(Conversation.stopSummary(t))
+                "cancelled" -> {
+                    val rawSummary = Conversation.stopSummary(t)
+                    val summary = if (rawSummary != null && uiLocale().language != "zh") {
+                        rawSummary
+                            .replace("已经停下。停止前:", "Stopped. Before stopping:")
+                            .replace("已经停下,停止前做了这些:", "Stopped. Actions before stop:")
+                            .replace("已经停下,还没开始操作。", "Stopped before starting any actions.")
+                    } else rawSummary
+                    ExchangeStatus.Cancelled(summary)
+                }
                 else -> ExchangeStatus.Failed(t.outcome)
             }
             return Exchange(t.userText, emptyList(), status, live = false, runId = t.runId,

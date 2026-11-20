@@ -3,6 +3,11 @@
     <string name="settings_personal_start">啟動時開啟個人助理</string>
     <string name="settings_personal_start_sub">將個人助理設為 Mika 的起始畫面</string>
     <string name="language_title">語言</string>
+    <string name="language_prompt_title">語言偏好</string>
+    <string name="language_prompt_hint">選擇 Mika 進行思考、執行步驟旁白與回覆的語言。</string>
+    <string name="language_search_hint">搜尋語言</string>
+    <string name="language_prompt_confirm">確定</string>
+    <string name="language_prompt_dismiss">暫不設定</string>
     <string name="language_system">跟隨系統</string>
     <string name="language_system_detail">系統語言 Mika 有譯文時用它,沒有時用英文</string>
     <string name="settings_language_appearance">語言與外觀</string>

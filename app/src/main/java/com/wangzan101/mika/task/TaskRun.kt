@@ -43,6 +43,7 @@ import com.wangzan101.mika.cap.root.RootCommands
 import com.wangzan101.mika.cap.phone.a11y.launchableApps
 import com.wangzan101.mika.confirm.ConfirmationNotifier
 import com.wangzan101.mika.MikaApp
+import com.wangzan101.mika.i18n.AppLanguage
 import com.wangzan101.mika.core.action.ConfirmChoice
 import com.wangzan101.mika.core.agent.TaskStages
 import com.wangzan101.mika.core.agent.AgentLoop
@@ -905,7 +906,9 @@ class TaskRun(
             // 人格拼在身份、准则、通用规则之后;子任务和主任务用同一份。
             // 正文为空时没有可拼的层,也不记成「这一轮用了某个人格」。
             val personaLayer = persona?.let { PersonaPrompt.layer(it.name, it.prompt) }
-            val basePrompt = SystemPrompt.withPersona(SystemPrompt.identity(), personaLayer)
+            val appLang = AppLanguage.current(service)
+            val promptWithPersona = SystemPrompt.withPersona(SystemPrompt.identity(), personaLayer)
+            val basePrompt = SystemPrompt.withLanguage(promptWithPersona, appLang.tag)
             val personaLabel = if (personaLayer != null && persona != null) {
                 Redactor.text("${persona.name} · v${persona.revision}")
             } else null

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="language_title">Dil</string>
+    <string name="language_prompt_title">Dil</string>
+    <string name="language_prompt_hint">Mika\'nın düşünmek, adımları açıklamak ve yanıt vermek için kullanacağı dili seçin.</string>
+    <string name="language_search_hint">Dil ara</string>
+    <string name="language_prompt_confirm">Onayla</string>
+    <string name="language_prompt_dismiss">Şimdi değil</string>
     <string name="language_system">Sistemi takip et</string>
     <string name="language_system_detail">Mika\'da varsa sistem dilinizi kullanır, yoksa İngilizce</string>
     <string name="settings_language_appearance">Dil ve görünüm</string>

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="language_title">Language</string>
+    <string name="language_prompt_title">Language</string>
+    <string name="language_prompt_hint">Choose the language Mika uses for thinking, step narration, and replies.</string>
+    <string name="language_search_hint">Search language</string>
+    <string name="language_prompt_confirm">Confirm</string>
+    <string name="language_prompt_dismiss">Not now</string>
     <string name="language_system">Follow system</string>
     <string name="language_system_detail">Uses your system language when Mika has it, English otherwise</string>
     <string name="language_simplified_chinese" translatable="false">简体中文</string>

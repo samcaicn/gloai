@@ -785,6 +785,22 @@ private fun MikaRoot(
         })
         Route.Calls -> CallSettingsScreen(app.calls, onBack = back, standalone = true, initialHistoryCallId = focusedCallHistoryId)
     }
+
+    var showLanguagePrompt by rememberSaveable { mutableStateOf(!AppLanguage.hasPrompted(context)) }
+    if (showLanguagePrompt && onboarding == null) {
+        LanguagePromptDialog(
+            initial = AppLanguage.current(context),
+            onConfirm = { lang ->
+                showLanguagePrompt = false
+                AppLanguage.markPrompted(context)
+                AppLanguage.set(context, lang)
+            },
+            onDismiss = {
+                showLanguagePrompt = false
+                AppLanguage.markPrompted(context)
+            },
+        )
+    }
 }
 
 /** 自身工具能打开的 Mika 顶层页;只给这几页,不给权限/root/开发者子页。 */

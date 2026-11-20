@@ -48,6 +48,7 @@ class RunRecovery(
     private val records: RunRecords? = null,
     private val label: (String) -> String = { it },
     private val appLabel: (String) -> String = { it },
+    private val languageTag: () -> String? = { null },
     private val scheduledLocalChannel: Channel? = null,
 ) {
     private val done = AtomicBoolean(false)
@@ -125,7 +126,7 @@ class RunRecovery(
             return null
         }
         if (!StopSummary.worthSaying(events, null)) return null
-        val text = StopSummary.plain(said, events, null, label, appLabel)
+        val text = StopSummary.plain(said, events, null, label, appLabel, language = languageTag())
         return text.take(RECOVERY_SUMMARY_CHARS) + if (text.length > RECOVERY_SUMMARY_CHARS) "…" else ""
     }
 

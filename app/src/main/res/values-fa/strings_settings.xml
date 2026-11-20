@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="language_title">زبان</string>
+    <string name="language_prompt_title">زبان</string>
+    <string name="language_prompt_hint">زبانی را که Mika برای فکر کردن، توضیح مراحل و پاسخ‌ها استفاده می‌کند انتخاب کنید.</string>
+    <string name="language_search_hint">جستجوی زبان</string>
+    <string name="language_prompt_confirm">تأیید</string>
+    <string name="language_prompt_dismiss">فعلاً نه</string>
     <string name="language_system">پیروی از زبان سیستم</string>
     <string name="language_system_detail">اگر میکا از زبان سیستم پشتیبانی کند از آن استفاده می‌کند؛ در غیر این صورت انگلیسی نمایش داده می‌شود</string>
 
