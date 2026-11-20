@@ -333,7 +333,7 @@ private class AnthropicStream(
                 }
             }
             "message_stop" -> stopped = true
-            "error" -> throw ModelError.BadResponse(root["error"].toString().take(200))
+            "error" -> throw ModelHttp.streamError(root) ?: ModelError.BadResponse(root["error"].toString().take(200))
         }
         return stopped
     }

@@ -184,4 +184,13 @@ class AgentLoopLightTest {
         assertEquals(1, light.requests.size)
         assertEquals(3, main.requests.size)
     }
+
+    @Test fun light429FallsBackImmediatelyWithoutConsumingTaskWaitBudget() = runTest {
+        val main = Named("main", FakeModel(tools(call("phone_observe")), tools(call("phone_observe")), finish()))
+        val light = Named("light", FakeModel(com.wangzan101.mika.core.model.ModelError.RateLimited(300_000)))
+        val r = loop(main, light).run("t")
+        assertTrue(r is TaskState.Succeeded)
+        assertEquals(1, light.requests.size)
+        assertEquals(3, main.requests.size)
+    }
 }

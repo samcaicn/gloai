@@ -11,6 +11,7 @@ import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
+import com.wangzan101.mika.core.net.RateLimitGovernor
 import com.wangzan101.mika.core.testing.answerReply
 import com.wangzan101.mika.core.tool.FakeScreen
 import kotlinx.coroutines.test.runTest
@@ -68,6 +69,28 @@ class ModelCallerChainTest {
         try { caller.ask(history, emptyList(), step = 1) } catch (e: ModelError) { thrown = e }
         assertEquals(true, thrown is ModelError.QuotaExceeded)
         assertEquals(1, main.calls)
+    }
+
+    @Test fun rateLimitWithNoRetriesFallsToFallbackImmediately() = runTest {
+        RateLimitGovernor.reset()
+        val main = Scripted("main-rate-limit-none", ModelError.RateLimited(300_000L))
+        val backup = Scripted("backup-rate-limit-none", null)
+        val caller = caller(main, listOf(backup))
+        caller.ask(history, emptyList(), step = 1)
+        assertEquals(1, main.calls)
+        assertEquals(1, backup.calls)
+    }
+
+    @Test fun rateLimitWithFallbackDoesNotWaitForTheFullRetryAfter() = runTest {
+        RateLimitGovernor.reset()
+        val main = Scripted("main-rate-limit-fallback", ModelError.RateLimited(30_000L))
+        val backup = Scripted("backup-rate-limit-fallback", null)
+        val retry = RetryPolicy(maxRetries = 3, jitter = { 0.0 })
+        val caller = ModelCaller(main, toolDispatcher(FakeScreen()), null, SpeedFlags.OFF, retry, {}, { 0 }, fallbacks = listOf(backup))
+            .also { it.reset("") }
+        caller.ask(history, emptyList(), step = 1)
+        assertEquals(1, main.calls)
+        assertEquals(1, backup.calls)
     }
 
     @Test fun chainExhaustionSurfacesPrimaryError() = runTest {

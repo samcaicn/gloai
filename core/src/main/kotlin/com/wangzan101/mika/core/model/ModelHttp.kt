@@ -38,6 +38,21 @@ object ModelHttp {
             else -> if (status >= 400) ModelError.Server(status, ModelAccessErrors.detail(body)) else ModelError.BadResponse("HTTP $status ${body.take(200)}")
         }
 
+    /** HTTP 200 SSE 中的错误帧也按 HTTP 错误的分类交给重试和备援。 */
+    fun streamError(root: JsonObject): ModelError? {
+        val error = root["error"] ?: return null
+        val errorObject = error as? JsonObject
+        val type = (errorObject?.get("type") as? JsonPrimitive)?.contentOrNull
+            ?: (root["type"] as? JsonPrimitive)?.contentOrNull
+        val detail = (errorObject?.get("message") as? JsonPrimitive)?.contentOrNull
+        return when (type) {
+            "rate_limit_error" -> ModelError.RateLimited(null)
+            "overloaded_error" -> ModelError.Server(529, detail)
+            else -> if (saysContextTooLong(error.toString())) ModelError.ContextTooLong()
+            else ModelError.BadResponse(error.toString().take(200))
+        }
+    }
+
     /** HTTP 400 的报错说请求超出了模型的上下文(见 [saysContextTooLong])。OpenAI 兼容、Responses、Anthropic 三种接口共用;本机跑的服务三种接口都可能开。 */
     fun contextTooLong(status: Int, body: String): Boolean = status == 400 && saysContextTooLong(body)
 

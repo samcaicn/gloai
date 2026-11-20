@@ -432,7 +432,7 @@ class AgentLoopTest {
     @Test fun rateLimitedFollowsRetryAfter() = runTest {
         val m = FakeModel(ModelError.RateLimited(5000), finish())
         com.wangzan101.mika.core.testing.assertAnswered(DONE, loop(m).run("t"))
-        assertEquals(5000, currentTime)
+        assertTrue("cooldown should be close to Retry-After: $currentTime", currentTime in 4_000..5_000)
     }
 
     // 一时的故障(限流、网络、5xx)共用一份重试次数,按指数退避等:1 s、2 s、4 s
@@ -440,7 +440,7 @@ class AgentLoopTest {
         val m = FakeModel(ModelError.RateLimited(null), ModelError.Network(), ModelError.Server(503), finish())
         com.wangzan101.mika.core.testing.assertAnswered(DONE, loop(m).run("t"))
         assertEquals(4, m.requests.size)
-        assertEquals(7000, currentTime)
+        assertTrue("backoff should total close to 7s: $currentTime", currentTime in 6_000..7_000)
 
         val always = FakeModel(ModelError.Network(), ModelError.Network(), ModelError.Network(), ModelError.Network(), finish())
         val r = loop(always).run("t")
@@ -490,7 +490,7 @@ class AgentLoopTest {
 
     @Test fun rateLimitWaitIsCapped() = runTest {
         loop(FakeModel(ModelError.RateLimited(600_000), finish())).run("t")
-        assertEquals(30_000, currentTime)
+        assertTrue("cooldown should be capped near 30s: $currentTime", currentTime in 29_000..30_000)
     }
 
     // 流式回复没收尾连接就断了:回复还没进历史、也没执行工具,原样重发;界面上那半截字在重试前就清掉

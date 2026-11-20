@@ -22,7 +22,7 @@ class RetryPolicy(
     private val jitter: () -> Double = { Random.nextDouble() },
 ) {
     init {
-        require(maxRetries >= 0 && baseMs > 0 && maxBackoffMs >= baseMs && retryAfterCapMs >= 0 && taskWaitBudgetMs >= 0)
+        require(maxRetries >= 0 && baseMs > 0 && maxBackoffMs >= baseMs && retryAfterCapMs >= MIN_RETRY_AFTER_MS && taskWaitBudgetMs >= 0)
     }
 
     /**
@@ -31,7 +31,7 @@ class RetryPolicy(
      */
     fun delayFor(e: Throwable, retriesSoFar: Int, waitedInTaskMs: Long = 0): Long? {
         if (retriesSoFar >= maxRetries || !transient(e)) return null
-        val wait = (e as? ModelError.RateLimited)?.retryAfterMs?.coerceIn(0, retryAfterCapMs) ?: run {
+        val wait = (e as? ModelError.RateLimited)?.retryAfterMs?.coerceIn(MIN_RETRY_AFTER_MS, retryAfterCapMs) ?: run {
             val ceiling = minOf(maxBackoffMs, baseMs shl minOf(retriesSoFar, 20))
             // 一半固定、一半随机:同时出错的几个任务不会在同一刻再撞上去
             ceiling / 2 + (ceiling / 2 * jitter().coerceIn(0.0, 1.0)).toLong()
@@ -40,6 +40,8 @@ class RetryPolicy(
     }
 
     companion object {
+        private const val MIN_RETRY_AFTER_MS = 1_000L
+
         /** 不重试:出错就交出(轻量模型出错时这一步直接改问主模型)。 */
         val NONE = RetryPolicy(maxRetries = 0)
 

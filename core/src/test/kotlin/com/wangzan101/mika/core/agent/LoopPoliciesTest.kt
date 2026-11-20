@@ -221,6 +221,7 @@ class LoopPoliciesTest {
 
     @Test fun retryAfterIsHonouredAndCapped() {
         assertEquals(5000L, fixed.delayFor(ModelError.RateLimited(5000), 0))
+        assertEquals(1_000L, fixed.delayFor(ModelError.RateLimited(0), 0))
         assertEquals(30_000L, fixed.delayFor(ModelError.RateLimited(600_000), 0))
         assertNull(fixed.delayFor(ModelError.RateLimited(5000), 3))
     }

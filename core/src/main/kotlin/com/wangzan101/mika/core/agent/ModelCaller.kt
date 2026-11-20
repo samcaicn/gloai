@@ -293,12 +293,16 @@ internal class ModelCaller(
             } catch (e: ModelError) {
                 onText?.invoke("")
                 if (e is ModelError.RateLimited) {
-                    // 429：记进全局冷却窗口，别的任务/子代理也一起等；回循环顶部，下一次 awaitClear 统一等，不再「3 次就放弃」
+                    // 429：记进全局冷却窗口，别的任务/子代理也一起等；没有重试额度时立刻交给链路切换。
                     val wait = RateLimitGovernor.reportRateLimited(using.name, e.retryAfterMs)
+                    val hasFallback = chainIndex + 1 < chain.size && chain[chainIndex] === using
+                    val withinRetryLimit = retries < policy.maxRetries &&
+                        (!hasFallback || retries < RATE_LIMIT_FAILOVER_RETRIES)
+                    val withinWaitLimit = !hasFallback || wait <= RATE_LIMIT_FAILOVER_WAIT_BUDGET_MS
+                    if (!withinRetryLimit || !withinWaitLimit || taskRetryWaitMs + wait > policy.taskWaitBudgetMs) throw e
                     retries += 1
                     taskRetryWaitMs += wait
                     emit(RunEvent.State(now(), "model_retry", "${roleOf(using)} rate_limited #$retries ${wait}ms"))
-                    if (taskRetryWaitMs > policy.taskWaitBudgetMs) throw e
                     continue
                 }
                 val wait = policy.delayFor(e, retries, taskRetryWaitMs) ?: throw e
@@ -317,6 +321,10 @@ internal class ModelCaller(
         const val ROLE_LIGHT = "light"
         /** 轻量模型的回复没执行,这一步改问了主模型;仍是一次模型调用,用量照记。 */
         const val ROLE_LIGHT_REJECTED = "light_rejected"
+        /** 有备援时只给当前主模型一次 429 重试机会，避免在单模型冷却里耗尽任务预算。 */
+        private const val RATE_LIMIT_FAILOVER_RETRIES = 1
+        /** 有备援时，超过这段 Retry-After 就直接切换备援。 */
+        private const val RATE_LIMIT_FAILOVER_WAIT_BUDGET_MS = 5_000L
     }
 }
 

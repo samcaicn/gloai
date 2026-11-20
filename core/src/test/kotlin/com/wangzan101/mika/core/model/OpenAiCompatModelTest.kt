@@ -109,6 +109,23 @@ class OpenAiCompatModelTest {
         assertTrue(streamError(frame("bad input")) is ModelError.BadResponse)
     }
 
+    @Test fun streamingRateLimitAndOverloadErrorsAreClassified() = runTest {
+        suspend fun streamError(type: String): ModelError {
+            server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+                "data: {\"error\":{\"type\":\"$type\",\"message\":\"busy\"}}\n\ndata: [DONE]\n\n",
+            ))
+            return try {
+                model().completeStreaming("s", user, emptyList()) {}
+                throw AssertionError("expected ModelError")
+            } catch (e: ModelError) { e }
+        }
+
+        assertTrue(streamError("rate_limit_error") is ModelError.RateLimited)
+        val overloaded = streamError("overloaded_error") as ModelError.Server
+        assertEquals(529, overloaded.status)
+        assertTrue(overloaded.message.orEmpty().contains("busy"))
+    }
+
     /** 整份回复已经收全,只是没发 `[DONE]`:照常说完,不当成流提前断了。 */
     @Test fun eventStreamWithoutDoneStillFinishes() = runTest {
         server.enqueue(

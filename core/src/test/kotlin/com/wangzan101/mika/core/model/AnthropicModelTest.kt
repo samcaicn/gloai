@@ -260,6 +260,24 @@ class AnthropicModelTest {
         assertEquals(listOf(Part.Thinking("想", SignedThinking.signed(endpoint, "sig"))), r.parts)
     }
 
+    @Test fun streamingRateLimitAndOverloadErrorsAreClassified() = runTest {
+        suspend fun streamError(type: String): ModelError {
+            server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+                "event: error\ndata: {\"type\":\"error\",\"error\":{\"type\":\"$type\",\"message\":\"busy\"}}\n\n",
+            ))
+            return try {
+                model().completeStreaming("s", user, emptyList()) {}
+                fail("expected ModelError")
+                error("unreachable")
+            } catch (e: ModelError) { e }
+        }
+
+        assertTrue(streamError("rate_limit_error") is ModelError.RateLimited)
+        val overloaded = streamError("overloaded_error") as ModelError.Server
+        assertEquals(529, overloaded.status)
+        assertTrue(overloaded.message.orEmpty().contains("busy"))
+    }
+
     @Test fun marksCacheOnSystemAndTools() = runTest {
         server.enqueue(ok("""{"content":[],"stop_reason":"end_turn"}"""))
         val tools = listOf(ToolSpec("a", "d", """{"type":"object"}"""), ToolSpec("b", "d", """{"type":"object"}"""))
