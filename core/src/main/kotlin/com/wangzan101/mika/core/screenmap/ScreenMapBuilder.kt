@@ -39,7 +39,7 @@ class ScreenMapBuilder {
 
     private fun visitOrCreate(graphs: MutableMap<String, MutableMap<String, ScreenNode>>, app: String, texts: List<String>): ScreenNode {
         val nodes = graphs.getOrPut(app) { linkedMapOf() }
-        val id = ScreenId.of(app, signature(texts))
+        val id = ScreenId.of(app, ScreenId.signature(texts))
         val existing = nodes[id]
         return if (existing != null) {
             val updated = existing.copy(
@@ -55,9 +55,6 @@ class ScreenMapBuilder {
             node
         }
     }
-
-    /** 首次骨架锚点签名：稳定骨架文字去重后排序拼接。 */
-    private fun signature(texts: List<String>): String = texts.distinct().sorted().joinToString("\u0000")
 
     private fun increment(anchors: Map<String, Int>, texts: List<String>): Map<String, Int> {
         val m = anchors.toMutableMap()

@@ -47,6 +47,9 @@ object ScreenId {
             .digest((app + "\u0000" + signature).toByteArray(Charsets.UTF_8))
         return bytes.take(8).joinToString("") { "%02x".format(it.toInt() and 0xff) }
     }
+
+    /** 骨架锚点签名：稳定骨架文字去重后排序拼接。建图与自检共用同一口径。 */
+    fun signature(texts: List<String>): String = texts.distinct().sorted().joinToString("\u0000")
 }
 
 object ScreenNodeCodec {
