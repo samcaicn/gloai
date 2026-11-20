@@ -53,7 +53,7 @@ class SystemPromptTest {
     // 结局的约定只说一次:不带调用的回复就是最终回答;做不成、要问、要用户亲手做各有工具;不再写依据行
     @Test fun endingContractStatedOnce() {
         val p = flat()
-        assertTrue("a reply without any tool call is your final answer to the user and ends the task" in p)
+        assertTrue("a reply without any tool call is your final answer and ends the task" in p)
         assertTrue("call end_not_done" in p && "call ask_user" in p && "calling hand_to_user" in p)
         assertTrue("Do not write a separate evidence or sources line" in p)
         assertFalse("依据" in p)
