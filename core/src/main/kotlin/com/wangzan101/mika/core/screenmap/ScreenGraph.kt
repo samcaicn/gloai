@@ -35,12 +35,50 @@ data class ScreenGraph(val app: String, val nodes: Map<String, ScreenNode>) {
         return null
     }
 
+    /**
+     * 把 [fragment] 按屏 id 并入:同 id 的 anchors/levels/visits/transitions 计数累加、status provisional→confirmed;
+     * 新 id 追加(保留它的 status)。不同 App 的片段不并(返回原图,防归错 App)。
+     */
+    fun mergedWith(fragment: ScreenGraph): ScreenGraph {
+        if (fragment.app != app) return this
+        val merged = nodes.toMutableMap()
+        for ((id, node) in fragment.nodes) {
+            merged[id] = merged[id]?.let { mergeNode(it, node) } ?: node
+        }
+        return copy(nodes = merged)
+    }
+
     companion object {
         /** 两条路的公共前缀长度（按转移边 key 逐条比）。供回放接图裁掉已走过的公共部分（design D6）。 */
         fun commonPrefix(a: List<Transition>, b: List<Transition>): Int {
             var i = 0
             while (i < a.size && i < b.size && a[i].key() == b[i].key()) i++
             return i
+        }
+
+        private fun mergeNode(a: ScreenNode, b: ScreenNode): ScreenNode = a.copy(
+            anchors = sumCounts(a.anchors, b.anchors),
+            levels = sumCounts(a.levels, b.levels),
+            visits = a.visits + b.visits,
+            transitions = mergeTransitions(a.transitions, b.transitions),
+            status = "confirmed",
+        )
+
+        private fun sumCounts(a: Map<String, Int>, b: Map<String, Int>): Map<String, Int> {
+            if (b.isEmpty()) return a
+            val m = a.toMutableMap()
+            for ((k, v) in b) m[k] = (m[k] ?: 0) + v
+            return m
+        }
+
+        private fun mergeTransitions(a: Map<String, Transition>, b: Map<String, Transition>): Map<String, Transition> {
+            if (b.isEmpty()) return a
+            val m = a.toMutableMap()
+            for ((k, t) in b) {
+                val prev = m[k]
+                m[k] = prev?.let { it.copy(count = it.count + t.count, offTrack = it.offTrack + t.offTrack) } ?: t
+            }
+            return m
         }
     }
 }

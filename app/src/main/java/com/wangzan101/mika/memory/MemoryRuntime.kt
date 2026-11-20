@@ -12,6 +12,7 @@ import com.wangzan101.mika.settings.KeystoreKeyCipher
 import com.wangzan101.mika.settings.MemorySettings
 import com.wangzan101.mika.skills.PersonalSkillFiles
 import com.wangzan101.mika.knowledge.AppKnowledgeFiles
+import com.wangzan101.mika.knowledge.FileScreenMapStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -49,6 +50,7 @@ class MemoryRuntime(context: Context) {
     private var settings: MemorySettings? = null
     private var profile: ProfileStore? = null
     private var appKnowledge: AppKnowledgeFiles? = null
+    private var screenMaps: FileScreenMapStore? = null
     private var taskMemoryFile: TaskMemoryFile? = null
     private var taskMemory: TaskMemoryStore? = null
 
@@ -95,6 +97,9 @@ class MemoryRuntime(context: Context) {
     @Synchronized fun appKnowledge(): AppKnowledgeFiles =
         appKnowledge ?: AppKnowledgeFiles(app.filesDir).also { appKnowledge = it }
 
+    @Synchronized fun screenMaps(): FileScreenMapStore =
+        screenMaps ?: FileScreenMapStore(app.filesDir).also { screenMaps = it }
+
     @Synchronized fun settings(): MemorySettings =
         settings ?: MemorySettings(File(app.filesDir, "memory_settings.json")).also { settings = it }
 
@@ -113,6 +118,7 @@ class MemoryRuntime(context: Context) {
         runCatching { KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry(KEY_ALIAS) }
         File(app.filesDir, "skills").deleteRecursively()
         File(app.filesDir, "knowledge/app-drafts").deleteRecursively()
+        File(app.filesDir, "knowledge/apps").deleteRecursively()
         stripMemory(null)
         _notes.update { m -> m.mapValues { (_, n) -> n.copy(skillNotes = emptyList()) } }
     }

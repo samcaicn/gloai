@@ -31,12 +31,17 @@ import com.wangzan101.mika.core.skills.SkillNote
 import com.wangzan101.mika.core.skills.SkillOutcomes
 import com.wangzan101.mika.core.skills.SkillResult
 import com.wangzan101.mika.core.skills.SkillStatus
+import com.wangzan101.mika.core.screenmap.ScreenMapBuilder
+import com.wangzan101.mika.core.screenmap.ScreenMapGrower
+import com.wangzan101.mika.core.screenmap.ScreenMapStore
 import com.wangzan101.mika.memory.RunNotes
 import com.wangzan101.mika.settings.MemorySwitches
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.wangzan101.mika.core.tool.ToolIndex
 
 /** 一次运行结束后,学东西要用的全部材料;由 [TaskRun] 在任务收尾时交出。 */
@@ -90,10 +95,13 @@ class RunLearning(
     private val yieldToForeground: suspend () -> Unit = {},
     private val appDrafter: AppKnowledgeDrafter? = null,
     private val appDrafts: AppKnowledgeDraftStore? = null,
+    /** 各 App 的屏图仓库;为 null 时收尾不长图。 */
+    private val screenMaps: ScreenMapStore? = null,
 ) {
     suspend fun learn(a: RunAftermath): RunNotes {
         yieldToForeground()
         val events = guarded(emptyList()) { a.events() }
+        growGraphs(a, events)
         val used = events.filterIsInstance<RunEvent.SkillUsed>()
         // 照着做了的技能(只读过的不算):记结果和要不要起草都看它
         val followed = SkillFollow.followed(events, used, a.tools, catalog::skillPlaces)
@@ -203,6 +211,17 @@ class RunLearning(
         throw e
     } catch (e: Exception) {
         fallback
+    }
+
+    /** 收尾长图:重放本次 events 得到屏/边片段,按屏 id 并进已存图。失败只计数、不影响任务结局。 */
+    private suspend fun growGraphs(a: RunAftermath, events: List<RunEvent>) {
+        val store = screenMaps ?: return
+        if (a.origin != RunOrigin.Ui) return
+        val fragments = ScreenMapBuilder().apply(a.runId ?: "", events)
+        if (fragments.isEmpty()) return
+        guarded(Unit) {
+            withContext(Dispatchers.IO) { ScreenMapGrower.grow(store, fragments) }
+        }
     }
 
     companion object {

@@ -145,6 +145,7 @@ internal class RunTeardown(
             drafter = SkillDrafter(k.model),
             appDrafter = AppKnowledgeDrafter(k.light ?: k.model),
             appDrafts = memoryRuntime.appKnowledge(),
+            screenMaps = memoryRuntime.screenMaps(),
             ids = { UUID.randomUUID().toString() },
             autoApprove = env.evalHooks.autoApproveSkillDrafts,
             yieldToForeground = { while (service.hasActiveRuns()) delay(500) },

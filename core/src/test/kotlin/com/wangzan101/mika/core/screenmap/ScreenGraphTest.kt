@@ -39,4 +39,32 @@ class ScreenGraphTest {
         assertEquals(0, ScreenGraph.commonPrefix(listOf(t1), listOf(t2)))
         assertEquals(3, ScreenGraph.commonPrefix(listOf(t1, t2, t3), listOf(t1, t2, t3)))
     }
+
+    @Test fun mergedWithAccumulatesSameId() {
+        val base = ScreenGraph("x", mapOf("A" to ScreenNode(id = "A", app = "x", anchors = mapOf("主页" to 2),
+            transitions = mapOf("a-b" to edge("tap", "B")), visits = 2, status = "confirmed")))
+        val frag = ScreenGraph("x", mapOf("A" to ScreenNode(id = "A", app = "x", anchors = mapOf("主页" to 1, "设置" to 1),
+            transitions = mapOf("a-b" to edge("tap", "B"), "a-c" to edge("tap", "C")), visits = 1, status = "provisional")))
+        val m = base.mergedWith(frag)
+        val node = m.nodes["A"]!!
+        assertEquals(mapOf("主页" to 3, "设置" to 1), node.anchors)
+        assertEquals(3, node.visits)
+        assertEquals("confirmed", node.status)
+        assertEquals(2, node.transitions["a-b"]!!.count)
+        assertEquals(1, node.transitions["a-c"]!!.count)
+    }
+
+    @Test fun mergedWithAppendsNewId() {
+        val base = ScreenGraph("x", mapOf("A" to ScreenNode(id = "A", app = "x", anchors = mapOf("主页" to 1))))
+        val frag = ScreenGraph("x", mapOf("B" to ScreenNode(id = "B", app = "x", anchors = mapOf("设置" to 1), status = "provisional")))
+        val m = base.mergedWith(frag)
+        assertEquals(setOf("A", "B"), m.nodes.keys)
+        assertEquals("provisional", m.nodes["B"]!!.status)
+    }
+
+    @Test fun mergedWithDifferentAppIsNoop() {
+        val base = ScreenGraph("x", mapOf("A" to ScreenNode(id = "A", app = "x", anchors = mapOf("主页" to 1))))
+        val frag = ScreenGraph("y", mapOf("A" to ScreenNode(id = "A", app = "y", anchors = mapOf("主页" to 1))))
+        assertEquals(base, base.mergedWith(frag))
+    }
 }
