@@ -3,13 +3,6 @@ package com.wangzan101.mika.core.screenmap
 import com.wangzan101.mika.core.record.RunEvent
 
 /**
- * 一张 App 的屏图：节点 = 结构页，边 = 点击导航。由运行记录确定性重建，`nodes` 键是屏 id。
- */
-data class ScreenGraph(val app: String, val nodes: Map<String, ScreenNode>) {
-    fun nodes(): List<ScreenNode> = nodes.values.toList()
-}
-
-/**
  * 从运行记录确定性重建屏图（design D4）。原料是 `RunEvent.ActionTarget` 的 before/after 骨架锚点：
  * 每个动作前、后各 visit / 建屏，动作加一条转移边。屏身份 = 首次骨架锚点签名（`ScreenId.of(app, 签名)`），
  * 同签名再见到 = 同一屏（计数累加、provisional→confirmed）；不同签名 = 新屏（宁可分开不可合错）。
