@@ -12,6 +12,7 @@ import com.wangzan101.mika.core.tool.ToolDef
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.uistate.session
+import com.wangzan101.mika.core.uistate.screenAttempt
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -91,9 +92,12 @@ internal object DoEach : PhoneTool {
 
         val runner = EachRunner(role, text, onError)
         var subIndex = 0
+        // @item 按 ref 直点:read 用登记式的读屏(ref 才能被 tap 解析),并把这一屏的 snapshotId 交给这轮动作。
+        var currentSnapshotId: String? = null
         val summary = runner.run(
             read = {
-                val snapshot = ctx.session.peek()
+                val snapshot = screenAttempt { ctx.session.snapshot(internal = true) }
+                currentSnapshotId = snapshot?.snapshotId
                 if (snapshot == null) emptyList()
                 else {
                     val r = PhoneAutomationEngine.find(snapshot, PhoneAutomationEngine.Query(text = text, resourceId = resourceId, role = role), 100)
@@ -104,7 +108,7 @@ internal object DoEach : PhoneTool {
                 if (reveal) sub.run(Part.ToolCall("${ctx.callId}.${++subIndex}.phone_scroll", "phone_scroll", buildJsonObject { put("direction", "down"); put("amount", 3) }.toString()))
             },
             doItem = { current ->
-                val resolved = JsonArray(body.map { resolveItem(it, current) })
+                val resolved = JsonArray(body.map { resolveItem(it, current, currentSnapshotId) })
                 val result = sub.run(Part.ToolCall("${ctx.callId}.${++subIndex}.phone_run", "phone_run", buildJsonObject { put("commands", resolved) }.toString()))
                 result.content["ok"] == JsonPrimitive(true)
             },
@@ -127,13 +131,17 @@ internal object DoEach : PhoneTool {
         })
     }
 
-    /** 把 body 里指代本轮条目的 @item 换成这一条的名字,其余原样,整段交给 phone_run。 */
-    private fun resolveItem(step: JsonElement, item: EachCursor.Item): JsonElement {
+    /** 把 body 里指代本轮条目的 @item 换成这条的 ref + snapshotId(直接点,不靠名字回找);其余原样,整段交给 phone_run。 */
+    private fun resolveItem(step: JsonElement, item: EachCursor.Item, snapshotId: String?): JsonElement {
         val o = step as? JsonObject ?: return step
         val tt = (o["targetText"] as? JsonPrimitive)?.takeIf { it.isString }?.content
         if (tt != "@item") return o
+        val ref = item.ref.takeIf { it.isNotBlank() }
+        if (ref == null || snapshotId == null) return o
         return buildJsonObject {
-            o.forEach { (k, v) -> if (k == "targetText") put("targetText", item.name) else put(k, v) }
+            o.forEach { (k, v) -> if (k != "targetText") put(k, v) }
+            put("ref", ref)
+            put("snapshotId", snapshotId)
         }
     }
 

@@ -23,7 +23,7 @@ internal class EachCursor {
         val ordinal: Int,       // 本快照里同名条目的序号(0,1,…)，只在本快照内区分同名，不跨屏用
         val role: String,
         val name: String,
-        val ref: String,        // 本次快照的 ref（不稳定，只用于本轮动作）
+        val ref: String,        // 本轮点按用的 ref(可点祖先的 actionRef,没有才用自身 ref;本次快照内有效)
     )
 
     /** 按 pattern（role? / text?）匹配 [elements]，给每条算出 contentKey 与 ordinal。 */
@@ -33,7 +33,9 @@ internal class EachCursor {
         for (e in elements) {
             val r = (e["role"] as? JsonPrimitive)?.contentOrNull ?: ""
             val n = (e["name"] as? JsonPrimitive)?.contentOrNull ?: ""
-            val ref = (e["ref"] as? JsonPrimitive)?.contentOrNull ?: ""
+            // 点按要落在可点祖先上:find 的结果里 actionRef 是可点祖先、ref 是命中节点自身。
+            val ref = (e["actionRef"] as? JsonPrimitive)?.contentOrNull
+                ?: (e["ref"] as? JsonPrimitive)?.contentOrNull ?: ""
             val roleOk = role == null || r == role
             val textOk = text == null || n.contains(text)
             if (!roleOk || !textOk) continue

@@ -63,4 +63,19 @@ class EachCursorTest {
         assertEquals(listOf("@e1", "@e3"), items.map { it.ref })
         assertEquals(listOf(0, 1), items.map { it.ordinal })
     }
+
+    /** 点按要落在可点祖先上：actionRef 优先于自身 ref（命中非可点的文字节点时，ref 是不可点的那个）。 */
+    @Test
+    fun actionRefPreferredOverOwnRef() {
+        val items = cursor.match(
+            listOf(buildJsonObject {
+                put("ref", JsonPrimitive("@t1"))
+                put("actionRef", JsonPrimitive("@e1"))
+                put("role", JsonPrimitive("TextView"))
+                put("name", JsonPrimitive("打招呼"))
+            }),
+            role = null, text = null,
+        )
+        assertEquals(listOf("@e1"), items.map { it.ref })
+    }
 }

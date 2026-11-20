@@ -18,18 +18,21 @@ internal object PhoneAutomationEngine {
         fun visit(node: UiTreeNode, parents: List<String>, clickableParent: String?, editableParent: String?) {
             val clickRef = if (node.clickable) node.ref ?: clickableParent else clickableParent
             val editRef = if (node.editable) node.ref ?: editableParent else editableParent
-            val label = listOfNotNull(node.text.takeUnless { node.secret }, node.description, node.hintText).filter(String::isNotBlank).joinToString(" ")
-            val hit = (query.text == null || label.contains(query.text, ignoreCase = true)) &&
+            val own = listOfNotNull(node.text.takeUnless { node.secret }, node.description, node.hintText).filter(String::isNotBlank).joinToString(" ")
+            // text 匹配只看节点自身文字(叶子文本节点命中、actionRef 指向可点祖先);resourceId/role 命中容器时才需要后代文字补 name。
+            val hit = (query.text == null || own.contains(query.text, ignoreCase = true)) &&
                 (query.resourceId == null || node.resourceId?.contains(query.resourceId, ignoreCase = true) == true) &&
                 (query.role == null || node.role.contains(query.role, ignoreCase = true))
             if (hit) {
+                // 可访问名:点按的容器(tile/列表项)常把可见文字放在子节点上、自身 text/description/hintText 都空;和元素表一致,从后代取名字。
+                val name = own.ifBlank { if (node.clickable) descendantLabel(node) else "" }
                 total++
                 if (matches.size < limit) matches += buildJsonObject {
                     node.ref?.let { put("ref", it) }
                     clickRef?.let { put("actionRef", it) }
                     editRef?.let { put("editRef", it) }
                     put("role", node.role)
-                    if (label.isNotBlank() && !node.secret) put("name", label)
+                    if (name.isNotBlank() && !node.secret) put("name", name)
                     node.resourceId?.let { put("resourceId", it) }
                     put("bounds", JsonArray(node.bounds.map(::JsonPrimitive)))
                     put("parents", JsonArray(parents.map(::JsonPrimitive)))
@@ -71,6 +74,19 @@ internal object PhoneAutomationEngine {
             put("truncated", total > matches.size)
             put("matches", JsonArray(matches))
         }
+    }
+
+    /** 一个节点自身没有可读文字时,用它后代的文字当名字(和元素表给可点容器起名同一规则)。 */
+    private fun descendantLabel(node: UiTreeNode): String {
+        val parts = mutableListOf<String>()
+        fun collect(n: UiTreeNode) {
+            listOfNotNull(n.text?.takeUnless { n.secret }, n.description?.takeUnless { n.secret })
+                .filter(String::isNotBlank)
+                .forEach { if (it !in parts) parts += it }
+            n.children.forEach(::collect)
+        }
+        node.children.forEach(::collect)
+        return parts.joinToString(" ")
     }
 
     /** 重叠区域按整段顺序合并,同文的两条独立消息仍可保留。 */

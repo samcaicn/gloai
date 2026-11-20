@@ -61,6 +61,24 @@ class PhoneAutomationToolsTest {
         assertEquals("@e1", item["actionRef"]!!.jsonPrimitive.content)
     }
 
+    @Test fun resourceIdMatchResolvesNameFromClickableDescendant() {
+        // do_each 用 resourceId 命中可点容器(tile/列表项),自身无文字、可见文字在子节点上;name 从后代取(和元素表 labelOf 一致),
+        // 供 contentKey 去重;点按另走 ref。标题 + 摘要两个子节点,拼成全名。
+        val screen = ScreenSnapshot("p1", "com.example.app", emptyList(), 1080, 2400, windows = listOf(
+            UiWindowTree(1, "application", 0, null, "com.example.app", true, true, listOf(
+                UiTreeNode("LinearLayout", listOf(0, 100, 999, 200), ref = "@t1", clickable = true, resourceId = "id/tile", children = listOf(
+                    UiTreeNode("TextView", listOf(30, 110, 600, 180), text = "WLAN"),
+                    UiTreeNode("TextView", listOf(30, 150, 600, 190), text = "已连接"),
+                )),
+            )),
+        ))
+        val found = PhoneAutomationEngine.find(screen, PhoneAutomationEngine.Query(resourceId = "id/tile"), 10)
+        assertEquals(1, found["total"]!!.jsonPrimitive.content.toInt())
+        val item = found["matches"]!!.jsonArray.single().jsonObject
+        assertEquals("@t1", item["actionRef"]!!.jsonPrimitive.content)
+        assertEquals("WLAN 已连接", item["name"]!!.jsonPrimitive.content)
+    }
+
     @Test fun queryDoesNotEncodeImageEvenWhenRunRecordsFrames() = runTest {
         var screenshots = 0
         val screen = object : ScreenPort by FakeScreen() {
@@ -198,6 +216,50 @@ class PhoneAutomationToolsTest {
         assertEquals(2, result["completed"]!!.jsonPrimitive.content.toInt())
         assertEquals(2, calls.count { it == "phone_tap" })
         assertEquals(3, calls.count { it == "phone_query" })
+    }
+
+    @Test fun runTapsDirectRefWithoutQuery() = runTest {
+        val dispatcher = toolDispatcher(FakeScreen())
+        val calls = mutableListOf<String>()
+        dispatcher.ctx.sub = SubActions { call ->
+            calls += call.name
+            ToolExecution(buildJsonObject { put("ok", true) })
+        }
+        val json = """{"commands":[{"op":"tap","ref":"@e1","snapshotId":"p1"}]}"""
+        val result = PhoneRun.execute(Args(PhoneRun.def, Json.parseToJsonElement(json).jsonObject), dispatcher.ctx).content
+        assertEquals("true", result["ok"]!!.jsonPrimitive.content)
+        assertEquals(0, calls.count { it == "phone_query" })  // 直接给 ref,不按字重找
+        assertEquals(1, calls.count { it == "phone_tap" })
+    }
+
+    @Test fun doEachResolvesItemToDirectRef() = runTest {
+        val screen = object : ScreenPort by FakeScreen() {
+            override suspend fun snapshot(): ScreenSnapshot =
+                ScreenSnapshot("p1", "com.example.app", emptyList(), 1080, 2400, windows = listOf(
+                    UiWindowTree(1, "application", 0, null, "com.example.app", true, true, listOf(
+                        UiTreeNode("LinearLayout", listOf(0, 100, 999, 200), ref = "@t1", clickable = true, resourceId = "id/tile", children = listOf(
+                            UiTreeNode("TextView", listOf(30, 110, 600, 180), text = "WLAN"),
+                        )),
+                        UiTreeNode("LinearLayout", listOf(0, 210, 999, 310), ref = "@t2", clickable = true, resourceId = "id/tile", children = listOf(
+                            UiTreeNode("TextView", listOf(30, 220, 600, 290), text = "蓝牙"),
+                        )),
+                    )),
+                ))
+        }
+        val dispatcher = toolDispatcher(screen)
+        val runCalls = mutableListOf<String>()
+        dispatcher.ctx.sub = SubActions { call ->
+            if (call.name == "phone_run") runCalls += call.argsJson
+            ToolExecution(buildJsonObject { put("ok", true) })
+        }
+        val json = """{"item":{"resourceId":"id/tile"},"body":[{"op":"tap","targetText":"@item"},{"op":"observe"},{"op":"back"}]}"""
+        val result = DoEach.execute(Args(DoEach.def, Json.parseToJsonElement(json).jsonObject), dispatcher.ctx).content
+        assertEquals("true", result["ok"]!!.jsonPrimitive.content)
+        assertEquals(2, result["done"]!!.jsonPrimitive.content.toInt())
+        // @item 换成 ref 直点(带 snapshotId),不靠名字回找
+        assertEquals(listOf("@t1", "@t2"), runCalls.map { args ->
+            Json.parseToJsonElement(args).jsonObject["commands"]!!.jsonArray[0].jsonObject["ref"]!!.jsonPrimitive.content
+        })
     }
 
     @Test fun runHidesNestedTypedTextInRecord() {
