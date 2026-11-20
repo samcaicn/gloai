@@ -33,6 +33,7 @@ import android.view.Display
 import com.wangzan101.mika.BuildConfig
 import com.wangzan101.mika.cap.phone.a11y.AndroidScreen
 import com.wangzan101.mika.cap.phone.a11y.AppCopyReader
+import com.wangzan101.mika.cap.phone.a11y.CalendarBulkWriter
 import com.wangzan101.mika.cap.phone.a11y.LazyPhoneScreen
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.cap.phone.a11y.PhoneUnavailable
@@ -717,7 +718,13 @@ class TaskRun(
                     phoneServices.hub.shell.value?.let { s ->
                         withContext(Dispatchers.IO) { runCatching { AppCopyReader.read(s, launchableApps(service.packageManager, service.packageName)) }.getOrNull() }
                     }.orEmpty()
-                }) { connectPhone() }
+                },
+                // shareWorkspaceAudio is always supplied to AndroidScreen above, so this capability check stays lazy.
+                canShareAudio = true,
+                calendarBulkWriter = { events ->
+                    withContext(Dispatchers.IO) { CalendarBulkWriter.insert(service, events) }
+                },
+            ) { connectPhone() }
             val accessedPhone = com.wangzan101.mika.core.uistate.AppAccessScreenPort(
                 phoneScreen, appAccess,
                 packages = { phone?.screen?.accessPackages().orEmpty() },

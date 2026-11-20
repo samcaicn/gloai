@@ -2,8 +2,17 @@ package com.wangzan101.mika.cap.web
 
 import com.wangzan101.mika.core.uistate.KeyCombo
 import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.access.AppAccessPolicy
+import com.wangzan101.mika.core.uistate.AfterTaskMarks
+import com.wangzan101.mika.core.uistate.AppCopy
+import com.wangzan101.mika.core.uistate.AppWait
 import com.wangzan101.mika.core.uistate.ScreenCheck
 import com.wangzan101.mika.core.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.uistate.SystemAction
+import com.wangzan101.mika.core.uistate.SystemActionResult
+import com.wangzan101.mika.core.uistate.SystemCommandResult
+import com.wangzan101.mika.core.uistate.VisibleTextLine
+import com.wangzan101.mika.core.uistate.WheelOutcome
 import com.wangzan101.mika.core.cap.web.CapturedResponse
 import com.wangzan101.mika.core.cap.web.DownloadInfo
 import com.wangzan101.mika.core.cap.web.EvalJs
@@ -46,6 +55,9 @@ class LazyWebPort(private val create: suspend () -> WebPort) : WebPort {
 
     override suspend fun navigate(url: String, newTab: Boolean): NavResult = built().navigate(url, newTab)
 
+    override val appAccess: AppAccessPolicy get() = port?.appAccess ?: AppAccessPolicy.ALLOW
+    override suspend fun checkAppAccess() { port?.checkAppAccess() }
+
     /** 现在就建好(任务开局就要用网页时,如借来了用户看着的页面);建不起来返回 false,下次用到时再试。 */
     suspend fun prepare(): Boolean = try {
         built()
@@ -59,20 +71,53 @@ class LazyWebPort(private val create: suspend () -> WebPort) : WebPort {
     override suspend fun snapshot(): ScreenSnapshot = port?.snapshot() ?: EMPTY
     override suspend fun peek(): ScreenSnapshot = port?.peek() ?: EMPTY
     override suspend fun screenshotPng(): ByteArray? = port?.screenshotPng()
+    override suspend fun readVisibleText(): List<VisibleTextLine>? = port?.readVisibleText()
     override suspend fun tapRef(ref: String, snapshotId: String) = port?.tapRef(ref, snapshotId) ?: NO_TAB
     override suspend fun tapXY(x: Int, y: Int) = port?.tapXY(x, y) ?: NO_TAB
     override suspend fun doubleTapRef(ref: String, snapshotId: String) = port?.doubleTapRef(ref, snapshotId) ?: NO_TAB
     override suspend fun doubleTapXY(x: Int, y: Int) = port?.doubleTapXY(x, y) ?: NO_TAB
     override suspend fun typeText(ref: String?, snapshotId: String?, text: String) = port?.typeText(ref, snapshotId, text) ?: NO_TAB
     override suspend fun clearText(ref: String?, snapshotId: String?) = port?.clearText(ref, snapshotId) ?: NO_TAB
+    override suspend fun typeAt(x: Int, y: Int, text: String) = port?.typeAt(x, y, text) ?: NO_TAB
+    override suspend fun clearAt(x: Int, y: Int) = port?.clearAt(x, y) ?: NO_TAB
     override suspend fun scroll(ref: String?, snapshotId: String?, down: Boolean) = port?.scroll(ref, snapshotId, down) ?: NO_TAB
     override suspend fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Long) = port?.swipe(x1, y1, x2, y2, durationMs) ?: NO_TAB
+    override suspend fun idleScroll(fraction: Double): Boolean = port?.idleScroll(fraction) ?: false
+    override suspend fun gesture(paths: List<List<Pair<Int, Int>>>, durationMs: Long): ActionResult =
+        port?.gesture(paths, durationMs) ?: ActionResult.Failed("unsupported")
     override suspend fun back() = port?.back() ?: NO_TAB
     override suspend fun pressKey(keyCode: Int) = port?.pressKey(keyCode) ?: NO_TAB
     override suspend fun openApp(packageName: String, cold: Boolean) = port?.openApp(packageName, cold) ?: NO_TAB
+    override suspend fun openAppCopy(packageName: String, userId: Int, cold: Boolean): ActionResult =
+        port?.openAppCopy(packageName, userId, cold) ?: ActionResult.Failed("unsupported")
+    override suspend fun awaitAppFree(packageName: String, userId: Int?, timeoutMs: Long): AppWait =
+        port?.awaitAppFree(packageName, userId, timeoutMs) ?: AppWait.Unsupported
+    override suspend fun openLink(action: String?, uri: String?, packageName: String?): ActionResult =
+        port?.openLink(action, uri, packageName) ?: ActionResult.Failed("unsupported")
+    override suspend fun shareText(packageName: String, text: String): ActionResult =
+        port?.shareText(packageName, text) ?: ActionResult.Failed("unsupported")
+    override val canShareAudio: Boolean get() = port?.canShareAudio ?: false
+    override suspend fun shareAudio(packageName: String, path: String, text: String?): ActionResult =
+        port?.shareAudio(packageName, path, text) ?: ActionResult.Failed("unsupported")
+    override suspend fun systemAction(action: SystemAction): SystemActionResult =
+        port?.systemAction(action) ?: SystemActionResult(ActionResult.Failed("unsupported"))
+    override suspend fun bulkCalendarInsert(events: List<SystemAction.AddCalendarEvent>): SystemActionResult =
+        port?.bulkCalendarInsert(events) ?: SystemActionResult(ActionResult.Failed(SystemActionResult.NOT_SUPPORTED))
+    override suspend fun setWheel(ref: String, snapshotId: String, value: String): WheelOutcome =
+        port?.setWheel(ref, snapshotId, value) ?: WheelOutcome(false, null, null, 0, "none", error = "unsupported")
     override suspend fun waitStable(timeoutMs: Long) = port?.waitStable(timeoutMs) ?: true
     override suspend fun awaitChange(timeoutMs: Long): Boolean = port?.awaitChange(timeoutMs) ?: super.awaitChange(timeoutMs)
+    override suspend fun waitFor(condition: String, value: String?, timeoutMs: Long): Boolean =
+        port?.waitFor(condition, value, timeoutMs) ?: false
+    override suspend fun nextEvent(kind: String, packageName: String?, timeoutMs: Long) =
+        port?.nextEvent(kind, packageName, timeoutMs)
+    override suspend fun watchEvents(kind: String, packageName: String?, durationMs: Long, maxEvents: Int) =
+        port?.watchEvents(kind, packageName, durationMs, maxEvents) ?: emptyList()
+    override suspend fun systemCommand(command: String): SystemCommandResult? = port?.systemCommand(command)
     override suspend fun listApps(): List<Pair<String, String>> = port?.listApps().orEmpty()
+    override suspend fun otherProfiles(): Map<String, List<String>> = port?.otherProfiles().orEmpty()
+    override suspend fun appCopies(): List<AppCopy> = port?.appCopies().orEmpty()
+    override val afterTask: AfterTaskMarks? get() = port?.afterTask
     override suspend fun checkScreen(): ScreenCheck? = port?.checkScreen()
     override suspend fun isProtected() = port?.isProtected() ?: false
     override suspend fun frameGrid() = port?.frameGrid()
@@ -92,7 +137,6 @@ class LazyWebPort(private val create: suspend () -> WebPort) : WebPort {
     override suspend fun setSiteMode(mobile: Boolean) = port?.setSiteMode(mobile)
     override suspend fun siteMode(): String? = port?.siteMode()
     override suspend fun keepOpen(keep: Boolean, reason: String) = port?.keepOpen(keep, reason)
-    override suspend fun idleScroll(fraction: Double): Boolean = port?.idleScroll(fraction) ?: false
     override suspend fun runScript(code: String, timeoutMs: Long, bridge: ScriptBridge): ScriptRun =
         port?.runScript(code, timeoutMs, bridge) ?: ScriptRun.Failed(NO_TAB_CODE, "No web page is open.")
     override suspend fun hover(at: WebPoint) = port?.hover(at) ?: NO_TAB
