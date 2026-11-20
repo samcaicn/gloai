@@ -15,6 +15,8 @@ data class Capabilities(
     val maxImages: Int = Int.MAX_VALUE,
     /** 可选的本地压缩触发点，按整份请求的 token 数计。 */
     val compactionTriggerTokens: Int? = null,
+    /** 按往返轮数触发压缩:活着的工具往返超过 keepRecent + 这个值就折(null=不按轮数,只按大小)。 */
+    val compactionEveryRounds: Int? = null,
 )
 
 /**

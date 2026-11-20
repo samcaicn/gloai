@@ -406,7 +406,7 @@ class ProviderStoreTest {
         // 不再有「主模型能看图就兼任看图」的隐含规则
         assertNull(s.configFor(ModelRole.Vision))
         val m = s.modelFor(ModelRole.Main)
-        assertEquals("套上计量后能力照旧", cfg("a", vision = true).capabilities, m?.capabilities)
+        assertEquals("套上计量后能力照旧(临时:每 16 轮折一次)", cfg("a", vision = true).capabilities.copy(compactionEveryRounds = TEMP_COMPACTION_EVERY_ROUNDS), m?.capabilities)
         assertEquals("a" to "sk-a", built.single().first.id to built.single().second)
     }
 
