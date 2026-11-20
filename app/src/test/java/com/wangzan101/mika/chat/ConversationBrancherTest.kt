@@ -1,6 +1,10 @@
 package com.wangzan101.mika.chat
 
 import com.wangzan101.mika.cap.sandbox.JVM_GATE
+import com.wangzan101.mika.cap.sandbox.SandboxDirs
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
+import com.wangzan101.mika.core.workspace.SandboxTree
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -148,5 +152,45 @@ class ConversationBrancherTest {
         File(source, "inbox").mkdirs()
         assertEquals(BranchCopyResult(copied = 0), copyInboxTree(source, target, maxBytes = 1024))
         assertTrue(File(target, "inbox").isDirectory)
+    }
+
+    @Test fun sharedProjectBranchSkipsSelfCopyAndCopiesAcrossWorkspaces() = runBlocking {
+        val dirs = SandboxDirs(tmp.newFolder("sandbox"), tmp.newFolder("tmp"), tmp.newFolder("lib"), JVM_GATE, SandboxTree())
+        val sharedKey = WorkspaceKey.Project("proj-shared")
+        val sharedDir = dirs.workspace(sharedKey)
+        File(sharedDir, "inbox").mkdirs()
+        File(sharedDir, "inbox/doc.txt").writeText("shared-content")
+
+        val branchWorkspace = AndroidBranchWorkspace(dirs) { id ->
+            if (id == "c1" || id == "c2") sharedKey else WorkspaceKey.Conversation(id)
+        }
+
+        // 同项目内分支共享同一目录:不做自拷贝
+        assertNull(branchWorkspace.copyInbox("c1", "c2"))
+
+        // 跨工作区分支按各自解析结果复制到独立目录
+        assertEquals(BranchCopyResult(copied = 1), branchWorkspace.copyInbox("c1", "c-solo"))
+        assertEquals("shared-content", File(dirs.workspace(WorkspaceKey.Conversation("c-solo")), "inbox/doc.txt").readText())
+    }
+
+    @Test fun sharedProjectRetryChecksExistingFilesWithoutCopying() = runBlocking {
+        assumeTrue("JVM gate requires Unix file attributes", tmp.root.toPath().fileSystem.supportedFileAttributeViews().contains("unix"))
+        val dirs = SandboxDirs(tmp.newFolder("sandbox-retry"), tmp.newFolder("tmp-retry"), tmp.newFolder("lib-retry"), JVM_GATE, SandboxTree())
+        val sharedKey = WorkspaceKey.Project("proj-shared")
+        val sharedDir = dirs.workspace(sharedKey)
+        File(sharedDir, "inbox").mkdirs()
+        File(sharedDir, "inbox/doc.txt").writeText("shared-content")
+
+        val branchWorkspace = AndroidBranchWorkspace(dirs) { id ->
+            if (id == "c1" || id == "c2") sharedKey else WorkspaceKey.Conversation(id)
+        }
+
+        assertEquals(
+            listOf(
+                RetryAttachmentResult("/workspace/inbox/doc.txt", RetryAttachmentStatus.COPIED, sizeBytes = 14L),
+                RetryAttachmentResult("/workspace/inbox/missing.txt", RetryAttachmentStatus.MISSING),
+            ),
+            branchWorkspace.copyInboxForRetry("c1", "c2", listOf("/workspace/inbox/doc.txt", "/workspace/inbox/missing.txt")),
+        )
     }
 }

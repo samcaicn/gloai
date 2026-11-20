@@ -102,8 +102,14 @@ class TaskService : Service() {
     /** 最近一次 start 时读到的开关;关着时登记处上限恒为 1。 */
     @Volatile private var parallel = false
     private val center by lazy {
-        TaskCenter<TaskRun>(::limit, { it.conversationId }, { it.key }, (application as com.wangzan101.mika.MikaApp).runStore,
-            (application as com.wangzan101.mika.MikaApp).resources, (application as com.wangzan101.mika.MikaApp).followUpQueue) { c, g ->
+        val app = application as com.wangzan101.mika.MikaApp
+        val wsOf: (String) -> String = { id -> com.wangzan101.mika.chat.WorkspaceResolver.resolveFor(app, id).wire }
+        TaskCenter<TaskRun>(
+            ::limit, { it.conversationId }, { it.key }, app.runStore,
+            app.resources, app.followUpQueue,
+            workspaceOf = { wsOf(it.conversationId) },
+            resolveWorkspace = wsOf,
+        ) { c, g ->
             TaskRun(c, g, this, scope, freeSlot(), parallel)
         }
     }

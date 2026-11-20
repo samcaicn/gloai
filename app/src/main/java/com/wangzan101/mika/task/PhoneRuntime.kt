@@ -16,6 +16,7 @@ import com.wangzan101.mika.cap.phone.display.PipInput
 import com.wangzan101.mika.cap.phone.shell.AppAudioKey
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.core.agent.RunProgress
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
@@ -97,6 +98,7 @@ internal class PhoneRuntime(
     private val sideScope: () -> CoroutineScope?,
     private val sandbox: () -> AndroidSandbox,
     private val setMuteFailedFor: (String?) -> Unit,
+    private val workspaceKey: () -> WorkspaceKey = { WorkspaceKey.Conversation(conversationId) },
 ) {
     /** 浮层上的声音开关:恢复过声音的再按一次静回去,没恢复的按一次恢复(重复点击重试真实动作);没有手机侧或目标 App 时不动。 */
     fun togglePipSound() {
@@ -138,7 +140,7 @@ internal class PhoneRuntime(
         if (rel.isEmpty() || rel.split('/').any { it.isEmpty() || it == "." || it == ".." }) return@withContext null
         val dirs = SandboxDirs(service)
         val bytes = dirs.tree.shared {
-            dirs.gate.openRead(dirs.workspace(conversationId), rel).use { g ->
+            dirs.gate.openRead(dirs.workspace(workspaceKey()), rel).use { g ->
                 if (g.size > 20L * 1024 * 1024) null else g.read(0, g.size.toInt())
             }
         } ?: return@withContext null

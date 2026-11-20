@@ -46,7 +46,7 @@ class BridgeDeviceTest {
     // 导出到「下载/Mika」的测试文件删掉,不留在用户的下载目录里
     @After fun deleteExported() {
         for (f in shared) runCatching { context.contentResolver.delete(Uri.parse(f.uri), null, null) }
-        SandboxDirs(context).workspace("bridge-ws").deleteRecursively()
+        SandboxDirs(context).workspace(WorkspaceKey.Conversation("bridge-ws")).deleteRecursively()
     }
 
     @Test fun progressReachesCallback() {

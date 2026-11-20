@@ -141,4 +141,15 @@
     <string name="personal_replay_pause">暂停</string>
     <string name="personal_replay_play">播放</string>
     <string name="personal_replay_return_live">回到实时</string>
+    <string name="drawer_projects">项目</string>
+    <string name="drawer_new_project">新建项目</string>
+    <string name="drawer_project_new_title">新建项目</string>
+    <string name="drawer_project_name_hint">项目名称</string>
+    <string name="drawer_project_rename_title">重命名项目</string>
+    <string name="drawer_project_new_chat">在项目里新对话</string>
+    <string name="drawer_project_empty">暂无对话</string>
+    <string name="drawer_project_delete_title">删除这个项目？</string>
+    <string name="drawer_project_delete_body">项目「%1$s」里的全部对话和共享工作区文件都会被删掉，没法找回。</string>
+    <string name="drawer_project_actions">项目操作</string>
+    <string name="chat_project_shared">项目</string>
 </resources>

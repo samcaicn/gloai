@@ -24,6 +24,25 @@ class DeviceImportStoreTest {
         assertEquals(listOf(second), DeviceImportStore(prefs).allRecords())
     }
 
+    @Test fun listByWorkspaceGroupsSharedProjectImportsWhilePreservingLegacyDefault() {
+        val prefs = FeatureFlagsCapsuleTest.MemoryPrefs()
+        val store = DeviceImportStore(prefs)
+        val c1 = DeviceImportRecord("one", "c1", "/sdcard/a", "/workspace/inbox/a", 3, 100, 1, 2, workspaceId = "p:proj-1")
+        val c2 = DeviceImportRecord("two", "c2", "/sdcard/b", "/workspace/inbox/b", 4, 101, 3, 4, workspaceId = "p:proj-1")
+        val solo = DeviceImportRecord("three", "c3", "/sdcard/c", "/workspace/inbox/c", 5, 102, 5, 6)
+        store.add(c1)
+        store.add(c2)
+        store.add(solo)
+
+        val reloaded = DeviceImportStore(prefs)
+        assertEquals(listOf(c1, c2), reloaded.listByWorkspace("p:proj-1"))
+        assertEquals(listOf(solo), reloaded.listByWorkspace("c3"))
+        assertEquals("c3", reloaded.list("c3").single().workspaceId)
+
+        reloaded.removeWorkspace("p:proj-1")
+        assertEquals(listOf(solo), DeviceImportStore(prefs).allRecords())
+    }
+
     @Test fun flowEmitsInitialAndCommittedRecords() = runBlocking {
         val prefs = FeatureFlagsCapsuleTest.MemoryPrefs()
         val store = DeviceImportStore(prefs)

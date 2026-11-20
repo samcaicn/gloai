@@ -181,6 +181,9 @@ class SystemPromptTest {
         val on = SandboxCapability.section(SandboxStatus.Ready(network = true), true)
         assertTrue(SandboxCapability.NETWORK_OFF in off && SandboxCapability.NETWORK_ON !in off)
         assertTrue(SandboxCapability.NETWORK_ON in on && SandboxCapability.NETWORK_OFF !in on)
+        assertFalse(SandboxCapability.SHARED_WORKSPACE in off)
+        val shared = SandboxCapability.section(SandboxStatus.Ready(network = false), false, sharedWorkspace = true)
+        assertTrue(SandboxCapability.SHARED_WORKSPACE in shared)
     }
 }
 
@@ -260,6 +263,9 @@ class SystemPromptAssemblyTest {
         val with = promptOf(toolDispatcher(FakeScreen(), sandbox = sb, workspace = { "w" }))
         assertTrue(with.startsWith(SystemPrompt.identity()))
         assertTrue(with.contains(SandboxCapability.NETWORK_OFF))
+        assertFalse(with.contains(SandboxCapability.SHARED_WORKSPACE))
+        val withProject = promptOf(toolDispatcher(FakeScreen(), sandbox = sb, workspace = { "p:proj-1" }))
+        assertTrue(withProject.contains(SandboxCapability.SHARED_WORKSPACE))
         sb.status = SandboxStatus.Unsupported("x86")
         assertFalse(promptOf(toolDispatcher(FakeScreen(), sandbox = sb, workspace = { "w" })).contains(SandboxCapability.NETWORK_OFF))
     }

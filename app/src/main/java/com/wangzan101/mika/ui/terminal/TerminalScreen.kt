@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.R
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
+import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.core.workspace.SandboxError
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.terminal.TerminalSession
@@ -50,22 +52,34 @@ import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.ui.theme.MikaRadius
 import kotlinx.coroutines.flow.MutableStateFlow
 
-/** 终端页的入口:打开(或附着)这个对话的会话,把状态交给 [TerminalScreen]。 */
+/** 终端页的入口:打开(或附着)这个工作区或对话的会话,把状态交给 [TerminalScreen]。 */
 @Composable
-internal fun TerminalRoute(app: MikaApp, conversationId: String, title: String?, onDone: () -> Unit) {
+internal fun TerminalRoute(
+    app: MikaApp,
+    conversationId: String?,
+    workspaceKey: WorkspaceKey?,
+    title: String?,
+    onDone: () -> Unit,
+) {
+    val targetKey = workspaceKey ?: WorkspaceResolver.resolveFor(app, requireNotNull(conversationId))
     var attempt by remember { mutableIntStateOf(0) }
     var session by remember {
-        mutableStateOf(app.terminals.session(conversationId)?.takeIf { it.phase.value == TerminalSession.Phase.Running })
+        mutableStateOf(
+            (if (workspaceKey != null) app.terminals.sessionForWorkspace(workspaceKey)
+            else app.terminals.session(requireNotNull(conversationId)))
+                ?.takeIf { it.phase.value == TerminalSession.Phase.Running },
+        )
     }
     var opening by remember { mutableStateOf(session == null) }
     var error by remember { mutableStateOf<SandboxError?>(null) }
 
-    LaunchedEffect(conversationId, attempt) {
+    LaunchedEffect(conversationId, workspaceKey, attempt) {
         if (session != null) { opening = false; return@LaunchedEffect }
         opening = true
         error = null
         try {
-            session = app.terminals.open(conversationId, title)
+            session = if (workspaceKey != null) app.terminals.openWorkspace(workspaceKey, title)
+            else app.terminals.open(requireNotNull(conversationId), title)
         } catch (e: SandboxError) {
             error = e
         } catch (e: Exception) {
@@ -80,7 +94,7 @@ internal fun TerminalRoute(app: MikaApp, conversationId: String, title: String?,
     val phase by (session?.phase ?: closed).collectAsState()
     val exitCode by (session?.exitCode ?: noExit).collectAsState()
     val network = session?.network ?: app.sandboxState.networkAllowed
-    val running = app.taskState.activeConversations.collectAsState().value.contains(conversationId)
+    val running = app.taskState.activeConversations.collectAsState().value.any { WorkspaceResolver.resolveFor(app, it) == targetKey }
 
     TerminalScreen(
         session = session,
@@ -92,12 +106,16 @@ internal fun TerminalRoute(app: MikaApp, conversationId: String, title: String?,
         phase = phase,
         exitCode = exitCode,
         onRetry = {
-            session?.let { app.terminals.close(conversationId) }
+            session?.let {
+                if (workspaceKey != null) app.terminals.closeWorkspace(workspaceKey)
+                else app.terminals.close(requireNotNull(conversationId))
+            }
             session = null
             attempt++
         },
         onClose = {
-            app.terminals.close(conversationId)
+            if (workspaceKey != null) app.terminals.closeWorkspace(workspaceKey)
+            else app.terminals.close(requireNotNull(conversationId))
             onDone()
         },
         onBack = onDone,

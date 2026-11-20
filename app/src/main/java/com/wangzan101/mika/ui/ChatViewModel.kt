@@ -16,9 +16,13 @@ import com.wangzan101.mika.chat.ConversationSummary
 import com.wangzan101.mika.chat.CurrentChat
 import com.wangzan101.mika.chat.DeleteBatch
 import com.wangzan101.mika.chat.DeleteImpact
+import com.wangzan101.mika.chat.Project
+import com.wangzan101.mika.chat.ProjectDeleteImpact
+import com.wangzan101.mika.chat.ProjectStore
 import com.wangzan101.mika.chat.SharedDraft
 import com.wangzan101.mika.chat.SharedDraftStore
 import com.wangzan101.mika.chat.SharedFile
+import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.cap.sandbox.ImportResult
 import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.cap.sandbox.AttachmentFailureReason
@@ -307,6 +311,8 @@ data class ChatUi(
     val exchanges: List<Exchange> = emptyList(),
     /** 这个对话用的人格;新对话还没发第一句话时只是界面状态,发出去时写进旁文件。 */
     val personaId: String? = null,
+    /** 所属项目分组 id;新对话还没发第一句话时只保存在草稿/界面状态,发送首条消息时写入旁文件。 */
+    val projectId: String? = null,
     /** 上次发送被拦下时缺的条件;为空表示没被拦。 */
     val blocked: List<Problem>? = null,
     val pip: PipUi = PipUi(),
@@ -347,15 +353,16 @@ private data class ComposerDraft(
     val importing: Boolean = false,
     val rejected: List<AttachmentFailure> = emptyList(),
     val overLimit: Int = 0,
+    val projectId: String? = null,
 ) {
     val hasContent: Boolean get() = input.isNotEmpty() || attachments.isNotEmpty() || quote != null || importing || rejected.isNotEmpty()
     fun applyTo(ui: ChatUi) = ui.copy(input = input, attachments = attachments, quote = quote,
         followUpMode = followUpMode, sharedDraft = sharedDraft, importing = importing,
-        rejectedAttachments = rejected, overLimit = overLimit)
+        rejectedAttachments = rejected, overLimit = overLimit, projectId = projectId ?: ui.projectId)
 }
 
 private fun ChatUi.draft() = ComposerDraft(input, attachments, quote, followUpMode, sharedDraft,
-    importing, rejectedAttachments, overLimit)
+    importing, rejectedAttachments, overLimit, projectId)
 
 /**
  * 换对话时统一重建界面:任务和输入内容属于各自对话,附件按钮能力属于设备,不随对话重建丢掉。
@@ -368,9 +375,11 @@ private fun ChatUi.rebuildForConversation(
     input: String = "",
     sharedDraft: SharedDraft? = null,
     attachments: List<PendingAttachment> = emptyList(),
+    projectId: String? = null,
 ) = copy(
     conversationId = conversationId,
     exchanges = exchanges,
+    projectId = projectId,
     blocked = null,
     pip = PipUi(),
     composer = ComposerMode.Idle,
@@ -492,7 +501,21 @@ class ChatViewModel(
     /** 播放工作区里的一段音频(对话编号, 路径);默认不做。 */
     private val playAudio: suspend (String, String) -> Unit = { _, _ -> },
     private val voiceFailed: (String) -> Unit = {},
+    /** 项目分组列表与删项目入口;为 null 时仅按普通对话显示。 */
+    private val projectStore: ProjectStore? = null,
+    private val projectDeletionImpact: (String) -> ProjectDeleteImpact = { ProjectDeleteImpact(0, 0, 0) },
+    private val removeProject: suspend (String) -> Unit = {},
+    private val workspaceResolver: WorkspaceResolver? = null,
 ) {
+    /** 项目分组列表;为空或不注入时不展示项目分组。 */
+    val projects: StateFlow<List<Project>> = projectStore?.projects ?: MutableStateFlow(emptyList())
+
+    private val _collapsedProjects = MutableStateFlow<Set<String>>(emptySet())
+    val collapsedProjects: StateFlow<Set<String>> = _collapsedProjects.asStateFlow()
+
+    fun toggleProjectCollapsed(projectId: String) {
+        _collapsedProjects.update { if (projectId in it) it - projectId else it + projectId }
+    }
     /** 用户在对话页上关掉留在后台的那一页。 */
     fun closeKeptPage() = closeKept()
 
@@ -567,7 +590,8 @@ class ChatViewModel(
         all.filterValues { it.hasContent }.map { (id, draft) ->
             ConversationSummary(id,
                 ChatCopy.plainTitle(draft.input).takeIf { it.isNotBlank() }
-                    ?: draft.attachments.firstOrNull()?.name ?: tr(R.string.chat_new), 0L)
+                    ?: draft.attachments.firstOrNull()?.name ?: tr(R.string.chat_new), 0L,
+                projectId = projectFor(id) ?: draft.projectId)
         }
     }.stateIn(scope, SharingStarted.Eagerly, emptyList())
 
@@ -575,12 +599,13 @@ class ChatViewModel(
         draftConversations.value.filter { draft -> history.none { it.id == draft.id } }.map {
             it.copy(title = store.title(it.id) ?: it.title, pinnedAt = store.pinnedAt(it.id),
                 page = store.pageOrigin(it.id), branchOf = store.branchOrigin(it.id), archivedAt = store.archivedAt(it.id),
-                restoredAt = store.restoredAt(it.id))
+                restoredAt = store.restoredAt(it.id), projectId = store.projectId(it.id) ?: it.projectId)
         } + history
 
     private fun draftConversation(): String {
         draftStateChanged = true
         return _ui.value.conversationId ?: store.newConversation().also { id ->
+            workspaceResolver?.setDraftProject(id, _ui.value.projectId)
             _ui.update { it.copy(conversationId = id) }
             markCurrent(CurrentChat.Open(id))
         }
@@ -1301,6 +1326,11 @@ class ChatViewModel(
                 if (store.persona(id)?.personaId != selected) runCatching { store.setPersona(id, selected) }
             }
         }
+        val boundProject = (_ui.value.projectId ?: store.projectId(id))?.takeIf { projectStore == null || projectStore.get(it) != null }
+        if (boundProject != null && store.projectId(id) != boundProject) {
+            runCatching { store.setProject(id, boundProject) }
+        }
+        workspaceResolver?.setDraftProject(id, null)
         // 这个对话的编号定下来了:胶囊之后接着它(新开的对话到这一刻才有编号)
         markCurrent(CurrentChat.Open(id))
         // 上一个任务收尾时先撤屏再报结束,这里读到的就是新任务开始前的样子;
@@ -1469,7 +1499,14 @@ class ChatViewModel(
         when {
             current == null -> {
                 if (!s.active()) return
-                _ui.update { it.copy(conversationId = conversationId, exchanges = saved(conversationId), personaId = personaFor(conversationId)) }
+                _ui.update {
+                    it.copy(
+                        conversationId = conversationId,
+                        exchanges = saved(conversationId),
+                        personaId = personaFor(conversationId),
+                        projectId = projectFor(conversationId),
+                    )
+                }
             }
             current != conversationId -> {
                 val live = _ui.value.exchanges.getOrNull(liveIndex)
@@ -1495,7 +1532,7 @@ class ChatViewModel(
         val past = saved(conversationId)
         liveIndex = -1
         // 没有任务的对话不带别的任务的接管进度;输入内容只恢复目标对话自己的草稿。
-        _ui.update { restoreDraft(it.rebuildForConversation(conversationId = conversationId, exchanges = past)) }
+        _ui.update { restoreDraft(it.rebuildForConversation(conversationId = conversationId, exchanges = past, projectId = projectFor(conversationId))) }
         markCurrent(CurrentChat.Open(conversationId))
         if (conversationId !in activeConversations.value) { unpark(conversationId); actions.drainFollowUps(conversationId); return }
         follow(conversationId, unpark(conversationId))
@@ -1511,7 +1548,7 @@ class ChatViewModel(
         parkLive()
         val past = saved(conversationId)
         liveIndex = -1
-        _ui.update { restoreDraft(it.rebuildForConversation(conversationId = conversationId, exchanges = past)) }
+        _ui.update { restoreDraft(it.rebuildForConversation(conversationId = conversationId, exchanges = past, projectId = projectFor(conversationId))) }
         markCurrent(CurrentChat.Open(conversationId))
         if (conversationId !in activeConversations.value) { unpark(conversationId); return }
         follow(conversationId, unpark(conversationId))
@@ -1834,9 +1871,53 @@ class ChatViewModel(
     fun consumeJump(jump: ChatJump) {
         _jump.update { if (it == jump) null else it }
     }
+    /** 这个对话存下的项目 id;项目不存在时回落为 null。 */
+    private fun projectFor(conversationId: String?): String? =
+        conversationId?.let { store.projectId(it) }?.takeIf { projectStore == null || projectStore.get(it) != null }
+
     /** 这个对话存下的人格 id;没有人格存储(功能关闭)或没有绑定为 null。 */
     private fun personaFor(conversationId: String?): String? =
         if (personaStore == null) null else conversationId?.let { store.persona(it)?.personaId }
+
+    /** 创建新项目。 */
+    fun createProject(name: String): Result<Project>? = projectStore?.create(name)
+
+    /** 重命名项目。 */
+    fun renameProject(projectId: String, name: String): Result<Project>? = projectStore?.rename(projectId, name)
+
+    fun projectDeleteImpact(projectId: String): ProjectDeleteImpact = projectDeletionImpact(projectId)
+
+    /** 删除项目及其全部成员对话和共享工作区 `p-<projectId>`。 */
+    fun deleteProject(projectId: String) {
+        val members = store.list(includeArchived = true).filter { it.projectId == projectId }.map { it.id }
+        val draftMembers = drafts.value.filterValues { it.projectId == projectId }.keys
+        val openMember = _ui.value.conversationId?.takeIf {
+            _ui.value.projectId == projectId || store.projectId(it) == projectId
+        }
+        val targets = (members + draftMembers + listOfNotNull(openMember)).distinct().filter { deleting.add(it) }
+        targets.forEach { id ->
+            drafts.update { it - id }
+            sharedDrafts?.clear(id)
+            workspaceResolver?.setDraftProject(id, null)
+            _deleted.update { it + id }
+            if (id == _ui.value.conversationId) startOver(id) else unpark(id)
+        }
+        if (_ui.value.conversationId == null && _ui.value.projectId == projectId) {
+            _ui.update { it.copy(projectId = null) }
+        }
+        releaseUnusedLibraryCopies()
+        scope.launch {
+            try {
+                removeProject(projectId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _deleted.update { it - targets.toSet() }
+            } finally {
+                deleting.removeAll(targets.toSet())
+            }
+        }
+    }
 
     /**
      * 换这个对话用的人格;null 表示回到默认。任务在跑或排队时不允许切换。
@@ -1865,7 +1946,7 @@ class ChatViewModel(
         val past = saved(id)
         liveIndex = -1
         _ui.update {
-            restoreDraft(it.rebuildForConversation(conversationId = id, exchanges = past, takeoverStage = it.takeoverStage))
+            restoreDraft(it.rebuildForConversation(conversationId = id, exchanges = past, takeoverStage = it.takeoverStage, projectId = projectFor(id)))
                 .copy(personaId = personaFor(id))
         }
         markCurrent(CurrentChat.Open(id))
@@ -1884,7 +1965,8 @@ class ChatViewModel(
         runCatching { store.setCurrent(current) }
     }
 
-    fun newConversation() {
+    fun newConversation(projectId: String? = null) {
+        val validProject = projectId?.takeIf { projectStore == null || projectStore.get(it) != null }
         refreshParallel()
         if (parallel()) {
             cancelPendingSharedDraft()
@@ -1893,7 +1975,9 @@ class ChatViewModel(
             lingerJob?.cancel()
             parkLive()
             liveIndex = -1
-            _ui.update { it.rebuildForConversation(conversationId = store.newConversation()) }
+            val fresh = store.newConversation()
+            workspaceResolver?.setDraftProject(fresh, validProject)
+            _ui.update { it.rebuildForConversation(conversationId = fresh, projectId = validProject) }
             // 还没说过话:胶囊上是一张新对话卡片(编号等说出来再定,见 begin)
             markCurrent(CurrentChat.Fresh)
             return
@@ -1902,7 +1986,7 @@ class ChatViewModel(
         cancelPendingSharedDraft()
         keepDraft()
         liveIndex = -1
-        _ui.update { it.rebuildForConversation(conversationId = null, takeoverStage = it.takeoverStage) }
+        _ui.update { it.rebuildForConversation(conversationId = null, takeoverStage = it.takeoverStage, projectId = validProject) }
         markCurrent(CurrentChat.Fresh)
     }
 

@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
@@ -22,12 +23,15 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.ExperimentalFoundationApi
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.ui.components.MikaDialog
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import com.wangzan101.mika.chat.DeleteBatch
 import com.wangzan101.mika.chat.DeleteImpact
+import com.wangzan101.mika.chat.Project
+import com.wangzan101.mika.chat.ProjectDeleteImpact
 import com.wangzan101.mika.i18n.trPlural
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -170,6 +174,10 @@ data class DrawerConversation(
     val archivedAt: Long? = null,
     /** 搜索结果命中了正文:打开对话后跳到这条消息;只有标题命中时为 null。 */
     val target: ChatTarget? = null,
+    /** 所属项目分组 id;未归属项目时为 null。 */
+    val projectId: String? = null,
+    /** 所属项目分组名称(用于在已归档、搜索和进行中列表里直接标明归属)。 */
+    val projectName: String? = null,
 )
 
 /** 一次批量归档的结果:归档了几个、几个因为在跑任务或是当前对话没动。 */
@@ -184,11 +192,15 @@ enum class ArchivePeriod { ThisWeek, ThisMonth, Earlier }
 /** 归档视图里的一组。[rows] 保持传进来的顺序(按归档时间倒序)。 */
 data class ArchiveGroup(val period: ArchivePeriod, val rows: List<DrawerConversation>)
 
-/** 侧栏里的对话分段:进行中、置顶、最近。 */
+/** 侧栏里的一个项目分组及其成员对话。 */
+data class DrawerProjectGroup(val project: Project, val rows: List<DrawerConversation>)
+
+/** 侧栏里的对话分段:进行中、项目分组、置顶、最近。 */
 data class DrawerSections(
     val running: List<DrawerConversation>,
     val recent: List<DrawerConversation>,
     val pinned: List<DrawerConversation> = emptyList(),
+    val projects: List<DrawerProjectGroup> = emptyList(),
 )
 
 /** 多选能勾的对话:普通侧栏是此刻列出来的;归档视图里是收起来的那些。没有编号的行勾不了。 */
@@ -198,7 +210,7 @@ fun drawerSelectableIds(
     archivedView: Boolean,
 ): Set<String> =
     if (archivedView) archived.mapNotNull { it.id }.toSet()
-    else (sections.running + sections.pinned + sections.recent).mapNotNull { it.id }.toSet()
+    else (sections.running + sections.pinned + sections.recent + sections.projects.flatMap { it.rows }).mapNotNull { it.id }.toSet()
 
 /** 搜索候选:删掉的当场不搜;再按归档状态筛,全部时归档的也搜(结果行带归档标记)。 */
 internal fun drawerSearchCandidates(
@@ -243,27 +255,42 @@ fun drawerSections(
     canSwitch: Boolean,
     now: Long,
     zone: ZoneId = ZoneId.systemDefault(),
+    projects: List<Project> = emptyList(),
 ): DrawerSections {
     val byId = all.associateBy { it.id }
+    val projectNames = projects.associate { it.id to it.name }
     fun timeOf(id: String?) = byId[id]?.takeIf { it.updatedAt != 0L }?.let { conversationTime(it.updatedAt, now, zone) }.orEmpty()
     fun pinned(id: String?) = byId[id]?.pinnedAt != null
     fun archived(id: String?) = byId[id]?.archivedAt != null
     fun saved(id: String?) = byId[id]?.updatedAt?.let { it != 0L } ?: false
+    fun projectOf(id: String?) = byId[id]?.projectId?.takeIf { it in projectNames }
     val running = buildList {
-        if (current.running) add(DrawerConversation(current.id, current.title.ifBlank { tr(R.string.chat_new) }, current.subtitle, true, true, true, time = timeOf(current.id), pinned = pinned(current.id), site = byId[current.id]?.page?.host, branch = byId[current.id]?.branchOf != null, archived = archived(current.id), saved = saved(current.id)))
+        if (current.running) {
+            val pid = projectOf(current.id)
+            add(DrawerConversation(current.id, current.title.ifBlank { tr(R.string.chat_new) }, current.subtitle, true, true, true, time = timeOf(current.id), pinned = pinned(current.id), site = byId[current.id]?.page?.host, branch = byId[current.id]?.branchOf != null, archived = archived(current.id), saved = saved(current.id), projectId = pid, projectName = pid?.let(projectNames::get)))
+        }
         others.filter { it != current.id }.distinct().forEach { id ->
             val title = (byId[id]?.title ?: otherTitle(id))?.let(ChatCopy::plainTitle)?.ifBlank { null } ?: tr(R.string.drawer_running_task)
-            add(DrawerConversation(id, title, tr(R.string.drawer_running), running = true, current = false, enabled = canSwitch, time = timeOf(id), pinned = pinned(id), site = byId[id]?.page?.host, branch = byId[id]?.branchOf != null, archived = archived(id), saved = saved(id)))
+            val pid = projectOf(id)
+            add(DrawerConversation(id, title, tr(R.string.drawer_running), running = true, current = false, enabled = canSwitch, time = timeOf(id), pinned = pinned(id), site = byId[id]?.page?.host, branch = byId[id]?.branchOf != null, archived = archived(id), saved = saved(id), projectId = pid, projectName = pid?.let(projectNames::get)))
         }
     }
     val runningIds = running.mapNotNull { it.id }.toSet()
     fun entry(s: ConversationSummary): DrawerConversation =
-        drawerEntry(s, current.id, canSwitch, running = s.id in runningIds, time = timeOf(s.id))
+        drawerEntry(s, current.id, canSwitch, running = s.id in runningIds, time = timeOf(s.id), projectName = s.projectId?.let(projectNames::get))
     // 归档的对话不在主列表里;当前正在看的那个例外,不然打开归档对话后不知道自己在哪
     val rest = all.filter { it.id !in runningIds && (it.archivedAt == null || it.id == current.id) }
-    val pinnedRows = rest.filter { it.pinnedAt != null }.sortedByDescending { it.pinnedAt }.map(::entry)
-    val recent = rest.asSequence().filter { it.pinnedAt == null }.take(MAX_RECENT).map(::entry).toList()
-    return DrawerSections(running, recent, pinnedRows)
+    val grouped = rest.filter { it.projectId != null && it.projectId in projectNames }.groupBy { it.projectId!! }
+    val projectGroups = projects.map { project ->
+        val rows = grouped[project.id].orEmpty()
+            .sortedWith(compareByDescending<ConversationSummary> { it.pinnedAt != null }.thenByDescending { it.pinnedAt ?: 0L }.thenByDescending { it.updatedAt })
+            .map(::entry)
+        DrawerProjectGroup(project, rows)
+    }
+    val standalone = rest.filter { it.projectId == null || it.projectId !in projectNames }
+    val pinnedRows = standalone.filter { it.pinnedAt != null }.sortedByDescending { it.pinnedAt }.map(::entry)
+    val recent = standalone.asSequence().filter { it.pinnedAt == null }.take(MAX_RECENT).map(::entry).toList()
+    return DrawerSections(running, recent, pinnedRows, projectGroups)
 }
 
 /** 一条对话在侧栏里的样子:侧栏列表和搜索结果共用，免得两处规则走岔。 */
@@ -275,12 +302,14 @@ internal fun drawerEntry(
     time: String,
     subtitle: String = "",
     target: ChatTarget? = null,
+    projectName: String? = null,
 ): DrawerConversation {
     val isCurrent = s.id == currentId
     return DrawerConversation(
         s.id, ChatCopy.plainTitle(s.title), subtitle, running, isCurrent, canSwitch || isCurrent, time,
         pinned = s.pinnedAt != null, site = s.page?.host, branch = s.branchOf != null,
         archived = s.archivedAt != null, saved = s.updatedAt != 0L, archivedAt = s.archivedAt, target = target,
+        projectId = s.projectId, projectName = projectName,
     )
 }
 
@@ -403,6 +432,12 @@ fun ChatDrawer(
     archivedView: Boolean = false,
     onOpenArchive: () -> Unit = {},
     onExitArchive: () -> Unit = {},
+    showProjectsSection: Boolean = false,
+    collapsedProjects: Set<String> = emptySet(),
+    onToggleProject: (String) -> Unit = {},
+    onNewProject: () -> Unit = {},
+    onNewInProject: (String) -> Unit = {},
+    onProjectActions: (Project, Rect) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     containerColor: Color = MikaTheme.colors.bg,
 ) {
@@ -462,6 +497,7 @@ fun ChatDrawer(
             archivedView -> "h-archive"
             searchActive -> "h-search"
             sections.running.isNotEmpty() -> "h-running"
+            showProjectsSection -> "h-projects"
             sections.pinned.isNotEmpty() -> "h-pinned"
             sections.recent.isNotEmpty() -> "h-recent"
             else -> "end"
@@ -485,7 +521,7 @@ fun ChatDrawer(
                 if (search?.searching != false) item("searching") { SearchHint(stringResource(R.string.drawer_searching)) }
                 items(search?.hits.orEmpty(), key = { "s-${it.id}" }) {
                     // 「只看已归档」时每一行都是归档的,不用再标;其余筛选用归档小图标把收起来的对话标出来
-                    ConversationEntry(it, onOpen, onActions, terms, showArchivedMark = searchFilter != SearchArchiveFilter.Archived)
+                    ConversationEntry(it, onOpen, onActions, terms, showArchivedMark = searchFilter != SearchArchiveFilter.Archived, showProjectMark = true)
                 }
                 if (search != null && !search.searching && search.hits.isEmpty()) {
                     item("search-empty") { SearchEmpty(query) }
@@ -500,7 +536,7 @@ fun ChatDrawer(
                     item("h-archive-${group.period.name}") { SectionLabel(archivePeriodLabel(group.period)) }
                     items(group.rows, key = { "a-${it.id}" }) {
                         ConversationEntry(
-                            it, onOpen, onActions, showArchivedMark = false,
+                            it, onOpen, onActions, showArchivedMark = false, showProjectMark = true,
                             selecting = selecting, selected = it.id in selected, onToggleSelect = onToggleSelect,
                         )
                     }
@@ -510,7 +546,42 @@ fun ChatDrawer(
                     // 「进行中」这一段的右边进「后台屏」页:看每个在跑的任务正在用哪个 App、实时画面
                     item("h-running") { RunningLabel(onScreens) }
                     items(sections.running, key = { "r-${it.id}" }) {
-                        ConversationEntry(it, onOpen, onActions, selecting = selecting, selected = it.id in selected, onToggleSelect = onToggleSelect)
+                        ConversationEntry(it, onOpen, onActions, selecting = selecting, selected = it.id in selected, onToggleSelect = onToggleSelect, showProjectMark = true)
+                    }
+                }
+                if (showProjectsSection) {
+                    item("h-projects") { ProjectsHeader(enabled = canSwitch, onNewProject = onNewProject) }
+                    sections.projects.forEach { group ->
+                        val collapsed = group.project.id in collapsedProjects
+                        item("proj-h-${group.project.id}") {
+                            ProjectGroupHeader(
+                                project = group.project,
+                                count = group.rows.size,
+                                collapsed = collapsed,
+                                canCreate = canSwitch,
+                                onToggle = { onToggleProject(group.project.id) },
+                                onNewChat = { onNewInProject(group.project.id) },
+                                onActions = { bounds -> onProjectActions(group.project, bounds) },
+                            )
+                        }
+                        if (!collapsed) {
+                            if (group.rows.isEmpty()) {
+                                item("proj-empty-${group.project.id}") {
+                                    Text(
+                                        stringResource(R.string.drawer_project_empty),
+                                        Modifier.padding(start = 36.dp, end = 20.dp, top = 2.dp, bottom = 6.dp),
+                                        style = MikaType.Hint, color = c.ink3,
+                                    )
+                                }
+                            } else {
+                                items(group.rows, key = { "proj-${group.project.id}-${it.id}" }) {
+                                    ConversationEntry(
+                                        it, onOpen, onActions, selecting = selecting, selected = it.id in selected,
+                                        onToggleSelect = onToggleSelect,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 // 换不了对话时的说明放在第一段存着的对话(置顶或最近)上面
@@ -810,6 +881,8 @@ internal fun ConversationEntry(
     onToggleSelect: (DrawerConversation) -> Unit = {},
     /** 标题前显不显示归档小图标;归档视图里每一行都是归档的,不用再标。 */
     showArchivedMark: Boolean = true,
+    /** 非项目分组列表(进行中/搜索/归档)里把所属项目用小文件夹标出来。 */
+    showProjectMark: Boolean = false,
 ) {
     val c = MikaTheme.colors
     val deletable = item.id != null
@@ -846,7 +919,7 @@ internal fun ConversationEntry(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (selectable) SelectMark(selected)
-                Box(Modifier.weight(1f)) { ConversationRowContent(item, terms, showArchivedMark) }
+                Box(Modifier.weight(1f)) { ConversationRowContent(item, terms, showArchivedMark, showProjectMark) }
             }
         }
     }
@@ -874,13 +947,16 @@ internal fun ConversationRowContent(
     item: DrawerConversation,
     terms: List<String> = emptyList(),
     showArchivedMark: Boolean = true,
+    showProjectMark: Boolean = false,
 ) {
     val c = MikaTheme.colors
     val title = remember(item.title, terms, c.accent) { highlighted(item.title, terms, c.accent) }
+    val showProjectName = showProjectMark && !item.projectName.isNullOrBlank()
     Column {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             if (item.running) Box(Modifier.size(7.dp).background(c.accent, CircleShape))
             if (item.pinned) Icon(MikaIcons.Pin, stringResource(R.string.drawer_pinned_mark), Modifier.size(14.dp).testTag("conversation-pin"), tint = c.ink3)
+            if (showProjectMark && item.projectId != null && !showProjectName) Icon(MikaIcons.Folder, stringResource(R.string.chat_project_shared), Modifier.size(14.dp).testTag("conversation-project"), tint = c.ink3)
             if (item.branch) Icon(MikaIcons.Route, stringResource(R.string.chat_branch_origin), Modifier.size(14.dp).testTag("conversation-branch"), tint = c.ink3)
             if (item.archived && showArchivedMark) Icon(MikaIcons.Archive, stringResource(R.string.drawer_archived), Modifier.size(14.dp).testTag("conversation-archived"), tint = c.ink3)
             Text(title, Modifier.weight(1f, fill = item.site == null), style = ConversationTitle, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -896,9 +972,26 @@ internal fun ConversationRowContent(
             }
         }
         val sub = item.subtitle.ifEmpty { item.site.orEmpty() }
-        if (sub.isNotEmpty()) {
-            val styled = remember(sub, terms, c.accent) { highlighted(sub, terms, c.accent) }
-            Text(styled, Modifier.padding(top = 2.dp), style = ConversationTime, color = c.ink3, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (showProjectName || sub.isNotEmpty()) {
+            Row(
+                Modifier.padding(top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (showProjectName) {
+                    Icon(MikaIcons.Folder, stringResource(R.string.chat_project_shared), Modifier.size(12.dp).testTag("conversation-project"), tint = c.ink2)
+                    Text(
+                        item.projectName!!,
+                        Modifier.weight(1f, fill = false),
+                        style = ConversationTime, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    if (sub.isNotEmpty()) Text("·", style = ConversationTime, color = c.ink3)
+                }
+                if (sub.isNotEmpty()) {
+                    val styled = remember(sub, terms, c.accent) { highlighted(sub, terms, c.accent) }
+                    Text(styled, Modifier.weight(1f, fill = !showProjectName), style = ConversationTime, color = c.ink3, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
     }
 }
@@ -984,6 +1077,137 @@ internal fun DeleteManyConversationsDialog(
                 Text(stringResource(R.string.cancel))
             }
         },
+    )
+}
+
+/** 侧栏「项目」段头与「新建项目」入口。 */
+@Composable
+private fun ProjectsHeader(enabled: Boolean, onNewProject: () -> Unit) {
+    val c = MikaTheme.colors
+    Row(Modifier.fillMaxWidth().padding(end = 12.dp), verticalAlignment = Alignment.Bottom) {
+        Box(Modifier.weight(1f)) { SectionLabel(stringResource(R.string.drawer_projects)) }
+        Row(
+            Modifier.clip(NavShape).clickable(enabled = enabled, role = Role.Button, onClick = onNewProject)
+                .alpha(if (enabled) 1f else 0.4f)
+                .padding(start = 10.dp, end = 6.dp, top = 8.dp, bottom = 4.dp).testTag("drawer-new-project"),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(MikaIcons.Plus, null, Modifier.size(13.dp), tint = c.ink3)
+            Text(stringResource(R.string.drawer_new_project), style = MikaType.Hint, color = c.ink2)
+        }
+    }
+}
+
+/** 侧栏里一个项目的可折叠分组头:点按展开/收起，右侧加号新建项目内对话，长按打开项目操作菜单。 */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ProjectGroupHeader(
+    project: Project,
+    count: Int,
+    collapsed: Boolean,
+    canCreate: Boolean,
+    onToggle: () -> Unit,
+    onNewChat: () -> Unit,
+    onActions: (Rect) -> Unit,
+) {
+    val c = MikaTheme.colors
+    val haptic = LocalHapticFeedback.current
+    val bounds = remember { mutableStateOf(Rect.Zero) }
+    Row(
+        Modifier.padding(horizontal = 12.dp).fillMaxWidth()
+            .onGloballyPositioned { bounds.value = Rect(it.positionInWindow(), it.size.toSize()) }
+            .clip(NavShape)
+            .combinedClickable(
+                onLongClickLabel = stringResource(R.string.drawer_project_actions),
+                onLongClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onActions(bounds.value) },
+                onClick = onToggle,
+            )
+            .padding(horizontal = 10.dp, vertical = 7.dp)
+            .testTag("project-header"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            MikaIcons.Chevron, null,
+            Modifier.size(12.dp).rotate(if (collapsed) 0f else 90f),
+            tint = c.ink3,
+        )
+        Icon(MikaIcons.Folder, null, Modifier.size(15.dp), tint = c.ink2)
+        Text(project.name, Modifier.weight(1f), style = ConversationTitle, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (count > 0) Text("$count", style = MikaType.Hint, color = c.ink3, maxLines = 1, softWrap = false)
+        Box(
+            Modifier.size(26.dp).clip(CircleShape)
+                .clickable(enabled = canCreate, role = Role.Button, onClickLabel = stringResource(R.string.drawer_project_new_chat), onClick = onNewChat)
+                .alpha(if (canCreate) 1f else 0.4f)
+                .testTag("project-new-chat"),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(MikaIcons.Plus, stringResource(R.string.drawer_project_new_chat), Modifier.size(14.dp), tint = c.ink2)
+        }
+    }
+}
+
+/** 新建 / 重命名项目的输入弹窗。 */
+@Composable
+private fun ProjectNameDialog(
+    title: String,
+    initial: String,
+    confirmTag: String,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var value by remember(initial) { mutableStateOf(TextFieldValue(initial, TextRange(0, initial.length))) }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    val ok = value.text.isNotBlank()
+    MikaDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            KeyboardDismissArea {
+                OutlinedTextField(
+                    value, { value = it },
+                    Modifier.fillMaxWidth().focusRequester(focus).keepsKeyboard().testTag("project-name-field"),
+                    placeholder = { Text(stringResource(R.string.drawer_project_name_hint)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { if (ok) onSave(value.text.trim()) }),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(value.text.trim()) }, Modifier.testTag(confirmTag), enabled = ok) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+/** 删除项目的确认弹窗:写明会删除项目内全部对话与共享工作区文件。 */
+@Composable
+private fun DeleteProjectDialog(
+    project: Project,
+    impact: ProjectDeleteImpact,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val body = listOfNotNull(
+        stringResource(R.string.drawer_project_delete_body, project.name),
+        if (impact.runningTasks > 0) trPlural(R.plurals.drawer_delete_many_running, impact.runningTasks, impact.runningTasks) else null,
+        if (impact.schedules > 0) trPlural(R.plurals.drawer_delete_many_schedules, impact.schedules, impact.schedules) else null,
+    ).joinToString("\n")
+    MikaDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.drawer_project_delete_title)) },
+        text = { Text(body, Modifier.testTag("delete-project-body")) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, Modifier.testTag("confirm-delete-project")) {
+                Text(stringResource(R.string.confirm_delete), color = MikaTheme.colors.bad)
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
@@ -1163,10 +1387,14 @@ fun ChatWithDrawer(
     val deleted by vm.deleted.collectAsState()
     /** 长按了的那条和它在窗口里的位置;菜单开着(收起的动画放完才清掉)。 */
     var acting by remember { mutableStateOf<Pair<DrawerConversation, Rect>?>(null) }
+    var actingProject by remember { mutableStateOf<Pair<Project, Rect>?>(null) }
+    var creatingProject by remember { mutableStateOf(false) }
+    var renamingProject by remember { mutableStateOf<Project?>(null) }
+    var confirmingProject by remember { mutableStateOf<Pair<Project, ProjectDeleteImpact>?>(null) }
     /** 菜单出现的进度:0 是没有,1 是完全出来;关了动画时直接到位。 */
     val lift = remember { Animatable(0f) }
-    LaunchedEffect(acting) {
-        if (acting != null) {
+    LaunchedEffect(acting, actingProject) {
+        if (acting != null || actingProject != null) {
             if (reduceMotion) lift.snapTo(1f) else lift.animateTo(1f, tween(MENU_IN_MS, easing = MikaMotion.Decelerate))
         }
     }
@@ -1176,6 +1404,7 @@ fun ChatWithDrawer(
         scope.launch {
             if (reduceMotion) lift.snapTo(0f) else lift.animateTo(0f, tween(MENU_OUT_MS, easing = MikaMotion.Decelerate))
             acting = null
+            actingProject = null
         }
     }
     /** 正在改名的那条。 */
@@ -1188,6 +1417,10 @@ fun ChatWithDrawer(
         if (resetKey != lastReset) {
             lastReset = resetKey
             acting = null
+            actingProject = null
+            creatingProject = false
+            renamingProject = null
+            confirmingProject = null
             renaming = null
             confirming = null
             selecting = false
@@ -1202,7 +1435,9 @@ fun ChatWithDrawer(
             drawer.snapTo(DrawerValue.Closed)
         }
     }
-    val menuOpen = acting != null
+    val menuOpen = acting != null || actingProject != null
+    val projects by vm.projects.collectAsState()
+    val collapsedProjects by vm.collapsedProjects.collectAsState()
     val drawerColors = MikaTheme.colors
     BoxWithConstraints(Modifier.fillMaxSize().clipToBounds().background(MikaTheme.colors.bg)) {
         // 与参照一致占手机宽度的 85%;窄窗口也至少留 48dp 供点击/左滑收回。
@@ -1269,6 +1504,7 @@ fun ChatWithDrawer(
                 val runningIds = remember(others, ui.conversationId, running) {
                     (others + listOfNotNull(ui.conversationId?.takeIf { running })).toSet()
                 }
+                val projectNames = remember(projects) { projects.associate { it.id to it.name } }
                 val searchView = searchOutcome?.takeIf { it.query == query.trim() }?.let { outcome ->
                     DrawerSearch(
                         outcome.hits.mapNotNull { hit ->
@@ -1277,6 +1513,7 @@ fun ChatWithDrawer(
                             drawerEntry(
                                 s, ui.conversationId, canSwitch, running = hit.id in runningIds,
                                 time = time, subtitle = hit.snippet.orEmpty(), target = hit.target,
+                                projectName = s.projectId?.let(projectNames::get),
                             )
                         },
                         outcome.searching,
@@ -1284,11 +1521,11 @@ fun ChatWithDrawer(
                     )
                 }
                 // 删掉的对话当场不列,不等后台删完
-                val sections = remember(all, current, others, canSwitch, deleted) {
-                    drawerSections(all.filter { it.id !in deleted }, current, others.filter { it !in deleted }, vm::runningGoal, canSwitch, System.currentTimeMillis())
+                val sections = remember(all, current, others, canSwitch, deleted, projects) {
+                    drawerSections(all.filter { it.id !in deleted }, current, others.filter { it !in deleted }, vm::runningGoal, canSwitch, System.currentTimeMillis(), projects = projects)
                 }
-                // 归档视图里的行:按归档时间倒序,最近收起来的在前;副标题写清归档了多久
-                val archivedRows = remember(all, current, canSwitch, deleted, runningIds) {
+                // 归档视图里的行:按归档时间倒序,最近收起来的在前;副标题写清所属项目和归档了多久
+                val archivedRows = remember(all, current, canSwitch, deleted, runningIds, projectNames) {
                     val now = System.currentTimeMillis()
                     all.filter { it.id !in deleted && it.archivedAt != null }
                         .sortedByDescending { it.archivedAt }
@@ -1297,6 +1534,7 @@ fun ChatWithDrawer(
                                 s, current.id, canSwitch, running = s.id in runningIds,
                                 time = if (s.updatedAt != 0L) conversationTime(s.updatedAt, now) else "",
                                 subtitle = s.archivedAt?.let { archivedAgo(it, now) }.orEmpty(),
+                                projectName = s.projectId?.let(projectNames::get),
                             )
                         }
                 }
@@ -1393,6 +1631,12 @@ fun ChatWithDrawer(
                         selecting = false
                         selected = emptySet()
                     },
+                    showProjectsSection = true,
+                    collapsedProjects = collapsedProjects,
+                    onToggleProject = vm::toggleProjectCollapsed,
+                    onNewProject = { creatingProject = true },
+                    onNewInProject = { pid -> close { vm.newConversation(pid); onRegularChat() } },
+                    onProjectActions = { project, bounds -> actingProject = project to bounds },
                 )
             },
             drawerState = drawer,
@@ -1465,6 +1709,59 @@ fun ChatWithDrawer(
                 onDismiss = { closeMenu() },
             )
         }
+        actingProject?.let { (project, bounds) ->
+            ProjectMenu(
+                project, bounds, progress = { lift.value },
+                onNewChat = { closeMenu { close { vm.newConversation(project.id); onRegularChat() } } },
+                onRename = { closeMenu { renamingProject = project } },
+                onTerminal = {
+                    closeMenu {
+                        activity?.let { a ->
+                            com.wangzan101.mika.ui.terminal.TerminalLauncher.openWorkspace(a, WorkspaceKey.Project(project.id), project.name)
+                        }
+                    }
+                },
+                onDelete = { closeMenu { confirmingProject = project to vm.projectDeleteImpact(project.id) } },
+                onDismiss = { closeMenu() },
+            )
+        }
+    }
+    if (creatingProject) {
+        ProjectNameDialog(
+            title = stringResource(R.string.drawer_project_new_title),
+            initial = "",
+            confirmTag = "confirm-create-project",
+            onSave = { name ->
+                creatingProject = false
+                vm.createProject(name)?.getOrNull()?.let { p ->
+                    close { vm.newConversation(p.id); onRegularChat() }
+                }
+            },
+            onDismiss = { creatingProject = false },
+        )
+    }
+    renamingProject?.let { project ->
+        ProjectNameDialog(
+            title = stringResource(R.string.drawer_project_rename_title),
+            initial = project.name,
+            confirmTag = "confirm-rename-project",
+            onSave = { name ->
+                renamingProject = null
+                vm.renameProject(project.id, name)
+            },
+            onDismiss = { renamingProject = null },
+        )
+    }
+    confirmingProject?.let { (project, impact) ->
+        DeleteProjectDialog(
+            project = project,
+            impact = impact,
+            onConfirm = {
+                confirmingProject = null
+                vm.deleteProject(project.id)
+            },
+            onDismiss = { confirmingProject = null },
+        )
     }
     renaming?.let { item ->
         RenameConversationDialog(

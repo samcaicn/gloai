@@ -10,6 +10,7 @@ import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.chat.AttachFilesProvider
 import com.wangzan101.mika.chat.SharedFile
 import com.wangzan101.mika.chat.SharedDraftCopy
+import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.core.cap.sandbox.ShareRules
 import com.wangzan101.mika.ui.viewer.FileViewer
 import kotlinx.coroutines.Dispatchers
@@ -85,7 +86,7 @@ object LibraryFileActions {
                     require(source.conversationId.isNotBlank())
                     val rel = requireNotNull(AttachFiles.relative(source.path))
                     val dirs = SandboxDirs(context)
-                    dirs.gate.openRead(dirs.workspace(source.conversationId), rel).use { it.input().read() }
+                    dirs.gate.openRead(dirs.workspace(WorkspaceResolver.resolveFor(context, source.conversationId)), rel).use { it.input().read() }
                 }
                 is LibraryFileHandle.Exported -> {
                     val uri = Uri.parse(source.file.uri)
@@ -328,7 +329,7 @@ object LibraryFileActions {
                         require(source.conversationId.isNotBlank())
                         val rel = requireNotNull(AttachFiles.relative(source.path))
                         val dirs = SandboxDirs(context)
-                        dirs.gate.openRead(dirs.workspace(source.conversationId), rel).use { gated ->
+                        dirs.gate.openRead(dirs.workspace(WorkspaceResolver.resolveFor(context, source.conversationId)), rel).use { gated ->
                             SharedDraftCopy.copy(gated.input(), tmp, file) { dir.usableSpace }
                         }
                     }

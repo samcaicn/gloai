@@ -141,4 +141,15 @@
     <string name="personal_replay_pause">一時停止</string>
     <string name="personal_replay_play">再生</string>
     <string name="personal_replay_return_live">ライブに戻る</string>
+    <string name="drawer_projects">プロジェクト</string>
+    <string name="drawer_new_project">新しいプロジェクト</string>
+    <string name="drawer_project_new_title">新しいプロジェクト</string>
+    <string name="drawer_project_name_hint">プロジェクト名</string>
+    <string name="drawer_project_rename_title">プロジェクト名を変更</string>
+    <string name="drawer_project_new_chat">プロジェクト内で新しいチャット</string>
+    <string name="drawer_project_empty">チャットはまだありません</string>
+    <string name="drawer_project_delete_title">このプロジェクトを削除しますか？</string>
+    <string name="drawer_project_delete_body">「%1$s」のすべてのチャットと共有ワークスペースのファイルが削除され、元に戻せません。</string>
+    <string name="drawer_project_actions">プロジェクトの操作</string>
+    <string name="chat_project_shared">プロジェクト</string>
 </resources>

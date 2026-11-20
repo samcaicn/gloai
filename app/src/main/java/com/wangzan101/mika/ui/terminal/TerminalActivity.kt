@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import com.wangzan101.mika.MikaApp
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.i18n.AppLanguage
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.animationsOff
@@ -27,20 +28,23 @@ class TerminalActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        val conversationId = intent.getStringExtra(EXTRA_CONVERSATION) ?: run { finish(); return }
+        val conversationId = intent.getStringExtra(EXTRA_CONVERSATION)
+        val workspaceKey = intent.getStringExtra(EXTRA_WORKSPACE)?.let(WorkspaceKey::parse)
+        if (conversationId == null && workspaceKey == null) { finish(); return }
         val title = intent.getStringExtra(EXTRA_TITLE)
         val app = applicationContext as MikaApp
         setContent {
             val dark = appearanceDark()
             LaunchedEffect(dark) { systemBarsFor(dark) }
             MikaTheme(dark = dark, reduceMotion = animationsOff(this)) {
-                TerminalRoute(app, conversationId, title, onDone = ::finish)
+                TerminalRoute(app, conversationId, workspaceKey, title, onDone = ::finish)
             }
         }
     }
 
     companion object {
         const val EXTRA_CONVERSATION = "conversationId"
+        const val EXTRA_WORKSPACE = "workspaceKey"
         const val EXTRA_TITLE = "title"
     }
 }
@@ -50,6 +54,14 @@ object TerminalLauncher {
     fun open(context: Context, conversationId: String, title: String?) {
         val intent = Intent(context, TerminalActivity::class.java)
             .putExtra(TerminalActivity.EXTRA_CONVERSATION, conversationId)
+            .putExtra(TerminalActivity.EXTRA_TITLE, title)
+        if (context !is Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+
+    fun openWorkspace(context: Context, workspace: WorkspaceKey, title: String?) {
+        val intent = Intent(context, TerminalActivity::class.java)
+            .putExtra(TerminalActivity.EXTRA_WORKSPACE, workspace.wire)
             .putExtra(TerminalActivity.EXTRA_TITLE, title)
         if (context !is Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)

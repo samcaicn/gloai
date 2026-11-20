@@ -207,6 +207,7 @@ class ConversationStoreTest {
         store.append(id, Turn("查天气", "晴", "succeeded"))
         store.setTitle(id, "天气")
         store.setPinned(id, true, at = 5L)
+        store.setProject(id, "proj-sidecar")
         java.io.File(dir, "$id.json.corrupt-1").writeText("x")
         java.io.File(dir, "$id.json.tmp").writeText("x")
         store.append(other, Turn("订票", "好了", "succeeded"))
@@ -754,5 +755,32 @@ class ConversationStoreTest {
         )
         store.append("a", Turn("说一段", "好", "succeeded", audios = audios))
         assertEquals(audios, ConversationStore(dir).turns("a").single().audios)
+    }
+
+    @Test fun projectSidecarPersistsInheritsOnBranchAndCleansOnDelete() {
+        val dir = tmp.newFolder("project-sidecar")
+        val store = ConversationStore(dir)
+        val a = store.newConversation()
+        store.append(a, Turn("第一轮", "好了", "succeeded"))
+        assertTrue(store.setProject(a, "proj-1"))
+        assertFalse(store.setProject(a, "../bad"))
+        assertEquals("proj-1", ConversationStore(dir).projectId(a))
+        assertEquals("proj-1", store.list().single { it.id == a }.projectId)
+
+        val branched = store.newConversation()
+        assertTrue(store.branch(a, branched, 0))
+        assertEquals("proj-1", ConversationStore(dir).projectId(branched))
+
+        // 删除源对话连带清掉它的 .project 旁文件,分支保留
+        store.delete(a)
+        assertNull(store.projectId(a))
+        assertFalse(File(dir, "$a.project").exists())
+        assertFalse(store.setProject(a, "proj-2"))
+        assertEquals("proj-1", store.projectId(branched))
+
+        // 解绑回到独立对话
+        assertTrue(store.setProject(branched, null))
+        assertNull(store.projectId(branched))
+        assertFalse(File(dir, "$branched.project").exists())
     }
 }

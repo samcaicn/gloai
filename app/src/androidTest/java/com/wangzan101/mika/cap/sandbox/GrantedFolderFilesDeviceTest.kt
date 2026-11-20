@@ -81,7 +81,7 @@ class GrantedFolderFilesDeviceTest {
             expectError("invalid_folder_path") { folders.write("${grant.path}/../outside.md", byteArrayOf(1), null, false) }
             expectError("folder_access_denied") { folders.write("/folders/unknown/a.md", "x".toByteArray(), null, false) }
             expectError("file_too_large") { folders.write("${grant.path}/large.md", ByteArray(FolderFiles.MAX_BYTES + 1) { 65 }, null, false) }
-            val ws = SandboxDirs(context).workspace("folder-device-test").apply { mkdirs() }
+            val ws = SandboxDirs(context).workspace(WorkspaceKey.Conversation("folder-device-test")).apply { mkdirs() }
             File(ws, "summary.md").writeText("# 本周复习\n交替听写和朗读。")
             val exported = tool("share_file", buildJsonObject { put("path", "/workspace/summary.md"); put("folderPath", "${grant.path}/复习总结.md") })
             assertEquals(exported.toString(), JsonPrimitive(true), exported["ok"])

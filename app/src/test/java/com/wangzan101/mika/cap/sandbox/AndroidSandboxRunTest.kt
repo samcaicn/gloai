@@ -36,7 +36,7 @@ class AndroidSandboxRunTest {
         assertFalse(dirs.skills.exists())
         runCatching { sb.run("c1", listOf("true"), null, 1_000) {} } // JVM 上没有启动器,启动本身会失败
         assertTrue(dirs.skills.isDirectory)
-        assertTrue(dirs.workspace("c1").isDirectory)
+        assertTrue(dirs.workspace(WorkspaceKey.Conversation("c1")).isDirectory)
         assertTrue(dirs.tmp.isDirectory)
     }
 
@@ -130,5 +130,21 @@ class AndroidSandboxRunTest {
         val outside = File(tmp, "secret.txt").apply { writeText("s") }
         Files.createSymbolicLink(File(ok.parentFile, "link.txt").toPath(), outside.toPath())
         assertTrue(sb.uploadCheck("c1", "/workspace/in/link.txt") != com.wangzan101.mika.core.workspace.WorkspacePathCheck.Ok)
+    }
+
+    @Test fun projectWorkspaceWireMapsToPDirAndSharesMetrics() {
+        val dirs = SandboxDirs(File(tmp, "proj/files/sandbox"), File(tmp, "proj/cache"), File(tmp, "proj/lib"), JVM_GATE, SandboxTree())
+        val sb = AndroidSandbox(dirs, { SandboxStatus.Ready(false) }, { emptyList() })
+        val projectKey = WorkspaceKey.Project("proj-alpha")
+        val ws = dirs.workspace(projectKey)
+        assertEquals("p-proj-alpha", ws.name)
+
+        val file = sb.hostPath(projectKey.wire, "notes/plan.md", forWrite = true)!!
+            .apply { parentFile?.mkdirs(); writeText("hello") }
+        assertTrue(file.canonicalPath.startsWith(ws.canonicalPath))
+        assertEquals(com.wangzan101.mika.core.workspace.WorkspacePathCheck.Ok, sb.uploadCheck(projectKey, "/workspace/notes/plan.md"))
+        assertEquals(5L, sb.workspaceBytes(projectKey))
+        val outPath = sb.saveOutput(projectKey.wire, "saved")
+        assertTrue(File(ws, outPath.removePrefix("/workspace/")).isFile)
     }
 }

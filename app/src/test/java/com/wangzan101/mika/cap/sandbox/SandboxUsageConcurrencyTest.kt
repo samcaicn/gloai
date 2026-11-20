@@ -36,7 +36,7 @@ class SandboxUsageConcurrencyTest {
     private val dirs = SandboxDirs(File(tmp, "sandbox"), File(tmp, "cache"), File(tmp, "lib"), gate, SandboxTree())
     private val reader = SandboxUsageReader(dirs, { emptyList() }, { active })
 
-    private fun workspace(id: String) = dirs.workspace(id).apply { mkdirs() }
+    private fun workspace(id: String) = dirs.workspace(WorkspaceKey.Conversation(id)).apply { mkdirs() }
 
     @Test(timeout = 10_000) fun singleClearRechecksBusyAfterWaitingForTheTree() = runBlocking {
         val a = workspace("a")
@@ -102,7 +102,7 @@ class SandboxUsageConcurrencyTest {
 
     // 删对话时删工作区走同一条独占的路
     @Test(timeout = 10_000) fun conversationDeleteBlocksNewWorkspaceWrites() = runBlocking {
-        verifyWritesWaitForCleanup { dirs.deleteWorkspace("a"); true }
+        verifyWritesWaitForCleanup { dirs.deleteWorkspace(WorkspaceKey.Conversation("a")); true }
     }
 
     // 删一个没往工作区写过东西的对话(没有工作区):没东西可删,不拿独占许可,也就不收回别的对话开着的终端、stdio MCP server 拿着的租约
@@ -111,12 +111,12 @@ class SandboxUsageConcurrencyTest {
         var revoked = false
         val lease = dirs.tree.lease(onRevoke = { revoked = true })
         try {
-            dirs.deleteWorkspace("a")
+            dirs.deleteWorkspace(WorkspaceKey.Conversation("a"))
             assertFalse("No workspace to delete, nothing to revoke", revoked)
             assertTrue(attempts.isEmpty())
-            dirs.deleteWorkspace("b")
+            dirs.deleteWorkspace(WorkspaceKey.Conversation("b"))
             assertTrue(revoked)
-            assertEquals(listOf(dirs.workspace("b").name), attempts.toList())
+            assertEquals(listOf(dirs.workspace(WorkspaceKey.Conversation("b")).name), attempts.toList())
         } finally {
             lease.close()
         }
@@ -128,7 +128,7 @@ class SandboxUsageConcurrencyTest {
         val release = CompletableDeferred<Unit>()
         val command = launch { dirs.tree.shared { entered.complete(Unit); release.await() } }
         entered.await()
-        val deleting = async(start = CoroutineStart.UNDISPATCHED) { dirs.deleteWorkspace("a") }
+        val deleting = async(start = CoroutineStart.UNDISPATCHED) { dirs.deleteWorkspace(WorkspaceKey.Conversation("a")) }
         assertFalse(deleting.isCompleted)
         assertTrue("Deletion must not start while a command still writes", attempts.isEmpty())
         release.complete(Unit)

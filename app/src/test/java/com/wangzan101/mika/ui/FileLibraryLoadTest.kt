@@ -78,6 +78,27 @@ class FileLibraryLoadTest {
         assertFalse(result.partial)
     }
 
+    @Test fun projectMembershipIsReturnedAndFormattedAlongsideTitles() {
+        val store = ConversationStore(tmp.newFolder())
+        store.append("c1", Turn("设计评审", "", "succeeded"))
+        store.setProject("c1", "proj-1")
+        val result = loadLibraryData(
+            snapshot = { FileLibrary(store).snapshot() },
+            summaries = { store.list(includeArchived = true) },
+            draftTitles = emptyMap(),
+            fallbackTitle = { null },
+        )
+        assertEquals(mapOf("c1" to "proj-1"), result.projectIds)
+        assertEquals(
+            "工作区项目 / 设计评审",
+            libraryConversationDisplay("c1", result.titles, result.projectIds, mapOf("proj-1" to "工作区项目")),
+        )
+        assertEquals(
+            "设计评审",
+            libraryConversationDisplay("c1", result.titles, result.projectIds, emptyMap()),
+        )
+    }
+
     @Test fun cancellationIsNotConvertedIntoFailure() {
         try {
             loadLibraryData(snapshot = { throw CancellationException("cancel") }, summaries = { emptyList() },

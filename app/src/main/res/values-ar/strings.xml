@@ -141,4 +141,15 @@
     <string name="personal_replay_pause">إيقاف مؤقت</string>
     <string name="personal_replay_play">تشغيل</string>
     <string name="personal_replay_return_live">العودة إلى البث المباشر</string>
+    <string name="drawer_projects">المشاريع</string>
+    <string name="drawer_new_project">مشروع جديد</string>
+    <string name="drawer_project_new_title">مشروع جديد</string>
+    <string name="drawer_project_name_hint">اسم المشروع</string>
+    <string name="drawer_project_rename_title">إعادة تسمية المشروع</string>
+    <string name="drawer_project_new_chat">محادثة جديدة في المشروع</string>
+    <string name="drawer_project_empty">لا توجد محادثات بعد</string>
+    <string name="drawer_project_delete_title">هل تريد حذف هذا المشروع؟</string>
+    <string name="drawer_project_delete_body">سيتم حذف جميع المحادثات وملفات مساحة العمل المشتركة في "%1$s" ولا يمكن استعادتها.</string>
+    <string name="drawer_project_actions">إجراءات المشروع</string>
+    <string name="chat_project_shared">مشروع</string>
 </resources>

@@ -142,4 +142,15 @@
     <string name="personal_replay_pause">مکث</string>
     <string name="personal_replay_play">پخش</string>
     <string name="personal_replay_return_live">بازگشت به پخش زنده</string>
+    <string name="drawer_projects">پروژه‌ها</string>
+    <string name="drawer_new_project">پروژه جدید</string>
+    <string name="drawer_project_new_title">پروژه جدید</string>
+    <string name="drawer_project_name_hint">نام پروژه</string>
+    <string name="drawer_project_rename_title">تغییر نام پروژه</string>
+    <string name="drawer_project_new_chat">گفت‌وگوی جدید در پروژه</string>
+    <string name="drawer_project_empty">هنوز گفت‌وگویی نیست</string>
+    <string name="drawer_project_delete_title">این پروژه حذف شود؟</string>
+    <string name="drawer_project_delete_body">تمام گفت‌وگوها و فایل‌های فضای کاری مشترک در «%1$s» حذف می‌شوند و قابل بازیابی نیستند.</string>
+    <string name="drawer_project_actions">عملیات پروژه</string>
+    <string name="chat_project_shared">پروژه</string>
 </resources>

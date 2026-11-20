@@ -19,8 +19,8 @@ import com.wangzan101.mika.core.workspace.SandboxPaths
  */
 internal class SandboxCapability(
     private val port: SandboxPort?,
-    /** 本次任务的工作区(对话 ID)。 */
-    workspace: () -> String,
+    /** 本次任务的工作区(对话 ID 或 `p:<projectId>`)。 */
+    private val workspace: () -> String,
     visionEnabled: Boolean,
     onCommand: (String) -> Unit,
     onProgress: (String) -> Unit,
@@ -55,7 +55,8 @@ internal class SandboxCapability(
     override fun sections(env: PromptEnv): List<String> {
         if (!env.isOpen(id) || SandboxGroup.tools.none { it.name in env.offered }) return emptyList()
         val p = port?.takeIf { available() }
-        return listOf(env.gate(section(p?.status() ?: SandboxStatus.NotInstalled, p?.networkAllowed() == true)))
+        val shared = workspace().startsWith(PROJECT_WORKSPACE_PREFIX)
+        return listOf(env.gate(section(p?.status() ?: SandboxStatus.NotInstalled, p?.networkAllowed() == true, sharedWorkspace = shared)))
     }
 
     override val scripts = object : BundledScripts {
@@ -86,12 +87,16 @@ internal class SandboxCapability(
     companion object {
         val KEY = CapabilityKey<SandboxCapability>(SANDBOX)
 
-        /** 沙箱一段:写明此刻是否联网([network]:用户的联网设置);运行环境还没准备好时多一句,第一次用工具会等它。 */
-        fun section(status: SandboxStatus, network: Boolean): String {
-            val s = Prompts.capability(SANDBOX).replace("{{network}}", if (network) NETWORK_ON else NETWORK_OFF)
-            return if (status is SandboxStatus.Ready) s else "$s\n- $PREPARING"
+        /** 沙箱一段:写明此刻是否联网([network]:用户的联网设置);项目共享工作区和运行环境还没准备好时分别补一句。 */
+        fun section(status: SandboxStatus, network: Boolean, sharedWorkspace: Boolean = false): String = buildString {
+            append(Prompts.capability(SANDBOX).replace("{{network}}", if (network) NETWORK_ON else NETWORK_OFF))
+            if (sharedWorkspace) append("\n- ").append(SHARED_WORKSPACE)
+            if (status !is SandboxStatus.Ready) append("\n- ").append(PREPARING)
         }
 
+        private const val PROJECT_WORKSPACE_PREFIX = "p:"
+
+        const val SHARED_WORKSPACE = "This conversation belongs to a project: all conversations in the same project share /workspace, so files created or updated by other conversations in this project may already be present."
         const val PREPARING = "The environment is still being set up in the background. The first tool call waits for it (up to about two minutes); if it is still not ready, the tool says so."
 
         const val NETWORK_ON = "on. The user allowed the sandbox to use the network; anything you send out leaves the phone, so only fetch what the task needs."

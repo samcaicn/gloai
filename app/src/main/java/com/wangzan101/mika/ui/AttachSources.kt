@@ -28,6 +28,7 @@ import androidx.core.content.FileProvider
 import com.wangzan101.mika.cap.sandbox.Attachments
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.chat.AttachFilesProvider
+import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.core.workspace.SandboxPaths
 import com.wangzan101.mika.ui.viewer.FileViewer
 import kotlinx.coroutines.Dispatchers
@@ -108,7 +109,9 @@ object AttachFiles {
         val name = path.substringAfterLast('/')
         val uri = copyToViewing(context, name) { out ->
             val dirs = SandboxDirs(context)
-            dirs.gate.openRead(dirs.workspace(conversationId), rel).use { g -> out.outputStream().use { g.input().copyTo(it) } }
+            dirs.gate.openRead(dirs.workspace(WorkspaceResolver.resolveFor(context, conversationId)), rel).use { g ->
+                out.outputStream().use { g.input().copyTo(it) }
+            }
         } ?: return false
         FileViewer.open(context, uri, name)
         return true
@@ -234,7 +237,7 @@ private class StoredAttachImages(private val context: Context) : AttachImages {
     private fun sentBytes(image: AttachImage.Sent): ByteArray? {
         val rel = AttachFiles.relative(image.path) ?: return null
         val dirs = SandboxDirs(context)
-        return dirs.gate.openRead(dirs.workspace(image.conversationId), rel).use { f ->
+        return dirs.gate.openRead(dirs.workspace(WorkspaceResolver.resolveFor(context, image.conversationId)), rel).use { f ->
             if (f.size > MAX_BYTES) null else f.read(0, f.size.toInt())
         }
     }

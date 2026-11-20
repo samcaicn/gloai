@@ -14,6 +14,7 @@ data class DeviceImportRecord(
     val id: String, val conversationId: String, val sourcePath: String,
     val workspacePath: String, val size: Long, val importedAt: Long,
     val sourceModifiedSeconds: Long?, val sourceModifiedNanos: Long?,
+    val workspaceId: String = conversationId,
 )
 
 class DeviceImportStore(private val prefs: SharedPreferences) {
@@ -22,6 +23,10 @@ class DeviceImportStore(private val prefs: SharedPreferences) {
 
     fun list(conversationId: String): List<DeviceImportRecord> = synchronized(lock) {
         read().filter { it.conversationId == conversationId }
+    }
+
+    fun listByWorkspace(workspaceId: String): List<DeviceImportRecord> = synchronized(lock) {
+        read().filter { it.workspaceId == workspaceId }
     }
 
     /** Emits the current snapshot and updates after successful writes in this process. */
@@ -34,6 +39,13 @@ class DeviceImportStore(private val prefs: SharedPreferences) {
         if (remaining.size != current.size) write(remaining)
     }
 
+    /** Removes all import records belonging to a workspace (e.g., deleted project workspace). */
+    fun removeWorkspace(workspaceId: String) = synchronized(lock) {
+        val current = read()
+        val remaining = current.filterNot { it.workspaceId == workspaceId }
+        if (remaining.size != current.size) write(remaining)
+    }
+
     internal fun add(record: DeviceImportRecord) = synchronized(lock) { write(read() + record) }
 
     private fun write(records: List<DeviceImportRecord>) {
@@ -42,6 +54,7 @@ class DeviceImportStore(private val prefs: SharedPreferences) {
             put("records", buildJsonArray { records.forEach { r -> add(buildJsonObject {
                 put("id", r.id); put("conversationId", r.conversationId); put("sourcePath", r.sourcePath)
                 put("workspacePath", r.workspacePath); put("size", r.size); put("importedAt", r.importedAt)
+                if (r.workspaceId != r.conversationId) put("workspaceId", r.workspaceId)
                 r.sourceModifiedSeconds?.let { put("sourceModifiedSeconds", it) }
                 r.sourceModifiedNanos?.let { put("sourceModifiedNanos", it) }
             }) } })
@@ -59,10 +72,12 @@ class DeviceImportStore(private val prefs: SharedPreferences) {
         check(root.getValue("schemaVersion").jsonPrimitive.int == 1) { "Unsupported device import schema" }
         return root.getValue("records").jsonArray.map { element ->
             val o = element.jsonObject
-            DeviceImportRecord(o.getValue("id").jsonPrimitive.content, o.getValue("conversationId").jsonPrimitive.content,
+            val conversationId = o.getValue("conversationId").jsonPrimitive.content
+            DeviceImportRecord(o.getValue("id").jsonPrimitive.content, conversationId,
                 o.getValue("sourcePath").jsonPrimitive.content, o.getValue("workspacePath").jsonPrimitive.content,
                 o.getValue("size").jsonPrimitive.long, o.getValue("importedAt").jsonPrimitive.long,
-                o["sourceModifiedSeconds"]?.jsonPrimitive?.long, o["sourceModifiedNanos"]?.jsonPrimitive?.long)
+                o["sourceModifiedSeconds"]?.jsonPrimitive?.long, o["sourceModifiedNanos"]?.jsonPrimitive?.long,
+                o["workspaceId"]?.jsonPrimitive?.contentOrNull ?: conversationId)
         }
     }
 

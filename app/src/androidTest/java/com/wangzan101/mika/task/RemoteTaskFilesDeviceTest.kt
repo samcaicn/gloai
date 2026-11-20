@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.core.agent.AttachmentLines
 import com.wangzan101.mika.core.remote.PendingUploads
 import com.wangzan101.mika.core.remote.RemoteTask
@@ -92,7 +93,7 @@ class RemoteTaskFilesDeviceTest {
             }
             val inputs = AttachmentLines.parse(app.remoteTasks.get(task)!!.goal).files
             val input = inputs.first().first
-            val workspace = SandboxDirs(app).workspace(usedConversation)
+            val workspace = SandboxDirs(app).workspace(WorkspaceKey.Conversation(usedConversation))
             assertArrayEquals(csv, File(workspace, input.removePrefix("/workspace/")).readBytes())
             if (driverId != null) {
                 assertEquals(2, inputs.size)
@@ -130,7 +131,7 @@ class RemoteTaskFilesDeviceTest {
             receipt.delete()
             exported?.let { app.contentResolver.delete(it, null, null) }
             app.conversations.delete(usedConversation)
-            SandboxDirs(app).workspace(usedConversation).deleteRecursively()
+            SandboxDirs(app).workspace(WorkspaceKey.Conversation(usedConversation)).deleteRecursively()
             client.connectionPool.evictAll()
             client.dispatcher.executorService.shutdown()
         }

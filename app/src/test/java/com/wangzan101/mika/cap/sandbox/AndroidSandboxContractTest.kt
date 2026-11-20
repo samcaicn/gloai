@@ -22,7 +22,7 @@ class AndroidSandboxContractTest : SandboxPathContract() {
         val sb = AndroidSandbox(dirs(), { SandboxStatus.Ready(false) }, { emptyList() })
         assertNotNull(sb.hostRoot("fresh", "/workspace/a.txt", forWrite = false))
         sb.uploadCheck("fresh", "/workspace/a.txt")
-        assertFalse(dirs().workspace("fresh").exists())
+        assertFalse(dirs().workspace(WorkspaceKey.Conversation("fresh")).exists())
         assertFalse(dirs().work.exists())
     }
 }

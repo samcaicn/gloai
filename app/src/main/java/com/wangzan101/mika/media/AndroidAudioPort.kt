@@ -5,6 +5,7 @@ import android.webkit.MimeTypeMap
 import com.wangzan101.mika.cap.audio.AudioExporter
 import com.wangzan101.mika.cap.sandbox.Attachments
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.core.cap.audio.AudioPort
 import com.wangzan101.mika.core.model.SavedAudio
 import com.wangzan101.mika.core.model.StoredAudio
@@ -30,11 +31,12 @@ class AndroidAudioPort(
     private val onSpeak: suspend (TtsResponse) -> Unit = {},
     private val defaultVoice: String? = null,
     private val defaultSpeed: Float? = null,
+    private val resolveWorkspace: (String) -> WorkspaceKey = WorkspaceKey::Conversation,
 ) : AudioPort {
     override val modelName: String get() = model.name
 
     private val dirs by lazy { SandboxDirs(context) }
-    private val workspace: File by lazy { dirs.workspace(conversationId) }
+    private val workspace: File by lazy { dirs.workspace(resolveWorkspace(conversationId)) }
 
     override suspend fun synthesize(request: TtsRequest): TtsResponse = model.synthesize(request.copy(
         voice = request.voice ?: defaultVoice,

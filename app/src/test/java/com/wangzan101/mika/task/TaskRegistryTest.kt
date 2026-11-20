@@ -183,4 +183,36 @@ class TaskRegistryTest {
         assertEquals(listOf("下一件"), registry.takeReady().map { it.text })
         assertTrue(registry.deferOrStart("c", "空着的对话", "id-c"))
     }
+
+    @Test fun sameWorkspaceConversationsSerializeWhileOtherWorkspacesRunInParallel() {
+        val workspaces = mapOf("p1-a" to "p:proj-1", "p1-b" to "p:proj-1", "p1-c" to "p:proj-1", "other" to "other")
+        val shared = TaskRegistry<Run>(
+            { ParallelLimit(2, null) },
+            { it.conversationId },
+            { it.key },
+            workspaceOf = { workspaces[it.conversationId] ?: it.conversationId },
+            resolveWorkspace = { workspaces[it] ?: it },
+        ) { c, g -> Run(c, g) }
+
+        val first = (shared.tryStart("p1-a", "步1") as StartResult.Started).run
+        val second = (shared.tryStart("p1-b", "步2") as StartResult.Queued)
+        val third = (shared.tryStart("p1-c", "步3") as StartResult.Queued)
+        val other = (shared.tryStart("other", "独立任务") as StartResult.Started).run
+
+        assertEquals(1, second.position)
+        assertEquals(2, third.position)
+        assertEquals(listOf(first, other), shared.running())
+
+        // 结束 other 时，p1-b/p1-c 仍需等 p1-a 完成，不能并发跑进 p:proj-1
+        assertEquals(emptyList<Run>(), shared.onEnded(other))
+        assertEquals(listOf(first), shared.running())
+
+        // 结束 p1-a 时仅按 FIFO 放出 p1-b，p1-c 继续排队
+        assertEquals(listOf(second.run), shared.onEnded(first))
+        assertEquals(listOf(second.run), shared.running())
+        assertEquals(listOf(third.run), shared.queued())
+
+        assertEquals(listOf(third.run), shared.onEnded(second.run))
+        assertEquals(listOf(third.run), shared.running())
+    }
 }

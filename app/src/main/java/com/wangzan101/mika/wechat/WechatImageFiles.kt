@@ -6,6 +6,7 @@ import com.wangzan101.mika.cap.sandbox.AndroidSandbox
 import com.wangzan101.mika.cap.sandbox.Attachments
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.cap.sandbox.SandboxState
+import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.wechat.WechatApi
@@ -43,8 +44,8 @@ internal fun androidWechatImages(context: Context, api: WechatApi): WechatImageF
     val sandbox = AndroidSandbox(context, SandboxState.get(context))
     return StoredWechatImages(
         File(context.cacheDir, "wechat-images"), api::downloadImage, ::prepareWechatImage,
-        dirs::workspace, dirs.gate, dirs.tree,
-        { thread -> sandbox.freeBytes() >= Attachments.MIN_FREE && sandbox.workspaceBytes(thread) <= Attachments.WORKSPACE_MAX },
+        { thread -> dirs.workspace(WorkspaceResolver.resolveFor(context, thread)) }, dirs.gate, dirs.tree,
+        { thread -> sandbox.freeBytes() >= Attachments.MIN_FREE && sandbox.workspaceBytes(WorkspaceResolver.resolveFor(context, thread)) <= Attachments.WORKSPACE_MAX },
         { uri -> context.contentResolver.openInputStream(Uri.parse(uri)) },
     )
 }

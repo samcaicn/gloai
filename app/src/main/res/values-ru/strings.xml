@@ -141,4 +141,15 @@
     <string name="personal_replay_pause">Пауза</string>
     <string name="personal_replay_play">Воспроизвести</string>
     <string name="personal_replay_return_live">Вернуться к прямому эфиру</string>
+    <string name="drawer_projects">Проекты</string>
+    <string name="drawer_new_project">Новый проект</string>
+    <string name="drawer_project_new_title">Новый проект</string>
+    <string name="drawer_project_name_hint">Название проекта</string>
+    <string name="drawer_project_rename_title">Переименовать проект</string>
+    <string name="drawer_project_new_chat">Новый чат в проекте</string>
+    <string name="drawer_project_empty">Пока нет чатов</string>
+    <string name="drawer_project_delete_title">Удалить этот проект?</string>
+    <string name="drawer_project_delete_body">Все чаты и общие файлы рабочего пространства в «%1$s» будут удалены без возможности восстановления.</string>
+    <string name="drawer_project_actions">Действия с проектом</string>
+    <string name="chat_project_shared">Проект</string>
 </resources>

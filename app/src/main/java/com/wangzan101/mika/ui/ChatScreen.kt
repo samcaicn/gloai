@@ -233,6 +233,8 @@ fun ChatScreen(
     }
     val recommendedTasks by recommendedTasksFlow.collectAsState()
     val ui by vm.ui.collectAsState()
+    val projects by vm.projects.collectAsState()
+    val currentProject = remember(projects, ui.projectId) { ui.projectId?.let { pid -> projects.firstOrNull { it.id == pid } } }
     var deviceBrowserConversation by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(ui.conversationId, deviceBrowserConversation) {
         if (deviceBrowserConversation != null && deviceBrowserConversation != vm.ui.value.conversationId) deviceBrowserConversation = null
@@ -510,6 +512,23 @@ fun ChatScreen(
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(MikaIcons.New, stringResource(R.string.chat_new), Modifier.size(MikaSize.Icon), tint = c.ink)
+                        }
+                    }
+                }
+                if (currentProject != null) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        GlassSurface(backdrop = backdrop, modifier = Modifier.testTag("chat-project-pill")) {
+                            Row(
+                                Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            ) {
+                                Icon(MikaIcons.Folder, stringResource(R.string.chat_project_shared), Modifier.size(12.dp), tint = c.ink2)
+                                Text(currentProject.name, style = MikaType.Hint, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
                     }
                 }

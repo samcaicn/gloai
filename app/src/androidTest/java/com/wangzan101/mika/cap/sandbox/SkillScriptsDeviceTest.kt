@@ -46,7 +46,7 @@ class SkillScriptsDeviceTest {
 
     @Before fun setUp() {
         assumeTrue("sandbox not installed", sb.status() is SandboxStatus.Ready)
-        SandboxDirs(context).workspace(ws).apply { deleteRecursively(); mkdirs() }
+        SandboxDirs(context).workspace(WorkspaceKey.Conversation(ws)).apply { deleteRecursively(); mkdirs() }
     }
 
     private fun runScript(skill: String, script: String, vararg args: String): JsonObject = runBlocking {
@@ -85,7 +85,7 @@ class SkillScriptsDeviceTest {
     }
 
     @Test fun extractPdfGetsText() {
-        File(SandboxDirs(context).workspace(ws), "inbox/sample.pdf").apply { parentFile!!.mkdirs() }
+        File(SandboxDirs(context).workspace(WorkspaceKey.Conversation(ws)), "inbox/sample.pdf").apply { parentFile!!.mkdirs() }
             .writeBytes(samplePdf("Hello from Mika page one", "Second page text"))
         val r = runScript("skills/documents", "scripts/extract_pdf.py", "inbox/sample.pdf")
         assertRan(r)

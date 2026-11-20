@@ -9,6 +9,7 @@ import com.wangzan101.mika.cap.phone.shell.HelperHub
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
 import com.wangzan101.mika.cap.sandbox.Attachments
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.settings.DeviceDirectory
 import com.wangzan101.mika.settings.DeviceDirectoryStore
 import com.wangzan101.mika.core.cap.devicefiles.DeviceDirectoryHint
@@ -33,6 +34,8 @@ internal class AndroidDeviceFiles(
     private val sandbox: AndroidSandbox,
     private val directoryStore: DeviceDirectoryStore,
     private val imports: DeviceImportStore,
+    private val resolveWorkspace: (String) -> WorkspaceKey = WorkspaceKey::parse,
+    private val conversationIdFor: (String) -> String = { it },
 ) : DeviceFilesPort {
     private fun hint(directory: DeviceDirectory): DeviceDirectoryHint {
         val status = try { hub.listFiles(directory.path, null, 1).getString("status") ?: "helper_error" }
@@ -105,18 +108,20 @@ internal class AndroidDeviceFiles(
                 ?: throw failure("helper_error", "Phone helper did not return a file.")
             descriptor.use { fd ->
                 val metadata = metadata(fd)
-                val records = try { imports.list(workspace) } catch (e: Exception) {
+                val key = resolveWorkspace(workspace)
+                val convId = conversationIdFor(workspace)
+                val records = try { imports.listByWorkspace(key.wire) } catch (e: Exception) {
                     throw failure("record_error", "Could not read device import records.")
                 }
                 if (metadata != null) {
                     val existing = records.asReversed().firstOrNull { record ->
                         record.sourcePath == path && record.size == metadata.size &&
                             record.sourceModifiedSeconds == metadata.seconds && record.sourceModifiedNanos == metadata.nanos &&
-                            readableCopy(workspace, record)
+                            readableCopy(key, record)
                     }
                     if (existing != null) return@withContext DeviceFileImport(existing.workspacePath, existing.size)
                 }
-                val root = dirs.workspace(workspace)
+                val root = dirs.workspace(key)
                 val base = Attachments.safeName(File(path).name)
                 val result = Attachments.importOne(
                     root,
@@ -135,8 +140,8 @@ internal class AndroidDeviceFiles(
                 // Only retain metadata when the open source stayed unchanged throughout the copy.
                 val stable = metadata?.takeIf { it == metadata(fd) && it.size == entry.second }
                 try {
-                    imports.add(DeviceImportRecord(UUID.randomUUID().toString(), workspace, path, entry.first, entry.second,
-                        System.currentTimeMillis(), stable?.seconds, stable?.nanos))
+                    imports.add(DeviceImportRecord(UUID.randomUUID().toString(), convId, path, entry.first, entry.second,
+                        System.currentTimeMillis(), stable?.seconds, stable?.nanos, workspaceId = key.wire))
                 } catch (e: Exception) {
                     throw failure("record_error", "The file was copied, but its import record could not be saved.")
                 }
@@ -153,13 +158,13 @@ internal class AndroidDeviceFiles(
         else SourceMetadata(stat.st_size, stat.st_mtim.tv_sec, stat.st_mtim.tv_nsec)
     } catch (_: Exception) { null }
 
-    private fun readableCopy(workspace: String, record: DeviceImportRecord): Boolean {
+    private fun readableCopy(key: WorkspaceKey, record: DeviceImportRecord): Boolean {
         val prefix = "/workspace/inbox/"
         if (!record.workspacePath.startsWith(prefix)) return false
         val name = record.workspacePath.removePrefix(prefix)
         if (name.isEmpty() || '/' in name || name == "." || name == "..") return false
         return try {
-            dirs.gate.openRead(dirs.workspace(workspace), "inbox/$name").use {
+            dirs.gate.openRead(dirs.workspace(key), "inbox/$name").use {
                 it.currentSize() == record.size && (record.size == 0L || it.read(0, 1).size == 1)
             }
         } catch (_: Exception) { false }

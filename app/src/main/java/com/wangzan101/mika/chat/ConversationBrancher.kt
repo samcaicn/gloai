@@ -2,6 +2,7 @@ package com.wangzan101.mika.chat
 
 import android.content.Context
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.core.workspace.SandboxPaths
 import com.wangzan101.mika.core.workspace.SandboxError
 import com.wangzan101.mika.core.workspace.WorkspaceFileGate
@@ -57,14 +58,22 @@ interface BranchWorkspace {
 }
 
 /** 手机上的实现:两个工作区都在 files/sandbox/ 里,复制时拿同一把树锁,和重置、任务共用工作区互斥。 */
-class AndroidBranchWorkspace(private val dirs: SandboxDirs) : BranchWorkspace {
-    constructor(context: Context) : this(SandboxDirs(context))
+class AndroidBranchWorkspace(
+    private val dirs: SandboxDirs,
+    private val resolveWorkspace: (String) -> WorkspaceKey = WorkspaceKey::Conversation,
+) : BranchWorkspace {
+    constructor(context: Context) : this(SandboxDirs(context), WorkspaceResolver.resolver(context))
 
     override suspend fun copyInbox(sourceId: String, targetId: String, maxBytes: Long): BranchCopyResult? =
         dirs.tree.shared {
             withContext(Dispatchers.IO) {
-                val inbox = copyInboxTree(dirs.workspace(sourceId), dirs.workspace(targetId), maxBytes) ?: return@withContext null
-                val audio = copyGeneratedAudioTree(dirs.workspace(sourceId), dirs.workspace(targetId), maxBytes) ?: return@withContext inbox
+                val src = resolveWorkspace(sourceId)
+                val dst = resolveWorkspace(targetId)
+                if (src == dst) return@withContext null
+                val srcDir = dirs.workspace(src)
+                val dstDir = dirs.workspace(dst)
+                val inbox = copyInboxTree(srcDir, dstDir, maxBytes) ?: return@withContext null
+                val audio = copyGeneratedAudioTree(srcDir, dstDir, maxBytes) ?: return@withContext inbox
                 BranchCopyResult(inbox.copied + audio.copied, inbox.skipped + audio.skipped, inbox.truncated || audio.truncated)
             }
         }
@@ -73,13 +82,16 @@ class AndroidBranchWorkspace(private val dirs: SandboxDirs) : BranchWorkspace {
         sourceId: String, targetId: String, paths: List<String>, maxBytes: Long,
     ): List<RetryAttachmentResult> = dirs.tree.shared {
         withContext(Dispatchers.IO) {
+            val src = resolveWorkspace(sourceId)
+            val dst = resolveWorkspace(targetId)
+            if (src == dst) return@withContext checkRetryAttachments(dirs.workspace(dst), paths, dirs.gate)
             val context = currentCoroutineContext()
-            copyRetryAttachments(dirs.workspace(sourceId), dirs.workspace(targetId), paths, maxBytes, dirs.gate) { context.ensureActive() }
+            copyRetryAttachments(dirs.workspace(src), dirs.workspace(dst), paths, maxBytes, dirs.gate) { context.ensureActive() }
         }
     }
 
     override suspend fun checkInboxAttachments(targetId: String, paths: List<String>): List<RetryAttachmentResult> =
-        dirs.tree.shared { withContext(Dispatchers.IO) { checkRetryAttachments(dirs.workspace(targetId), paths, dirs.gate) } }
+        dirs.tree.shared { withContext(Dispatchers.IO) { checkRetryAttachments(dirs.workspace(resolveWorkspace(targetId)), paths, dirs.gate) } }
 }
 
 private const val INBOX = "inbox"

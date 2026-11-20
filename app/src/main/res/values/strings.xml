@@ -159,4 +159,15 @@
     <string name="personal_replay_pause">Pause</string>
     <string name="personal_replay_play">Play</string>
     <string name="personal_replay_return_live">Return to live</string>
+    <string name="drawer_projects">Projects</string>
+    <string name="drawer_new_project">New project</string>
+    <string name="drawer_project_new_title">New project</string>
+    <string name="drawer_project_name_hint">Project name</string>
+    <string name="drawer_project_rename_title">Rename project</string>
+    <string name="drawer_project_new_chat">New chat in project</string>
+    <string name="drawer_project_empty">No chats yet</string>
+    <string name="drawer_project_delete_title">Delete this project?</string>
+    <string name="drawer_project_delete_body">All chats and shared workspace files in "%1$s" will be deleted and cannot be recovered.</string>
+    <string name="drawer_project_actions">Project actions</string>
+    <string name="chat_project_shared">Project</string>
 </resources>

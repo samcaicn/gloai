@@ -61,6 +61,7 @@ import com.wangzan101.mika.cap.phone.PhoneServices
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.cap.sandbox.SandboxState
+import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.core.cap.devicefiles.DeviceFileEntry
 import com.wangzan101.mika.core.cap.devicefiles.DeviceFileSearchQuery
 import com.wangzan101.mika.core.cap.devicefiles.DeviceFilesPort
@@ -131,11 +132,13 @@ internal fun DeviceFileBrowser(vm: ChatViewModel, conversationId: String, onClos
             AndroidSandbox(context, SandboxState.get(context)),
             directories,
             importStore,
+            resolveWorkspace = WorkspaceResolver.resolver(context),
         )
     }
     val records by remember(importStore) {
         importStore.recordsFlow().catch { emit(emptyList()) }
     }.collectAsState(initial = emptyList())
+    val workspaceId = remember(context, conversationId) { WorkspaceResolver.resolveFor(context, conversationId).wire }
     DeviceFileBrowserDialog(
         files = files,
         loadRootDescriptions = { authorized ->
@@ -143,7 +146,7 @@ internal fun DeviceFileBrowser(vm: ChatViewModel, conversationId: String, onClos
                 directories.directories().filter { it.path in authorized }.associate { it.path to it.description }
             }
         },
-        records = records.filter { it.conversationId == conversationId }.asReversed(),
+        records = records.filter { it.workspaceId == workspaceId }.asReversed(),
         onAddSelected = { selectedPaths ->
             if (FeatureFlags.get(context).deviceFiles()) {
                 vm.importDeviceAttachments(conversationId, selectedPaths, files::importFile)

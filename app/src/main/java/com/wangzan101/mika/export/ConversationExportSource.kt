@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
 import com.wangzan101.mika.chat.SharedFile
+import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.export.AssetKind
 import com.wangzan101.mika.core.export.AssetRequest
@@ -60,7 +61,7 @@ class ConversationExportSource(
     }
 
     override suspend fun resolve(request: AssetRequest): ExportAsset? = withContext(Dispatchers.IO) {
-        val workspace = dirs.workspace(conversationId)
+        val workspace = dirs.workspace(WorkspaceResolver.resolveFor(app, conversationId))
         when (request) {
             is AssetRequest.Workspace -> {
                 // 只读工作区里的相对路径;gate 会拒绝链接、目录和非普通文件
@@ -99,9 +100,10 @@ class ConversationExportSource(
 
     override suspend fun open(asset: ExportAsset): InputStream? = withContext(Dispatchers.IO) {
         runCatching {
+            val workspace = dirs.workspace(WorkspaceResolver.resolveFor(app, conversationId))
             when (val request = asset.request) {
-                is AssetRequest.Workspace -> gated(dirs.gate.openRead(dirs.workspace(conversationId), request.path.removePrefix("/workspace/")))
-                is AssetRequest.UserScreen -> gated(dirs.gate.openRead(dirs.workspace(conversationId), "screens/${request.screenId}.jpg"))
+                is AssetRequest.Workspace -> gated(dirs.gate.openRead(workspace, request.path.removePrefix("/workspace/")))
+                is AssetRequest.UserScreen -> gated(dirs.gate.openRead(workspace, "screens/${request.screenId}.jpg"))
                 is AssetRequest.ContentUri -> app.contentResolver.openInputStream(Uri.parse(request.uri))
             }
         }.getOrNull()

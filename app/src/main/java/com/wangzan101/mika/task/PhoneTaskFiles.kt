@@ -8,6 +8,7 @@ import com.wangzan101.mika.cap.sandbox.Attachments
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.cap.sandbox.SandboxState
 import com.wangzan101.mika.chat.SharedFile
+import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.core.agent.AttachmentLines
 import com.wangzan101.mika.core.remote.PendingUploads
 import com.wangzan101.mika.core.remote.RemoteTask
@@ -32,13 +33,14 @@ internal class PhoneTaskFiles(private val context: Context, private val exported
     override fun start(conversation: String, goal: String, files: List<Upload>, launch: (String) -> RemoteTask): RemoteTask {
         val dirs = SandboxDirs(context)
         val sandbox = AndroidSandbox(context, SandboxState.get(context))
+        val key = WorkspaceResolver.resolveFor(context, conversation)
         val bytes = files.sumOf { it.size }
-        if (sandbox.freeBytes() - bytes < Attachments.MIN_FREE || sandbox.workspaceBytes(conversation) + bytes > Attachments.WORKSPACE_MAX)
+        if (sandbox.freeBytes() - bytes < Attachments.MIN_FREE || sandbox.workspaceBytes(key) + bytes > Attachments.WORKSPACE_MAX)
             throw IOException("Not enough space for attachments")
         return runBlocking(Dispatchers.IO) {
             try {
-                Attachments.withTaskFiles(files.map { it.name to it.path }, dirs.workspace(conversation), dirs.gate, dirs.tree,
-                    { sandbox.freeBytes() >= Attachments.MIN_FREE && sandbox.workspaceBytes(conversation) <= Attachments.WORKSPACE_MAX }) { stored ->
+                Attachments.withTaskFiles(files.map { it.name to it.path }, dirs.workspace(key), dirs.gate, dirs.tree,
+                    { sandbox.freeBytes() >= Attachments.MIN_FREE && sandbox.workspaceBytes(key) <= Attachments.WORKSPACE_MAX }) { stored ->
                     launch(AttachmentLines.composeBytes(goal, stored))
                 }
             } catch (e: SandboxError) { throw IOException("Cannot import into this workspace", e) }

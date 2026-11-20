@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -118,5 +119,26 @@ class ConversationDeleterTest {
         assertTrue(runCatching { deleter(store).delete("a") }.exceptionOrNull() is IOException)
         assertTrue("a" in workspaces)
         assertTrue(calls.isEmpty())
+    }
+
+    @Test fun deletingProjectConversationDeletesHistoryButKeepsSharedWorkspace() = runTest {
+        val store = store()
+        store.setProject("a", "proj-shared")
+        var removedImportFor: String? = null
+        ConversationDeleter(
+            store, active,
+            cancelTasks = { calls += "cancel:$it" },
+            schedulesOf = { emptyList() },
+            deleteWorkspace = { calls += "workspace:$it"; workspaces.remove(it) },
+            stopWaitMs = 5_000,
+            io = EmptyCoroutineContext,
+            onDeleted = { removedImportFor = it },
+        ).delete("a")
+
+        assertEquals(listOf("b"), store.list().map { it.id })
+        assertNull(store.projectId("a"))
+        assertTrue("项目成员删对话时不能删共享工作区", "a" in workspaces)
+        assertFalse(calls.any { it.startsWith("workspace:") })
+        assertEquals("a", removedImportFor)
     }
 }

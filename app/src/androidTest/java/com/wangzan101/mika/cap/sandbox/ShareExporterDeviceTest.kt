@@ -20,7 +20,7 @@ import java.nio.file.Files
 class ShareExporterDeviceTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val exporter = ShareExporter(context)
-    private val ws = SandboxDirs(context).workspace("share-device-test").apply { mkdirs() }
+    private val ws = SandboxDirs(context).workspace(WorkspaceKey.Conversation("share-device-test")).apply { mkdirs() }
     private val exported = mutableListOf<String>()
 
     @After fun cleanUp() {

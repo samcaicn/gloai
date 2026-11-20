@@ -3,6 +3,7 @@ package com.wangzan101.mika.media
 import android.content.Context
 import android.webkit.MimeTypeMap
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.core.cap.transcribe.TranscribeError
 import com.wangzan101.mika.core.cap.transcribe.TranscribePort
 import com.wangzan101.mika.core.cap.transcribe.Transcript
@@ -24,9 +25,10 @@ class AndroidTranscribePort(
     private val context: Context,
     private val conversationId: String,
     private val choice: SpeechChoice.Provider,
+    private val resolveWorkspace: (String) -> WorkspaceKey = WorkspaceKey::Conversation,
 ) : TranscribePort {
     private val dirs by lazy { SandboxDirs(context) }
-    private val workspace: File by lazy { dirs.workspace(conversationId) }
+    private val workspace: File by lazy { dirs.workspace(resolveWorkspace(conversationId)) }
 
     override suspend fun transcribe(path: String, language: String?): Transcript {
         val rel = relative(path) ?: throw TranscribeError.Unsupported("the path must be under ${SandboxPaths.WORKSPACE}")

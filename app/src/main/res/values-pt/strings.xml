@@ -141,4 +141,15 @@
     <string name="personal_replay_pause">Pausar</string>
     <string name="personal_replay_play">Reproduzir</string>
     <string name="personal_replay_return_live">Voltar ao vivo</string>
+    <string name="drawer_projects">Projetos</string>
+    <string name="drawer_new_project">Novo projeto</string>
+    <string name="drawer_project_new_title">Novo projeto</string>
+    <string name="drawer_project_name_hint">Nome do projeto</string>
+    <string name="drawer_project_rename_title">Renomear projeto</string>
+    <string name="drawer_project_new_chat">Nova conversa no projeto</string>
+    <string name="drawer_project_empty">Ainda não há conversas</string>
+    <string name="drawer_project_delete_title">Excluir este projeto?</string>
+    <string name="drawer_project_delete_body">Todas as conversas e arquivos compartilhados do espaço de trabalho em "%1$s" serão excluídos e não poderão ser recuperados.</string>
+    <string name="drawer_project_actions">Ações do projeto</string>
+    <string name="chat_project_shared">Projeto</string>
 </resources>

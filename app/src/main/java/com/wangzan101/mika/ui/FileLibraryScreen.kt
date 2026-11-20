@@ -85,7 +85,21 @@ private data class LibraryLoaded(
     val archived: Set<String>,
     val partial: Boolean,
     val failed: Boolean = false,
+    /** 对话所属的项目编号,用于把项目名一并标出。 */
+    val projectIds: Map<String, String> = emptyMap(),
 )
+
+/** 拼接对话显示名:属于项目时带上项目名,没项目时只显示对话标题。 */
+internal fun libraryConversationDisplay(
+    id: String,
+    titles: Map<String, String>,
+    projectIds: Map<String, String>,
+    projectNames: Map<String, String>,
+): String? {
+    val title = titles[id] ?: return null
+    val project = projectIds[id]?.let(projectNames::get)?.takeIf { it.isNotBlank() }
+    return if (project != null) "$project / $title" else title
+}
 
 /** 「在对话中查看」跳到哪一行:输入文件回到附上它的那条用户消息,产物回到这一轮的文件卡片。 */
 internal fun fileLibraryTarget(source: FileSource, input: Boolean): ChatTarget =
@@ -98,6 +112,7 @@ internal data class LibraryLoadResult(
     val titles: Map<String, String>,
     val archived: Set<String>,
     val partial: Boolean,
+    val projectIds: Map<String, String> = emptyMap(),
 )
 
 /** 索引和会话标题分别读取，一边出错不能阻止另一边显示。取消仍交给协程处理。 */
@@ -121,6 +136,7 @@ internal fun loadLibraryData(
     val names = listed?.associate { it.id to ChatCopy.plainTitle(it.title) }?.toMutableMap() ?: draftTitles.toMutableMap()
     // 归档状态和标题来自同一次读取,不额外扫一遍对话目录
     val archived = listed.orEmpty().filter { it.archivedAt != null }.map { it.id }.toSet()
+    val projectIds = listed.orEmpty().mapNotNull { s -> s.projectId?.let { s.id to it } }.toMap()
     draftTitles.forEach { (id, title) -> names.putIfAbsent(id, title) }
     files?.files?.forEach { file ->
         val ids = when (file) {
@@ -131,7 +147,7 @@ internal fun loadLibraryData(
             if (id !in names) names[id] = attempt { fallbackTitle(id) } ?: id
         }
     }
-    return LibraryLoadResult(files, names, archived, partial || files?.hasReadFailures == true)
+    return LibraryLoadResult(files, names, archived, partial || files?.hasReadFailures == true, projectIds)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -201,7 +217,7 @@ internal fun FileLibraryScreen(
             val titles = result.titles.toMutableMap()
             importRecords.forEach { record -> titles.putIfAbsent(record.conversationId, record.conversationId) }
             LibraryLoaded(rows.sortedByDescending { it.at ?: Long.MIN_VALUE }, titles, result.archived,
-                result.partial || importReadFailed, failed = result.snapshot == null && importReadFailed)
+                result.partial || importReadFailed, failed = result.snapshot == null && importReadFailed, projectIds = result.projectIds)
         } } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -237,6 +253,10 @@ internal fun FileLibraryScreen(
             (type == null || type == it.type)
     }
     val titles = loaded?.titles.orEmpty()
+    val projectIds = loaded?.projectIds.orEmpty()
+    val projects by vm.projects.collectAsState()
+    val projectNames = remember(projects) { projects.associate { it.id to it.name } }
+    fun displayTitle(id: String): String? = libraryConversationDisplay(id, titles, projectIds, projectNames)
     val archivedIds = loaded?.archived.orEmpty()
     val rowKeys = allRows.map { it.key }
     LaunchedEffect(rowKeys) {
@@ -347,7 +367,7 @@ internal fun FileLibraryScreen(
         2 -> R.string.file_library_output
         else -> R.string.file_library_sources
     })
-    val conversationLabel = conversation?.let { titles[it] ?: stringResource(R.string.file_library_current) }
+    val conversationLabel = conversation?.let { displayTitle(it) ?: stringResource(R.string.file_library_current) }
         ?: stringResource(R.string.file_library_all)
     val typeLabel = stringResource(type?.label ?: R.string.file_library_type_all)
     PageBackground {
@@ -399,7 +419,7 @@ internal fun FileLibraryScreen(
                                 conversationMenu = false
                             }
                             titles.forEach { (id, title) ->
-                                FilterMenuItem(title, conversation == id) {
+                                FilterMenuItem(displayTitle(id) ?: title, conversation == id) {
                                     conversation = id
                                     conversationMenu = false
                                 }
@@ -492,7 +512,7 @@ internal fun FileLibraryScreen(
                                     selected = item.key in selected,
                                     selecting = selecting,
                                     working = working,
-                                    conversationLabel = item.conversations.joinToString(" · ") { titles[it] ?: it },
+                                    conversationLabel = item.conversations.joinToString(" · ") { displayTitle(it) ?: it },
                                     fromArchived = item.conversations.any { it in archivedIds },
                                     sourceLabel = stringResource(if (item.deviceImport) R.string.dev_device_files else if (item.input) R.string.file_library_input else R.string.file_library_output),
                                     divider = index > 0,
@@ -553,7 +573,7 @@ internal fun FileLibraryScreen(
                     choosing = null
                     add(item, store.newConversation())
                 }.padding(vertical = 12.dp))
-                titles.filter { (id, _) -> vm.canSwitch() || id == vm.ui.value.conversationId }.forEach { (id, title) -> Text(title, Modifier.fillMaxWidth().clickable {
+                titles.filter { (id, _) -> vm.canSwitch() || id == vm.ui.value.conversationId }.forEach { (id, title) -> Text(displayTitle(id) ?: title, Modifier.fillMaxWidth().clickable {
                     choosing = null
                     add(item, id)
                 }.padding(vertical = 12.dp), maxLines = 1, overflow = TextOverflow.Ellipsis) }
@@ -571,7 +591,7 @@ internal fun FileLibraryScreen(
                     choosingBatch = false
                     addSelected(store.newConversation())
                 }.padding(vertical = 12.dp))
-                titles.filter { (id, _) -> vm.canSwitch() || id == vm.ui.value.conversationId }.forEach { (id, title) -> Text(title, Modifier.fillMaxWidth().clickable {
+                titles.filter { (id, _) -> vm.canSwitch() || id == vm.ui.value.conversationId }.forEach { (id, title) -> Text(displayTitle(id) ?: title, Modifier.fillMaxWidth().clickable {
                     choosingBatch = false
                     addSelected(id)
                 }.padding(vertical = 12.dp), maxLines = 1, overflow = TextOverflow.Ellipsis) }

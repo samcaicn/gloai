@@ -10,7 +10,7 @@ import java.util.TimeZone
 
 class ProcRunnerArgsTest {
     private val dirs = SandboxDirs(File("/data/m/files/sandbox"), File("/data/m/cache/proot-tmp"), File("/data/app/lib/arm64"), JVM_GATE, SandboxTree())
-    private val ws = dirs.workspace("conv1")
+    private val ws = dirs.workspace(WorkspaceKey.Conversation("conv1"))
 
     private fun List<String>.hasPair(a: String, b: String) = indices.any { it + 1 < size && this[it] == a && this[it + 1] == b }
 
@@ -113,15 +113,16 @@ class ProcRunnerArgsTest {
     }
 
     @Test fun oddConversationIdsStayInsideWork() {
-        for (id in listOf("../../etc", "a/b", "", "对话一")) {
-            val f = dirs.workspace(id)
+        for (id in listOf("../../etc", "a/b", "", "对话一", "p:abc")) {
+            val f = dirs.workspace(WorkspaceKey.Conversation(id))
             assertEquals(id, dirs.work, f.parentFile)
             assertFalse(id, f.name.contains(".."))
         }
-        assertEquals(dirs.workspace("x/y"), dirs.workspace("x/y"))
-        // 简单名字和哈希名字分在两个前缀下:「h-…」样子的 ID 不会撞上别的对话的哈希目录
-        val hashed = dirs.workspace("a/b").name
+        assertEquals(dirs.workspace(WorkspaceKey.Conversation("x/y")), dirs.workspace(WorkspaceKey.Conversation("x/y")))
+        // 简单名字和哈希名字分在两个前缀下:「h-…」样子的 ID 不会撞上别的对话的哈希目录;项目工作区固定为 p-<id>
+        val hashed = dirs.workspace(WorkspaceKey.Conversation("a/b")).name
         assertTrue(hashed, hashed.startsWith("h-"))
-        assertEquals("c-$hashed", dirs.workspace(hashed).name)
+        assertEquals("c-$hashed", dirs.workspace(WorkspaceKey.Conversation(hashed)).name)
+        assertEquals("p-proj_1", dirs.workspace(WorkspaceKey.Project("proj_1")).name)
     }
 }

@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
+import com.wangzan101.mika.chat.Project
 import com.wangzan101.mika.ui.components.GlassBlurSupported
 import com.wangzan101.mika.ui.components.floatShadow
 import com.wangzan101.mika.ui.theme.MikaIcons
@@ -109,6 +110,44 @@ internal fun ConversationMenu(
         ),
         onDismiss = onDismiss,
     ) { LiftedRow(item) }
+}
+
+/** 长按侧栏项目分组头后的菜单:在项目里新对话、重命名、打开终端、删除项目。 */
+@Composable
+internal fun ProjectMenu(
+    project: Project,
+    bounds: Rect,
+    progress: () -> Float,
+    onNewChat: () -> Unit,
+    onRename: () -> Unit,
+    onTerminal: () -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val c = MikaTheme.colors
+    LongPressMenu(
+        bounds, progress, pane = stringResource(R.string.drawer_project_actions), tag = "drawer-project-menu",
+        entries = listOf(
+            MenuEntry(stringResource(R.string.drawer_project_new_chat), MikaIcons.New, "project-menu-new-chat", onClick = onNewChat),
+            MenuEntry(stringResource(R.string.drawer_project_rename_title), MikaIcons.Edit, "project-menu-rename", onClick = onRename),
+            MenuEntry(stringResource(R.string.terminal_open), MikaIcons.Terminal, "project-menu-terminal", onClick = onTerminal),
+            MenuEntry(stringResource(R.string.confirm_delete), MikaIcons.Trash, "project-menu-delete", c.bad, onDelete),
+        ),
+        onDismiss = onDismiss,
+    ) {
+        Box(
+            Modifier
+                .floatShadow(c, NavShape)
+                .background(c.surface, NavShape)
+                .clip(NavShape)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                Icon(MikaIcons.Folder, null, Modifier.size(16.dp), tint = c.ink2)
+                Text(project.name, style = MikaType.Body, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
 }
 
 /** 长按菜单里的一项:文字、右边的图标、测试标签、颜色(为 null 是正文色)。 */

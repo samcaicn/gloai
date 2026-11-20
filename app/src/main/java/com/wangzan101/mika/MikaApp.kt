@@ -15,10 +15,14 @@ import com.wangzan101.mika.chat.AutoArchive
 import com.wangzan101.mika.chat.ConversationDeleter
 import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.chat.CurrentChat
+import com.wangzan101.mika.chat.ProjectDeleter
+import com.wangzan101.mika.chat.ProjectStore
 import com.wangzan101.mika.chat.SharedDraftStore
+import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
 import com.wangzan101.mika.cap.sandbox.Attachments
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.ui.AttachFiles
 import com.wangzan101.mika.cap.sandbox.ShareExporter
 import com.wangzan101.mika.cap.web.WebFiles
@@ -255,15 +259,40 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
     /** 对话记录:整个进程一份,任务服务、聊天界面、结果卡片的按钮共用。 */
     val conversations: ConversationStore by lazy { ConversationStore(this) }
 
+    /** 项目定义:整个进程一份。 */
+    val projects: ProjectStore by lazy { ProjectStore(this) }
+
+    /** 对话编号到工作区的解析器(不依赖 [chat] 避免循环 lazy)。 */
+    val workspaceResolver: WorkspaceResolver by lazy { WorkspaceResolver(conversations, projects) }
+
     /** 最近一次系统分享尚未发送的草稿和它的私有图片副本。 */
     val sharedDrafts: SharedDraftStore by lazy { SharedDraftStore(java.io.File(filesDir, "shared-drafts")) }
 
-    /** 用户自己打开的终端(按对话):只从界面进,不交给任何任务,也不写运行记录。 */
+    /** 用户自己打开的终端(按工作区):只从界面进,不交给任何任务,也不写运行记录。 */
     val terminals: com.wangzan101.mika.terminal.TerminalHub by lazy {
-        com.wangzan101.mika.terminal.TerminalHub(this, conversations)
+        com.wangzan101.mika.terminal.TerminalHub(this, conversations, projects)
     }
 
-    /** 删对话(侧栏长按):停掉它的当前任务并删工作区,保留定时任务。 */
+    /** 删项目:停掉旗下对话的当前任务、删除项目内对话与项目定义,并清掉共享工作区 `p-<id>`。 */
+    val projectDeleter: ProjectDeleter by lazy {
+        val app = this
+        ProjectDeleter(
+            projects, conversations, taskState.activeConversations,
+            cancelTasks = { id -> taskState.runs.value.filter { it.conversationId == id }.forEach { TaskService.cancel(app, it.key) } },
+            schedulesOf = { id -> TriggerRuntime.list(app).filter { it.threadId == id }.map { it.id } },
+            deleteProjectWorkspace = { pid -> SandboxDirs(app).deleteWorkspace(WorkspaceKey.Project(pid)) },
+            forgetRemoteTasks = { id ->
+                if (com.wangzan101.mika.core.remote.RemoteTaskService.isConversation(id)) remoteTasks.forget(id)
+            },
+            onDeleted = { pid, ids ->
+                val imports = com.wangzan101.mika.task.DeviceImportStore.get(app)
+                imports.removeWorkspace(WorkspaceKey.Project(pid).wire)
+                ids.forEach(imports::removeConversation)
+            },
+        )
+    }
+
+    /** 删对话(侧栏长按):停掉它的当前任务并删工作区(同项目对话保留共享工作区),保留定时任务。 */
     val conversationDeleter: ConversationDeleter by lazy {
         val app = this
         ConversationDeleter(
@@ -275,12 +304,10 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             schedulesOf = { id -> TriggerRuntime.list(app).filter { it.threadId == id }.map { it.id } },
             deleteWorkspace = { id ->
                 // 工作区里有附件、用户发来的屏幕、任务写的文件;沙箱里的命令碰得到这里,和命令、导入、重置互斥着删
-                try {
-                    SandboxDirs(app).deleteWorkspace(id)
-                } finally {
-                    com.wangzan101.mika.task.DeviceImportStore.get(app).removeConversation(id)
-                }
+                SandboxDirs(app).deleteWorkspace(WorkspaceKey.Conversation(id))
             },
+            isSharedWorkspace = { id -> workspaceResolver.isShared(id) },
+            onDeleted = { id -> com.wangzan101.mika.task.DeviceImportStore.get(app).removeConversation(id) },
         )
     }
 
@@ -366,8 +393,9 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
         val rel = path.removePrefix(prefix)
         if (rel.isEmpty() || rel.split('/').any { it.isEmpty() || it == "." || it == ".." }) return
         val dirs = com.wangzan101.mika.cap.sandbox.SandboxDirs(this)
+        val key = workspaceResolver.resolve(conversationId)
         val bytes = dirs.tree.shared {
-            dirs.gate.openRead(dirs.workspace(conversationId), rel).use { g ->
+            dirs.gate.openRead(dirs.workspace(key), rel).use { g ->
                 if (g.size > 20L * 1024 * 1024) null else g.read(0, g.size.toInt())
             }
         } ?: return
@@ -466,7 +494,8 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             importAttachments = { id, uris ->
                 val sandbox = AndroidSandbox(app, SandboxState.get(app))
                 val dirs = SandboxDirs(app)
-                Attachments.importInto(app, uris.map(Uri::parse), dirs.workspace(id), dirs.gate, dirs.tree, sandbox::freeBytes) { sandbox.workspaceBytes(id) }
+                val key = workspaceResolver.resolve(id)
+                Attachments.importInto(app, uris.map(Uri::parse), dirs.workspace(key), dirs.gate, dirs.tree, sandbox::freeBytes) { sandbox.workspaceBytes(key) }
             },
             describeAttachments = { uris -> AttachFiles.describe(app, uris) },
             deletionImpact = conversationDeleter::impact,
@@ -495,6 +524,13 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             stopVoice = { voicePlayer.stop() },
             voiceFailed = voicePlayer::fail,
             personaStore = if (FeatureFlags.get(this).persona()) personas else null,
+            projectStore = projects,
+            projectDeletionImpact = projectDeleter::impact,
+            removeProject = { pid ->
+                conversations.list(includeArchived = true).filter { it.projectId == pid }.forEach { followUpQueue.dropConversation(it.id) }
+                projectDeleter.delete(pid)
+            },
+            workspaceResolver = workspaceResolver,
         )
     }
 

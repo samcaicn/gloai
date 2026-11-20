@@ -10,6 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.core.shell.BuiltinShellStatus
 import com.wangzan101.mika.cap.phone.PhoneServices
 import com.wangzan101.mika.cap.phone.setup.BuiltinShellManager
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -113,7 +114,8 @@ class BuiltinHelperDeviceTest {
                 val copied = runBlocking { deviceFiles.importFile("$dir/sample.txt", workspaceId) }
                 assertEquals("/workspace/inbox/sample.txt", copied.path)
                 assertEquals(6L, copied.size)
-                dirs.gate.openRead(dirs.workspace(workspaceId), "inbox/sample.txt").use {
+                val key = WorkspaceKey.Conversation(workspaceId)
+                dirs.gate.openRead(dirs.workspace(key), "inbox/sample.txt").use {
                     assertEquals("bridge", it.input().readBytes().toString(Charsets.UTF_8))
                 }
                 val record = com.wangzan101.mika.task.DeviceImportStore(importPrefs).list(workspaceId).single()
@@ -121,13 +123,13 @@ class BuiltinHelperDeviceTest {
                 assertEquals(copied.path, record.workspacePath)
                 assertEquals(copied, runBlocking { deviceFiles.importFile("$dir/sample.txt", workspaceId) })
                 assertEquals(record.id, store.list(workspaceId).single().id)
-                java.io.File(dirs.workspace(workspaceId), "inbox/sample.txt").delete()
+                java.io.File(dirs.workspace(key), "inbox/sample.txt").delete()
                 val replacement = runBlocking { deviceFiles.importFile("$dir/sample.txt", workspaceId) }
                 assertEquals(copied.path, replacement.path)
                 assertEquals(2, store.list(workspaceId).size)
                 importPrefs.edit().clear().commit()
             } finally {
-                runBlocking { dirs.deleteWorkspace(workspaceId) }
+                runBlocking { dirs.deleteWorkspace(WorkspaceKey.Conversation(workspaceId)) }
             }
             assertEquals("not_file", shell.openFile(dir).getString("status"))
             assertEquals("denied", shell.openFile("/dev/null").getString("status"))

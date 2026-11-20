@@ -141,4 +141,15 @@
     <string name="personal_replay_pause">Jeda</string>
     <string name="personal_replay_play">Putar</string>
     <string name="personal_replay_return_live">Kembali ke siaran langsung</string>
+    <string name="drawer_projects">Proyek</string>
+    <string name="drawer_new_project">Proyek baru</string>
+    <string name="drawer_project_new_title">Proyek baru</string>
+    <string name="drawer_project_name_hint">Nama proyek</string>
+    <string name="drawer_project_rename_title">Ganti nama proyek</string>
+    <string name="drawer_project_new_chat">Obrolan baru di proyek</string>
+    <string name="drawer_project_empty">Belum ada obrolan</string>
+    <string name="drawer_project_delete_title">Hapus proyek ini?</string>
+    <string name="drawer_project_delete_body">Semua obrolan dan berkas ruang kerja bersama di "%1$s" akan dihapus dan tidak dapat dipulihkan.</string>
+    <string name="drawer_project_actions">Tindakan proyek</string>
+    <string name="chat_project_shared">Proyek</string>
 </resources>

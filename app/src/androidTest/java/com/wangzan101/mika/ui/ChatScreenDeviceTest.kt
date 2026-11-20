@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import com.wangzan101.mika.cap.sandbox.ShareExporter
 import com.wangzan101.mika.cap.sandbox.SandboxState
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
+import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.core.agent.SpeedFlags
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.model.ChatModel
@@ -310,7 +311,7 @@ class ChatScreenDeviceTest {
     /** 文件卡片显示名字和大小;点开文本文件进 App 里的查看页(不再交给系统选 App),看得到文件内容,返回回到对话。 */
     @Test
     fun fileCardOpens() {
-        val ws = SandboxDirs(context).workspace("card-device-test").apply { mkdirs() }
+        val ws = SandboxDirs(context).workspace(WorkspaceKey.Conversation("card-device-test")).apply { mkdirs() }
         val f = File(ws, "card.txt").apply { writeText("hello") }
         val name = "mika-card-${System.currentTimeMillis()}.txt"
         val card = runBlocking { com.wangzan101.mika.cap.sandbox.AndroidFdSys.gate.openRead(ws, f.name).use { ShareExporter(context).export(it, name) } }

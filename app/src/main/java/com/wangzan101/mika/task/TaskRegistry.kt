@@ -33,6 +33,9 @@ class TaskCenter<R : Any>(
     val resources: ResourceScheduler = ResourceScheduler(),
     /** 同对话下一件任务的持久队列;测试里换成内存实现。 */
     val followUps: FollowUpQueue = FollowUpQueue(),
+    /** 同工作区串行化使用的键;默认按对话各自隔离,传入工作区解析器后同项目对话会排队串行。 */
+    private val workspaceOf: (R) -> String = conversationOf,
+    private val resolveWorkspace: (String) -> String = { it },
     private val create: (conversationId: String, goal: String) -> R,
 ) {
     private val running = mutableListOf<R>()
@@ -52,16 +55,18 @@ class TaskCenter<R : Any>(
             followUps.remove(followUp.id)
             return StartResult.DuplicateFollowUp
         }
+        val workspace = resolveWorkspace(conversationId)
         val sameConversation = byConversation(conversationId) != null
         if (sameConversation && !queueInConversation) {
             // 点发送和任务收尾撞在一起:在同一个锁里放回队列,调用方据此知道下一件还排着
             followUp?.let { followUps.add(it) }
             return StartResult.AlreadyRunningInConversation
         }
+        val sameWorkspaceActive = runs().any { workspaceOf(it) == workspace }
         val run = create(conversationId, goal)
         val record = StoredRun(RunId(keyOf(run)), conversationId, goal, RunPhase.Preparing,
             channelPeer = channelPeer, channelMessageId = channelMessageId, followUpId = followUp?.id)
-        return if (!sameConversation && running.size < limit().max) {
+        return if (!sameConversation && !sameWorkspaceActive && running.size < limit().max) {
             store.save(record)
             running += run
             StartResult.Started(run)
@@ -122,8 +127,12 @@ class TaskCenter<R : Any>(
         val started = mutableListOf<R>()
         while (queued.isNotEmpty() && running.size < limit().max) {
             val index = queued.indexOfFirst { candidate ->
-                running.none { conversationOf(it) == conversationOf(candidate) } &&
-                    queued.takeWhile { it !== candidate }.none { conversationOf(it) == conversationOf(candidate) }
+                val conv = conversationOf(candidate)
+                val ws = workspaceOf(candidate)
+                running.none { conversationOf(it) == conv || workspaceOf(it) == ws } &&
+                    queued.takeWhile { it !== candidate }.none {
+                        conversationOf(it) == conv || workspaceOf(it) == ws
+                    }
             }
             if (index < 0) break
             val next = queued.removeAt(index)

@@ -38,6 +38,8 @@ class ConversationDeleter(
     /** 读写定时任务和对话记录在哪儿做。 */
     private val io: CoroutineContext = Dispatchers.IO,
     private val forgetRemoteTasks: (String) -> Unit = {},
+    private val isSharedWorkspace: (String) -> Boolean = { store.projectId(it) != null },
+    private val onDeleted: suspend (String) -> Unit = {},
 ) {
     fun impact(conversationId: String): DeleteImpact =
         DeleteImpact(conversationId in active.value, runCatching { schedulesOf(conversationId).size }.getOrDefault(0))
@@ -47,11 +49,16 @@ class ConversationDeleter(
             cancelTasks(conversationId)
             withTimeoutOrNull(stopWaitMs) { active.first { conversationId !in it } }
         }
-        withContext(io) {
+        val sharedWorkspace = withContext(io) {
+            val shared = isSharedWorkspace(conversationId)
             forgetRemoteTasks(conversationId)
             store.delete(conversationId)
+            shared
         }
-        // Only clean up attachments after the history has been removed.
-        try { deleteWorkspace(conversationId) } catch (e: CancellationException) { throw e } catch (e: Exception) { }
+        // Only clean up standalone attachments after history is removed; shared project workspaces stay intact.
+        if (!sharedWorkspace) {
+            try { deleteWorkspace(conversationId) } catch (e: CancellationException) { throw e } catch (e: Exception) { }
+        }
+        try { onDeleted(conversationId) } catch (e: CancellationException) { throw e } catch (e: Exception) { }
     }
 }
