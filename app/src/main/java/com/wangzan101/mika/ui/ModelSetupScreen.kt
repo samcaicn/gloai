@@ -167,7 +167,8 @@ fun ModelSetupScreen(
         setModel = vm::setModel, setManual = vm::setManual, setName = vm::setName,
         testAndSave = vm::testAndSave, saveUntested = vm::saveWithoutTest,
         openForm = vm::openForm, closeForm = vm::closeForm,
-        openProvider = { openProvider = it; allModels = false; showProviders = false }, pickRole = { picking = it },
+        // 从服务商页面进详情时留着 showProviders:返回落回服务商页面,不是模型页
+        openProvider = { openProvider = it; allModels = false }, pickRole = { picking = it },
         pickFallback = { pickingFallbackRole = ModelRole.Main; pickingFallbackSlot = it },
         pickRoleFallback = { r, s -> pickingFallbackRole = r; pickingFallbackSlot = s },
         clearFallback = vm::clearFallback,
@@ -176,52 +177,74 @@ fun ModelSetupScreen(
         openDecision = { openDecision = true }, openSignIn = { signInSheet = it },
         setReasoningEffort = vm::setReasoningEffort, setModelContext = vm::setModelContext,
     )
-    when {
-        openDecision -> JevSettingsScreen(remember { DecisionSettings.get(context) }, onBack = { openDecision = false })
-        provider != null -> {
-            LaunchedEffect(provider.id) { vm.ensureListed() }
-            val accountKind = when {
-                provider.kind == ProviderConfig.Kind.Xai -> SignInKind.Xai
-                provider.signIn == ProviderStore.OPENROUTER_SIGN_IN -> SignInKind.OpenRouter
-                else -> null
-            }
-            val actions = ProviderDetailActions(
-                refresh = { vm.refresh(provider.id) }, changeKey = { vm.changeKey(provider.id, it) },
-                addKey = { vm.addProviderKey(provider.id, it) },
-                removeKey = { vm.removeProviderKey(provider.id, it) },
-                remove = { vm.removeProvider(provider.id); openProvider = null; allModels = false },
-                use = { r, model -> vm.pick(r, provider.id, model) },
-                setVision = { model, sees -> vm.setModelVision(provider.id, model, sees) },
-                showAll = { allModels = true },
-                retest = { vm.retest(provider.id) },
-                // ChatGPT 照旧直接去浏览器登录;xAI、OpenRouter 先打开说明面板
-                signIn = { if (accountKind != null) signInSheet = accountKind else vm.signInWithChatGpt() },
-                signOut = { if (accountKind != null) vm.signOutAccount(provider.id) else vm.signOutChatGpt(provider.id) },
-                manageUsage = {
-                    openInBrowser(context, when (accountKind) {
-                        SignInKind.Xai -> ModelsCopy.ACCOUNT_MANAGE_URL
-                        SignInKind.OpenRouter -> OpenRouterAuth.KEYS_PAGE
-                        else -> ChatGptAuth.USAGE_URL
-                    })
-                },
-                useAsMain = { vm.useAsMain(provider.id) },
-                setDailyBudget = { vm.setDailyTokenBudget(provider.id, it) },
-            )
-            if (allModels) {
-                BackHandler { allModels = false }
-                AllModelsContent(ui, provider, actions, onBack = { allModels = false })
-            } else {
-                BackHandler { openProvider = null }
-                ProviderDetailContent(ui, provider, actions, onBack = { openProvider = null })
+    // 内部子页:标识稳定(换数据不重演动画)、带着层级(决定滑动方向)
+    val subPage: ModelSubPage = when {
+        openDecision -> ModelSubPage.Decision
+        provider != null && allModels -> ModelSubPage.AllModels(provider.id, showProviders)
+        provider != null -> ModelSubPage.Detail(provider.id, showProviders)
+        showProviders -> ModelSubPage.Providers
+        pickingFallbackSlot != null -> ModelSubPage.FallbackPick(pickingFallbackRole ?: ModelRole.Main, pickingFallbackSlot!!)
+        role != null -> ModelSubPage.RolePick(role)
+        else -> ModelSubPage.Main
+    }
+    // 换页动画期间旧页还在渲染:服务商刚删掉时详情页也能从缓存里拿到数据画完退出
+    var heldProviders by remember { mutableStateOf(ui.providers) }
+    if (ui.providers.isNotEmpty()) heldProviders = ui.providers
+    NavSlide(subPage, depth = { it.depth }) { page ->
+    when (page) {
+        is ModelSubPage.Decision -> JevSettingsScreen(remember { DecisionSettings.get(context) }, onBack = { openDecision = false })
+        is ModelSubPage.Detail, is ModelSubPage.AllModels -> {
+            val pid = if (page is ModelSubPage.Detail) page.id else (page as ModelSubPage.AllModels).id
+            val p = ui.providers.firstOrNull { it.id == pid } ?: heldProviders.firstOrNull { it.id == pid }
+            if (p != null) {
+                LaunchedEffect(p.id) { vm.ensureListed() }
+                val accountKind = when {
+                    p.kind == ProviderConfig.Kind.Xai -> SignInKind.Xai
+                    p.signIn == ProviderStore.OPENROUTER_SIGN_IN -> SignInKind.OpenRouter
+                    else -> null
+                }
+                val detailActions = ProviderDetailActions(
+                    refresh = { vm.refresh(p.id) }, changeKey = { vm.changeKey(p.id, it) },
+                    addKey = { vm.addProviderKey(p.id, it) },
+                    removeKey = { vm.removeProviderKey(p.id, it) },
+                    remove = { vm.removeProvider(p.id); openProvider = null; allModels = false },
+                    use = { r, model -> vm.pick(r, p.id, model) },
+                    setVision = { model, sees -> vm.setModelVision(p.id, model, sees) },
+                    showAll = { allModels = true },
+                    retest = { vm.retest(p.id) },
+                    // ChatGPT 照旧直接去浏览器登录;xAI、OpenRouter 先打开说明面板
+                    signIn = { if (accountKind != null) signInSheet = accountKind else vm.signInWithChatGpt() },
+                    signOut = { if (accountKind != null) vm.signOutAccount(p.id) else vm.signOutChatGpt(p.id) },
+                    manageUsage = {
+                        openInBrowser(context, when (accountKind) {
+                            SignInKind.Xai -> ModelsCopy.ACCOUNT_MANAGE_URL
+                            SignInKind.OpenRouter -> OpenRouterAuth.KEYS_PAGE
+                            else -> ChatGptAuth.USAGE_URL
+                        })
+                    },
+                    useAsMain = { vm.useAsMain(p.id) },
+                    setDailyBudget = { vm.setDailyTokenBudget(p.id, it) },
+                )
+                if (page is ModelSubPage.AllModels) {
+                    BackHandler { allModels = false }
+                    AllModelsContent(ui, p, detailActions, onBack = { allModels = false })
+                } else {
+                    BackHandler { openProvider = null }
+                    ProviderDetailContent(ui, p, detailActions, onBack = { openProvider = null })
+                }
             }
         }
-        showProviders -> {
+        is ModelSubPage.Providers -> {
             BackHandler { showProviders = false }
-            Page(ModelsCopy.PROVIDERS, onBack = { showProviders = false }) { ProvidersSection(ui, actions) }
+            Page(ModelsCopy.PROVIDERS, onBack = { showProviders = false }) {
+                ProvidersSection(ui, actions)
+                // 各服务商的当前额度跟着服务商走,不放在 Token 用量页
+                UsageAllowanceCard(ui.providers, store, onOpenUrl = { openInBrowser(context, it) })
+            }
         }
-        pickingFallbackSlot != null -> {
-            val role = pickingFallbackRole ?: ModelRole.Main
-            val slot = pickingFallbackSlot!!
+        is ModelSubPage.FallbackPick -> {
+            val role = page.role
+            val slot = page.slot
             BackHandler { pickingFallbackSlot = null; pickingFallbackRole = null }
             LaunchedEffect(role, slot) { vm.ensureListed(); vm.clearManualPick() }
             RolePickerContent(
@@ -249,7 +272,8 @@ fun ModelSetupScreen(
                 clearSelected = ui.roles.fallbacks(role).getOrNull(slot) == null,
             )
         }
-        role != null -> {
+        is ModelSubPage.RolePick -> {
+            val role = page.role
             BackHandler { picking = null }
             LaunchedEffect(role) { vm.ensureListed(); vm.clearManualPick() }
             RolePickerContent(
@@ -267,11 +291,12 @@ fun ModelSetupScreen(
                 onBack = { picking = null },
             )
         }
-        else -> {
+        is ModelSubPage.Main -> {
             if (ui.chatGptWelcome) ChatGptWelcome(vm::dismissChatGptWelcome)
             BackHandler(onBack = onBack)
             ModelSetupContent(ui, onboarding, actions, onBack)
         }
+    }
     }
 
     signInSheet?.let { kind ->
@@ -295,6 +320,20 @@ fun ModelSetupScreen(
             ),
         )
     }
+}
+
+/**
+ * 模型页内部的子页:标识用稳定值(服务商 id、用途、槽位),数据变了不重演换页动画;
+ * [depth] 决定滑动方向——主页 0,服务商列表和各选择页 1,详情 1(主页直进)或 2(从服务商列表进),全部模型再深一层。
+ */
+private sealed class ModelSubPage(val depth: Int) {
+    data object Main : ModelSubPage(0)
+    data object Decision : ModelSubPage(1)
+    data object Providers : ModelSubPage(1)
+    data class Detail(val id: String, val fromProviders: Boolean) : ModelSubPage(if (fromProviders) 2 else 1)
+    data class AllModels(val id: String, val fromProviders: Boolean) : ModelSubPage(if (fromProviders) 3 else 2)
+    data class FallbackPick(val role: ModelRole, val slot: Int) : ModelSubPage(1)
+    data class RolePick(val role: ModelRole) : ModelSubPage(1)
 }
 
 /** 主页面上的全部动作。 */
