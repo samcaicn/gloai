@@ -1942,7 +1942,7 @@ internal fun Composer(
                             val label = if (panel == Panel.Open) AttachCopy.CLOSE else AttachCopy.ADD
                             val blockedHint = stringResource(R.string.attach_blocked_running)
                             Box(
-                                Modifier.size(MikaSize.IconButton).background(c.greySoft, CircleShape).clip(CircleShape)
+                                Modifier.size(MikaSize.IconButton).clip(CircleShape)
                                     .clickable(enabled = !importing, onClickLabel = label, onClick = {
                                         if (attachBlocked) {
                                             Toast.makeText(context, blockedHint, Toast.LENGTH_SHORT).show()
@@ -1967,22 +1967,21 @@ internal fun Composer(
                         // 任务在跑时没字就停止;写了字停止让位给发送,发出去的话交给当前任务
                         if (busy && !canSend) {
                             Box(
-                                Modifier.size(MikaSize.IconButton).background(c.ink, CircleShape).clip(CircleShape)
+                                Modifier.size(MikaSize.IconButton).clip(CircleShape)
                                     .clickable(onClickLabel = stringResource(R.string.chat_stop), onClick = onStop),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(MikaIcons.Stop, stringResource(R.string.chat_stop), Modifier.size(26.dp), tint = c.bg)
+                                Icon(MikaIcons.Stop, stringResource(R.string.chat_stop), Modifier.size(26.dp), tint = c.ink)
                             }
                         }
                         if (!busy || canSend) {
                             Box(
                                 Modifier.size(MikaSize.IconButton)
-                                    .background(if (canSend) c.accent else c.greySoft, CircleShape)
                                     .clip(CircleShape)
                                     .clickable(enabled = canSend, onClickLabel = stringResource(R.string.chat_send)) { panel = Panel.Closed; onSend() },
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(MikaIcons.Up, stringResource(R.string.chat_send), Modifier.size(20.dp), tint = if (canSend) c.onAccent else c.ink3)
+                                Icon(MikaIcons.Up, stringResource(R.string.chat_send), Modifier.size(20.dp), tint = if (canSend) c.accent else c.ink3)
                             }
                         }
                     }
