@@ -80,4 +80,5 @@
     <string name="tool_mika_login_site">ورود به یک سایت</string>
     <string name="tool_mika_confirm_login">تأیید ورود</string>
     <string name="tool_mika_favorites">سایت‌های پرکاربرد</string>
+    <string name="tool_wechat_owner">ارسال به WeChat من</string>
 </resources>

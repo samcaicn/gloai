@@ -84,6 +84,8 @@ import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.RunSpec
 import com.wangzan101.mika.core.run.RunProvenance
 import com.wangzan101.mika.core.run.RunOrigin
+import com.wangzan101.mika.core.wechat.explicitWechatOwnerRequest
+import com.wangzan101.mika.wechat.AndroidWechatOwnerPort
 import com.wangzan101.mika.core.child.ChildAgentRunner
 import com.wangzan101.mika.core.run.RunInbox
 import com.wangzan101.mika.core.run.RunInput
@@ -1062,6 +1064,10 @@ class TaskRun(
                 // 这两天的通知原文和存着的各天、各周、各月的归纳(主动能力攒下的):只给用户在手机上发起的任务;主动能力没开时不去碰它
                 notices = if (provenance.origin == RunOrigin.Ui && !conditionCheck && FeatureFlags.get(service).proactive()) {
                     (service.application as MikaApp).proactive.noticeSource()
+                } else null,
+                // 机主结果推送:只给用户明说「发我微信」的手机 UI 主任务;绑定快照、复查与同文幂等都在发送器一侧
+                wechatOwner = if (provenance.origin == RunOrigin.Ui && !conditionCheck && explicitWechatOwnerRequest(goal)) {
+                    AndroidWechatOwnerPort(service.application as MikaApp, key)
                 } else null,
                 mcpServers = mcpEndpoints(),
                 // 仅用户明确配置并启用时提供通用搜索;否则继续用浏览器搜索。

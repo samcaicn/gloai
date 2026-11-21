@@ -80,4 +80,5 @@
     <string name="tool_mika_login_site">Bir sitede oturum aç</string>
     <string name="tool_mika_confirm_login">Oturumu onayla</string>
     <string name="tool_mika_favorites">Sık kullanılan siteler</string>
+    <string name="tool_wechat_owner">WeChat\'ıma gönder</string>
 </resources>

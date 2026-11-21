@@ -61,6 +61,8 @@ class WechatChannel(
         return withContext(Dispatchers.IO) {
             val started = System.nanoTime()
             val outcome = try {
+                // 与图片路径同款复查:排队到真正调 API 之间暂停或换绑,旧投递不能发出。
+                if (!store.accepts(peer, account)) return@withContext SendOutcome.Failed
                 api.sendText(account, peer.peerId, delivery.id, text, store.contextToken(peer.peerId))
                 SendOutcome.Delivered
             } catch (e: CancellationException) {

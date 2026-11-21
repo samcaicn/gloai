@@ -80,4 +80,5 @@
     <string name="tool_mika_login_site">サイトにログイン</string>
     <string name="tool_mika_confirm_login">ログインを確認</string>
     <string name="tool_mika_favorites">よく使うサイト</string>
+    <string name="tool_wechat_owner">自分の WeChat に送る</string>
 </resources>
