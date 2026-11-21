@@ -41,6 +41,21 @@ class StepRowLanguageTest {
     }
 
     @Test
+    fun testShouldKeepJapaneseReasonInNonChineseLocale() {
+        // 日语界面下模型按语言指令写的日语用意:含汉字也含假名,不是中文,不该被隐藏。
+        assertFalse(StepRow.shouldHideRawReason("検索ボタンをタップして連絡先を探す", isChineseLocale = false))
+        assertFalse(StepRow.shouldHideRawReason("「微信」アプリを開く", isChineseLocale = false))
+        // 中文界面下日语用意照常显示(中文界面从不隐藏)。
+        assertFalse(StepRow.shouldHideRawReason("設定を開いてBluetoothを確認する", isChineseLocale = true))
+    }
+
+    @Test
+    fun testShouldHideKanjiOnlyReasonInNonChineseLocale() {
+        // 纯汉字无假名的文本无法与中文区分,非中文界面下仍回退(残余局限,如实断言)。
+        assertTrue(StepRow.shouldHideRawReason("設定確認", isChineseLocale = false))
+    }
+
+    @Test
     fun testStepRowTextFallback() {
         // 界面语言为英文(上面装的 ui_locale=en)时,模型输出的中文用意回退到本地化标题。
         val rowFallback = StepRow(
@@ -61,5 +76,24 @@ class StepRowLanguageTest {
             reason = "Tap \"WeChat\" icon to open app",
         )
         assertEquals("Tap \"WeChat\" icon to open app", rowEnglish.text)
+    }
+
+    @Test
+    fun testStepRowTextShowsJapaneseReasonUnderJapaneseUi() {
+        // 日语界面(ui_locale=ja):模型按语言指令写的日语用意(含汉字)直接展示,不回退到本地化标题。
+        UiText.source = object : UiTexts {
+            override fun string(id: Int, args: Array<out Any?>): String =
+                if (id == R.string.ui_locale) "ja" else ""
+
+            override fun plural(id: Int, count: Int, args: Array<out Any?>): String = ""
+        }
+        val row = StepRow(
+            step = 1,
+            title = "タップ · WeChat",
+            subtitle = "",
+            state = StepState.Ok,
+            reason = "「微信」アプリを開く",
+        )
+        assertEquals("「微信」アプリを開く", row.text)
     }
 }

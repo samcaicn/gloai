@@ -138,11 +138,13 @@ data class StepRow(val step: Int, val title: String, val subtitle: String, val s
         /**
          * 当界面语言为非中文环境（如当前语言为英文），而模型未遵循指令输出了包含中文字符的用意时，
          * 避免在界面上展示突兀的生硬中文，回退为已本地化的动作标题（如 Tap · WeChat）。
+         * 「像中文」要求含汉字且不含假名:日语书面语几乎必混假名(助词/活用),只有假名能把日语从汉字里分出来,
+         * 否则日语界面下模型按语言指令写的日语用意会被整条隐藏。
          */
         internal fun shouldHideRawReason(reason: String, isChineseLocale: Boolean = uiLocale().language == "zh"): Boolean {
             if (reason.isEmpty()) return false
             if (isChineseLocale) return false
-            return reason.any { it in '\u4e00'..'\u9fa5' }
+            return reason.any { it in '\u4e00'..'\u9fa5' } && reason.none { it in '\u3040'..'\u30ff' }
         }
     }
 }
