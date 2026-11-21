@@ -6,4 +6,7 @@
     <string name="voicecall_task_done">Selesai</string>
     <string name="voicecall_task_failed">Tidak berhasil</string>
     <string name="voicecall_task_cancelled">Dibatalkan</string>
+    <string name="voicecall_notification_channel">Panggilan suara</string>
+    <string name="voicecall_notification_ongoing">Panggilan suara sedang berlangsung</string>
+    <string name="voicecall_hangup">Tutup panggilan</string>
 </resources>

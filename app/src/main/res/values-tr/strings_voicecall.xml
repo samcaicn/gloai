@@ -6,4 +6,7 @@
     <string name="voicecall_task_done">Tamamlandı</string>
     <string name="voicecall_task_failed">Tamamlanamadı</string>
     <string name="voicecall_task_cancelled">İptal edildi</string>
+    <string name="voicecall_notification_channel">Sesli arama</string>
+    <string name="voicecall_notification_ongoing">Sesli arama devam ediyor</string>
+    <string name="voicecall_hangup">Aramayı kapat</string>
 </resources>

@@ -6,4 +6,7 @@
     <string name="voicecall_task_done">Готово</string>
     <string name="voicecall_task_failed">Не удалось выполнить</string>
     <string name="voicecall_task_cancelled">Отменено</string>
+    <string name="voicecall_notification_channel">Голосовой вызов</string>
+    <string name="voicecall_notification_ongoing">Идёт голосовой вызов</string>
+    <string name="voicecall_hangup">Завершить вызов</string>
 </resources>

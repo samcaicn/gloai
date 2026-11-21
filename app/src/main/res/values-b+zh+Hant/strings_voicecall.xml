@@ -6,4 +6,7 @@
     <string name="voicecall_task_done">已完成</string>
     <string name="voicecall_task_failed">沒辦成</string>
     <string name="voicecall_task_cancelled">已取消</string>
+    <string name="voicecall_notification_channel">語音通話</string>
+    <string name="voicecall_notification_ongoing">語音通話進行中</string>
+    <string name="voicecall_hangup">掛斷</string>
 </resources>

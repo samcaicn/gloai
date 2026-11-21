@@ -19,6 +19,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- 语音通话:通话期间后台持麦走麦克风型前台服务；安卓 12 以下免提切换要改音频路由(普通权限,安装即授)。 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <!-- 通话功能:拨号、读通话状态,以及安卓 13+ 的「通话助手」框架(伴侣角色经 shell 授予)。 -->
@@ -277,6 +280,12 @@
         </service>
 
         <receiver android:name=".calls.CallNotificationAction" android:exported="false" />
+
+        <!-- 应用内语音通话:通话期间撑住进程与后台麦克风;通知带挂断动作,锁屏时不打开通话页。 -->
+        <service
+            android:name=".voicecall.VoiceCallService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
         <!-- 用户绑定并打开微信渠道后保持长轮询；没有本地服务器，任务仍交给 TaskService。 -->
         <service
