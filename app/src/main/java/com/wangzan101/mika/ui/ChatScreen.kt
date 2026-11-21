@@ -1908,7 +1908,8 @@ internal fun Composer(
                 val canSend = AttachTray.canSend(text, attachments, importing)
                 // 两行:第一行纯输入,第二行按钮;字再多按钮排布也不动
                 Column(Modifier.weight(1f)) {
-                    Box(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 4.dp)) {
+                    // start 14dp:文字左缘对齐＋图标可视左缘(40dp 按钮内 20dp 图标居中,字形自身再内缩约 4dp)
+                    Box(Modifier.fillMaxWidth().padding(start = 14.dp, end = 8.dp, top = 4.dp)) {
                         val converting = vState is HoldToTalk.State.Converting
                         if (text.isEmpty() && !converting) {
                             if (vh != null) VoicePlaceholder(mode)
