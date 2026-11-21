@@ -527,7 +527,10 @@ private fun MikaRoot(
     val back: () -> Unit = { nav.back() }
     // 聊天页离开组合树时保留列表位置和输入内容，返回设置页等子页面后原样恢复。
     val screenStates = rememberSaveableStateHolder()
-    when (nav.current) {
+    // 全局换页套滑动推入过渡;页内一律用 route 不用 nav.current:过渡动画期间旧页还在渲染,读实时状态会瞬间变脸
+    NavSlide(nav.stack, depth = { it.size }) { stack ->
+    val route = stack.last()
+    when (route) {
         Route.PhoneSetup -> PhoneSetupScreen(status, setupRepair, onFix, onboarding = onboarding == OnboardingStep.Phone) {
             phoneSetup.markGuideSeen()
             if (onboarding == OnboardingStep.Phone) goOnboarding(null) else nav.back()
@@ -546,7 +549,7 @@ private fun MikaRoot(
                 },
             )
         }
-        Route.Chat, Route.Personal -> screenStates.SaveableStateProvider(nav.current.name) {
+        Route.Chat, Route.Personal -> screenStates.SaveableStateProvider(route.name) {
             // 对话页重新看得见(回到前台、从别的页面回来):补上别处存进来的轮次,接上别处开始的任务
             LifecycleStartEffect(Unit) {
                 app.chat.refresh()
@@ -573,7 +576,7 @@ private fun MikaRoot(
                     val readyRelease = readyUpdate?.takeIf { autoUpdate && it.apkUrl == updateState.update?.apkUrl }
                     val updateBackdrop = if (readyRelease != null) rememberGlassBackdrop() else null
                     Box(Modifier.fillMaxSize().glassSource(updateBackdrop)) {
-                        if (nav.current == Route.Personal) PersonalAgentScreen(
+                        if (route == Route.Personal) PersonalAgentScreen(
                             runtime = app.personal,
                             voice = app.voice,
                             onOpenDrawer = openDrawer,
@@ -653,7 +656,7 @@ private fun MikaRoot(
         Route.VoiceModel -> VoiceModelScreen(store, onBack = back)
         Route.ImageModel -> ImageModelScreen(store, onBack = back)
         Route.Persona -> if (personasOn) PersonaScreen(app.personas, onBack = back) else LaunchedEffect(Unit) { nav.back() }
-        Route.Usage -> UsageScreen(app.usage, store, onBack = back, onOpenUrl = { openInBrowser(context, it) })
+        Route.Usage -> UsageScreen(app.usage, store, onBack = back)
         Route.SpeechModel -> SpeechModelScreen(store, onBack = back)
         Route.About -> AboutScreen(
             versionName = BuildConfig.VERSION_NAME, build = BuildConfig.GIT_HASH, beta = BuildConfig.BETA,
@@ -756,7 +759,7 @@ private fun MikaRoot(
             val id = reportRunId
             val vm = remember(id) { id?.let { TaskReportViewModel(RunStore(context), it) } }
             if (vm == null) LaunchedEffect(Unit) { nav.back() }
-            else if (nav.current == Route.Report) TaskReportScreen(vm, back,
+            else if (route == Route.Report) TaskReportScreen(vm, back,
                 onReplay = { playbackScreenshotId = it; nav.push(Route.Playback) },
                 onTimeline = { runId = id; nav.push(Route.Run) })
             else TaskPlaybackScreen(vm, playbackScreenshotId, back)
@@ -784,6 +787,7 @@ private fun MikaRoot(
             nav.reset()
         })
         Route.Calls -> CallSettingsScreen(app.calls, onBack = back, standalone = true, initialHistoryCallId = focusedCallHistoryId)
+    }
     }
 
     var showLanguagePrompt by rememberSaveable { mutableStateOf(!AppLanguage.hasPrompted(context)) }

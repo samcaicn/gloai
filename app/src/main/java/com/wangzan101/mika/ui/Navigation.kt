@@ -1,5 +1,15 @@
 package com.wangzan101.mika.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -7,6 +17,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.IntOffset
+import com.wangzan101.mika.ui.theme.MikaTheme
 
 /** App 里的页面。对话是根页面,其余都从它(或从设置)进去,返回时回到进来的那一页。 */
 enum class Route { Chat, Personal, Settings, Memory, Plans, Browser, Files, Run, Source, PhoneSetup, Models, Usage, SpeechModel, VoiceModel, ImageModel, Welcome, ModelSetup, About, License, UpdateMirrors, Screens, Teach, Calls, Report, Playback, Persona }
@@ -92,3 +105,43 @@ class NavStack(initial: List<Route> = listOf(Route.Chat), fromDrawer: Boolean = 
 @Composable
 fun rememberNavStack(first: Route = Route.Chat): NavStack =
     rememberSaveable(saver = NavStack.Saver) { NavStack(listOf(first)) }
+
+/** 页面切换的动效参数:时长、视差比例(旧页挪四分之一)、曲线。 */
+private object NavAnim {
+    const val MS = 280
+    const val PARALLAX = 4
+    val EASE = FastOutSlowInEasing
+}
+
+/**
+ * 页面切换的滑动推入过渡:[depth] 变深时新页从右滑入、旧页小幅左移(视差),变浅时反向。
+ * 同级替换按推入处理;系统关了动画([MikaTheme.reduceMotion])时直接替换。
+ * 内容里要用 [targetState] 的值(动画期间旧页还在),别读导航的实时状态。
+ */
+@Composable
+fun <T> NavSlide(
+    targetState: T,
+    depth: (T) -> Int,
+    modifier: Modifier = Modifier,
+    content: @Composable AnimatedContentScope.(T) -> Unit,
+) {
+    val reduce = MikaTheme.reduceMotion
+    AnimatedContent(
+        targetState = targetState,
+        modifier = modifier,
+        transitionSpec = {
+            if (reduce) {
+                fadeIn(snap()) togetherWith fadeOut(snap())
+            } else {
+                val slide = tween<IntOffset>(NavAnim.MS, easing = NavAnim.EASE)
+                if (depth(targetState) >= depth(initialState)) {
+                    slideInHorizontally(slide) { it } togetherWith slideOutHorizontally(slide) { -it / NavAnim.PARALLAX }
+                } else {
+                    slideInHorizontally(slide) { -it / NavAnim.PARALLAX } togetherWith slideOutHorizontally(slide) { it }
+                }
+            }
+        },
+        label = "nav-slide",
+        content = content,
+    )
+}
