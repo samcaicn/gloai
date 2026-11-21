@@ -84,7 +84,10 @@ class KeyPoolManager(
             providerPools.remove(providerId)
             return
         }
-        val existing = providerPools[providerId]?.keys?.associateBy { it.key }.orEmpty()
+        val previous = providerPools[providerId]
+        // 请求时会反复注册同一份配置,不能重建池并把轮询计数归零。
+        if (previous?.keys?.map { it.key } == keys) return
+        val existing = previous?.keys?.associateBy { it.key }.orEmpty()
         val entries = keys.map { k ->
             existing[k]?.copy() ?: KeyEntry(key = k)
         }

@@ -8,6 +8,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class KeyPoolManagerTest {
+    @Test fun registeringUnchangedKeysPreservesRotationAndCooldown() {
+        val manager = KeyPoolManager(clock = { 1_000L })
+        val selected = (1..3).map {
+            manager.register("p", "keyA,keyB,keyC")
+            manager.getActiveKey("p")
+        }
+        assertEquals(listOf("keyA", "keyB", "keyC"), selected)
+        manager.markRateLimited("p", "keyA", 10_000L)
+        manager.register("p", "keyA,keyB,keyC")
+        assertEquals("keyC", manager.getActiveKey("p"))
+        manager.register("p", "keyA,keyB,keyC")
+        assertEquals("keyB", manager.getActiveKey("p"))
+    }
+
 
     @Test
     fun parseKeysHandlesMultipleFormats() {
