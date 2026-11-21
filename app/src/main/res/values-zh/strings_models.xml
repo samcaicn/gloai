@@ -45,9 +45,9 @@
     <string name="models_new_key_hint">粘贴新的 Key</string>
     <string name="save">保存</string>
     <string name="models_models">模型</string>
-    <string name="models_models_note">点一个模型，可以把它用作主模型、看图或轻量模型。</string>
-    <string name="models_no_list_note">这家不提供模型列表。要用它的模型，在「用途」里照文档填模型名。</string>
-    <string name="models_untested_note">这家是跳过测试存下的，还不知道能不能用。选一个模型时会先试调用，也可以点右上角刷新列出它的模型。</string>
+    <string name="models_models_note">点按一个模型，选择它的用途。</string>
+    <string name="models_no_list_note">这家服务商未返回模型列表。请在上方输入服务商文档中的模型 ID。</string>
+    <string name="models_untested_note">这家服务商尚未测试。点击右上角的刷新按钮可获取模型列表。</string>
     <string name="models_not_listed">还没列出这家的模型。</string>
     <string name="refresh">刷新</string>
     <string name="models_in_use">正在用这个</string>
@@ -62,6 +62,16 @@
     <string name="role_main">主模型</string>
     <string name="role_vision">看图模型</string>
     <string name="role_light">轻量模型</string>
+    <string name="model_legacy_role_overlap">旧设置把这个模型同时用于对话和朗读。点上面的对话用途：保留该用途，取消朗读标记；打开下面的「仅用于朗读」：只保留朗读，清空它的对话用途。</string>
+    <string name="role_tts">仅朗读</string>
+    <string name="model_tts_switch">仅用于朗读</string>
+    <string name="model_tts_switch_off">标记后在「声音模型」中可选，不再用于对话</string>
+    <string name="model_tts_switch_in_voice">声音模型正在用</string>
+    <string name="model_tts_switch_marked">已标记，可在「声音模型」中选择</string>
+    <string name="model_tts_confirm_title">仅用于朗读？</string>
+    <string name="model_tts_confirm_body">打开后，%1$s 不再用于对话，这些用途会被清空：%2$s。</string>
+    <string name="model_tts_confirm_ok">仅用于朗读</string>
+    <string name="model_role_tts_conflict">「%1$s」也标记为仅用于朗读。请到「服务商」中点这个模型，选择保留对话用途还是仅用于朗读。</string>
     <string name="role_main_what">思考和办事</string>
     <string name="role_vision_what">读屏时看截图</string>
     <string name="role_light_what">判断、记东西这类小事</string>
@@ -130,8 +140,11 @@
     <string name="chatgpt_page_back">回到 Mika</string>
     <string name="chatgpt_no_browser">没有找到可以用来登录的浏览器。</string>
     <string name="models_unverified">没测试通过，任务可能会失败</string>
-    <string name="models_unverified_note">这家不提供模型列表，在用的 %1$s 还没测试通过，任务可能会失败。点「重新测试」用它试调用一次。</string>
+    <string name="models_unverified_note">正在使用的 %1$s 尚未通过测试。点击对应模型的测试按钮可单独验证。</string>
     <string name="models_retest">重新测试</string>
+    <string name="models_retest_model">测试 %1$s</string>
+    <string name="models_retest_confirm_title">测试模型？</string>
+    <string name="models_retest_confirm_body">Mika 将向服务商 %2$s 的模型 %1$s 发送一次工具调用测试请求。</string>
 
     <!-- 账号登录：xAI / Grok（设备码）。 -->
     <string name="account_signin_copied">已复制</string>
@@ -209,7 +222,9 @@
     <string name="voice_enable">允许 Mika 说话</string>
     <string name="voice_enable_note">只有点「朗读」时才会合成；自动朗读另开</string>
     <string name="voice_provider">服务商</string>
-    <string name="voice_no_providers">先添加一个模型服务商（语音和对话共用服务商与 Key）。</string>
+    <string name="voice_no_providers">请先在「模型」中添加服务商。</string>
+    <string name="voice_no_tts_models">在「模型 → 服务商」中点一个模型，打开「仅用于朗读」。</string>
+    <string name="voice_choice_cleared">「%1$s」已取消仅朗读标记，声音模型随之取消。需要时请在「声音模型」中重新选择。</string>
     <string name="voice_model_name">模型</string>
     <string name="voice_protocol">接口</string>
     <string name="voice_protocol_openai">OpenAI Speech</string>

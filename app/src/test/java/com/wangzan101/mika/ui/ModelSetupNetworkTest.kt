@@ -14,72 +14,44 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import javax.crypto.KeyGenerator
 
-/**
- * 「测试并保存」走真的列模型接口和适配器:自定义的 OpenAI 兼容接口,对着一个按路径回话的本地服务。
- * 列表接口 404 时分得出「这家真不提供列表」(手填的模型调得通)和「地址、接口类型填错了」(调用也 404)。
- */
+/** 对着本地服务核对目录请求与用户单独确认的模型试调用。 */
 class ModelSetupNetworkTest {
     @get:Rule val texts = ChineseTexts()
-
     @get:Rule val tmp = TemporaryFolder()
 
     private val key = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
-    private val server = MockWebServer()
+    private val server = MockWebServer().also { it.start() }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-    /** 路径 → 回什么;没写的路径回 404 网页。[chat] 给了时按请求里的模型名回调用接口。 */
-    private val routes = mutableMapOf<String, () -> MockResponse>()
-    private var chat: ((model: String) -> MockResponse)? = null
-    private val chatModels = mutableListOf<String>()
-
-    @Before fun start() {
-        server.dispatcher = object : Dispatcher() {
-            override fun dispatch(request: RecordedRequest): MockResponse {
-                val path = request.path?.substringBefore('?')
-                chat?.takeIf { path == "/chat/completions" }?.let { answer ->
-                    val model = Regex("\"model\"\\s*:\\s*\"([^\"]+)\"").find(request.body.readUtf8())?.groupValues?.get(1).orEmpty()
-                    synchronized(chatModels) { chatModels += model }
-                    return answer(model)
-                }
-                return routes[path]?.invoke()
-                    ?: MockResponse().setResponseCode(404).setHeader("Content-Type", "text/html").setBody("<html><body>Not Found</body></html>")
-            }
-        }
-        server.start()
-    }
 
     @After fun stop() {
         scope.cancel()
         server.shutdown()
     }
 
-    private val base get() = server.url("/").toString().trimEnd('/')
+    private fun modelList(vararg ids: String): MockResponse {
+        val models = ids.joinToString(",") { """{"id":"$it"}""" }
+        return MockResponse().setHeader("Content-Type", "application/json")
+            .setBody("""{"object":"list","data":[$models]}""")
+    }
 
-    private fun toolCall() = MockResponse().setHeader("Content-Type", "application/json").setBody(
-        """{"choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"c1","type":"function",""" +
-            """"function":{"name":"get_time","arguments":"{}"}}]},"finish_reason":"tool_calls"}]}""",
-    )
-
-    private fun setUp(): Pair<ProviderStore, ModelSetupViewModel> {
+    private fun setUp(kind: ProviderConfig.Kind = ProviderConfig.Kind.OpenAiCompat): Pair<ProviderStore, ModelSetupViewModel> {
         val store = ProviderStore(tmp.root, AesGcmKeyCipher { key }, userAgent = "Mika/1.2.3")
         val vm = ModelSetupViewModel(store, scope, io = Dispatchers.IO)
         vm.selectPreset(ProviderPresets.custom.label)
-        vm.setKind(ProviderConfig.Kind.OpenAiCompat)
-        vm.setBaseUrl(base)
+        vm.setKind(kind)
+        vm.setBaseUrl(server.url("/").toString().trimEnd('/'))
         vm.setApiKey("sk")
         return store to vm
     }
@@ -89,146 +61,154 @@ class ModelSetupNetworkTest {
         withTimeout(15_000) { state.first { it.form.test != ListState.Running } }
     }
 
-    @Test fun listAndChatBoth404MeansNothingIsSaved() {
+    @Test fun missingCatalogNeverFallsBackToAChatRequest() {
+        server.enqueue(MockResponse().setResponseCode(404))
+        server.enqueue(MockResponse().setResponseCode(404))
         val (store, vm) = setUp()
         vm.testAndWait()
-        assertTrue("先要一个模型名", vm.state.value.form.noList)
+        assertTrue(vm.state.value.form.noList)
         assertTrue(store.providers.value.isEmpty())
-        vm.setModel("gemini")
+        vm.setModel("manual-model")
         vm.testAndWait()
-        val failed = vm.state.value.form.test as ListState.Failed
-        assertTrue(failed.message, failed.message.startsWith("列不出模型，用「gemini」试调用也说找不到：地址或接口类型可能填错了"))
+        assertTrue(vm.state.value.form.noList)
         assertTrue(store.providers.value.isEmpty())
         assertTrue(store.list().isEmpty())
-    }
 
-    @Test fun list404ButChatWorksSavesANoListProvider() {
-        routes["/chat/completions"] = ::toolCall
-        val (store, vm) = setUp()
-        vm.testAndWait()
-        vm.setModel("my-model")
-        vm.testAndWait()
-        val p = store.providers.value.single()
-        assertEquals(emptyList<Any>(), p.models)
-        assertEquals(setOf("my-model"), p.verifiedModels)
-        assertEquals("my-model", store.configFor(ModelRole.Main)?.model)
-        assertFalse(vm.state.value.showForm)
-        // 记下的「核实过」重新读入后还在
-        assertEquals(setOf("my-model"), ProviderStore(tmp.root, AesGcmKeyCipher { key }).provider(p.id)?.verifiedModels)
-        assertEquals(listOf("/models", "/models", "/chat/completions"), List(server.requestCount) { server.takeRequest().path })
-    }
-
-    /** 列表里先是别家的模型:没开通的那个调用回 400,接着试下一个,通了就存下、它当主模型,说清先试的哪个没通过。 */
-    @Test fun notActivatedFirstModelFallsBackToTheNext() {
-        routes["/models"] = ::thirdPartyFirst
-        chat = { model -> if (model == "qwen-plus") toolCall() else notActivated() }
-        val (store, vm) = setUp()
-        vm.testAndWait()
-        assertEquals(listOf("antdigital/Ling-3.1-flash", "qwen-plus"), chatModels)
-        val p = store.providers.value.single()
-        assertEquals("qwen-plus", store.configFor(ModelRole.Main)?.model)
-        assertFalse(vm.state.value.showForm)
-        val note = vm.state.value.probeNote.orEmpty()
-        assertTrue(note, note.startsWith("先试的 antdigital/Ling-3.1-flash 没测试通过：这个账号没开通或没权限用这个模型（服务商说：The product is not activated"))
-        assertTrue(note, note.endsWith("主模型用了测试通过的「qwen-plus」。"))
-        assertEquals(null, vm.state.value.pickToProbe)
-        assertTrue("qwen-plus" in p.verifiedModels)
-    }
-
-    /** 试的几个都没开通:Key 是对的,存下服务商、不定主模型,请用户从列表里选。 */
-    @Test fun noCandidateActivatedSavesProviderWithoutMain() {
-        routes["/models"] = ::thirdPartyFirst
-        chat = { notActivated() }
-        val (store, vm) = setUp()
-        vm.testAndWait()
-        assertEquals(listOf("antdigital/Ling-3.1-flash", "qwen-plus", "qwen-max"), chatModels)
-        val p = store.providers.value.single()
-        assertEquals(4, p.models?.size)
-        assertEquals(null, store.roles.value.main)
-        val s = vm.state.value
-        assertEquals(p.id, s.pickToProbe)
-        assertTrue(s.probeNote.orEmpty(), s.probeNote.orEmpty().startsWith("服务商已连上，但「antdigital/Ling-3.1-flash」没测试通过："))
-        assertTrue(s.probeNote.orEmpty(), s.probeNote.orEmpty().endsWith("试了 antdigital/Ling-3.1-flash、qwen-plus、qwen-max，都没开通。"))
-    }
-
-    /** 先试的模型这个账号额度为零(429 里说 limit: 0):不当成限流卡住,接着试下一个,通了存下、它当主模型。 */
-    @Test fun quotaZeroFirstModelFallsBackToTheNext() {
-        routes["/models"] = {
-            MockResponse().setHeader("Content-Type", "application/json").setBody("""{"object":"list","data":[{"id":"paid-only"},{"id":"free-ok"}]}""")
+        runBlocking {
+            vm.saveWithoutTest()
+            withTimeout(15_000) { vm.state.first { !it.showForm } }
         }
-        chat = { model -> if (model == "free-ok") toolCall() else quotaZero() }
-        val (store, vm) = setUp()
-        vm.testAndWait()
-        assertEquals(listOf("paid-only", "free-ok"), chatModels)
-        val p = store.providers.value.single()
-        assertEquals("free-ok", store.configFor(ModelRole.Main)?.model)
-        assertTrue("free-ok" in p.verifiedModels)
-        assertFalse(vm.state.value.showForm)
-        val note = vm.state.value.probeNote.orEmpty()
-        assertTrue(note, note.startsWith("先试的 paid-only 没测试通过：这个账号没开通或没权限用这个模型（服务商说："))
-        assertTrue(note, note.endsWith("主模型用了测试通过的「free-ok」。"))
+        val saved = store.providers.value.single()
+        assertEquals(setOf("manual-model"), saved.typedModels)
+        assertTrue(saved.verifiedModels.isEmpty())
+        assertNull(store.roles.value.main)
+        assertEquals(listOf("/models", "/models"), List(server.requestCount) { server.takeRequest().path })
     }
 
-    /** 真的限流(429 没说额度为零):第一个就因为模型以外的原因失败,不存、不试下一个。 */
-    @Test fun plainRateLimitOnTheFirstModelSavesNothing() {
-        routes["/models"] = {
-            MockResponse().setHeader("Content-Type", "application/json").setBody("""{"object":"list","data":[{"id":"a"},{"id":"b"}]}""")
-        }
-        chat = {
-            MockResponse().setResponseCode(429).setHeader("Content-Type", "application/json")
-                .setBody("""{"error":{"message":"Rate limit reached for requests, limit: 60 per minute"}}""")
-        }
-        val (store, vm) = setUp()
-        vm.testAndWait()
-        assertEquals(listOf("a"), chatModels.distinct())
-        assertTrue(vm.state.value.form.test is ListState.Failed)
-        assertTrue(store.providers.value.isEmpty())
-    }
-
-    private fun quotaZero() = MockResponse().setResponseCode(429).setHeader("Content-Type", "application/json").setBody(
-        """[{"error":{"code":429,"message":"You exceeded your current quota. Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: paid-only","status":"RESOURCE_EXHAUSTED"}}]""",
+    private fun toolCall(): MockResponse = MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+        "data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"function_call\",\"call_id\":\"c1\",\"name\":\"get_time\",\"arguments\":\"{}\"}}\n\n" +
+            "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n",
     )
 
-    private fun thirdPartyFirst() = MockResponse().setHeader("Content-Type", "application/json").setBody(
-        """{"object":"list","data":[{"id":"antdigital/Ling-3.1-flash"},{"id":"text-embedding-v4"},{"id":"qwen-plus"},{"id":"qwen-max"}]}""",
-    )
+    private fun rejected(): MockResponse = MockResponse().setResponseCode(400)
+        .setHeader("Content-Type", "application/json").setBody("""{"error":{"message":"bad request"}}""")
 
-    private fun notActivated() = MockResponse().setResponseCode(400).setHeader("Content-Type", "application/json").setBody(
-        """{"code":"InvalidParameter","message":"The product is not activated, please confirm that you have activated products and try again after activation.","request_id":"r1"}""",
-    )
+    private fun ModelSetupViewModel.pickAndWait(role: ModelRole, providerId: String, model: String) = runBlocking {
+        pick(role, providerId, model)
+        withTimeout(15_000) { state.first { it.manualPick[providerId] != ListState.Running } }
+    }
+
+    /**
+     * 已经有主模型时保存服务商只发一次 GET;之后每次换主模型只对那一个模型发一次请求,没通过原来的主模型不变;
+     * 核实过的、标 TTS、取消标记都不发请求。
+     */
+    @Test fun savingWithAMainSendsOnlyTheCatalogRequestAndEachMainChoiceProbesOnce() {
+        server.enqueue(modelList("gpt-x", "gpt-y", "tts-z"))
+        server.enqueue(toolCall())
+        server.enqueue(rejected())
+        server.enqueue(toolCall())
+        val (store, vm) = setUp(ProviderConfig.Kind.OpenAiResponses)
+        val other = store.connect("Other", ProviderConfig.Kind.OpenAiCompat, "https://other.test/v1", "k", emptyList())
+        assertTrue(store.use(ModelRole.Main, other.id, "old-main", ProviderPresets.custom.capabilities))
+        vm.testAndWait()
+        val saved = store.providers.value.first { it.id != other.id }
+        assertEquals(listOf("gpt-x", "gpt-y", "tts-z"), saved.models.orEmpty().map { it.id })
+        assertEquals("old-main", store.configFor(ModelRole.Main)?.model)
+        assertEquals(1, server.requestCount)
+
+        vm.pickAndWait(ModelRole.Main, saved.id, "gpt-y")
+        assertEquals("gpt-y", store.configFor(ModelRole.Main)?.model)
+        assertEquals(setOf("gpt-y"), store.provider(saved.id)?.verifiedModels)
+        vm.pickAndWait(ModelRole.Main, saved.id, "gpt-x")
+        assertTrue(vm.state.value.manualPick[saved.id] is ListState.Failed)
+        assertEquals("没通过不换", "gpt-y", store.configFor(ModelRole.Main)?.model)
+
+        assertTrue(vm.setTtsModel(saved.id, "tts-z", true))
+        assertTrue(vm.setTtsModel(saved.id, "gpt-y", true))
+        assertNull(store.configFor(ModelRole.Main))
+        runBlocking {
+            vm.useFromProvider(ModelRole.Main, saved.id, "gpt-y")
+            withTimeout(15_000) { vm.state.first { it.roles.main != null } }
+        }
+        assertEquals("gpt-y", store.configFor(ModelRole.Main)?.model)
+        assertEquals(setOf("tts-z"), store.provider(saved.id)?.ttsModels)
+
+        val requests = List(server.requestCount) { server.takeRequest() }
+        // 从 TTS 改回主模型要再试一次:回复过不等于会调用工具
+        assertEquals(listOf("GET /models", "POST /responses", "POST /responses", "POST /responses"), requests.map { "${it.method} ${it.path}" })
+        assertTrue(requests.all { it.getHeader("Authorization") == "Bearer sk" })
+        assertTrue(requests[1].body.readUtf8().contains("\"model\":\"gpt-y\""))
+        assertTrue(requests[2].body.readUtf8().contains("\"model\":\"gpt-x\""))
+        assertTrue(requests[3].body.readUtf8().contains("\"model\":\"gpt-y\""))
+    }
+
+    /** 手填的轻量模型对那一个模型发一次试调用;没通过,原来的轻量不动。 */
+    @Test fun typedLightModelIsProbedOnceAndRejectedOnFailure() {
+        server.enqueue(modelList("gpt-x"))
+        server.enqueue(rejected())
+        val (store, vm) = setUp(ProviderConfig.Kind.OpenAiResponses)
+        val other = store.connect("Other", ProviderConfig.Kind.OpenAiCompat, "https://other.test/v1", "k", emptyList())
+        assertTrue(store.use(ModelRole.Main, other.id, "old-main", ProviderPresets.custom.capabilities))
+        assertTrue(store.use(ModelRole.Light, other.id, "old-light", ProviderPresets.custom.capabilities))
+        vm.testAndWait()
+        val saved = store.providers.value.first { it.id != other.id }
+        runBlocking {
+            vm.pickManual(ModelRole.Light, saved.id, "gpt-typo")
+            withTimeout(15_000) { vm.state.first { it.manualPick[saved.id] is ListState.Failed } }
+        }
+        assertEquals("old-light", store.configFor(ModelRole.Light)?.model)
+        val requests = List(server.requestCount) { server.takeRequest() }
+        assertEquals(listOf("GET /models", "POST /responses"), requests.map { "${it.method} ${it.path}" })
+        assertTrue(requests.last().body.readUtf8().contains("\"model\":\"gpt-typo\""))
+    }
+
+    /** 第一家、还没有主模型:推荐的模型没通过时服务商照样存下、不定主模型,只发了一次试调用。 */
+    @Test fun failedFirstProbeKeepsTheProviderWithoutAMain() {
+        server.enqueue(modelList("gpt-x", "gpt-y"))
+        server.enqueue(rejected())
+        val (store, vm) = setUp(ProviderConfig.Kind.OpenAiResponses)
+        vm.testAndWait()
+        val saved = store.providers.value.single()
+        assertNull(store.roles.value.main)
+        assertTrue(saved.verifiedModels.isEmpty())
+        assertEquals(saved.id, vm.state.value.pickToProbe)
+        assertTrue(vm.state.value.probeNote.orEmpty().isNotEmpty())
+        val requests = List(server.requestCount) { server.takeRequest() }
+        assertEquals(listOf("GET /models", "POST /responses"), requests.map { "${it.method} ${it.path}" })
+        assertTrue(requests.last().body.readUtf8().contains("\"model\":\"gpt-x\""))
+    }
 
     @Test fun badKeyIsAKeyErrorAndNothingIsSaved() {
-        routes["/models"] = { MockResponse().setResponseCode(401).setBody("""{"error":{"message":"invalid api key"}}""") }
+        server.enqueue(MockResponse().setResponseCode(401).setBody("""{"error":{"message":"invalid api key"}}"""))
         val (store, vm) = setUp()
         vm.testAndWait()
         assertEquals(ListState.Failed(ListFailure.Auth.text), vm.state.value.form.test)
-        assertFalse("Key 不对不要模型名", vm.state.value.form.noList)
+        assertFalse(vm.state.value.form.noList)
         assertTrue(store.providers.value.isEmpty())
+        assertEquals(listOf("/models"), List(server.requestCount) { server.takeRequest().path })
     }
 
-    /** 自定义选 OpenAI Responses:列模型照样 `GET /models`,试调用走 `/responses`(不碰 `/chat/completions`),存下的服务商和主模型都是这种接口。 */
-    @Test fun customResponsesListsThenProbesTheResponsesEndpoint() {
-        routes["/models"] = {
-            MockResponse().setHeader("Content-Type", "application/json").setBody("""{"object":"list","data":[{"id":"gpt-x"}]}""")
-        }
-        routes["/responses"] = {
-            MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
-                "data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"function_call\",\"call_id\":\"c1\",\"name\":\"get_time\",\"arguments\":\"{}\"}}\n\n" +
-                    "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n",
-            )
-        }
-        val (store, vm) = setUp()
-        vm.setKind(ProviderConfig.Kind.OpenAiResponses)
+    /** 第一家、还没有主模型:只对推荐的那一个模型发一次试调用(走它自己的接口),通了当主模型;再测试只测确认的那个。 */
+    @Test fun firstProviderProbesOnlyTheRecommendedResponsesModel() {
+        server.enqueue(modelList("gpt-x", "gpt-y"))
+        server.enqueue(toolCall())
+        server.enqueue(toolCall())
+        val (store, vm) = setUp(ProviderConfig.Kind.OpenAiResponses)
         vm.testAndWait()
-        val p = store.providers.value.single()
-        assertEquals(ProviderConfig.Kind.OpenAiResponses, p.kind)
-        assertEquals(setOf("gpt-x"), p.verifiedModels)
-        val main = store.configFor(ModelRole.Main)
-        assertEquals("gpt-x", main?.model)
-        assertEquals(ProviderConfig.Kind.OpenAiResponses, main?.kind)
-        assertFalse(vm.state.value.showForm)
+        val saved = store.providers.value.single()
+        assertEquals("gpt-x", store.configFor(ModelRole.Main)?.model)
+        assertEquals(ProviderConfig.Kind.OpenAiResponses, store.configFor(ModelRole.Main)?.kind)
+        assertEquals(setOf("gpt-x"), saved.verifiedModels)
+        assertEquals(2, server.requestCount)
+        runBlocking {
+            vm.retestModel(saved.id, "gpt-x")
+            withTimeout(15_000) { vm.state.first { it.retest.isEmpty() && server.requestCount == 3 } }
+        }
+
         val requests = List(server.requestCount) { server.takeRequest() }
-        assertEquals(listOf("/models", "/responses"), requests.map { it.path })
+        assertEquals(listOf("/models", "/responses", "/responses"), requests.map { it.path })
         assertTrue(requests.all { it.getHeader("Authorization") == "Bearer sk" })
+        val bodies = requests.drop(1).map { it.body.readUtf8() }
+        assertTrue(bodies.all { it.contains("\"model\":\"gpt-x\"") && it.contains("\"name\":\"get_time\"") })
     }
 }

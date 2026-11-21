@@ -1,14 +1,19 @@
 package com.wangzan101.mika.settings
 
 import com.wangzan101.mika.core.model.ImageAspect
+import com.wangzan101.mika.core.model.ListedModel
 import com.wangzan101.mika.settings.FeatureFlagsCapsuleTest.MemoryPrefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 class ImageModelSettingsTest {
+    @get:Rule val tmp = TemporaryFolder()
+
     @Test fun freshDefaultsAreOffAndAskBeforeSave() {
         val state = ImageModelSettings(MemoryPrefs()).state.value
         assertFalse(state.enabled)
@@ -88,5 +93,21 @@ class ImageModelSettingsTest {
         val noEdit = settings.capabilities()!!
         assertFalse(noEdit.supportsEdit)
         assertEquals(0, noEdit.maxReferences)
+    }
+
+    @Test fun imageAdapterExcludesOnlyExplicitlyMarkedTtsModelsWithinMixedProviders() {
+        val store = ProviderStore(tmp.root, AesGcmKeyCipher { error("No credentials in this fixture") })
+        val provider = store.connect(
+            "Mixed", ProviderConfig.Kind.OpenAiCompat, "https://example.test/v1", null,
+            listOf(ListedModel("image-model"), ListedModel("fishaudio/drama-3-int4")),
+        )
+        store.setTtsModel(provider.id, "custom", true)
+        val choice = ImageChoice(provider.id, "image-model", ImageProtocol.OpenAiImages)
+        val settings = ImageModelSettings(MemoryPrefs())
+        settings.setChoice(choice)
+        val caps = settings.capabilities()!!
+        assertEquals("image-model", store.imageModel(choice, caps)?.name)
+        assertEquals("fishaudio/drama-3-int4", store.imageModel(choice.copy(model = "fishaudio/drama-3-int4"), caps)?.name)
+        assertNull(store.imageModel(choice.copy(model = "custom"), caps))
     }
 }

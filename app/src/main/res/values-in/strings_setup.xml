@@ -24,6 +24,7 @@
     <string name="model_provider_name_hint">Opsional, default-nya host</string>
     <string name="model_key_hint">Tempel kunci dari penyedia Anda</string>
     <string name="model_key_optional">Opsional untuk layanan lokal</string>
+    <string name="model_key_pool_hint">Tempel API key di sini\n(Pisahkan beberapa key dengan koma atau baris baru agar dirotasi otomatis)</string>
     <string name="model_key_clear">Hapus</string>
     <string name="model_key_invisible_removed">Karakter tak terlihat di dalam kunci sudah dihapus.</string>
     <string name="model_key_illegal_chars">Kunci ini berisi karakter yang tidak bisa dipakai. Tempelkan kunci itu saja.</string>
@@ -31,6 +32,7 @@
     <string name="model_test_save">Uji dan simpan</string>
     <string name="model_testing">Menguji…</string>
     <string name="model_test_note">Mika memuat daftar model penyedia ini, lalu meminta salah satunya memanggil alat uji; jika keduanya berhasil, disimpan.</string>
+    <string name="model_test_catalog_note">Mika mengambil dan menyimpan daftar model penyedia. Jika belum ada model utama, model yang disarankan diminta memanggil alat uji sekali dan baru dijadikan model utama jika berhasil.</string>
     <string name="next">Berikutnya</string>
     <string name="model_failed">Koneksi gagal: %1$s</string>
     <string name="cap_vision">Visual</string>
@@ -52,15 +54,17 @@
     <string name="preset_custom">Kustom</string>
     <string name="model_manual_name">Nama model</string>
     <string name="model_no_list_custom">Tidak ada model yang bisa dimuat dari alamat ini. Penyedia mungkin tidak menyediakan daftar model, atau alamat atau jenis antarmukanya salah. Masukkan nama model dan ketuk “Uji dan simpan” lagi; satu panggilan uji akan memastikannya.</string>
+    <string name="model_no_catalog_note">Penyedia tidak mengembalikan daftar model. Masukkan ID model, pilih “Simpan tanpa menguji”, lalu atur perannya di detail penyedia.</string>
     <string name="model_no_list_preset">Penyedia ini tidak menampilkan model apa pun. Masukkan nama model dan ketuk “Uji dan simpan” lagi; hanya disimpan jika panggilan uji dengannya berhasil.</string>
     <string name="model_manual_on">Masukkan nama model sendiri</string>
     <string name="model_manual_off">Jangan masukkan nama model</string>
     <string name="model_manual_note">Dengan nama model terisi, “Uji dan simpan” hanya mencoba model itu: tetap bisa walau penyedia tidak punya daftar model, daftarnya tidak memuatnya, atau pemuatan gagal. Hanya disimpan jika panggilan uji berhasil.</string>
+    <string name="model_manual_catalog_note">Masukkan ID model dari dokumentasi penyedia. Setelah menyimpan, pilih perannya di detail penyedia.</string>
     <string name="model_save_untested">Simpan tanpa menguji</string>
     <string name="model_save_untested_title">Simpan tanpa menguji?</string>
     <string name="model_save_untested_body">Mika akan menyimpan penyedia ini dengan alamat dan kunci yang Anda masukkan, tanpa memuat daftar model atau melakukan panggilan uji. Mika memerlukan model yang bisa memanggil alat untuk menyelesaikan tugas, dan yang belum diuji mungkin tidak tersambung atau tidak memanggil alat. Anda bisa mengujinya nanti dari halaman penyedia.</string>
     <string name="model_save_untested_confirm">Tetap simpan</string>
-    <string name="model_saved_untested">%1$s disimpan tanpa pengujian. Ditandai belum diuji; pilih model untuk memeriksanya, atau uji lagi dari halaman penyedia.</string>
+    <string name="model_saved_untested">%1$s disimpan tanpa pengujian. Anda dapat menyegarkan daftar model dari halaman penyedia.</string>
     <string name="cap_typed">Diketik sendiri</string>
     <string name="model_example_gemini">mis. gemini-flash-latest</string>
     <string name="model_example_anthropic">mis. claude-sonnet-4-5</string>
@@ -78,6 +82,8 @@
     <string name="model_reason_not_found">penyedia tidak punya model itu</string>
     <string name="model_reason_no_tools">tidak memanggil alat, dan Mika memerlukan model yang bisa memanggil alat</string>
     <string name="model_reason_wrong_protocol">tidak tersedia lewat jenis antarmuka yang Anda pilih, jadi permintaan tidak pernah sampai</string>
+    <string name="model_tts_only_not_supported">Model ini ditandai khusus suara. Untuk memakainya di obrolan, ketuk model ini di «Penyedia» lalu nonaktifkan «Khusus suara».</string>
+    <string name="model_saved_no_main">Penyedia sudah disimpan, tetapi belum ada model utama: %1$s</string>
     <string name="model_reason_server">server mengembalikan galat (%1$s)</string>
     <string name="model_probe_none_usable">Penyedia tersambung, tetapi “%1$s” tidak lulus pengujian: %2$s. Pilih model dari daftar yang sudah diaktifkan akun Anda.</string>
     <string name="model_probe_none_usable_protocol">Penyedia tersambung, tetapi “%1$s” tidak lulus pengujian: %2$s. Pilih model yang bisa dijangkau jenis antarmuka ini, atau ganti jenis antarmuka.</string>

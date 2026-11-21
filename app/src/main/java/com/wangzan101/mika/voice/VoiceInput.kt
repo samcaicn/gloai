@@ -3,7 +3,11 @@ package com.wangzan101.mika.voice
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import com.wangzan101.mika.R
+import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.i18n.AppLanguage
+import com.wangzan101.mika.i18n.tr
+import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.Provider
 import com.wangzan101.mika.settings.ProviderStore
 
@@ -66,11 +70,14 @@ class VoiceInput(
                 )
             }
             is SpeechEngineSpec.Provider -> {
-                val p = spec.provider
-                val t = transcriber(p)
                 val iso = SystemSpeech.isoCode(tag)
                 ProviderSpeech(PcmRecorder(), { wav ->
-                    t.transcribe(p, providers.providerKey(p.id), spec.model, spec.method, wav, iso)
+                    val provider = providers.provider(spec.provider.id)
+                        ?: throw ModelError.BadResponse(tr(R.string.voice_unavailable_provider_gone))
+                    if (ModelOptions.isTtsOnly(provider, spec.model)) {
+                        throw ModelError.BadResponse(tr(R.string.model_tts_only_not_supported))
+                    }
+                    transcriber(provider).transcribe(provider, providers.providerKey(provider.id), spec.model, spec.method, wav, iso)
                 })
             }
             is SpeechEngineSpec.Unavailable -> FailedSession(SpeechFailure.Unavailable(spec.why))

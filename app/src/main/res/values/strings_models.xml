@@ -46,9 +46,9 @@
     <string name="models_new_key_hint">Paste the new key</string>
     <string name="save">Save</string>
     <string name="models_models">Models</string>
-    <string name="models_models_note">Tap a model to use it as the main, vision or light model.</string>
-    <string name="models_no_list_note">This provider has no model list. To use one of its models, enter the name from its docs under “Roles”.</string>
-    <string name="models_untested_note">This provider was saved without a test, so nothing is known about whether it works. Pick a model to test it, or tap Refresh to list its models.</string>
+    <string name="models_models_note">Tap a model to choose its role.</string>
+    <string name="models_no_list_note">This provider does not return a model list. In the field above, enter a model ID from the provider’s documentation.</string>
+    <string name="models_untested_note">This provider was saved without testing. Tap Refresh to fetch its model list.</string>
     <string name="models_not_listed">This provider’s models haven’t been listed yet.</string>
     <string name="refresh">Refresh</string>
     <string name="models_in_use">In use</string>
@@ -63,6 +63,16 @@
     <string name="role_main">Main model</string>
     <string name="role_vision">Vision model</string>
     <string name="role_light">Light model</string>
+    <string name="model_legacy_role_overlap">Your previous settings use this model for both chat and speech. Tap a chat role above to keep that role and remove the speech-only mark, or turn on “Speech only” below to keep speech and clear its chat roles.</string>
+    <string name="role_tts">TTS only</string>
+    <string name="model_tts_switch">Speech only (TTS)</string>
+    <string name="model_tts_switch_off">Once marked, you can pick it under Voice model; it’s no longer used for chat</string>
+    <string name="model_tts_switch_in_voice">In use as the voice model</string>
+    <string name="model_tts_switch_marked">Marked; pick it under Voice model</string>
+    <string name="model_tts_confirm_title">Use for speech only?</string>
+    <string name="model_tts_confirm_body">%1$s will no longer be used for chat. These roles will be cleared: %2$s.</string>
+    <string name="model_tts_confirm_ok">Use for speech only</string>
+    <string name="model_role_tts_conflict">“%1$s” is also marked speech only. Tap it under Providers and choose whether to keep it for chat or for speech only.</string>
     <string name="role_main_what">Thinking and doing</string>
     <string name="role_vision_what">Looks at screenshots</string>
     <string name="role_light_what">Small jobs like checks and notes</string>
@@ -135,8 +145,11 @@
     <string name="chatgpt_page_back">Return to Mika</string>
     <string name="chatgpt_no_browser">No browser found to sign in with.</string>
     <string name="models_unverified">Not tested; tasks may fail</string>
-    <string name="models_unverified_note">This provider has no model list, and %1$s (in use) hasn’t passed a test, so tasks may fail. Tap “Test again” to make one test call with it.</string>
+    <string name="models_unverified_note">The models in use (%1$s) have yet to pass a test. To check one, tap its test button.</string>
     <string name="models_retest">Test again</string>
+    <string name="models_retest_model">Test %1$s</string>
+    <string name="models_retest_confirm_title">Test model?</string>
+    <string name="models_retest_confirm_body">Mika will send one tool-calling test request to model %1$s at %2$s.</string>
 
     <string name="account_signin_copied">Copied</string>
     <string name="account_signin_notif_title">Signing in to your account</string>
@@ -212,8 +225,10 @@
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
-    <string name="voice_provider">Service</string>
-    <string name="voice_no_providers">Add a model service first (speech uses the same service and key).</string>
+    <string name="voice_provider">Provider</string>
+    <string name="voice_no_providers">Add a provider under “Model” first.</string>
+    <string name="voice_no_tts_models">Under “Model → Providers”, tap a model and turn on “Speech only (TTS)”.</string>
+    <string name="voice_choice_cleared">“%1$s” is no longer marked speech only, so the voice model was cleared. Pick another under Voice model if needed.</string>
     <string name="voice_model_name">Model</string>
     <string name="voice_protocol">API</string>
     <string name="voice_protocol_openai">OpenAI Speech</string>

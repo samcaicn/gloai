@@ -24,6 +24,7 @@
     <string name="model_provider_name_hint">İsteğe bağlı, varsayılan olarak host</string>
     <string name="model_key_hint">Sağlayıcınızdaki anahtarı yapıştırın</string>
     <string name="model_key_optional">Yerel hizmetler için isteğe bağlı</string>
+    <string name="model_key_pool_hint">API anahtarınızı buraya yapıştırın\n(Birden fazla anahtarı virgül veya satır sonuyla ayırın; sırayla otomatik kullanılır)</string>
     <string name="model_key_clear">Temizle</string>
     <string name="model_key_invisible_removed">Anahtardan görünmez karakterler kaldırıldı.</string>
     <string name="model_key_illegal_chars">Bu anahtar kullanılamayacak karakterler içeriyor. Yalnızca anahtarın kendisini yapıştırın.</string>
@@ -31,6 +32,7 @@
     <string name="model_test_save">Test et ve kaydet</string>
     <string name="model_testing">Test ediliyor…</string>
     <string name="model_test_note">Mika bu sağlayıcının modellerini listeler, sonra birinden bir test aracını çağırmasını ister; ikisi de çalışırsa kaydedilir.</string>
+    <string name="model_test_catalog_note">Mika sağlayıcının model listesini alıp kaydeder. Henüz ana model yoksa önerilen modelden bir test aracını bir kez çağırmasını ister ve yalnızca başarılı olursa onu ana model yapar.</string>
     <string name="next">İleri</string>
     <string name="model_failed">Bağlantı başarısız: %1$s</string>
     <string name="cap_vision">Görüntü</string>
@@ -52,15 +54,17 @@
     <string name="preset_custom">Özel</string>
     <string name="model_manual_name">Model adı</string>
     <string name="model_no_list_custom">Bu adreste hiçbir model listelenemedi. Sağlayıcı bir model listesi sunmuyor olabilir ya da adres veya arayüz türü yanlış olabilir. Bir model adı girin ve tekrar \“Test et ve kaydet\”e dokunun; tek bir test çağrısı söyleyecek.</string>
+    <string name="model_no_catalog_note">Sağlayıcı model listesi döndürmedi. Model kimliğini girip “Test etme, yine de kaydet”i seçin, ardından sağlayıcı ayrıntılarından rolü belirleyin.</string>
     <string name="model_no_list_preset">Bu sağlayıcı hiçbir model listelemedi. Bir model adı girin ve tekrar \“Test et ve kaydet\”e dokunun; yalnızca onunla yapılan bir test çağrısı çalışırsa kaydedilir.</string>
     <string name="model_manual_on">Kendiniz bir model adı girin</string>
     <string name="model_manual_off">Model adı girmeyin</string>
     <string name="model_manual_note">Model adı doldurulduğunda \“Test et ve kaydet\” yalnızca o modeli dener: bu sağlayıcının model listesi olmasa, listede o model bulunmasa veya listeleme başarısız olsa bile çalışır. Yalnızca test çağrısı çalışırsa kaydedilir.</string>
+    <string name="model_manual_catalog_note">Sağlayıcının belgelerindeki model kimliğini girin. Kaydettikten sonra sağlayıcı ayrıntılarından modelin rolünü seçin.</string>
     <string name="model_save_untested">Test etme, yine de kaydet</string>
     <string name="model_save_untested_title">Test etmeden kaydedilsin mi?</string>
     <string name="model_save_untested_body">Mika, model listelemeden veya test çağrısı yapmadan bu sağlayıcıyı girdiğiniz adres ve anahtarla kaydedecek. Mika\'nın işleri halletmek için araç çağırabilen bir modele ihtiyacı var ve test edilmemiş bir model bağlanamayabilir ya da araç çağıramayabilir. Daha sonra sağlayıcının sayfasından test edebilirsiniz.</string>
     <string name="model_save_untested_confirm">Yine de kaydet</string>
-    <string name="model_saved_untested">%1$s test edilmeden kaydedildi. Test edilmedi olarak işaretlendi; kontrol etmek için bir model seçin ya da sağlayıcının sayfasından tekrar test edin.</string>
+    <string name="model_saved_untested">%1$s test edilmeden kaydedildi. Model listesini sağlayıcının sayfasından yenileyebilirsiniz.</string>
     <string name="cap_typed">Yazıldı</string>
     <string name="model_example_gemini">örn. gemini-flash-latest</string>
     <string name="model_example_anthropic">örn. claude-sonnet-4-5</string>
@@ -78,6 +82,8 @@
     <string name="model_reason_not_found">sağlayıcının böyle bir modeli yok</string>
     <string name="model_reason_no_tools">araç çağırmıyor ve Mika\'nın araç çağırabilen bir modele ihtiyacı var</string>
     <string name="model_reason_wrong_protocol">seçtiğiniz arayüz türü üzerinden sunulmuyor, bu yüzden istek ona asla ulaşmıyor</string>
+    <string name="model_tts_only_not_supported">Bu model yalnızca seslendirme olarak işaretli. Sohbette kullanmak için “Sağlayıcılar” bölümünde modele dokunun ve “Yalnızca seslendirme” seçeneğini kapatın.</string>
+    <string name="model_saved_no_main">Sağlayıcı kaydedildi ancak ana model ayarlanmadı: %1$s</string>
     <string name="model_reason_server">sunucu bir hata döndürdü (%1$s)</string>
     <string name="model_probe_none_usable">Sağlayıcı bağlı, ancak \“%1$s\” testi geçmedi: %2$s. Listeden hesabınızın etkinleştirdiği bir model seçin.</string>
     <string name="model_probe_none_usable_protocol">Sağlayıcı bağlı, ancak \“%1$s\” testi geçmedi: %2$s. Bu arayüz türünün ulaşabildiği bir model seçin ya da arayüz türünü değiştirin.</string>

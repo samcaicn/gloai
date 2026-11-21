@@ -206,11 +206,12 @@ fun RadioRow(
     titleStyle: TextStyle = MikaType.Body,
     /** 标题下面的附加内容(例如能力小标签)。 */
     below: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     val c = MikaTheme.colors
     Row(
-        Modifier.fillMaxWidth()
+        modifier.fillMaxWidth()
             .topHairline(first, 50.dp, c.hair)
             .selectable(selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .heightIn(min = 56.dp)

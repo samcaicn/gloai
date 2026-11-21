@@ -44,6 +44,37 @@ class OpenAiSpeechModelTest {
     private fun model(http: OkHttpClient = OkHttpClient()) =
         OpenAiSpeechModel(server.url("/").toString().trimEnd('/'), "sk", "gpt-4o-mini-tts", caps(), http)
 
+    @Test fun repairsOnlyUnknownLengthsAfterAllWavBytesArrive() = runTest {
+        val samples = byteArrayOf(1, 2, 3, 4)
+        val wav = wrapPcm16Wav(samples, 24_000)
+        val junk = byteArrayOf(74, 85, 78, 75, 1, 0, 0, 0, 7, 0)
+        val withJunk = wav.copyOfRange(0, 12) + junk + wav.copyOfRange(12, wav.size)
+        withJunk[4] = (withJunk.size - 8).toByte()
+        val unknown = withJunk.clone()
+        unknown.fill((-1).toByte(), 4, 8)
+        unknown.fill((-1).toByte(), 50, 54)
+        server.enqueue(MockResponse().setHeader("Content-Type", "audio/wav").setBody(Buffer().write(unknown)))
+        val audio = model().synthesize(TtsRequest("hi", "alloy", format = "wav"))
+        assertArrayEquals(withJunk, audio.bytes)
+    }
+
+    @Test fun officialDefaultVoiceResolvesToAlloyAndCustomEndpointReceivesItsOwnId() = runTest {
+        val wav = wrapPcm16Wav(byteArrayOf(1, 2), 24_000)
+        val seen = mutableListOf<String>()
+        val http = OkHttpClient.Builder().addInterceptor { chain ->
+            val buf = Buffer()
+            chain.request().body!!.writeTo(buf)
+            seen.add(Json.parseToJsonElement(buf.readUtf8()).jsonObject.getValue("voice").jsonPrimitive.content)
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body(wav.toResponseBody("audio/wav".toMediaType())).build()
+        }.build()
+        for ((url, voice) in listOf("https://api.openai.com/v1" to null, "https://api.openai.com/v1" to "default",
+            "https://api.openai.com/v1" to "echo", "https://gateway.test/v1" to "default")) {
+            OpenAiSpeechModel(url, null, "tts-1", TtsCapabilities(), http).synthesize(TtsRequest("hi", voice))
+        }
+        assertEquals(listOf("alloy", "alloy", "echo", "default"), seen)
+    }
+
     @Test fun sendsSpeechRequestAndReturnsAudio() = runTest {
         val wav = wrapPcm16Wav(byteArrayOf(0, 0, 0, 0), 24_000)
         server.enqueue(MockResponse().setHeader("Content-Type", "audio/wav").setBody(Buffer().write(wav)))
@@ -280,6 +311,15 @@ class OpenAiSpeechModelTest {
         try { model().synthesize(TtsRequest("hello", "unknown")); fail("expected voice error") } catch (e: TtsError.Unsupported) { Unit }
         try { model().synthesize(TtsRequest("x".repeat(101), "alloy")); fail("expected length error") } catch (e: TtsError.Unsupported) { Unit }
         try { model().synthesize(TtsRequest("hello", "alloy", format = "flac")); fail("expected format error") } catch (e: TtsError.Unsupported) { Unit }
+        assertEquals(0, server.requestCount)
+    }
+
+    /** 地址不合法时构造不抛、不发请求,合成时报 [TtsError.Unsupported];[OpenAiSpeechModel.endpointOf] 为 null。 */
+    @Test fun invalidBaseUrlDoesNotThrowOnConstruction() = runTest {
+        assertEquals(null, OpenAiSpeechModel.endpointOf("not a url"))
+        assertNotNull(OpenAiSpeechModel.endpointOf(server.url("/v1").toString()))
+        val bad = OpenAiSpeechModel("not a url", "sk", "tts-1", caps(), OkHttpClient())
+        try { bad.synthesize(TtsRequest("hello", "alloy")); fail("expected invalid url error") } catch (e: TtsError.Unsupported) { Unit }
         assertEquals(0, server.requestCount)
     }
 }

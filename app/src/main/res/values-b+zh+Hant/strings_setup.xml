@@ -24,6 +24,7 @@
     <string name="model_provider_name_hint">可不填，預設用網址的主機名</string>
     <string name="model_key_hint">貼上服務商給的 Key</string>
     <string name="model_key_optional">本地服務可不填</string>
+    <string name="model_key_pool_hint">在此貼上 API Key\n（多個 Key 用逗號或換行分隔，會自動輪換）</string>
     <string name="model_key_clear">清空</string>
     <string name="model_key_invisible_removed">已去掉 Key 裡的不可見字元。</string>
     <string name="model_key_illegal_chars">Key 裡有無法使用的字元，請只貼上密鑰本身。</string>
@@ -31,6 +32,7 @@
     <string name="model_test_save">測試並儲存</string>
     <string name="model_testing">正在測試…</string>
     <string name="model_test_note">先列出這家的模型，再試著讓其中一個呼叫一次工具，都成了才儲存。</string>
+    <string name="model_test_catalog_note">取得並儲存服務商的模型列表。還沒有主模型時，再讓推薦的模型試呼叫一次工具，通過才設為主模型。</string>
     <string name="next">下一步</string>
     <string name="model_failed">連線失敗：%1$s</string>
     <string name="cap_vision">看圖</string>
@@ -52,15 +54,17 @@
     <string name="preset_custom">自定義</string>
     <string name="model_manual_name">模型名</string>
     <string name="model_no_list_custom">這個網址列不出模型：可能這家不提供模型列表，也可能網址或介面型別填錯了。填一個模型名再點「測試並儲存」，用它試呼叫一次就知道。</string>
+    <string name="model_no_catalog_note">這家服務商未傳回模型列表。可以手動輸入模型 ID，選擇「不測試，直接儲存」，再到服務商詳細資料設定用途。</string>
     <string name="model_no_list_preset">這家沒有列出模型。填一個模型名再點「測試並儲存」，用它試呼叫一次，通了才儲存。</string>
     <string name="model_manual_on">手動填寫模型名</string>
     <string name="model_manual_off">不填模型名</string>
     <string name="model_manual_note">填了模型名，「測試並儲存」就只用它試呼叫：這家不提供模型列表、列表裡沒有它、列模型出錯都不影響，試呼叫通了才儲存。</string>
+    <string name="model_manual_catalog_note">輸入服務商文件中的模型 ID，儲存後可在服務商詳細資料中設定用途。</string>
     <string name="model_save_untested">不測試，直接儲存</string>
     <string name="model_save_untested_title">不測試就儲存？</string>
     <string name="model_save_untested_body">Mika 會按你填的位址和 Key 存下這家服務商，不列模型、也不試呼叫。Mika 做事需要會呼叫工具的模型，沒測過的這一家可能連不通，也可能不會呼叫工具。存下之後可以在服務商頁「重新測試」。</string>
     <string name="model_save_untested_confirm">仍然儲存</string>
-    <string name="model_saved_untested">已存下 %1$s，沒有測試過。它標著「沒測試過」；選一個模型時會先試呼叫，也可以在服務商頁「重新測試」。</string>
+    <string name="model_saved_untested">已直接儲存 %1$s。可以在服務商詳細資料頁重新整理模型列表。</string>
     <string name="cap_typed">手填</string>
     <string name="model_example_gemini">例如 gemini-flash-latest</string>
     <string name="model_example_anthropic">例如 claude-sonnet-4-5</string>
@@ -78,6 +82,8 @@
     <string name="model_reason_not_found">服務商那裡沒有這個模型</string>
     <string name="model_reason_no_tools">它不會呼叫工具，Mika 做事需要會呼叫工具的模型</string>
     <string name="model_reason_wrong_protocol">它不走你選的介面類型，請求到不了它</string>
+    <string name="model_tts_only_not_supported">此模型已標記為僅用於朗讀。如要用於對話，請到「服務商」中點這個模型，關閉「僅用於朗讀」。</string>
+    <string name="model_saved_no_main">服務商已儲存，但還沒有主模型：%1$s</string>
     <string name="model_reason_server">伺服器端出錯（%1$s）</string>
     <string name="model_probe_none_usable">服務商已連上，但「%1$s」沒測試通過：%2$s。從列表裡選一個你開通了的模型。</string>
     <string name="model_probe_none_usable_protocol">服務商已連上，但「%1$s」沒測試通過：%2$s。換一個這個介面類型到得了的模型，或者換介面類型。</string>

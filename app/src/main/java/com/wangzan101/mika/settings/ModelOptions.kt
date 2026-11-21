@@ -30,26 +30,28 @@ data class ModelOption(
 object ModelOptions {
     /**
      * 把列出的模型和预设能力合并。可当主模型的排前面,其余保持服务商给的顺序。
-     * 只写了 Mika 不会说的接口协议的模型(见 [ListedModel.usable])调用必然失败,不列出来。
+     * 只写了 Mika 不会说的接口协议的模型(见 [ListedModel.usable])对话调用必然失败,默认不列;
+     * [includeUnsupported] 为真时也列(服务商详情、声音模型要看完整目录)。
      */
-    fun merge(listed: List<ListedModel>, base: Capabilities): List<ModelOption> = listed.filter { it.usable }.map { m ->
-        ModelOption(
-            id = m.id,
-            capabilities = base.copy(
-                toolCalls = m.toolCalls ?: base.toolCalls,
-                vision = m.vision ?: base.vision,
-                contextTokens = m.contextTokens ?: base.contextTokens,
-                reasoning = m.reasoning ?: base.reasoning,
-                // 看图定位准不准要实测过才算,新连的一律未验证
-                groundingVerified = false,
-            ),
-            toolCallsKnown = m.toolCalls != null,
-            visionKnown = m.vision != null,
-            contextKnown = m.contextTokens != null,
-            displayName = m.displayName,
-            chat = m.chat,
-        )
-    }.sortedBy { if (it.canBeMain) 0 else 1 }
+    fun merge(listed: List<ListedModel>, base: Capabilities, includeUnsupported: Boolean = false): List<ModelOption> =
+        listed.filter { includeUnsupported || it.usable }.map { m ->
+            ModelOption(
+                id = m.id,
+                capabilities = base.copy(
+                    toolCalls = m.toolCalls ?: base.toolCalls,
+                    vision = m.vision ?: base.vision,
+                    contextTokens = m.contextTokens ?: base.contextTokens,
+                    reasoning = m.reasoning ?: base.reasoning,
+                    // 看图定位准不准要实测过才算,新连的一律未验证
+                    groundingVerified = false,
+                ),
+                toolCallsKnown = m.toolCalls != null,
+                visionKnown = m.vision != null,
+                contextKnown = m.contextTokens != null,
+                displayName = m.displayName,
+                chat = m.chat,
+            )
+        }.sortedBy { if (it.canBeMain) 0 else 1 }
 
     /**
      * 拿来当主模型、试调用的先后:只要可当主模型、又不像别的用途的(见 [looksNonChat]);
@@ -88,6 +90,19 @@ object ModelOptions {
         "embed", "rerank", "tts", "whisper", "transcribe", "speech", "audio", "realtime", "image", "dall", "moderation", "ocr", "asr",
     )
 
+    /** 模型用途由用户在这家服务商上的选择决定。 */
+    fun isTtsOnly(provider: Provider, model: String): Boolean = model.trim() in provider.ttsModels
+
+    fun canUseForChat(provider: Provider, model: String): Boolean =
+        model.isNotBlank() && !isTtsOnly(provider, model)
+
+    /** 只有已知 TTS 模型的服务商从其他用途隐藏。完全没有已知模型时仍可手填。 */
+    fun mayHaveNonTtsModels(provider: Provider): Boolean {
+        if (provider.ttsModels.isEmpty()) return true
+        return provider.models.orEmpty().any { it.id !in provider.ttsModels } ||
+            (provider.typedModels + provider.verifiedModels).any { it !in provider.ttsModels }
+    }
+
     /** 上下文长度的短写:64K、1M。 */
     fun contextLabel(tokens: Int): String = when {
         tokens >= 1_000_000 && tokens % 1_000_000 < 50_000 -> "${tokens / 1_000_000}M"
@@ -108,27 +123,48 @@ object ModelOptions {
     /**
      * 一个服务商可选的全部模型:记住的列表(合并能力初值;已有配置的用配置里的能力),
      * 再加上已有配置、但列表里没有的模型(例如手动填的),和手填过、还没有配置的([Provider.typedModels])。
+     * 对话用途(默认)不列 [ListedModel.usable] 为假的;服务商详情、声音模型用 [includeTts] 显示完整目录和用户标为 TTS 的模型。
      * 用户说过能不能看图的([Provider.visionOverrides])按用户说的。
      */
-    fun ofProvider(p: Provider, configs: List<ProviderConfig>): List<ModelOption> = listedOf(p, configs).map { o ->
-        val said = p.visionOverrides[o.id] ?: return@map o
-        o.copy(capabilities = o.capabilities.copy(vision = said), visionByUser = said)
+    fun ofProvider(p: Provider, configs: List<ProviderConfig>, includeTts: Boolean = false): List<ModelOption> {
+        return listedOf(p, configs, includeTts).mapNotNull { o ->
+            val tts = isTtsOnly(p, o.id)
+            if (tts && !includeTts) return@mapNotNull null
+            if (tts) return@mapNotNull o.copy(
+                capabilities = o.capabilities.copy(toolCalls = false, vision = false, reasoning = false),
+                toolCallsKnown = false, visionKnown = false, chat = false, visionByUser = null,
+            )
+            val said = p.visionOverrides[o.id] ?: return@mapNotNull o
+            o.copy(capabilities = o.capabilities.copy(vision = said), visionByUser = said)
+        }
     }
 
-    private fun listedOf(p: Provider, configs: List<ProviderConfig>): List<ModelOption> {
+    private fun listedOf(p: Provider, configs: List<ProviderConfig>, includeTts: Boolean): List<ModelOption> {
         val saved = configs.filter { it.providerId == p.id }
         val byModel = saved.associateBy { it.model }
-        val listed = merge(p.models.orEmpty(), baseOf(p)).map { o -> byModel[o.id]?.let { o.copy(capabilities = it.capabilities) } ?: o }
+        val base = baseOf(p)
+        val listed = merge(p.models.orEmpty(), base, includeUnsupported = includeTts).map { o -> byModel[o.id]?.let { o.copy(capabilities = it.capabilities) } ?: o }
         val rest = saved.filter { c -> listed.none { it.id == c.model } }.map {
             // 列不出模型的那家,模型都是手填的;有列表的,列表后来没了的那个不算手填
             val typed = it.model in p.typedModels || p.models?.isEmpty() == true
             ModelOption(it.model, it.capabilities, toolCallsKnown = false, visionKnown = false, contextKnown = false, typed = typed)
         }
+        val options = listed + rest
+        val knownIds = options.mapTo(mutableSetOf()) { it.id }
+        val tts = if (includeTts) {
+            val voiceModels = p.ttsModels.filter(knownIds::add)
+            val speechBase = base.copy(toolCalls = false, vision = false, reasoning = false)
+            voiceModels.map {
+                ModelOption(it, speechBase,
+                    toolCallsKnown = false, visionKnown = false, contextKnown = false,
+                    chat = false, typed = it in p.typedModels)
+            }
+        } else emptyList()
         // 手填过、还没用在哪个用途上的(没有配置):照样列出来,能力按这家的初值
-        val typed = p.typedModels.filter { m -> listed.none { it.id == m } && rest.none { it.id == m } }.sorted().map {
-            ModelOption(it, baseOf(p), toolCallsKnown = false, visionKnown = false, contextKnown = false, typed = true)
+        val typed = p.typedModels.filter { it !in knownIds }.sorted().map {
+            ModelOption(it, base, toolCallsKnown = false, visionKnown = false, contextKnown = false, typed = true)
         }
-        return listed + rest + typed
+        return options + tts + typed
     }
 }
 

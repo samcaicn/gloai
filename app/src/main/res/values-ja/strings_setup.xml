@@ -24,6 +24,7 @@
     <string name="model_provider_name_hint">省略可。省略するとホスト名になります</string>
     <string name="model_key_hint">プロバイダーのキーを貼り付け</string>
     <string name="model_key_optional">ローカルのサービスでは省略可</string>
+    <string name="model_key_pool_hint">ここに API キーを貼り付け\n（複数のキーはカンマか改行で区切ると、自動で切り替えて使います）</string>
     <string name="model_key_clear">クリア</string>
     <string name="model_key_invisible_removed">キー内の見えない文字を取り除きました。</string>
     <string name="model_key_illegal_chars">キーに使えない文字があります。キー本体だけを貼り付けてください。</string>
@@ -31,6 +32,7 @@
     <string name="model_test_save">テストして保存</string>
     <string name="model_testing">テスト中…</string>
     <string name="model_test_note">Mika はこのプロバイダーのモデルを一覧にしてから、そのうち 1 つにテスト用のツールを呼び出してもらいます。どちらも成功すると保存されます。</string>
+    <string name="model_test_catalog_note">このプロバイダーのモデル一覧を取得して保存します。メインモデルがまだない場合は、おすすめのモデルにテスト用ツールを一度呼び出させ、成功したときだけメインモデルに設定します。</string>
     <string name="next">次へ</string>
     <string name="model_failed">接続に失敗しました: %1$s</string>
     <string name="cap_vision">ビジョン</string>
@@ -52,15 +54,17 @@
     <string name="preset_custom">カスタム</string>
     <string name="model_manual_name">モデル名</string>
     <string name="model_no_list_custom">このアドレスではモデルを一覧にできませんでした。プロバイダーがモデル一覧を提供していないか、アドレスやインターフェースの種類が間違っている可能性があります。モデル名を入力して、もう一度「テストして保存」をタップしてください。テスト呼び出しで分かります。</string>
+    <string name="model_no_catalog_note">プロバイダーからモデル一覧が返されませんでした。モデル ID を入力して「テストせずに保存」を選び、プロバイダーの詳細で役割を設定してください。</string>
     <string name="model_no_list_preset">このプロバイダーはモデルを一覧にしませんでした。モデル名を入力して、もう一度「テストして保存」をタップしてください。そのモデルでのテスト呼び出しが成功した場合にだけ保存されます。</string>
     <string name="model_manual_on">モデル名を自分で入力する</string>
     <string name="model_manual_off">モデル名を入力しない</string>
     <string name="model_manual_note">モデル名を入力すると、「テストして保存」はそのモデルだけを試します。プロバイダーにモデル一覧がない場合や、一覧にそのモデルがない場合、一覧の取得に失敗する場合でも使えます。テスト呼び出しが成功した場合にだけ保存されます。</string>
+    <string name="model_manual_catalog_note">プロバイダーのドキュメントに記載されているモデル ID を入力してください。保存後、プロバイダーの詳細で役割を設定できます。</string>
     <string name="model_save_untested">テストせずに保存</string>
     <string name="model_save_untested_title">テストせずに保存しますか？</string>
     <string name="model_save_untested_body">Mika は、入力されたアドレスとキーでこのプロバイダーを保存します。モデルの一覧取得もテスト呼び出しもしません。Mika がタスクをこなすには、ツールを呼び出せるモデルが必要で、テストしていないモデルは、接続できなかったり、ツールを呼び出せなかったりする可能性があります。あとでプロバイダーのページからテストできます。</string>
     <string name="model_save_untested_confirm">保存する</string>
-    <string name="model_saved_untested">%1$s をテストせずに保存しました。「未テスト」と表示されています。モデルを選んで確認するか、プロバイダーのページからもう一度テストしてください。</string>
+    <string name="model_saved_untested">%1$s をテストせずに保存しました。プロバイダーのページからモデル一覧を更新できます。</string>
     <string name="cap_typed">手入力</string>
     <string name="model_example_gemini">例: gemini-flash-latest</string>
     <string name="model_example_anthropic">例: claude-sonnet-4-5</string>
@@ -78,6 +82,8 @@
     <string name="model_reason_not_found">プロバイダーにそのようなモデルがありません</string>
     <string name="model_reason_no_tools">ツールを呼び出さず、Mika にはツールを呼び出せるモデルが必要です</string>
     <string name="model_reason_wrong_protocol">選んだインターフェースの種類では提供されていないため、リクエストが届きません</string>
+    <string name="model_tts_only_not_supported">このモデルは読み上げ専用に指定されています。会話に使うには、「プロバイダー」でこのモデルをタップし、「読み上げ専用」をオフにしてください。</string>
+    <string name="model_saved_no_main">プロバイダーは保存しましたが、メインモデルは未設定です：%1$s</string>
     <string name="model_reason_server">サーバーがエラーを返しました(%1$s)</string>
     <string name="model_probe_none_usable">プロバイダーには接続できましたが、「%1$s」はテストに通りませんでした: %2$s。一覧から、アカウントで有効になっているモデルを選んでください。</string>
     <string name="model_probe_none_usable_protocol">プロバイダーには接続できましたが、「%1$s」はテストに通りませんでした: %2$s。このインターフェースの種類で届くモデルに変えるか、インターフェースの種類を変えてください。</string>

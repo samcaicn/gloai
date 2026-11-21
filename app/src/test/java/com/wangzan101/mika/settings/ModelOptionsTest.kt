@@ -227,4 +227,41 @@ class ModelOptionsTest {
         assertTrue("已有配置的用配置里的能力", options.first { it.id == "b" }.capabilities.vision)
         assertEquals(emptyList<String>(), ModelOptions.ofProvider(p.copy(models = null), emptyList()).map { it.id })
     }
+
+    @Test fun onlyExplicitRoleMarksFilterThePicker() {
+        val ids = listOf("fishaudio/drama-3-int4", "renamed-model", "vendor/chat-tts", "speech-endpoint")
+        val catalog = ids.map { ListedModel(it, chat = false) }
+        val p = Provider("p", "Local", ProviderConfig.Kind.OpenAiCompat, "https://local.test/v1", models = catalog)
+        assertEquals(ids.toSet(), ModelOptions.ofProvider(p, emptyList()).map { it.id }.toSet())
+        for (id in ids) {
+            val marked = p.copy(ttsModels = setOf(id))
+            assertEquals(ids.toSet() - id, ModelOptions.ofProvider(marked, emptyList()).map { it.id }.toSet())
+            assertEquals(ids.toSet(), ModelOptions.ofProvider(marked, emptyList(), includeTts = true).map { it.id }.toSet())
+            assertTrue(ModelOptions.canUseForChat(p, id))
+            assertFalse(ModelOptions.canUseForChat(marked, id))
+        }
+    }
+
+    @Test fun providerWithOnlyManuallyMarkedModelsIsHiddenFromRolePickers() {
+        val p = Provider("p", "Local", ProviderConfig.Kind.OpenAiCompat, "https://local.test/v1",
+            models = listOf(ListedModel("only-id")), ttsModels = setOf("only-id"))
+        assertFalse(ModelOptions.mayHaveNonTtsModels(p))
+        assertFalse(ModelOptions.mayHaveNonTtsModels(p.copy(models = emptyList())))
+        assertTrue(ModelOptions.mayHaveNonTtsModels(p.copy(typedModels = setOf("extra-model"))))
+        assertTrue(ModelOptions.mayHaveNonTtsModels(p.copy(ttsModels = emptySet())))
+    }
+
+    /** 只写了 Mika 不会说的协议的模型:对话用途的选择器不列(调用必然失败),服务商详情和声音模型照样列出。 */
+    @Test fun unusableModelsAreHiddenFromRolePickersButShownInTheFullCatalog() {
+        val p = Provider("p", "Local", ProviderConfig.Kind.OpenAiCompat, "https://local.test/v1", models = listOf(
+            ListedModel("chat-model"),
+            ListedModel("speech-only", unsupportedApis = listOf("/v1/audio/speech")),
+            ListedModel("routed", unsupportedApis = listOf("/v1/audio/speech"), endpoint = ModelEndpoint(ModelProtocol.ChatCompletions, "https://local.test/v1")),
+        ))
+        assertEquals(listOf("chat-model", "routed"), ModelOptions.ofProvider(p, emptyList()).map { it.id })
+        assertEquals(setOf("chat-model", "speech-only", "routed"), ModelOptions.ofProvider(p, emptyList(), includeTts = true).map { it.id }.toSet())
+        val marked = p.copy(ttsModels = setOf("speech-only"))
+        assertEquals(listOf("chat-model", "routed"), ModelOptions.ofProvider(marked, emptyList()).map { it.id })
+        assertTrue("speech-only" in ModelOptions.ofProvider(marked, emptyList(), includeTts = true).map { it.id })
+    }
 }

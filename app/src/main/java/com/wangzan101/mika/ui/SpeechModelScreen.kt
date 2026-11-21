@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
+import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.ui.components.CapabilityTag
 import com.wangzan101.mika.ui.components.FooterNote
@@ -233,12 +234,13 @@ fun SpeechModelContent(
             )
         }
         LiveRows(choice, doubaoConfigured, funAsrConfigured, actions)
-        SpeechOptions.groups(ui.providers).forEach { g ->
+        SpeechOptions.groups(ui.providers, choice).forEach { g ->
             val p = g.provider
             val testing = ui.speechTesting == p.id
             GroupLabel(ModelsCopy.providerName(p))
             // 手填选上的模型不在列表里,也补一行标成选中,让人看得出现在用的是哪个
-            val picked = (choice as? SpeechChoice.Provider)?.takeIf { it.providerId == p.id }?.model
+            val picked = (choice as? SpeechChoice.Provider)
+                ?.takeIf { it.providerId == p.id && !ModelOptions.isTtsOnly(p, it.model) }?.model
             val rows = if (picked != null && picked !in g.models) g.models + picked else g.models
             GroupCard {
                 rows.forEachIndexed { i, id ->
