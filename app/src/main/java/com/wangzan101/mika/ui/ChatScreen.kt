@@ -1977,15 +1977,15 @@ internal fun Composer(
                             }
                         }
                         if (!busy || canSend) {
-                            // 可发时黑底白箭头(主操作按钮感);空输入裸黑箭头。用 ink/bg token,深色主题自动反转
+                            // 可发时黑底白箭头(主操作);空输入灰底灰箭头——发送是主行动,空态也有圆底和＋/话筒拉开层级,但灰箭头表明还不可用。全用 token,深色主题自动反转
                             Box(
                                 Modifier.size(MikaSize.IconButton)
                                     .clip(CircleShape)
-                                    .then(if (canSend) Modifier.background(c.ink) else Modifier)
+                                    .background(if (canSend) c.ink else c.neutralSoft)
                                     .clickable(enabled = canSend, onClickLabel = stringResource(R.string.chat_send)) { panel = Panel.Closed; onSend() },
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(MikaIcons.Up, stringResource(R.string.chat_send), Modifier.size(20.dp), tint = if (canSend) c.bg else c.ink)
+                                Icon(MikaIcons.Up, stringResource(R.string.chat_send), Modifier.size(20.dp), tint = if (canSend) c.bg else c.ink3)
                             }
                         }
                     }
