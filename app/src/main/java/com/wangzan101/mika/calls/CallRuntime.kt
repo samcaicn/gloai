@@ -1618,6 +1618,8 @@ class CallRuntime(private val app: MikaApp) {
                 playbackHeadFrames = stats.getLong("upPlaybackHeadFrames", -1L),
                 flushMaxMs = stats.getLong("upFlushMaxMs", -1L),
                 captureSilencedMs = if (stats.getBoolean("clientSilencedKnown")) stats.getLong("clientSilencedMaxMs", -1L) else -1L,
+                playbackRebuilds = stats.getLong("upPlaybackRebuilds", -1L),
+                rebuildDroppedBytes = stats.getLong("upRebuildDroppedBytes", -1L),
             )
             !stats.getBoolean("active") && stats.getBoolean("microphoneRestored")
         }.onFailure { debugMediaException(w, it) }.getOrDefault(false).also {

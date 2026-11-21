@@ -116,40 +116,48 @@ internal class ShellCallAudio(private val context: Context) {
         var toCall: Array<ParcelFileDescriptor>? = null
         var session: Session? = null
         try {
+            // 一份规格,开场建一次、假死重建也用它;出来的都是已确认在播的 track。
+            val trackFactory: () -> AudioTrack = {
+                val built = if (backend == DIRECT) {
+                    trackBuilder(AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()).build().also { t ->
+                        val tx = checkNotNull(telephonyDevice(AudioManager.GET_DEVICES_OUTPUTS)) {
+                            "Telephony uplink device is no longer available."
+                        }
+                        check(t.setPreferredDevice(tx)) { "Telephony uplink routing was rejected." }
+                    }
+                } else {
+                    RedirectApi().track(::trackBuilder)
+                }
+                check(built.state == AudioTrack.STATE_INITIALIZED) { "Uplink audio could not be initialized." }
+                built.play()
+                check(built.playState == AudioTrack.PLAYSTATE_PLAYING) { "Uplink did not start." }
+                built
+            }
             if (backend == DIRECT) {
                 record = recordBuilder().setAudioSource(MediaRecorder.AudioSource.VOICE_DOWNLINK).build()
-                track = trackBuilder(AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()).build()
-                val tx = checkNotNull(telephonyDevice(AudioManager.GET_DEVICES_OUTPUTS)) {
-                    "Telephony uplink device is no longer available."
-                }
-                check(track.setPreferredDevice(tx)) { "Telephony uplink routing was rejected." }
             } else {
                 // Explicitly attribute the builders to shell. The framework convenience
                 // helpers create context-free builders, whose attribution depends on bootstrap.
-                val api = RedirectApi()
-                record = api.record(recordBuilder())
-                track = api.track(::trackBuilder)
+                record = RedirectApi().record(recordBuilder())
             }
+            track = trackFactory()
             check(record.state == AudioRecord.STATE_INITIALIZED) { "Downlink audio could not be initialized." }
             check(record.audioSource == MediaRecorder.AudioSource.VOICE_DOWNLINK) {
                 "The recorder is not using the cellular downlink source."
             }
-            check(track.state == AudioTrack.STATE_INITIALIZED) { "Uplink audio could not be initialized." }
             fromCall = ParcelFileDescriptor.createPipe()
             toCall = ParcelFileDescriptor.createPipe()
             nonBlocking(fromCall[1].fileDescriptor)
             nonBlocking(toCall[0].fileDescriptor)
-            val created = Session(owner, backend, record, track, fromCall[1], toCall[0])
+            val created = Session(owner, backend, record, track, trackFactory, fromCall[1], toCall[0])
             session = created
             owner.linkToDeath(created.death, 0)
             check(inPstnCall() && owner.isBinderAlive) { "Cellular call or its owner ended." }
             created.requireCallMicrophoneMute()
             record.startRecording()
             check(record.recordingState == AudioRecord.RECORDSTATE_RECORDING) { "Downlink did not start." }
-            track.play()
-            check(track.playState == AudioTrack.PLAYSTATE_PLAYING) { "Uplink did not start." }
             created.establishRoute()
             active = created
             lastOwner = null
@@ -269,10 +277,16 @@ internal class ShellCallAudio(private val context: Context) {
             private set
         var flushMaxMs = 0L
             private set
+        var rebuildCount = 0L
+            private set
+        var rebuildDroppedBytes = 0L
+            private set
         private var zeroSinceMs = -1L
         private var completedZeroMaxMs = 0L
         private var lastWriteMs = -1L
         private var stoppedAtMs = -1L
+        private var lastHeadFrames = -1L
+        private var lastHeadAdvanceMs = -1L
 
         fun recordWrite(bytes: Int, atMs: Long) {
             if (bytes == 0) {
@@ -292,14 +306,38 @@ internal class ShellCallAudio(private val context: Context) {
 
         fun zeroMaxMs(nowMs: Long): Long = maxOf(completedZeroMaxMs, currentZeroStreakMs(nowMs))
 
+        fun zeroStreakMs(nowMs: Long): Long = currentZeroStreakMs(nowMs)
+
         fun pendingWriteStalled(nowMs: Long): Boolean =
             stoppedAtMs < 0L && currentZeroStreakMs(nowMs) >= MAX_UPLINK_WRITE_STALL_MS
 
         fun lastWriteAgeMs(nowMs: Long): Long = if (lastWriteMs < 0L) -1L else observationTime(nowMs) - lastWriteMs
 
-        fun recordPlaybackHead(rawFrames: Int) { playbackHeadFrames = rawFrames.toLong() and 0xffff_ffffL }
+        fun recordPlaybackHead(rawFrames: Int, atMs: Long) {
+            val frames = rawFrames.toLong() and 0xffff_ffffL
+            if (frames != lastHeadFrames) lastHeadAdvanceMs = atMs
+            lastHeadFrames = frames
+            playbackHeadFrames = frames
+        }
 
-        fun resetPlaybackHead() { playbackHeadFrames = -1L }
+        /**
+         * 播放头冻住([HEAD_STALL_MS] 没动)且还有东西该播(刚写过数据、或 track 里还压着没播的):
+         * track 已死(厂商栈假死),继续写只会把积压滚大,要重建。
+         */
+        fun headStalled(nowMs: Long): Boolean =
+            playbackHeadFrames >= 0L && lastHeadAdvanceMs >= 0L && nowMs - lastHeadAdvanceMs >= HEAD_STALL_MS &&
+                (nowMs - lastWriteMs <= HEAD_FLOW_MS || trackQueuedFrames() > 0L)
+
+        /** track 里压着没播的帧数(本纪元数据 + 先导静音 − 播放头);头未知为 -1。 */
+        fun trackQueuedFrames(): Long =
+            if (playbackHeadFrames < 0L) -1L
+            else (playbackEpochDataBytes / 2L + playbackPrimeFrames - playbackHeadFrames).coerceAtLeast(0L)
+
+        fun resetPlaybackHead() {
+            playbackHeadFrames = -1L
+            lastHeadFrames = -1L
+            lastHeadAdvanceMs = -1L
+        }
 
         fun recordTrackFlush() {
             playbackEpoch++
@@ -312,6 +350,11 @@ internal class ShellCallAudio(private val context: Context) {
 
         fun recordFlush(durationMs: Long) { flushMaxMs = maxOf(flushMaxMs, durationMs) }
 
+        fun recordRebuild(droppedBytes: Long) {
+            rebuildCount++
+            rebuildDroppedBytes += droppedBytes
+        }
+
         fun stop(atMs: Long) {
             endZeroStreak(atMs)
             stoppedAtMs = atMs
@@ -323,18 +366,47 @@ internal class ShellCallAudio(private val context: Context) {
             else observationTime(nowMs) - zeroSinceMs
     }
 
+    /**
+     * 播放重建的节流:假死的 track 重建一次多半能回来,真坏的重建也救不了。
+     * 窗口 [windowMs] 内最多 [maxInWindow] 次、相邻两次至少隔 [minIntervalMs];放弃才交还系统。
+     */
+    internal class PlaybackRebuildPolicy(
+        private val maxInWindow: Int = 3,
+        private val windowMs: Long = 15_000,
+        private val minIntervalMs: Long = 1_000,
+    ) {
+        private var lastRebuildAtMs = -1L
+        private val recent = ArrayDeque<Long>()
+
+        /** 距上次重建太近:这次先不动(等下一个评估点),不算失败。 */
+        @Synchronized fun throttled(nowMs: Long): Boolean =
+            lastRebuildAtMs >= 0L && nowMs - lastRebuildAtMs < minIntervalMs
+
+        /** 记一次重建;窗口内次数用尽返回 false(真坏,交还系统)。 */
+        @Synchronized fun allow(nowMs: Long): Boolean {
+            while (recent.isNotEmpty() && nowMs - recent.first() > windowMs) recent.removeFirst()
+            if (recent.size >= maxInWindow) return false
+            recent.addLast(nowMs)
+            lastRebuildAtMs = nowMs
+            return true
+        }
+    }
+
     internal enum class UplinkFlushStage { NONE, DRAIN, PAUSE, FLUSH, PLAY, PRIME, DONE }
 
     private inner class Session(
         val owner: IBinder,
         private val backend: Int,
         private val record: AudioRecord,
-        private val track: AudioTrack,
+        private var track: AudioTrack,
+        /** 重建假死 track 用:按开场同一份规格建一块已开始播放的新 track。 */
+        private val trackFactory: () -> AudioTrack,
         private val down: ParcelFileDescriptor,
         private val up: ParcelFileDescriptor,
     ) {
         private val io = Any()
         private val playbackDiagnostics = PlaybackDiagnostics()
+        private val rebuildPolicy = PlaybackRebuildPolicy()
         private val captureSilence = CaptureSilenceDiagnostics()
         private var closed = false
         private var downBytes = 0L
@@ -445,6 +517,7 @@ internal class ShellCallAudio(private val context: Context) {
                                 check(inPstnCall()) { "Cellular audio mode ended." }
                                 check(manager.isMicrophoneMute) { "Handset microphone was unmuted." }
                                 updateRoutes()
+                                checkPlaybackHealth(now)
                                 checkedAt = now
                             }
                             pump(now)
@@ -555,12 +628,49 @@ internal class ShellCallAudio(private val context: Context) {
 
         private fun playbackRouteReady(): Boolean = backend == REDIRECT || txDevice == AudioDeviceInfo.TYPE_TELEPHONY
 
-        private fun samplePlaybackHead(): Boolean = try {
-            playbackDiagnostics.recordPlaybackHead(track.playbackHeadPosition)
+        private fun samplePlaybackHead(atMs: Long = SystemClock.elapsedRealtime()): Boolean = try {
+            playbackDiagnostics.recordPlaybackHead(track.playbackHeadPosition, atMs)
             true
         } catch (_: Exception) {
             // Vendor tracks may not expose a head position. Keep the last good value but mark it stale.
             false
+        }
+
+        /**
+         * track 假死(播放头不走或写入持续为零)时重建,而不是干等到 1.5s 交还系统:
+         * 丢掉管子里积压的旧音频(有界),从接近现场的地方接着播,积压不再利滚利。
+         * 重建也救不回来(次数用尽)才按「上行播放无进展」交还系统。
+         */
+        private fun checkPlaybackHealth(now: Long) {
+            samplePlaybackHead(now)
+            val dead = playbackDiagnostics.headStalled(now) ||
+                playbackDiagnostics.trackQueuedFrames() > MAX_TRACK_QUEUE_FRAMES ||
+                playbackDiagnostics.zeroStreakMs(now) >= ZERO_REBUILD_MS && upSize > upOffset
+            if (!dead || rebuildPolicy.throttled(now)) return
+            check(rebuildPolicy.allow(now)) { "Uplink playback stopped accepting audio." }
+            rebuildPlayback(now)
+        }
+
+        private fun rebuildPlayback(now: Long) {
+            playbackDiagnostics.endZeroStreak(now)
+            runCatching { track.stop() }
+            runCatching { track.flush() }
+            runCatching { track.release() }
+            upOffset = 0
+            upSize = 0
+            val scratch = ByteArray(4096)
+            var dropped = 0L
+            while (dropped < MAX_REBUILD_DROP_BYTES) {
+                val n = noWouldBlock { Os.read(up.fileDescriptor, scratch, 0, scratch.size) }
+                if (n <= 0) break
+                dropped += n
+            }
+            track = trackFactory()
+            playbackDiagnostics.recordTrackFlush()
+            txDevice = -1
+            primePlayback()
+            playbackDiagnostics.recordRebuild(dropped)
+            updateRoutes()
         }
 
         fun snapshot(alive: Boolean, reason: String): Bundle = synchronized(io) {
@@ -585,6 +695,8 @@ internal class ShellCallAudio(private val context: Context) {
                 putBoolean("upPlaybackRouteReady", playbackActive && playbackRouteReady())
                 putLong("upFlushMaxMs", playbackDiagnostics.flushMaxMs)
                 putString("upFlushStage", flushStage.name)
+                putLong("upPlaybackRebuilds", playbackDiagnostics.rebuildCount)
+                putLong("upRebuildDroppedBytes", playbackDiagnostics.rebuildDroppedBytes)
                 putInt("downPeak", downPeak)
                 putInt("rxDevice", rxDevice)
                 putInt("txDevice", txDevice)
@@ -690,6 +802,15 @@ internal class ShellCallAudio(private val context: Context) {
         private const val MAX_CAPTURE_SILENCE_POLL_GAP_MS = DEVICE_CHECK_MS * 3
         private const val MAX_UPLINK_WRITE_STALL_MS = 1_500L
         private const val MAX_FLUSH_BYTES = 256 * 1024
+        /** 播放头冻结判定:这么久没动算死;期间要有数据在写或积压未播才成立。 */
+        private const val HEAD_STALL_MS = 1_000L
+        private const val HEAD_FLOW_MS = 500L
+        /** track 里压着超过 2 秒没播:消费已经跟不上,重建并丢弃旧音频。 */
+        private const val MAX_TRACK_QUEUE_FRAMES = PLAY_RATE * 2L
+        /** 写入持续这么久为零就动手重建(旧的 1.5s 直接交还系统仍作兜底)。 */
+        private const val ZERO_REBUILD_MS = 600L
+        /** 重建时从管子丢弃旧音频的上界(约 4 秒);应用侧队列另有自己的上限兜底。 */
+        private const val MAX_REBUILD_DROP_BYTES = PLAY_RATE * 2L * 4L
         private val PIPE_CLOSED get() = OsConstants.POLLERR or OsConstants.POLLHUP or OsConstants.POLLNVAL
 
         internal fun writePlaybackPrime(

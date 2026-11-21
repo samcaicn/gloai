@@ -301,11 +301,11 @@ class ShellCallAudioTest {
     fun playbackHeadIsAnUnsignedPositionAndCanBeInvalidatedAfterFlush() {
         val stats = ShellCallAudio.PlaybackDiagnostics()
         assertEquals(-1L, stats.playbackHeadFrames)
-        stats.recordPlaybackHead(Int.MIN_VALUE)
+        stats.recordPlaybackHead(Int.MIN_VALUE, 0)
         assertEquals(0x8000_0000L, stats.playbackHeadFrames)
         stats.resetPlaybackHead()
         assertEquals(-1L, stats.playbackHeadFrames)
-        stats.recordPlaybackHead(0)
+        stats.recordPlaybackHead(0, 0)
         assertEquals(0L, stats.playbackHeadFrames)
     }
 }

@@ -32,6 +32,8 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
     private var shellLastWriteAgeMs = -1L
     private var shellPlaybackHeadFrames = -1L
     private var shellFlushMaxMs = -1L
+    private var shellPlaybackRebuilds = -1L
+    private var shellRebuildDroppedBytes = -1L
     private var providerFailedEvents = 0L
     private var providerClosedEvents = 0L
     private var completeUserTranscripts = 0L
@@ -87,6 +89,8 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
         playbackHeadFrames: Long = -1L,
         flushMaxMs: Long = -1L,
         captureSilencedMs: Long = -1L,
+        playbackRebuilds: Long = -1L,
+        rebuildDroppedBytes: Long = -1L,
     ) {
         playbackShellAcceptedBytes = maxOf(playbackShellAcceptedBytes, bytes)
         shellWriteZeroCount = maxOf(shellWriteZeroCount, zeroCount)
@@ -94,6 +98,8 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
         if (lastWriteAgeMs >= 0) shellLastWriteAgeMs = lastWriteAgeMs
         if (playbackHeadFrames >= 0) shellPlaybackHeadFrames = playbackHeadFrames
         shellFlushMaxMs = maxOf(shellFlushMaxMs, flushMaxMs)
+        shellPlaybackRebuilds = maxOf(shellPlaybackRebuilds, playbackRebuilds)
+        shellRebuildDroppedBytes = maxOf(shellRebuildDroppedBytes, rebuildDroppedBytes)
         if (captureSilencedMs >= 0L) captureSilencedMaxMs = maxOf(captureSilencedMaxMs ?: 0L, captureSilencedMs)
     }
 
@@ -104,7 +110,8 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
             "peak_queued_bytes=$playbackMaxQueuedBytes rejected_packets=$playbackRejectedPackets " +
             "shell_up_bytes=$playbackShellAcceptedBytes shell_write_zero_count=$shellWriteZeroCount " +
             "shell_write_zero_max_ms=$shellWriteZeroMaxMs shell_last_write_age_ms=$shellLastWriteAgeMs " +
-            "shell_playback_head_frames=$shellPlaybackHeadFrames shell_flush_max_ms=$shellFlushMaxMs"
+            "shell_playback_head_frames=$shellPlaybackHeadFrames shell_flush_max_ms=$shellFlushMaxMs " +
+            "shell_playback_rebuilds=$shellPlaybackRebuilds shell_rebuild_dropped_bytes=$shellRebuildDroppedBytes"
 
     @Synchronized
     fun eventReceived(event: VolcRealtimeEvent) {
@@ -199,6 +206,8 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
         "playback_shell_last_write_age_ms" to shellLastWriteAgeMs,
         "playback_shell_head_frames" to shellPlaybackHeadFrames,
         "playback_shell_flush_max_ms" to shellFlushMaxMs,
+        "playback_shell_rebuilds" to shellPlaybackRebuilds,
+        "playback_shell_rebuild_dropped_bytes" to shellRebuildDroppedBytes,
         "provider_failed_events" to providerFailedEvents,
         "provider_closed_events" to providerClosedEvents,
     )
