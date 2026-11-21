@@ -2,7 +2,7 @@ package com.wangzan101.mika.ui
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
-import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -98,7 +98,7 @@ class ProjectDrawerUiTest {
         compose.setContent {
             ChatWithDrawer(
                 vm, Prerequisites.Check(emptyList()), reduceMotion = true,
-                conversations = { store.list() }, conversationChanges = store.changes, conversationTitle = store::title,
+                conversations = { store.list(includeArchived = true) }, conversationChanges = store.changes, conversationTitle = store::title,
                 onSettings = {}, reopen = drawerOpen,
             ) { open ->
                 ChatScreen(
@@ -122,7 +122,7 @@ class ProjectDrawerUiTest {
         val created = projects.projects.value.single()
         assertEquals("Mika 研发", created.name)
         assertEquals(created.id, vm.ui.value.projectId)
-        compose.onNodeWithTag("chat-project-pill").assertTextContains("Mika 研发")
+        compose.onNode(hasText("Mika 研发") and hasAnyAncestor(hasTestTag("chat-project-pill"))).assertIsDisplayed()
 
         compose.onNodeWithContentDescription("菜单").performClick()
         compose.onNode(hasTestTag("project-header") and hasText("Mika 研发")).assertExists()
@@ -130,7 +130,7 @@ class ProjectDrawerUiTest {
         compose.waitForIdle()
 
         assertEquals(created.id, vm.ui.value.projectId)
-        compose.onNodeWithTag("chat-project-pill").assertTextContains("Mika 研发")
+        compose.onNode(hasText("Mika 研发") and hasAnyAncestor(hasTestTag("chat-project-pill"))).assertIsDisplayed()
     }
 
     @Test fun collapseRenameAndDeleteProjectRemoveMembersOnly() {

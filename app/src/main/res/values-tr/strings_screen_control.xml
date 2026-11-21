@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_control_hint">Mika kontrol ediyor · Devralmak için dokunun</string>
+    <string name="screen_control_wait">Geçerli işlemin bitmesi bekleniyor…</string>
+    <string name="screen_control_active">Kontrol sizde · Geri vermek için dokunun</string>
+    <string name="screen_control_failed">Kontrol kullanılamıyor veya ekran değişti. Lütfen tekrar deneyin.</string>
+    <string name="screen_control_resume">Mika devam etsin</string>
+    <string name="screen_control_start">Kontrolü devral</string>
+    <string name="screen_control_text">Odaklanılan alana girilecek metin</string>
+    <string name="screen_control_send_text">Metin gir</string>
+    <string name="screen_resize_panes">Bölmeleri yeniden boyutlandır</string>
+</resources>

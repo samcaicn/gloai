@@ -119,6 +119,24 @@ class ShellService(
         }
     }
 
+    override fun resizeDisplay(displayId: Int, surface: Surface, width: Int, height: Int, dpi: Int): Boolean = synchronized(displays) {
+        val vd = displays[displayId] ?: return@synchronized false
+        if (width !in 1..4096 || height !in 1..4096 || dpi !in 72..1000 || !surface.isValid) return@synchronized false
+        val old = android.util.DisplayMetrics().also { vd.display.getRealMetrics(it) }
+        val oldMode = vd.display.mode
+        val oldSurface = vd.surface
+        try {
+            vd.resize(width, height, dpi)
+            vd.surface = surface
+            oldSurface?.release()
+            true
+        } catch (e: Exception) {
+            runCatching { vd.resize(oldMode.physicalWidth, oldMode.physicalHeight, old.densityDpi); vd.surface = oldSurface }
+            Log.w(TAG, "resizeDisplay failed", e)
+            false
+        }
+    }
+
     private fun createVirtualDisplay(surface: Surface, width: Int, height: Int, dpi: Int, trusted: Boolean): Int {
         val flags = displayFlags(Build.VERSION.SDK_INT, trusted)
         val vd = displayManager.createVirtualDisplay("mika-agent", width, height, dpi, surface, flags)

@@ -29,6 +29,18 @@ class DisplayFrameGeometryTest {
         }
     }
 
+    @Test fun resizingUsesLogicalViewportDimensionsInEveryRotation() {
+        for (rotation in 0..3) {
+            val resized = DisplayFrameGeometry(2364, 1672, rotation).resized(814, 1301)
+            assertEquals(rotation, resized.rotation)
+            assertEquals(814, resized.width)
+            assertEquals(1301, resized.height)
+            assertEquals(if (rotation % 2 == 1) 1301 else 814, resized.bufferWidth)
+            assertEquals(if (rotation % 2 == 1) 814 else 1301, resized.bufferHeight)
+            assertEquals(720 to 1150, resized.previewSize(resized.previewWidth(720)))
+        }
+    }
+
     @Test fun previewDoesNotUpscaleSmallFrames() {
         val geometry = DisplayFrameGeometry(36, 80, 3)
         assertEquals(80 to 36, geometry.previewSize(geometry.previewWidth(360)))

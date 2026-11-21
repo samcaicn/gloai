@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_control_hint">Mika controla · Toca para tomar el control</string>
+    <string name="screen_control_wait">Esperando a que termine la acción actual…</string>
+    <string name="screen_control_active">Tú controlas · Toca para devolverlo</string>
+    <string name="screen_control_failed">El control no está disponible o la pantalla cambió. Inténtalo de nuevo.</string>
+    <string name="screen_control_resume">Continuar Mika</string>
+    <string name="screen_control_start">Tomar el control</string>
+    <string name="screen_control_text">Texto para el campo seleccionado</string>
+    <string name="screen_control_send_text">Introducir texto</string>
+    <string name="screen_resize_panes">Ajustar paneles</string>
+</resources>

@@ -227,7 +227,30 @@ class ToolDispatcher internal constructor(
 
     private var executed = 0
 
+    /** 宿主可提供运行级人工控制；核心不依赖界面或设备输入实现。 */
+    var manualControl: com.wangzan101.mika.core.run.ManualControl? = null
+    private val manualObserver = com.wangzan101.mika.core.run.ManualControl.Observer()
+
     private suspend fun dispatch(call: Part.ToolCall, step: Int?, sub: SubActions?): ToolExecution {
+        return try { withScreenControl(call.name, successful = { it: ToolExecution -> it.content["ok"] != JsonPrimitive(false) }) {
+            dispatchAutomatic(call, step, sub)
+        } } catch (e: com.wangzan101.mika.core.run.ManualControl.Interrupted) {
+            fail(com.wangzan101.mika.core.run.ManualControl.CHANGED, e.message.orEmpty(), recoverable = true)
+        }
+    }
+
+    /** 只锁单个屏幕操作；组合脚本的子步各自经过此入口，非屏幕工具不占用触控权。 */
+    internal suspend fun <T> withScreenControl(name: String, successful: (T) -> Boolean, block: suspend () -> T): T {
+        val control = manualControl ?: return block()
+        if (offScreen(name) || composite(name)) return block()
+        val verb = verb(name)
+        val observation = verb in setOf(Verb.Observe, Verb.ListElements, Verb.Screenshot, Verb.ReadPage)
+        // 后台网页正文不能证明已看过当前画面；每个分发器分别记录自己的观察代次。
+        return control.automatic(observation, refresh = observation && verb != Verb.ReadPage,
+            refreshed = successful, observer = manualObserver, block = block)
+    }
+
+    private suspend fun dispatchAutomatic(call: Part.ToolCall, step: Int?, sub: SubActions?): ToolExecution {
         surfaces.skip()
         val tool = registry[call.name] ?: return unknown(call.name, parseArgs(call.argsJson))
         // 收着的组里的工具(入口,或模型凭记忆调了没给它看的)照常执行;它那一组就此展开,结果里说一句,下一次调用起看得到整组
@@ -414,8 +437,10 @@ class ToolDispatcher internal constructor(
     }
 
     /** 此刻这块屏上要做一个改动屏幕的动作了:按这块屏的能力的节奏先停一会儿([Capability.beforeWrite])。 */
-    internal suspend fun beforeWrite(tool: String, outward: Boolean): Paced =
-        capabilities.firstOrNull { it.id == surface }?.beforeWrite(ctx, verb(tool), outward) ?: Paced.NONE
+    internal suspend fun beforeWrite(tool: String, outward: Boolean): Paced {
+        suspend fun prepare() = capabilities.firstOrNull { it.id == surface }?.beforeWrite(ctx, verb(tool), outward) ?: Paced.NONE
+        return manualControl?.automatic(observer = manualObserver) { prepare() } ?: prepare()
+    }
 
     /** 那个动作做完了:交给这块屏的能力([Capability.afterWrite])。 */
     internal fun afterWrite(tool: String, result: JsonObject) {

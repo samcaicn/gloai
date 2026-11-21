@@ -1,5 +1,10 @@
 package com.wangzan101.mika.ui
 
+import android.graphics.Bitmap
+import kotlinx.coroutines.flow.StateFlow
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.saveable.rememberSaveable
+
 import com.wangzan101.mika.R
 import com.wangzan101.mika.export.ExportConversationDialog
 import com.wangzan101.mika.i18n.tr
@@ -400,6 +405,10 @@ fun ChatDrawer(
     searchFilter: SearchArchiveFilter = SearchArchiveFilter.All,
     onSearchFilterChange: (SearchArchiveFilter) -> Unit = {},
     onNew: () -> Unit,
+    onPersonal: () -> Unit = {},
+    onPlans: () -> Unit = {},
+    onMemory: () -> Unit = {},
+    onBrowser: () -> Unit = {},
     onScreens: () -> Unit = {},
     onSettings: () -> Unit,
     onOpen: (DrawerConversation) -> Unit,
@@ -440,6 +449,8 @@ fun ChatDrawer(
     onProjectActions: (Project, Rect) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     containerColor: Color = MikaTheme.colors.bg,
+    permanent: Boolean = false,
+    onShowScreen: (() -> Unit)? = null,
 ) {
     val c = MikaTheme.colors
     // 能勾的就是此刻列在侧栏里、已经存过的对话(还没存过的当前草稿没有编号,删不了);归档视图里是归档的那些
@@ -451,7 +462,7 @@ fun ChatDrawer(
     // 搜索时把几个入口收起来，把高度让给结果;清空后原样回来。搜索框在入口上面，位置不跳
     val searchActive = canSearch && !selecting && !archivedView && query.isNotBlank()
     Column(
-        modifier.fillMaxHeight().widthIn(max = DrawerWidth).fillMaxWidth()
+        modifier.fillMaxHeight().then(if (permanent) Modifier else Modifier.widthIn(max = DrawerWidth)).fillMaxWidth()
             .background(containerColor)
             .windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.navigationBars))
             .testTag("drawer"),
@@ -472,6 +483,15 @@ fun ChatDrawer(
             }
             // 多选从长按菜单进;进去以后这里换成「取消」,返回键同样能退出
             if (selecting) HeaderAction(stringResource(R.string.cancel), "drawer-select-cancel", c.ink2, onExitSelect)
+        }
+        if (!searchActive && !selecting && !archivedView && permanent) {
+            Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                onShowScreen?.let { NavEntry(MikaIcons.Screens, stringResource(R.string.screens_preview), onClick = it) }
+                NavEntry(MikaIcons.Message, stringResource(R.string.drawer_personal), onClick = onPersonal)
+                NavEntry(MikaIcons.Clock, stringResource(R.string.drawer_plans), onClick = onPlans)
+                NavEntry(MikaIcons.Heart, stringResource(R.string.memory_and_skills), onClick = onMemory)
+                NavEntry(MikaIcons.Globe, stringResource(R.string.drawer_browser), onClick = onBrowser)
+            }
         }
         // 搜索框和新对话并成一行:搜索框占满,右边一个中性圆加号(没在搜时才有);没有可搜的对话时也留那个加号
         val showNew = !searchActive && !selecting && !archivedView
@@ -502,7 +522,7 @@ fun ChatDrawer(
             sections.recent.isNotEmpty() -> "h-recent"
             else -> "end"
         }
-        LaunchedEffect(first) { list.scrollToItem(0) }
+        LaunchedEffect(first) { list.requestScrollToItem(0) }
         val terms = remember(query) { ConversationSearch.termsOf(query) }
         // 归档视图按本周 / 本月 / 更早分组;分组也跟着列表走
         val archiveGrouping = remember(archived) { archiveGroups(archived, System.currentTimeMillis()) }
@@ -1247,6 +1267,10 @@ fun ChatWithDrawer(
     conversationTitle: (String) -> String? = { null },
     /** 侧栏搜索用的索引;没有时侧栏不显示搜索框。 */
     search: ConversationSearch? = null,
+    onPersonal: () -> Unit = {},
+    onPlans: () -> Unit = {},
+    onMemory: () -> Unit = {},
+    onBrowser: () -> Unit = {},
     onScreens: () -> Unit = {},
     onSettings: () -> Unit,
     onAbout: () -> Unit = {},
@@ -1255,20 +1279,33 @@ fun ChatWithDrawer(
     /** 从侧栏进去的页面刚退回来:当场打开侧栏,回到进去之前的样子。 */
     reopen: Boolean = false,
     onReopened: () -> Unit = {},
+    frames: StateFlow<Bitmap?>? = null,
+    operationRun: (String) -> com.wangzan101.mika.task.TaskRun? = { null },
+    chatActive: Boolean = true,
     onRegularChat: () -> Unit = {},
     /** 外部跳回对话页时变化:若之前因返回键留在展开的侧栏,当场收起侧栏。 */
     resetKey: Int = 0,
     content: @Composable (openDrawer: () -> Unit) -> Unit,
 ) {
+    val adaptive = LocalAdaptiveLayout.current
+    val permanent = adaptive.hasNavigation
+    val ui by vm.ui.collectAsState()
+    val runId = ui.exchanges.lastOrNull()?.runId
+    var preferConversations by rememberSaveable(ui.conversationId, runId) { mutableStateOf(false) }
+    val screenAvailable = chatActive && permanent && frames != null && ui.pip.visible
+    val screenDocked = screenAvailable && !ui.pip.closed && !preferConversations
     // 从侧栏页面返回时直接以展开状态创建,保留上游修复的首帧行为。
-    val drawer = rememberChatDrawerState(if (reopen) DrawerValue.Open else DrawerValue.Closed)
+    val drawer = rememberChatDrawerState(if (reopen && !permanent) DrawerValue.Open else DrawerValue.Closed)
     val backProgress = remember { Animatable(0f) }
     var drawerWidthPx by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
-    LaunchedEffect(reopen) {
-        if (reopen) onReopened()
+    LaunchedEffect(reopen, permanent) {
+        if (permanent) drawer.snapTo(DrawerValue.Closed)
+        if (reopen) {
+            preferConversations = true
+            onReopened()
+        }
     }
-    val ui by vm.ui.collectAsState()
     val others by vm.otherRunning.collectAsState()
     fun close(then: () -> Unit = {}) {
         scope.launch {
@@ -1282,16 +1319,16 @@ fun ChatWithDrawer(
         go()
     }
     // 从手指刚拉动就准备列表,而不是过了半程才从空白跳成历史记录;完全收回才清理搜索等状态。
-    val open by remember(drawer) {
+    val open by remember(drawer, permanent) {
         derivedStateOf {
-            drawer.targetValue == DrawerValue.Open || drawer.isOpen ||
+            permanent || drawer.targetValue == DrawerValue.Open || drawer.isOpen ||
                 (drawerWidthPx > 0 && drawer.currentOffset.isFinite() && drawer.currentOffset > -drawerWidthPx + 0.5f)
         }
     }
     val focus = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
-    LaunchedEffect(open) {
-        if (open) {
+    LaunchedEffect(open, permanent) {
+        if (open && !permanent) {
             focus.clearFocus()
             keyboard?.hide()
         }
@@ -1369,7 +1406,7 @@ fun ChatWithDrawer(
     }
     // 从右侧露出的聊天页贴边左划时,系统可能先接管返回。直接跟随返回进度,
     // 而不是等手指松开才突然启动另一段收起动画;取消返回则平滑回到展开位置。
-    PredictiveBackHandler(enabled = open && !nestedDrawerView) { progress ->
+    PredictiveBackHandler(enabled = !permanent && open && !nestedDrawerView) { progress ->
         try {
             progress.collect { backProgress.snapTo(it.progress) }
             if (reduceMotion) drawer.snapTo(DrawerValue.Closed) else drawer.close()
@@ -1393,6 +1430,11 @@ fun ChatWithDrawer(
     var confirmingProject by remember { mutableStateOf<Pair<Project, ProjectDeleteImpact>?>(null) }
     /** 菜单出现的进度:0 是没有,1 是完全出来;关了动画时直接到位。 */
     val lift = remember { Animatable(0f) }
+    LaunchedEffect(adaptive) {
+        acting = null
+        actingProject = null
+        lift.snapTo(0f)
+    }
     LaunchedEffect(acting, actingProject) {
         if (acting != null || actingProject != null) {
             if (reduceMotion) lift.snapTo(1f) else lift.animateTo(1f, tween(MENU_IN_MS, easing = MikaMotion.Decelerate))
@@ -1442,7 +1484,8 @@ fun ChatWithDrawer(
     BoxWithConstraints(Modifier.fillMaxSize().clipToBounds().background(MikaTheme.colors.bg)) {
         // 与参照一致占手机宽度的 85%;窄窗口也至少留 48dp 供点击/左滑收回。
         val drawerWidth = minOf(DrawerWidth, maxWidth * 0.85f, (maxWidth - 48.dp).coerceAtLeast(0.dp))
-        ChatNavigationDrawer(
+        AdaptiveChatNavigation(
+            layout = adaptive,
             // 菜单开着时后面整屏(对话页和侧栏)模糊(安卓 12 起;更早的只变暗),无障碍也只读菜单
             modifier = if (!menuOpen) Modifier else Modifier
                 .then(
@@ -1550,13 +1593,19 @@ fun ChatWithDrawer(
                 }
                 ChatDrawer(
                     check, sections, canSwitch,
-                    modifier = Modifier.width(drawerWidth).onSizeChanged { drawerWidthPx = it.width }.offset {
+                    modifier = (if (permanent) Modifier else Modifier.width(drawerWidth)).onSizeChanged { drawerWidthPx = it.width }.offset {
                         val offset = drawer.currentOffset
                         val reveal = if (offset.isFinite()) (drawerWidthPx + offset).coerceIn(0f, drawerWidthPx.toFloat()) else 0f
                         IntOffset(-(reveal * backProgress.value).roundToInt(), 0)
                     },
                     // 与外层共用背景,让聊天卡片上下角的外侧阴影完整显示。
                     containerColor = Color.Transparent,
+                    permanent = permanent,
+                    onShowScreen = if (screenAvailable) ({ preferConversations = false; vm.expandPip() }) else null,
+                    onPersonal = { leave(onPersonal) },
+                    onPlans = { leave(onPlans) },
+                    onMemory = { leave(onMemory) },
+                    onBrowser = { leave(onBrowser) },
                     query = query,
                     onQueryChange = { query = it },
                     search = searchView,
@@ -1639,21 +1688,38 @@ fun ChatWithDrawer(
                     onProjectActions = { project, bounds -> actingProject = project to bounds },
                 )
             },
-            drawerState = drawer,
-            contentOffset = {
-                val offset = drawer.currentOffset
-                val reveal = if (offset.isFinite()) (drawerWidthPx + offset).coerceIn(0f, drawerWidthPx.toFloat()) else 0f
-                reveal * (1f - backProgress.value)
+            sideContent = if (screenDocked) ({
+                val run = ui.conversationId?.let(operationRun)
+                val liveFrame by (run?.frames ?: frames!!).collectAsState()
+                var lastFrame by remember(ui.conversationId, runId) { mutableStateOf<Bitmap?>(null) }
+                LaunchedEffect(liveFrame) { liveFrame?.let { lastFrame = it } }
+                val previewFrame = liveFrame ?: lastFrame.takeIf { ui.pip.mode == PipMode.Done }
+                val showConversations = { preferConversations = true }
+                val closeScreen = { preferConversations = true; vm.closePip() }
+                if (run != null) InteractiveOperationScreen(run, previewFrame, ui.pip.mode, showConversations, closeScreen)
+                else OperationScreenPane(previewFrame, ui.pip.mode, showConversations, closeScreen)
+            }) else null,
+            drawerGesturesEnabled = chatActive,
+            compactContent = { navigation, detail ->
+                ChatNavigationDrawer(
+                    drawerContent = navigation,
+                    drawerState = drawer,
+                    contentOffset = {
+                        val offset = drawer.currentOffset
+                        val reveal = if (offset.isFinite()) (drawerWidthPx + offset).coerceIn(0f, drawerWidthPx.toFloat()) else 0f
+                        reveal * (1f - backProgress.value)
+                    },
+                    onDismiss = { close() },
+                    // 对话页上从左往右划拉出侧栏(拖着跟手);能左右滚的内容(宽表格、代码块等)先自己滚。
+                    // 屏幕边缘保留给系统返回;侧栏开着时返回收起侧栏,关着时交回系统。
+                    gesturesEnabled = !menuOpen,
+                ) { detail() }
             },
-            onDismiss = { close() },
-            // 对话页上从左往右划拉出侧栏(拖着跟手);能左右滚的内容(宽表格、代码块等)先自己滚。
-            // 屏幕边缘保留给系统返回;侧栏开着时返回收起侧栏,关着时交回系统。
-            gesturesEnabled = !menuOpen,
         ) {
             // 使用抽屉同一份实时位移,聊天页宽度不变,和侧栏一起跟手平移;不能只在松手后播动画。
             // offset 会自动镜像 RTL,和 Material 抽屉的起始边一致。
             Box(
-                Modifier.offset {
+                (if (permanent) Modifier else Modifier.offset {
                     val offset = drawer.currentOffset
                     val push = if (offset.isFinite()) (drawerWidthPx + offset).coerceIn(0f, drawerWidthPx.toFloat()) else 0f
                     IntOffset((push * (1f - backProgress.value)).roundToInt(), 0)
@@ -1682,11 +1748,16 @@ fun ChatWithDrawer(
                     )
                 }
                     .then(if (open) Modifier.clearAndSetSemantics {} else Modifier)
-                    .testTag("drawer-chat"),
+                    .testTag("drawer-chat")).fillMaxSize(),
             ) {
-                content { scope.launch { if (reduceMotion) drawer.snapTo(DrawerValue.Open) else drawer.open() } }
+                CompositionLocalProvider(LocalOperationScreenDocked provides screenDocked) {
+                    content {
+                        preferConversations = true
+                        if (!permanent) scope.launch { if (reduceMotion) drawer.snapTo(DrawerValue.Open) else drawer.open() }
+                    }
+                }
                 // 跟手淡化聊天内容,视觉焦点留在侧栏;绘制阶段读取位移,不让整页每帧重组。
-                Box(Modifier.fillMaxSize().drawBehind {
+                if (!permanent) Box(Modifier.fillMaxSize().drawBehind {
                     val offset = drawer.currentOffset
                     val progress = if (drawerWidthPx > 0 && offset.isFinite())
                         ((drawerWidthPx + offset) / drawerWidthPx).coerceIn(0f, 1f) * (1f - backProgress.value) else 0f

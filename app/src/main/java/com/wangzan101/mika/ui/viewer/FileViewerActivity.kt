@@ -38,7 +38,9 @@ class FileViewerActivity : ComponentActivity() {
             val dark = com.wangzan101.mika.ui.theme.appearanceDark()
             androidx.compose.runtime.LaunchedEffect(dark) { systemBarsFor(dark) }
             MikaTheme(dark = dark, reduceMotion = animationsOff(this)) {
-                FileViewerScreen(uri, name, kind, onBack = ::finish)
+                com.wangzan101.mika.ui.AdaptiveWindow {
+                    FileViewerScreen(uri, name, kind, onBack = ::finish)
+                }
             }
         }
     }

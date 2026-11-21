@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_control_hint">کنترل با Mika است · برای در دست گرفتن کنترل ضربه بزنید</string>
+    <string name="screen_control_wait">در انتظار پایان اقدام فعلی…</string>
+    <string name="screen_control_active">کنترل با شماست · برای بازگرداندن کنترل ضربه بزنید</string>
+    <string name="screen_control_failed">کنترل در دسترس نیست یا صفحه تغییر کرده است. دوباره تلاش کنید.</string>
+    <string name="screen_control_resume">ادامه با Mika</string>
+    <string name="screen_control_start">در دست گرفتن کنترل</string>
+    <string name="screen_control_text">متن برای کادر فعال</string>
+    <string name="screen_control_send_text">وارد کردن متن</string>
+    <string name="screen_resize_panes">تغییر اندازهٔ بخش‌ها</string>
+</resources>

@@ -619,6 +619,8 @@ class AgentLoop(
             _state.value = TaskState.Running(step, note, progress = progress.state(step))
             offer.refresh()
             var asked = now()
+            tools.manualControl?.awaitAutomatic()
+            val controlVersion = tools.manualControl?.version
             val routed = try {
                 routedOrRedirect(inbox, history, offer.current, track, step, { asked = it }, previewFor(step))
             } catch (e: CancellationException) {
@@ -628,6 +630,11 @@ class AgentLoop(
             }
             if (routed == null) {
                 keepInterrupted(history, inbox, step)
+                return null
+            }
+            tools.manualControl?.awaitAutomatic()
+            if (controlVersion != tools.manualControl?.version) {
+                history += ctx.notice("manual_control", "The screen changed. Read the current screen and reconsider the next step; the earlier proposed action was not executed.")
                 return null
             }
             var (reply, used) = routed
@@ -855,7 +862,7 @@ class AgentLoop(
                         return StopRules.guard(it)
                     }
                     // 应用权限拒绝已经由执行入口作为工具结果交给模型:不结束任务,让模型换路线或向用户说明
-                    if (AppAccessDenied.isAppAccessCode(action.code)) {
+                    if (AppAccessDenied.isAppAccessCode(action.code) || action.code == com.wangzan101.mika.core.run.ManualControl.CHANGED) {
                         track.after(tools.verb(first.name), ok = false, guard = false, changed = null, recovery = false, app = null)
                         return null
                     }

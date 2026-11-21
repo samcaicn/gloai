@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_control_hint">Mika управляет · Нажмите для перехвата</string>
+    <string name="screen_control_wait">Ожидание завершения текущего действия…</string>
+    <string name="screen_control_active">Вы управляете · Нажмите для возврата</string>
+    <string name="screen_control_failed">Управление недоступно или экран изменился. Повторите попытку.</string>
+    <string name="screen_control_resume">Продолжить Mika</string>
+    <string name="screen_control_start">Взять управление</string>
+    <string name="screen_control_text">Текст для выбранного поля</string>
+    <string name="screen_control_send_text">Ввести текст</string>
+    <string name="screen_resize_panes">Изменить ширину панелей</string>
+</resources>

@@ -527,6 +527,9 @@ private fun MikaRoot(
     val back: () -> Unit = { nav.back() }
     // 聊天页离开组合树时保留列表位置和输入内容，返回设置页等子页面后原样恢复。
     val screenStates = rememberSaveableStateHolder()
+    val sidebarPage = nav.current in setOf(Route.Chat, Route.Personal, Route.Plans, Route.Memory, Route.Browser)
+    AdaptiveWindow(navigation = sidebarPage) {
+        val page: @Composable (() -> Unit) -> Unit = { openDrawer ->
     // 全局换页套滑动推入过渡;页内一律用 route 不用 nav.current:过渡动画期间旧页还在渲染,读实时状态会瞬间变脸
     NavSlide(nav.stack, depth = { it.size }) { stack ->
     val route = stack.last()
@@ -555,24 +558,7 @@ private fun MikaRoot(
                 app.chat.refresh()
                 onStopOrDispose {}
             }
-            ChatWithDrawer(
-                vm = app.chat,
-                check = check,
-                reduceMotion = MikaTheme.reduceMotion,
-                conversations = { ConversationStore.shared(context).list(includeArchived = true) },
-                conversationChanges = ConversationStore.shared(context).changes,
-                conversationTitle = { ConversationStore.shared(context).title(it) },
-                search = ConversationStore.shared(context).search,
-                onSettings = { nav.pushFromDrawer(Route.Settings) },
-                onScreens = { nav.pushFromDrawer(Route.Screens) },
-                onAbout = { nav.pushFromDrawer(Route.About) },
-                updateAvailable = AboutCopy.drawerDot(updateState),
-                reopen = nav.reopenDrawer,
-                onReopened = nav::drawerReopened,
-                onRegularChat = nav::reset,
-                resetKey = nav.resetSerial,
-            ) { openDrawer ->
-                Box(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize()) {
                     val readyRelease = readyUpdate?.takeIf { autoUpdate && it.apkUrl == updateState.update?.apkUrl }
                     val updateBackdrop = if (readyRelease != null) rememberGlassBackdrop() else null
                     Box(Modifier.fillMaxSize().glassSource(updateBackdrop)) {
@@ -635,7 +621,6 @@ private fun MikaRoot(
                             onOpenUrl = { openInBrowser(context, it) }, onDismiss = { installUpdate = null })
                     }
                 }
-            }
         }
         Route.Settings -> {
             val autonomous by app.approvals.autonomous.collectAsState()
@@ -787,6 +772,40 @@ private fun MikaRoot(
         })
         Route.Calls -> CallSettingsScreen(app.calls, onBack = back, standalone = true, initialHistoryCallId = focusedCallHistoryId)
     }
+    }
+        }
+        val permanent = LocalAdaptiveLayout.current.hasNavigation
+        if (nav.current == Route.Chat || nav.current == Route.Personal || (permanent && sidebarPage)) {
+            fun openFromSidebar(route: Route) {
+                if (permanent && nav.current != Route.Chat && nav.current != Route.Personal) nav.reset()
+                nav.pushFromDrawer(route)
+            }
+            ChatWithDrawer(
+                vm = app.chat,
+                check = check,
+                reduceMotion = MikaTheme.reduceMotion,
+                conversations = { ConversationStore.shared(context).list(includeArchived = true) },
+                conversationChanges = ConversationStore.shared(context).changes,
+                conversationTitle = { ConversationStore.shared(context).title(it) },
+                search = ConversationStore.shared(context).search,
+                onSettings = { openFromSidebar(Route.Settings) },
+                onScreens = { openFromSidebar(Route.Screens) },
+                onAbout = { openFromSidebar(Route.About) },
+                updateAvailable = AboutCopy.drawerDot(updateState),
+                reopen = nav.reopenDrawer,
+                onReopened = nav::drawerReopened,
+                onRegularChat = nav::reset,
+                resetKey = nav.resetSerial,
+                onPersonal = { nav.show(Route.Personal) },
+                onPlans = { openFromSidebar(Route.Plans) },
+                onMemory = { openFromSidebar(Route.Memory) },
+                onBrowser = { openFromSidebar(Route.Browser) },
+                frames = if (nav.current == Route.Chat) app.taskState.frames else null,
+                operationRun = app.taskState::run,
+                chatActive = nav.current == Route.Chat || nav.current == Route.Personal,
+                content = page,
+            )
+        } else page({})
     }
 
     var showLanguagePrompt by rememberSaveable { mutableStateOf(!AppLanguage.hasPrompted(context)) }

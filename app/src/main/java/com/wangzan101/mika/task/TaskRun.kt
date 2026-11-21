@@ -27,6 +27,8 @@ import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.IBinder
 import android.os.RemoteException
+import com.wangzan101.mika.cap.phone.display.PhoneViewport
+import com.wangzan101.mika.cap.phone.display.phoneViewport
 import android.os.SystemClock
 import android.util.Log
 import android.view.Display
@@ -181,7 +183,85 @@ class TaskRun(
     private val scope: CoroutineScope,
     val slot: Int = 0,
     val parallel: Boolean = false,
-) {
+) : ScreenControl {
+    override val manualControl = com.wangzan101.mika.core.run.ManualControl()
+    private data class ManualTarget(val port: com.wangzan101.mika.core.uistate.ScreenPort, val identity: String, val width: Int, val height: Int, val inputWidth: Int, val inputHeight: Int)
+    private var manualTarget: ManualTarget? = null
+    private var manualTargetNow: (suspend () -> ManualTarget?)? = null
+
+    /** 只给当前运行的实际画面接管，已有主屏接管或无画面时不开放输入。 */
+    override suspend fun beginScreenControl(): Boolean {
+        if (stopPressed || job?.isActive != true || !manualControl.begin()) return false
+        return try {
+            val target = manualTargetNow?.invoke()
+            if (target == null) { manualControl.end(); false }
+            else { manualTarget = target; loop?.state?.value?.let(::publish); true }
+        } catch (e: CancellationException) { withContext(NonCancellable) { manualControl.end() }; throw e }
+        catch (_: Exception) { manualControl.end(); false }
+    }
+
+    private suspend fun endScreenControl() {
+        manualTarget = null
+        manualControl.end()
+        loop?.state?.value?.let(::publish)
+    }
+
+    override suspend fun continueAfterScreenControl() {
+        val waitingTakeover = takeover?.stage?.value == Takeover.Stage.Waiting
+        endScreenControl()
+        if (waitingTakeover) takeover?.handBack()
+    }
+
+    private suspend fun manualInput(width: Int, height: Int, act: suspend (ManualTarget) -> com.wangzan101.mika.core.uistate.ActionResult): Boolean {
+        val version = manualControl.version
+        return manualControl.userInput {
+            if (manualControl.version != version) return@userInput false
+            val current = manualTargetNow?.invoke() ?: return@userInput false
+            val target = manualTarget ?: return@userInput false
+            if (target.identity != current.identity || width != current.width || height != current.height ||
+                target.width != width || target.height != height || target.inputWidth != current.inputWidth || target.inputHeight != current.inputHeight) return@userInput false
+            try { target.port.checkAppAccess(); act(target) is com.wangzan101.mika.core.uistate.ActionResult.Ok }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { false }
+        } ?: false
+    }
+
+    @Volatile private var activePhoneDisplay: AgentDisplay? = null
+    private var appliedViewport: Pair<Int, PhoneViewport>? = null
+
+    override suspend fun resizeScreen(width: Int, height: Int): Boolean {
+        if (width < 64 || height < 64 || job?.isActive != true) return false
+        // 网页的手机版/桌面版视口由浏览器自己管理；这里调整后台手机屏。
+        if (runState._webOpen.value) return false
+        val display = activePhoneDisplay ?: return false
+        val viewport = phoneViewport(width, height, service.resources.displayMetrics.densityDpi)
+        if (appliedViewport == (display.displayId to viewport)) return true
+        return manualControl.reconfigure {
+            withContext(NonCancellable) {
+                if (runState._webOpen.value || job?.isActive != true || activePhoneDisplay !== display || takeover?.handedOver == true) return@withContext false
+                if (!display.resize(viewport.width, viewport.height, viewport.dpi)) return@withContext false
+                appliedViewport = display.displayId to viewport
+                manualTarget = manualTarget?.takeIf { it.identity == "phone:${display.displayId}" }?.copy(
+                    width = display.previewWidth, height = display.previewHeight, inputWidth = display.width, inputHeight = display.height)
+                // 新 Surface 的首帧之前不接受旧画面输入；任务仍在同一个 displayId 上。
+                withTimeoutOrNull(2_000) { display.frames.filterNotNull().first() }
+                true
+            }
+        }
+    }
+
+    override suspend fun touchScreen(width: Int, height: Int, x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Long, swipe: Boolean): Boolean {
+        if (width <= 0 || height <= 0 || x1 !in 0 until width || x2 !in 0 until width || y1 !in 0 until height || y2 !in 0 until height) return false
+        return manualInput(width, height) { target ->
+            val start = controlPoint(x1, y1, width, height, target.inputWidth, target.inputHeight)
+            val end = controlPoint(x2, y2, width, height, target.inputWidth, target.inputHeight)
+            if (swipe) target.port.swipe(start.first, start.second, end.first, end.second, durationMs.coerceIn(50, 2_000))
+            else target.port.tapXY(start.first, start.second)
+        }
+    }
+
+    override suspend fun screenBack(width: Int, height: Int) = manualInput(width, height) { it.port.back() }
+    override suspend fun screenText(width: Int, height: Int, text: String) = manualInput(width, height) { it.port.typeText(null, null, text) }
     internal val chipStages = TaskStages {
         try { service.refreshNotifications(this) } catch (e: RuntimeException) {
             // The action already ran. A notification failure must never turn it into a failed tool call.
@@ -231,7 +311,7 @@ class TaskRun(
     private val runState = TaskRunState(service, conversationId, env) { service.taskState.shownRun === this }
 
     /** 静音等恢复记录按它分开,几个任务各记各的。 */
-    val key: String = UUID.randomUUID().toString()
+    override val key: String = UUID.randomUUID().toString()
     private val inbox = RunInbox()
     /** 插话的收发、去向与撤回。 */
     private val steerCoordinator = SteerCoordinator(
@@ -325,14 +405,34 @@ class TaskRun(
         internal set
     /** 已接上的手机侧;浮层恢复声音据此找到当前目标 App,收尾时清空。 */
     @Volatile private var phone: PhoneSide? = null
-    fun cancel() = runControl.cancel()
+    fun cancel() {
+        runControl.cancel()
+        if (manualControl.state.value != com.wangzan101.mika.core.run.ManualControl.State.Automatic) {
+            scope.launch { manualControl.close() }
+        }
+    }
 
-    fun resume() = runControl.resume()
-    fun takeOver(waitKey: Int?) = runControl.takeOver(waitKey)
-    fun handBack(waitKey: Int?) = runControl.handBack(waitKey)
-    fun finishedMyself(waitKey: Int?) = runControl.finishedMyself(waitKey)
-    fun skip(waitKey: Int?) = runControl.skip(waitKey)
-    fun putAside(waitKey: Int?) = runControl.putAside(waitKey)
+    fun resume() {
+        if (manualControl.state.value == com.wangzan101.mika.core.run.ManualControl.State.Manual) {
+            scope.launch { continueAfterScreenControl() }
+            return
+        }
+        runControl.resume()
+    }
+    private fun takeoverAction(action: suspend (Takeover) -> Boolean) {
+        val current = takeover ?: return
+        scope.launch {
+            manualControl.end {
+                action(current).also { if (it) manualTarget = null }
+            }
+        }
+    }
+
+    fun takeOver(waitKey: Int?) = takeoverAction { it.handOver(waitKey) }
+    fun handBack(waitKey: Int?) = takeoverAction { it.handBack(waitKey) }
+    fun finishedMyself(waitKey: Int?) = takeoverAction { it.finishedMyself(waitKey) }
+    fun skip(waitKey: Int?) = takeoverAction { it.skip(waitKey) }
+    fun putAside(waitKey: Int?) = takeoverAction { it.putAside(waitKey) }
 
     /** 浮层上的声音开关:恢复过声音的再按一次静回去,没恢复的按一次恢复(重复点击重试真实动作);没有手机侧或目标 App 时不动。 */
     fun togglePipSound() = phoneRuntime.togglePipSound()
@@ -505,6 +605,10 @@ class TaskRun(
     )
 
     private suspend fun cleanup(c: RunCleanup) {
+        withContext(NonCancellable) { manualControl.close() }
+        manualTarget = null
+        manualTargetNow = null
+        activePhoneDisplay = null
         if (resultReadyAtMs == 0L) resultReadyAtMs = SystemClock.elapsedRealtime()
         handoffUnconsumed()
         c.side.cancel()
@@ -685,7 +789,7 @@ class TaskRun(
                 }.also { shell.asBinder().linkToDeath(it, 0) }
                 shellBinder = shell.asBinder()
                 side.launch { conn.shell.map { it != null }.collect { shellUp.value = it } }
-                val agentDisplay = LazyAgentDisplay(metrics.widthPixels, metrics.heightPixels) {
+                val agentDisplay = LazyAgentDisplay(metrics.widthPixels, metrics.heightPixels, sizeOf = { it.width to it.height }) {
                     suspend fun create() = resources.acquire(Dispatchers.IO, AgentDisplay::release) { AgentDisplay(shell, metrics.widthPixels, metrics.heightPixels, metrics.densityDpi, service.getSystemService(DisplayManager::class.java)) }
                     try {
                         create()
@@ -698,6 +802,7 @@ class TaskRun(
                         while (service.otherRunHasDisplay(this@TaskRun)) delay(DISPLAY_RETRY_MS)
                         create()
                     }.also { d ->
+                        activePhoneDisplay = d
                         runState._displayId.value = d.displayId
                         runState._pipInput.value = PipInputImpl(shell, d)
                         side.launch {
@@ -1002,6 +1107,7 @@ class TaskRun(
                         conversationId = conversationId, inlineScreen = speed.inlineScreen,
                         sandboxBudgetMs = sandboxBudgetMs,
                         adaptiveVision = speed.adaptiveVision)
+                    childTools.manualControl = manualControl
                     AgentLoop(model, childTools, basePrompt, maxSteps = childSpec.stepBudget ?: AgentLoop.UNLIMITED_STEPS,
                         // 子任务跟着询问 / 自主;询问时它也过关卡,子任务里花钱的一步一律不做
                         confirmations = runApproval.gate(), approvals = runApproval, autonomous = runApproval.startedAutonomous,
@@ -1101,6 +1207,23 @@ class TaskRun(
                 pluginTools = pluginTools, pluginScriptRunner = pluginRunner,
                 pluginArgsDir = java.io.File(service.cacheDir, "plugin-args"))
             dispatcher = tools
+            tools.manualControl = manualControl
+            manualTargetNow = target@{
+                if (stopPressed || job?.isActive != true || takeover?.handedOver == true) return@target null
+                val frame = runState._frames.value ?: return@target null
+                if (dispatcher?.surface == WEB) {
+                    val stack = webStack ?: return@target null
+                    val tab = stack.pool.current(key) ?: return@target null
+                    if (!runState._webOpen.value || stack.handedOver || stack.onBorrowedTab) return@target null
+                    ManualTarget(stack.screen, "web:${tab.id}", frame.width, frame.height, stack.host.width, stack.host.height)
+                } else {
+                    val p = phone ?: return@target null
+                    val display = p.display.current ?: return@target null
+                    if (runState._webOpen.value || !previewAllowed()) return@target null
+                    ManualTarget(accessedPhone, "phone:${display.displayId}", frame.width, frame.height, display.width, display.height)
+                }
+            }
+            side.launch { manualControl.state.collect { loop?.state?.value?.let(::publish) } }
             // 主动能力从通知里攒下、够格带进任务的那一段:只给用户在手机上发起的任务(不给定时、渠道、电脑交来的,也不给条件检查和子任务);
             // 主动能力没开时不去碰它(连对象都不建)
             val observed = if (provenance.origin == RunOrigin.Ui && !conditionCheck && FeatureFlags.get(service).proactive()) {
@@ -1256,7 +1379,7 @@ class TaskRun(
             side.launch {
                 agent.state.collect {
                     if (it == TaskState.Idle) return@collect
-                    if (it is TaskState.Running && it.preview != null && (gate?.movedAwayPending == true || gate?.userOnPagePending == true)) return@collect
+                    if (it is TaskState.Running && it.preview != null && (gate?.movedAwayPending == true || gate?.userOnPagePending == true || manualControl.state.value != com.wangzan101.mika.core.run.ManualControl.State.Automatic)) return@collect
                     val previous = runState._state.value as? TaskState.Running
                     if (it is TaskState.Running && previous != null && previous.preview != it.preview &&
                         previous.copy(preview = it.preview) == it) {
@@ -1280,7 +1403,7 @@ class TaskRun(
             }
             val end = withContext(tally) { agent.run(runSpec, inbox) }
             resultReadyAtMs = SystemClock.elapsedRealtime()
-            return end.also { usedGroups = agent.usedGroups.toList() }.let(::localizeTaskFailure).let(::withRetestHint)
+            return end.also { manualControl.awaitAutomatic(); usedGroups = agent.usedGroups.toList() }.let(::localizeTaskFailure).let(::withRetestHint)
         } finally {
             cleanup(RunCleanup(side, resources, tally, approvalControl, connection, smsLogin, watcher, mute, afterTask, shellDeath, shellBinder, record, runStore, mcpEvents, liveFeed, approval))
         }
@@ -1328,6 +1451,8 @@ class TaskRun(
         // 循环自己报的终态不往外发:终态只由 [end] 在记好运行编号之后写,否则界面先收到结束、拿不到编号
         if (!TaskService.loopMayPublish(state)) return
         val shown = when {
+            state is TaskState.Running && manualControl.state.value in setOf(com.wangzan101.mika.core.run.ManualControl.State.Requesting, com.wangzan101.mika.core.run.ManualControl.State.Manual) ->
+                TaskState.Held(TaskGate.paused(tr(R.string.gate_user_on_page)))
             state is TaskState.Running && gate?.movedAwayPending == true -> TaskState.Held(TaskGate.paused(TaskGate.MOVED_AWAY))
             // 用户在借出的页面上操作:到关卡之前也先显示暂停
             state is TaskState.Running && gate?.userOnPagePending == true -> TaskState.Held(TaskGate.paused(TaskGate.USER_ON_PAGE))

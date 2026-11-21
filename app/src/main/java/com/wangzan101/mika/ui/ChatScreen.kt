@@ -399,6 +399,12 @@ fun ChatScreen(
     var selecting by remember(ui.conversationId) { mutableStateOf<String?>(null) }
     /** 菜单出现的进度:0 是没有,1 是完全出来;关了动画时直接到位。 */
     val lift = remember { Animatable(0f) }
+    val adaptive = LocalAdaptiveLayout.current
+    val screenDocked = LocalOperationScreenDocked.current
+    LaunchedEffect(adaptive) {
+        menu = null
+        lift.snapTo(0f)
+    }
     LaunchedEffect(menu) {
         if (menu != null) {
             if (reduceMotion) lift.snapTo(1f) else lift.animateTo(1f, tween(MENU_IN_MS, easing = MikaMotion.Decelerate))
@@ -444,7 +450,7 @@ fun ChatScreen(
                     }
                 }
                 ui.exchanges.forEachIndexed { i, ex ->
-                    val backgroundNote = i == ui.exchanges.lastIndex && ui.operatingPhone
+                    val backgroundNote = i == ui.exchanges.lastIndex && ui.operatingPhone && !screenDocked
                     exchange(
                         i, ex, ui.conversationId, ui.takeoverStage, vm, reduceMotion, backgroundNote, runMetrics, openRun, loadSource, openSource, kept,
                         highlightKey = highlightKey,
@@ -480,7 +486,7 @@ fun ChatScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
+                    if (!adaptive.hasNavigation || screenDocked) GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
                         Box(
                             Modifier.fillMaxSize().clip(CircleShape)
                                 .clickable(onClickLabel = stringResource(R.string.chat_menu), onClick = onOpenDrawer),
@@ -588,7 +594,7 @@ fun ChatScreen(
             editRequest = editRequest,
         )
 
-        val pipOccupiesCorner = ui.pip.visible && ui.pip.mode != PipMode.Done
+        val pipOccupiesCorner = !screenDocked && ui.pip.visible && ui.pip.mode != PipMode.Done
         val composerBottomDp = with(density) { composerHeight.toDp() }
         ScrollToBottomButton(
             visible = showScrollToBottom,
@@ -620,7 +626,7 @@ fun ChatScreen(
 
         if (showUsage) ConversationUsageSheet(ui.conversationId) { showUsage = false }
 
-        AgentPip(
+        if (!screenDocked) AgentPip(
             pip = ui.pip,
             frame = frame,
             webContent = webContent,
