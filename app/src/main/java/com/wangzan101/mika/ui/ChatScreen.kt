@@ -1904,81 +1904,87 @@ internal fun Composer(
             }
             Box(Modifier.fillMaxWidth()) {
             GlassBar(Modifier.fillMaxWidth().keepsKeyboard(), backdrop) {
-                if (showAttach) {
-                    val label = if (panel == Panel.Open) AttachCopy.CLOSE else AttachCopy.ADD
-                    val blockedHint = stringResource(R.string.attach_blocked_running)
-                    Box(
-                        Modifier.size(MikaSize.IconButton).background(c.greySoft, CircleShape).clip(CircleShape)
-                            .clickable(enabled = !importing, onClickLabel = label, onClick = {
-                                if (attachBlocked) {
-                                    Toast.makeText(context, blockedHint, Toast.LENGTH_SHORT).show()
-                                } else togglePanel()
-                            }),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(MikaIcons.Plus, label, Modifier.size(20.dp).graphicsLayer { rotationZ = turn }, tint = c.ink)
-                    }
-                }
-                Box(Modifier.weight(1f).padding(start = if (showAttach) 2.dp else 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)) {
-                    val converting = vState is HoldToTalk.State.Converting
-                    if (text.isEmpty() && !converting) {
-                        if (vh != null) VoicePlaceholder(mode)
-                        else Text(ChatCopy.placeholder(mode, hasHistory), style = MikaType.Body, color = c.ink3, maxLines = 1)
-                    }
-                    BasicTextField(
-                        shownValue,
-                        { v -> fieldValue = v; if (v.text != text) onText(v.text) },
-                        Modifier.fillMaxWidth().testTag("composer-field").focusRequester(field)
-                            .alpha(if (converting) 0f else 1f)
-                            // 面板开着时点输入框:面板让给键盘
-                            .onFocusChanged {
-                                fieldFocused = it.isFocused
-                                if (it.isFocused && panel == Panel.Open) panel = Panel.Yielding
-                            },
-                        textStyle = MikaType.Body.copy(color = c.ink, textDirection = TextDirection.Content),
-                        cursorBrush = SolidColor(c.accent),
-                        maxLines = 5,
-                        keyboardOptions = if (sendFromIme) KeyboardOptions(imeAction = ImeAction.Send) else KeyboardOptions.Default,
-                        keyboardActions = if (sendFromIme) KeyboardActions(onSend = {
-                            if (AttachTray.canSend(text, attachments, importing)) onSend()
-                        }) else KeyboardActions.Default,
-                    )
-                    // 服务商松开后在转:输入框里转圈,转好的字填进来
-                    if (converting) VoiceConverting(Modifier.align(Alignment.CenterStart))
-                    if (voiceGesture && vh != null) {
-                        Box(Modifier.matchParentSize().holdToTalk(vh) { field.requestFocus(); keyboard?.show() })
-                    }
-                }
                 val canSend = AttachTray.canSend(text, attachments, importing)
-                // 键盘出来以后长按输入框留给系统选字;话筒按住才听,点一下只提示按住
-                if (fieldFocused && vh != null) {
-                    val hint = stringResource(R.string.voice_hold_to_talk)
-                    Box(
-                        Modifier.size(MikaSize.IconButton).testTag("composer-mic").holdToTalk(vh) { vh.toast = hint },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(MikaIcons.Mic, hint, Modifier.size(MikaSize.Icon), tint = c.ink)
+                // 两行:第一行纯输入,第二行按钮;字再多按钮排布也不动
+                Column(Modifier.weight(1f)) {
+                    Box(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 4.dp)) {
+                        val converting = vState is HoldToTalk.State.Converting
+                        if (text.isEmpty() && !converting) {
+                            if (vh != null) VoicePlaceholder(mode)
+                            else Text(ChatCopy.placeholder(mode, hasHistory), style = MikaType.Body, color = c.ink3, maxLines = 1)
+                        }
+                        BasicTextField(
+                            shownValue,
+                            { v -> fieldValue = v; if (v.text != text) onText(v.text) },
+                            Modifier.fillMaxWidth().testTag("composer-field").focusRequester(field)
+                                .alpha(if (converting) 0f else 1f)
+                                // 面板开着时点输入框:面板让给键盘
+                                .onFocusChanged {
+                                    fieldFocused = it.isFocused
+                                    if (it.isFocused && panel == Panel.Open) panel = Panel.Yielding
+                                },
+                            textStyle = MikaType.Body.copy(color = c.ink, textDirection = TextDirection.Content),
+                            cursorBrush = SolidColor(c.accent),
+                            maxLines = 5,
+                            keyboardOptions = if (sendFromIme) KeyboardOptions(imeAction = ImeAction.Send) else KeyboardOptions.Default,
+                            keyboardActions = if (sendFromIme) KeyboardActions(onSend = {
+                                if (AttachTray.canSend(text, attachments, importing)) onSend()
+                            }) else KeyboardActions.Default,
+                        )
+                        // 服务商松开后在转:输入框里转圈,转好的字填进来
+                        if (converting) VoiceConverting(Modifier.align(Alignment.CenterStart))
+                        if (voiceGesture && vh != null) {
+                            Box(Modifier.matchParentSize().holdToTalk(vh) { field.requestFocus(); keyboard?.show() })
+                        }
                     }
-                }
-                // 任务在跑时没字就停止;写了字停止让位给发送,发出去的话交给当前任务
-                if (busy && !canSend) {
-                    Box(
-                        Modifier.size(MikaSize.IconButton).background(c.ink, CircleShape).clip(CircleShape)
-                            .clickable(onClickLabel = stringResource(R.string.chat_stop), onClick = onStop),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(MikaIcons.Stop, stringResource(R.string.chat_stop), Modifier.size(26.dp), tint = c.bg)
-                    }
-                }
-                if (!busy || canSend) {
-                    Box(
-                        Modifier.size(MikaSize.IconButton)
-                            .background(if (canSend) c.accent else c.greySoft, CircleShape)
-                            .clip(CircleShape)
-                            .clickable(enabled = canSend, onClickLabel = stringResource(R.string.chat_send)) { panel = Panel.Closed; onSend() },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(MikaIcons.Up, stringResource(R.string.chat_send), Modifier.size(20.dp), tint = if (canSend) c.onAccent else c.ink3)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        if (showAttach) {
+                            val label = if (panel == Panel.Open) AttachCopy.CLOSE else AttachCopy.ADD
+                            val blockedHint = stringResource(R.string.attach_blocked_running)
+                            Box(
+                                Modifier.size(MikaSize.IconButton).background(c.greySoft, CircleShape).clip(CircleShape)
+                                    .clickable(enabled = !importing, onClickLabel = label, onClick = {
+                                        if (attachBlocked) {
+                                            Toast.makeText(context, blockedHint, Toast.LENGTH_SHORT).show()
+                                        } else togglePanel()
+                                    }),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(MikaIcons.Plus, label, Modifier.size(20.dp).graphicsLayer { rotationZ = turn }, tint = c.ink)
+                            }
+                        }
+                        Spacer(Modifier.weight(1f))
+                        // 键盘出来以后长按输入框留给系统选字;话筒按住才听,点一下只提示按住
+                        if (fieldFocused && vh != null) {
+                            val hint = stringResource(R.string.voice_hold_to_talk)
+                            Box(
+                                Modifier.size(MikaSize.IconButton).testTag("composer-mic").holdToTalk(vh) { vh.toast = hint },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(MikaIcons.Mic, hint, Modifier.size(MikaSize.Icon), tint = c.ink)
+                            }
+                        }
+                        // 任务在跑时没字就停止;写了字停止让位给发送,发出去的话交给当前任务
+                        if (busy && !canSend) {
+                            Box(
+                                Modifier.size(MikaSize.IconButton).background(c.ink, CircleShape).clip(CircleShape)
+                                    .clickable(onClickLabel = stringResource(R.string.chat_stop), onClick = onStop),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(MikaIcons.Stop, stringResource(R.string.chat_stop), Modifier.size(26.dp), tint = c.bg)
+                            }
+                        }
+                        if (!busy || canSend) {
+                            Box(
+                                Modifier.size(MikaSize.IconButton)
+                                    .background(if (canSend) c.accent else c.greySoft, CircleShape)
+                                    .clip(CircleShape)
+                                    .clickable(enabled = canSend, onClickLabel = stringResource(R.string.chat_send)) { panel = Panel.Closed; onSend() },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(MikaIcons.Up, stringResource(R.string.chat_send), Modifier.size(20.dp), tint = if (canSend) c.onAccent else c.ink3)
+                            }
+                        }
                     }
                 }
             }
