@@ -33,4 +33,10 @@
     <string name="calls_task_review_blocked">発信するには端末の準備を済ませ、通話中でないことを確認し、SIM を選んでください。</string>
     <string name="calls_task_sim_override_summary">今回：%1$s · 優先：%2$s</string>
     <string name="calls_voice_settings">音声</string>
+    <string name="calls_contacts_tab">連絡先</string>
+    <string name="calls_manual_tab">手入力</string>
+    <string name="calls_contacts_search">名前または番号で検索</string>
+    <string name="calls_contacts_permission">Mika に連絡先へのアクセスを許可すると、電話番号を選べます。手入力もできます。</string>
+    <string name="calls_contacts_empty">選択できる電話番号が登録されていません。</string>
+    <string name="calls_contacts_failed">連絡先を読み込めませんでした。</string>
 </resources>

@@ -33,4 +33,10 @@
     <string name="calls_task_review_blocked">برای شماره‌گیری، گوشی باید آماده و بدون کار باشد و سیم‌کارتی انتخاب شده باشد.</string>
     <string name="calls_task_sim_override_summary">این تماس: %1$s · ترجیحی: %2$s</string>
     <string name="calls_voice_settings">صدا</string>
+    <string name="calls_contacts_tab">مخاطبین</string>
+    <string name="calls_manual_tab">ورود دستی</string>
+    <string name="calls_contacts_search">جستجو با نام یا شماره</string>
+    <string name="calls_contacts_permission">برای انتخاب شماره‌ها، به Mika اجازهٔ خواندن مخاطبین را بدهید. می‌توانید شماره‌ها را دستی هم وارد کنید.</string>
+    <string name="calls_contacts_empty">هیچ مخاطبی با شمارهٔ قابل انتخاب وجود ندارد.</string>
+    <string name="calls_contacts_failed">خواندن مخاطبین ممکن نشد.</string>
 </resources>

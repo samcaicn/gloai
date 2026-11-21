@@ -17,6 +17,9 @@ Mika 只以子进程方式运行它们,不链接它们。
 `app/src/main/assets/runtime/rootfs.tar.xz`。手机首次启动 Mika 时在后台解到 `files/sandbox/rootfs`,不联网。
 
 - `runtime/sources.lock`:最小根文件系统的地址与 SHA-256,以及每个软件包的仓库、版本、APKINDEX 校验值、`.apk` 的 SHA-256。
+- `runtime/pip-requires.lock`:要烤进 `site-packages` 的 wheel(名称、版本、文件名、下载地址、SHA-256)。构建时逐个核对 SHA-256
+  后直接解开,不运行 pip,所以离线和重编都不依赖 PyPI;换 Python 小版本后按 wheel 自己的 tag 重新求。这个文件和 `sources.lock`
+  一样是构建的必需输入,缺了构建失败。
 - `build-runtime.py`:按 `sources.lock` 下载、校验后拼成 `rootfs.tar.xz`。全程不运行 apk:按 apk 的布局解开软件包,
   并用软件包签过名的元数据写出 `/lib/apk/db/installed`,所以运行环境里的 apk 看到的数据库是一致的。
   每个 `.apk` 都要核对:锁文件里的 SHA-256、它自己的 RSA 签名(公钥取自钉住的最小根文件系统)、控制段校验值与 APKINDEX 一致、

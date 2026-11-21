@@ -51,6 +51,8 @@
     <string name="models_not_listed">還沒列出這家的模型。</string>
     <string name="refresh">重新整理</string>
     <string name="models_in_use">正在用這個</string>
+    <string name="models_response_speed">回應速度</string>
+    <string name="models_response_speed_note">預設沿用伺服器設定。Fast 和 Ultrafast 是否可用取決於模型和帳號，可能增加費用或方案用量。</string>
     <string name="models_sees_images">能看圖</string>
     <string name="models_sees_note_user">按你的設定。主模型能看圖時，截圖直接給它看。</string>
     <string name="models_sees_note_vision">已用作看圖模型，算能看圖。</string>
@@ -213,6 +215,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">Voice</string>
     <string name="voice_speed">Speed</string>
+    <string name="voice_streaming">串流播放</string>
+    <string name="voice_streaming_note">需要服務供應商支援串流音訊，語速為 1.0。</string>
     <string name="voice_auto_read">Read every answer aloud</string>
     <string name="voice_speak_tool">Let Mika speak on its own</string>
     <string name="voice_max_chars">Longest read (characters)</string>
@@ -259,4 +263,44 @@
     <string name="tool_image_edit">Edit image</string>
     <string name="tool_image_save">Save image</string>
     <string name="tool_share_image">Share image to app</string>
+
+
+    <!-- Model groups -->
+    <string name="models_groups">模型群組</string>
+    <string name="models_group_lead">群組會依序嘗試成員，前一個失敗才用下一個。選模型的地方都可以選群組。</string>
+    <string name="models_group_empty">還沒有模型群組。新建一個可以把備用模型列在一起。</string>
+    <string name="models_group_footer">群組只在失敗後才把請求送給另一個服務商；這個版本不會平行送出同一個請求。</string>
+    <string name="models_group_new">新建模型群組</string>
+    <string name="models_group_edit">編輯「%1$s」</string>
+    <string name="models_group_name">名稱</string>
+    <string name="models_group_name_hint">例如：主力 + 備用</string>
+    <string name="models_group_strategy">策略</string>
+    <string name="models_group_strategy_failover">依序切換</string>
+    <string name="models_group_strategy_failover_note">前一個失敗才用下一個。</string>
+    <string name="models_group_strategy_weighted">依對話輪流</string>
+    <string name="models_group_strategy_weighted_note">新對話依權重分配，之後固定在這個模型上。</string>
+    <string name="models_group_strategy_latency">近期最快</string>
+    <string name="models_group_strategy_latency_note">優先使用近期成功率和延遲更好的成員。</string>
+    <string name="models_group_strategy_cost">最便宜</string>
+    <string name="models_group_strategy_cost_note">優先使用費用等級最低的成員；需要為成員填寫費用等級。</string>
+    <string name="models_group_sticky">同一對話固定一個模型</string>
+    <string name="models_group_sticky_note">避免頻繁更換前綴、保護快取；只在失敗時切換。</string>
+    <string name="models_group_members">成員</string>
+    <string name="models_group_member_count">%1$d 個模型</string>
+    <string name="models_group_no_members">還沒有成員。至少加入一個模型。</string>
+    <string name="models_group_priority">優先順序 %1$d</string>
+    <string name="models_group_up">上移</string>
+    <string name="models_group_down">下移</string>
+    <string name="models_group_remove">移除</string>
+    <string name="models_group_add_member">新增模型</string>
+    <string name="models_group_add">新增</string>
+    <string name="models_group_main_needs_tools">只有支援工具呼叫的模型才能放進主模型群組。</string>
+    <string name="models_group_vision_needs_eyes">看圖群組至少需要一個能看圖的模型。</string>
+    <string name="models_group_privacy">成員失敗時，這次請求（包括截圖）可能送給群組內另一個服務商。</string>
+    <string name="models_group_save_failed">儲存失敗：檢查成員和工具支援。</string>
+    <string name="models_group_delete">刪除這個群組</string>
+    <string name="models_group_delete_title">刪除「%1$s」？</string>
+    <string name="models_group_delete_body">使用這個群組的用途會退回未選擇、不使用或使用主模型。</string>
+    <string name="models_group_used_by">用作 %1$s</string>
+    <string name="models_group_member_context">上下文</string>
 </resources>

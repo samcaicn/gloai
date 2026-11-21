@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Chat composer: hold to talk -->
-    <string name="voice_placeholder_idle">Удерживайте, чтобы говорить, нажмите, чтобы печатать</string>
-    <string name="voice_placeholder_busy">Удерживайте, чтобы говорить задаче, нажмите, чтобы печатать</string>
-    <string name="voice_placeholder_answer">Удерживайте, чтобы ответить голосом, нажмите, чтобы печатать</string>
+    <string name="voice_placeholder_idle">Печатайте или удерживайте для речи</string>
+    <string name="voice_placeholder_busy">Печатайте задаче или удерживайте для речи</string>
+    <string name="voice_placeholder_answer">Печатайте ответ или удерживайте для речи</string>
     <string name="voice_listening">Слушаю</string>
     <string name="voice_steer_to">Сообщение для «%1$s»</string>
     <string name="voice_engine_phone">Телефон</string>

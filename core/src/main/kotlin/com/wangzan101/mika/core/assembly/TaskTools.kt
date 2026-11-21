@@ -11,6 +11,7 @@ import com.wangzan101.mika.core.cap.root.RootGroup
 import com.wangzan101.mika.core.cap.root.RootPort
 import com.wangzan101.mika.core.cap.sandbox.SandboxCapability
 import com.wangzan101.mika.core.cap.sandbox.SANDBOX
+import com.wangzan101.mika.core.cap.sandbox.SANDBOX_BUDGET_MS
 import com.wangzan101.mika.core.cap.sandbox.SandboxGroup
 import com.wangzan101.mika.core.cap.sandbox.SandboxPort
 import com.wangzan101.mika.core.cap.web.WEB
@@ -108,6 +109,8 @@ fun toolDispatcher(
     onSandboxPreparing: () -> Unit = {},
     /** 开始跑技能脚本时;不给就按 [onSandboxCommand] 报。 */
     onSandboxScript: ((String) -> Unit)? = null,
+    /** 这个任务里沙箱命令累计最多跑多久(设置 › 干活时的档位);默认 [SANDBOX_BUDGET_MS]。 */
+    sandboxBudgetMs: Long = SANDBOX_BUDGET_MS,
     /** 发给主模型的图统一编码用;为空时原样发。 */
     imageOps: ImageOps? = vision?.ops,
     /** 开局约束允许的能力；旧调用方不传时仍得到今天的工具。 */
@@ -160,6 +163,8 @@ fun toolDispatcher(
     notices: com.wangzan101.mika.core.proactive.NoticeSource? = null,
     /** 用户在 UI 发起任务时可访问的设备文件。 */
     deviceFiles: com.wangzan101.mika.core.cap.devicefiles.DeviceFilesPort? = null,
+    /** 把任务结果投递到机主绑定微信的出口;为空(任务没明确要发微信)时不提供 wechat_send_owner。没绑定时出口照样在,发送照实回报不可用。 */
+    wechatOwner: com.wangzan101.mika.core.wechat.WechatOwnerPort? = null,
     /** 启用的插件工具(名字已拼成 plugin_<id>_<name>);给了 [pluginScriptRunner] 才放进任务。 */
     pluginTools: List<PluginToolSpec> = emptyList(),
     /** 在 App 进程内跑插件脚本的入口;为空时插件工具不登记。 */
@@ -189,7 +194,14 @@ fun toolDispatcher(
             override fun open(spec: RunSpec) = SandboxCapability(sandbox, workspace, visionEnabled,
                 onSandboxCommand, onSandboxProgress, onSandboxPreparing, onSandboxScript,
                 folderAccess = spec.provenance.origin == com.wangzan101.mika.core.run.RunOrigin.Ui &&
-                    spec.provenance.attendance != com.wangzan101.mika.core.run.Attendance.Unattended && !spec.readOnly)
+                    spec.provenance.attendance != com.wangzan101.mika.core.run.Attendance.Unattended && !spec.readOnly,
+                budgetMs = sandboxBudgetMs)
+        },
+        // 端口为空时整个能力不进装配(任务没明确要发微信)
+        object : CapabilityProvider {
+            override val id = com.wangzan101.mika.core.wechat.WechatOwnerCapability.WECHAT_OWNER
+            override fun open(spec: RunSpec) =
+                wechatOwner?.let { com.wangzan101.mika.core.wechat.WechatOwnerCapability(it) }
         },
     ) + listOfNotNull(transcribe?.let { port ->
         object : CapabilityProvider {
@@ -276,7 +288,7 @@ fun recordedTools(): ToolIndex = legacyNames().let { legacy -> ToolIndex(allTool
 
 /** Mika 所有可能提供的工具,按发给模型的顺序。 */
 internal fun allTools(): List<AgentTool> =
-    GeneralGroup.tools + PhoneCapability.tools() + WebGroup.tools + SandboxGroup.tools + com.wangzan101.mika.core.cap.audio.AudioGroup.tools + com.wangzan101.mika.core.cap.transcribe.TranscribeGroup.tools + com.wangzan101.mika.core.cap.image.ImageGroup.tools + RootGroup.tools + com.wangzan101.mika.core.calls.callAgentTools + com.wangzan101.mika.core.cap.devicefiles.DeviceFilesGroup.tools
+    GeneralGroup.tools + PhoneCapability.tools() + WebGroup.tools + SandboxGroup.tools + com.wangzan101.mika.core.cap.audio.AudioGroup.tools + com.wangzan101.mika.core.cap.transcribe.TranscribeGroup.tools + com.wangzan101.mika.core.cap.image.ImageGroup.tools + RootGroup.tools + com.wangzan101.mika.core.calls.callAgentTools + com.wangzan101.mika.core.cap.devicefiles.DeviceFilesGroup.tools + com.wangzan101.mika.core.wechat.wechatOwnerAgentTools
 
 /** Mika 所有可能提供的工具的声明。 */
 fun knownTools(): ToolIndex = ToolIndex(allTools())

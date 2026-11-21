@@ -15,6 +15,8 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.longClick
@@ -133,6 +135,7 @@ class ChatDeleteAndSelectTest {
         compose.waitForIdle()
         compose.onNodeWithText("plan.pdf").assertExists()
         compose.onNodeWithContentDescription("菜单").performClick()
+        compose.onNode(hasScrollAction() and hasAnyAncestor(hasTestTag("drawer"))).performScrollToNode(hasText("订票"))
         compose.onNode(hasTestTag("conversation-row") and hasText("订票")).performClick()
         compose.onNodeWithTag("composer-field").assert(hasText(""))
         compose.onNodeWithText("plan.pdf").assertDoesNotExist()
@@ -244,6 +247,7 @@ class ChatDeleteAndSelectTest {
         compose.waitForIdle()
         assertEquals(0, compose.onAllNodesWithText("天气").fetchSemanticsNodes().size)
         assertEquals(0, compose.onAllNodesWithText("周报").fetchSemanticsNodes().size)
+        compose.onNode(hasScrollAction() and hasAnyAncestor(hasTestTag("drawer"))).performScrollToNode(hasText("订票"))
         compose.onNodeWithText("订票").assertExists()
         // 删完自动退出多选
         compose.onNodeWithTag("drawer-select-bar").assertDoesNotExist()

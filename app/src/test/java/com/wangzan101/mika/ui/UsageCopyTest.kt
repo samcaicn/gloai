@@ -46,6 +46,13 @@ class UsageCopyTest {
         assertEquals("占比按这一排算", 100.0 / 110, p1.first().share, 1e-9)
     }
 
+    @Test fun percentLabelsPositiveSharesBelowOnePercentBeforeRounding() {
+        assertEquals("0%", UsageCopy.percent(0.0))
+        assertEquals("<1%", UsageCopy.percent(0.007))
+        assertEquals("1%", UsageCopy.percent(0.01))
+        assertEquals("2%", UsageCopy.percent(0.016))
+    }
+
     @Test fun colorsFollowTheFixedOrderAndFoldBeyondThree() {
         // 连着的按连接先后:甲 0、丙 1、丁 2,删掉的排在后面
         assertEquals(mapOf("p1" to 0, "p3" to 1, "p4" to 2, "p2" to null), report.providers.associate { it.id to UsageCopy.colorSlot(it) })

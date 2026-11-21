@@ -51,6 +51,8 @@
     <string name="models_not_listed">このプロバイダーのモデルは、まだ一覧にしていません。</string>
     <string name="refresh">更新</string>
     <string name="models_in_use">使用中</string>
+    <string name="models_response_speed">応答速度</string>
+    <string name="models_response_speed_note">デフォルトではサーバーの設定に従います。Fast と Ultrafast の利用可否はモデルとアカウントによって異なり、料金やプランの使用量が増える場合があります。</string>
     <string name="models_sees_images">画像を見られる</string>
     <string name="models_sees_note_user">あなたの設定です。メインモデルが画像を見られる場合、スクリーンショットはそのまま送られます。</string>
     <string name="models_sees_note_vision">ビジョンモデルとして使っているため、画像を見られるものとして扱います。</string>
@@ -213,6 +215,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">Voice</string>
     <string name="voice_speed">Speed</string>
+    <string name="voice_streaming">ストリーミング再生</string>
+    <string name="voice_streaming_note">対応サービスと 1.0 倍速が必要です。</string>
     <string name="voice_auto_read">Read every answer aloud</string>
     <string name="voice_speak_tool">Let Mika speak on its own</string>
     <string name="voice_max_chars">Longest read (characters)</string>
@@ -259,4 +263,44 @@
     <string name="tool_image_edit">Edit image</string>
     <string name="tool_image_save">Save image</string>
     <string name="tool_share_image">Share image to app</string>
+
+
+    <!-- Model groups -->
+    <string name="models_groups">モデルグループ</string>
+    <string name="models_group_lead">グループは失敗したときだけ次のモデルを順番に試します。モデルを選ぶ場所ならどこでもグループを選べます。</string>
+    <string name="models_group_empty">モデルグループはまだありません。作成すると予備モデルをまとめられます。</string>
+    <string name="models_group_footer">グループは失敗した後だけ、リクエストを別のプロバイダーに送ります。このバージョンでは同じリクエストを並行して送りません。</string>
+    <string name="models_group_new">新しいモデルグループ</string>
+    <string name="models_group_edit">「%1$s」を編集</string>
+    <string name="models_group_name">名前</string>
+    <string name="models_group_name_hint">例：メイン + 予備</string>
+    <string name="models_group_strategy">戦略</string>
+    <string name="models_group_strategy_failover">順番に切り替え</string>
+    <string name="models_group_strategy_failover_note">前のモデルが失敗したときだけ次を使います。</string>
+    <string name="models_group_strategy_weighted">会話ごとに切り替え</string>
+    <string name="models_group_strategy_weighted_note">新しい会話は重みで割り当てられ、その後はそのモデルに固定されます。</string>
+    <string name="models_group_strategy_latency">最近速い順</string>
+    <string name="models_group_strategy_latency_note">最近の成功率と遅延が良いモデルを優先します。</string>
+    <string name="models_group_strategy_cost">最も安い</string>
+    <string name="models_group_strategy_cost_note">費用ランクが最も低いメンバーを優先します。メンバーごとに費用ランクが必要です。</string>
+    <string name="models_group_sticky">会話ごとに1つのモデルを固定</string>
+    <string name="models_group_sticky_note">プロンプトの前方部分を変えず、キャッシュを守ります。切り替えるのは失敗したときだけです。</string>
+    <string name="models_group_members">メンバー</string>
+    <string name="models_group_member_count">%1$d 個のモデル</string>
+    <string name="models_group_no_members">メンバーがまだありません。少なくとも1つ追加してください。</string>
+    <string name="models_group_priority">優先度 %1$d</string>
+    <string name="models_group_up">上へ</string>
+    <string name="models_group_down">下へ</string>
+    <string name="models_group_remove">削除</string>
+    <string name="models_group_add_member">モデルを追加</string>
+    <string name="models_group_add">追加</string>
+    <string name="models_group_main_needs_tools">ツール呼び出しに対応したモデルだけがメインモデルのグループに入れます。</string>
+    <string name="models_group_vision_needs_eyes">画像を見るグループには、画像を見られるモデルが少なくとも1つ必要です。</string>
+    <string name="models_group_privacy">メンバーが失敗すると、このリクエスト（スクリーンショットを含む）がグループ内の別のプロバイダーに送られることがあります。</string>
+    <string name="models_group_save_failed">保存できませんでした。メンバーとツール対応を確認してください。</string>
+    <string name="models_group_delete">このグループを削除</string>
+    <string name="models_group_delete_title">「%1$s」を削除しますか？</string>
+    <string name="models_group_delete_body">このグループを使っている役割は、未設定・なし・メインモデルに戻ります。</string>
+    <string name="models_group_used_by">%1$s として使用</string>
+    <string name="models_group_member_context">コンテキスト</string>
 </resources>

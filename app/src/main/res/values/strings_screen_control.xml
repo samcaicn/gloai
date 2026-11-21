@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_control_hint">Mika controls · Tap to take over</string>
+    <string name="screen_control_wait">Waiting for the current action to finish…</string>
+    <string name="screen_control_active">You control · Tap to hand back</string>
+    <string name="screen_control_failed">Control is unavailable or the screen changed. Please try again.</string>
+    <string name="screen_control_resume">Continue Mika</string>
+    <string name="screen_control_start">Take control</string>
+    <string name="screen_control_text">Text for the focused field</string>
+    <string name="screen_control_send_text">Enter text</string>
+    <string name="screen_resize_panes">Resize panes</string>
+</resources>

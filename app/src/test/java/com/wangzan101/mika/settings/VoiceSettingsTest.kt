@@ -44,7 +44,7 @@ class VoiceSettingsTest {
     @Test fun choiceAndFlagsSurviveARestart() {
         val prefs = MemoryPrefs()
         val settings = VoiceSettings(prefs)
-        val choice = VoiceChoice("p1", "gpt-4o-mini-tts", TtsProtocol.OpenAiSpeech, "alloy", 1.2f)
+        val choice = VoiceChoice("p1", "gpt-4o-mini-tts", TtsProtocol.OpenAiSpeech, "alloy", 1.2f, streaming = true)
         settings.setChoice(choice)
         settings.setAutoRead(true)
         settings.setSpeakTool(true)
@@ -66,6 +66,15 @@ class VoiceSettingsTest {
         assertNull(state.choice)
         assertFalse(state.autoRead)
         assertEquals(VoiceSettingsState.DEFAULT_MAX_CHARS, state.maxCharsPerSpeak)
+    }
+
+    @Test fun existingChoiceDefaultsToFullAudio() {
+        val prefs = MemoryPrefs()
+        prefs.edit().putString(
+            "voice_settings",
+            """{"providerId":"p","model":"tts","protocol":"openai-speech","voice":"alloy"}""",
+        ).commit()
+        assertFalse(VoiceSettings(prefs).state.value.choice!!.streaming)
     }
 
     @Test fun incompleteChoiceIsDropped() {

@@ -27,6 +27,8 @@ internal object Failover {
         is ModelError.ToolsUnsupported, is ModelError.SignInExpired, is ModelError.AccountPlanNotAllowed,
         is ModelError.ChatGptLimitReached, is ModelError.ChatGptNotEligible,
         is ModelError.RateLimited, is ModelError.Network, is ModelError.StreamCut,
+        // 组当前无人可用/用尽:组内已经没法换了,让链上进下一条
+        is ModelError.GroupUnavailable, is ModelError.GroupExhausted,
         is ModelError.Server, is ModelError.Proxy ->
             (fromIndex + 1).takeIf { it < chainSize }
         else -> null

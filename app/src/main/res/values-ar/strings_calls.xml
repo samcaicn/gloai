@@ -144,4 +144,21 @@
     <string name="calls_notification_connecting_audio">جارٍ توصيل صوت المكالمة</string>
     <string name="calls_notification_connected_waiting">تم اتصال الذكاء الاصطناعي. بانتظار حديث الطرف الآخر، ويمكنك تولي المكالمة في أي وقت.</string>
     <string name="calls_notification_connected">تم اتصال الذكاء الاصطناعي. يمكنك تولي المكالمة بنفسك في أي وقت.</string>
+    <string name="calls_only_types">أنواع المكالمات المحددة فقط</string>
+    <string name="calls_pick_types">اختر نوع مكالمة واحدًا على الأقل</string>
+    <string name="calls_type_note">يستخدم Mika تسهيلات الاستخدام لمطابقة التصنيف والرقم في تطبيق الهاتف مع المكالمة الواردة. إذا تعذرت المطابقة يمكنك الرد بنفسك.</string>
+    <string name="calls_type_accessibility">فتح إعدادات تسهيلات الاستخدام</string>
+    <string name="calls_type_takeout">توصيل الطعام</string>
+    <string name="calls_type_parcel">توصيل الطرود</string>
+    <string name="calls_type_delivery">توصيل أو خدمات لوجستية غير محددة</string>
+    <string name="calls_type_sales">مبيعات وإعلانات</string>
+    <string name="calls_type_broker">وكلاء ووسطاء</string>
+    <string name="calls_type_financial_sales">عروض التأمين والاستثمار</string>
+    <string name="calls_type_spam">مكالمات مزعجة</string>
+    <string name="calls_type_fraud">احتيال محتمل</string>
+    <string name="calls_type_high_risk">مخاطر عالية</string>
+    <string name="calls_type_business">شركات وخدمة العملاء</string>
+    <string name="calls_type_transport">سيارات الأجرة وخدمات النقل</string>
+    <string name="calls_only_strangers">الأرقام غير المحفوظة فقط</string>
+    <string name="calls_strangers_note">اسمح لتطبيق Mika بقراءة جهات الاتصال. يرد الذكاء الاصطناعي فقط إذا تأكد أن الرقم غير محفوظ. تتولى أنت الرد إذا كان الرقم مخفيًا أو تعذر التحقق منه.</string>
 </resources>

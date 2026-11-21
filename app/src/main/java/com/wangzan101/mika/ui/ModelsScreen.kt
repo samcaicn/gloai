@@ -58,7 +58,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wangzan101.mika.core.chatgpt.SignInFailure
 import com.wangzan101.mika.core.model.ApiKeyText
+import com.wangzan101.mika.core.model.GroupStrategy
 import com.wangzan101.mika.core.model.ModelRole
+import com.wangzan101.mika.core.model.OpenAiServiceTier
 import com.wangzan101.mika.settings.ModelOption
 import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.Provider
@@ -66,6 +68,7 @@ import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.RoleChoice
+import com.wangzan101.mika.settings.RoleChoices
 import com.wangzan101.mika.ui.components.BarIconButton
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize
@@ -193,6 +196,10 @@ class RolePickerActions(
     val pickManual: (String, String) -> Unit = { _, _ -> },
     /** 看图、轻量的固定选项(用主模型、不用)。 */
     val choose: (RoleChoice) -> Unit = {},
+    /** 选一个模型组。 */
+    val chooseGroup: (String) -> Unit = {},
+    /** 打开模型组管理页。 */
+    val manageGroups: () -> Unit = {},
     val addProvider: () -> Unit = {},
 )
 
@@ -223,6 +230,23 @@ fun RolePickerContent(ui: ModelSetupUi, role: ModelRole, actions: RolePickerActi
         val hint = hintOverride ?: ModelsCopy.roleHint(role)
         if (hint.isNotEmpty()) {
             Text(hint, Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
+        }
+        if (ui.groups.isNotEmpty()) {
+            GroupLabel(ModelsCopy.GROUPS)
+            GroupCard {
+                ui.groups.forEachIndexed { i, g ->
+                    val ok = ui.usable(g, role)
+                    RadioRow(
+                        g.name, selected = ui.roles[role] == RoleChoice.Group(g.id),
+                        onClick = { if (ok) actions.chooseGroup(g.id) }, first = i == 0, enabled = ok,
+                        subtitle = if (ok) ModelsCopy.groupCount(g.enabledMembers.size)
+                        else if (role == ModelRole.Vision) ModelsCopy.GROUP_VISION_NEEDS_EYES else ModelsCopy.GROUP_MAIN_NEEDS_TOOLS,
+                    )
+                }
+            }
+            GroupCard(Modifier.padding(top = 8.dp)) {
+                ListRow(MikaIcons.Plus, ModelsCopy.GROUPS, first = true, titleColor = c.accent, tone = TileTone.Accent, onClick = actions.manageGroups)
+            }
         }
         val fixed = fixedChoices(role)
         if (fixed.isNotEmpty()) {
@@ -316,6 +340,7 @@ class ProviderDetailActions(
     val use: (ModelRole, String) -> Unit = { _, _ -> },
     /** 用户说这家的一个模型能不能看图(「用作」面板里的开关)。 */
     val setVision: (String, Boolean) -> Unit = { _, _ -> },
+    val setServiceTier: (String, OpenAiServiceTier?) -> Boolean = { _, _ -> false },
     val showAll: () -> Unit = {},
     /** 在用、没核实过的手填模型再试调用一次(见 [ModelSetupUi.unverified])。 */
     val retest: () -> Unit = {},
@@ -504,7 +529,7 @@ fun ProviderDetailContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetail
         onDismiss = { editingBudget = false },
         saveError = if (budgetSaveFailed) stringResource(R.string.models_daily_token_budget_save_failed) else null,
     )
-    using?.let { o -> UseAsSheet(ui, p, o.id, onUse = { role -> actions.use(role, o.id) }, onVision = { actions.setVision(o.id, it) }, onDismiss = { using = null }) }
+    using?.let { UseAsSheet(ui, p, it.id, actions, onDismiss = { using = null }) }
     if (changingKey) {
         var key by remember { mutableStateOf("") }
         var notice by remember { mutableStateOf(ApiKeyText.Notice.None) }
@@ -796,7 +821,7 @@ fun AllModelsContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetailActio
             }
         }
     }
-    using?.let { o -> UseAsSheet(ui, p, o.id, onUse = { role -> actions.use(role, o.id) }, onVision = { actions.setVision(o.id, it) }, onDismiss = { using = null }) }
+    using?.let { UseAsSheet(ui, p, it.id, actions, onDismiss = { using = null }) }
 }
 
 /** 一张卡拆成懒加载的行时,每行的圆角:首行上圆、末行下圆。 */
@@ -831,10 +856,10 @@ private fun ModelRow(o: ModelOption, roles: List<ModelRole>, first: Boolean, onC
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun UseAsSheet(ui: ModelSetupUi, p: Provider, model: String, onUse: (ModelRole) -> Unit, onVision: (Boolean) -> Unit, onDismiss: () -> Unit) {
+private fun UseAsSheet(ui: ModelSetupUi, p: Provider, model: String, actions: ProviderDetailActions, onDismiss: () -> Unit) {
     val c = MikaTheme.colors
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = c.surface, shape = MikaShapes.SheetTop) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 8.dp).testTag("use-as")) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = 8.dp).testTag("use-as")) {
             Text(model, Modifier.padding(horizontal = 16.dp), style = ModelIdStyle, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(ModelsCopy.useAsSubtitle(ModelsCopy.providerName(p)), Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 6.dp), style = MikaType.Caption, color = c.ink3)
             ModelRole.entries.forEachIndexed { i, role ->
@@ -842,19 +867,59 @@ private fun UseAsSheet(ui: ModelSetupUi, p: Provider, model: String, onUse: (Mod
                 RadioRow(
                     ModelsCopy.roleName(role), selected = on, first = i == 0,
                     subtitle = if (on) ModelsCopy.IN_USE else ModelsCopy.roleWhat(role),
-                    onClick = { onUse(role); onDismiss() },
+                    onClick = { actions.use(role, model); onDismiss() },
                 )
             }
             ui.options(p).firstOrNull { it.id == model }?.let { o ->
                 val usedForVision = ModelRole.Vision in ui.rolesOf(p.id, model)
                 val sees = ModelOptions.seesImages(o.capabilities.vision, o.visionByUser, usedForVision)
                 ListRow(null, ModelsCopy.SEES_IMAGES, ModelsCopy.seesNote(o, usedForVision)) {
-                    MikaSwitch(sees, onVision, Modifier.testTag("model-sees-images"))
+                    MikaSwitch(sees, { actions.setVision(model, it) }, Modifier.testTag("model-sees-images"))
                 }
+            }
+            if (p.supportsServiceTier(model)) {
+                ModelSpeedControl(p.serviceTiers[model]) { actions.setServiceTier(model, it) }
             }
             ListRow(null, ModelSetupCopy.CANCEL, titleColor = c.ink2, onClick = onDismiss)
         }
     }
+}
+
+@Composable
+private fun ModelSpeedControl(selected: OpenAiServiceTier?, onSelect: (OpenAiServiceTier?) -> Boolean) {
+    var open by remember { mutableStateOf(false) }
+    var saveFailed by remember { mutableStateOf(false) }
+    val title = stringResource(R.string.models_response_speed)
+    ListRow(
+        null, title, onClick = { saveFailed = false; open = true },
+        modifier = Modifier.testTag("model-response-speed"),
+    ) {
+        RowValue(serviceTierLabel(selected))
+        RowChevron()
+    }
+    if (open) MikaDialog(
+        onDismissRequest = { open = false },
+        title = { Text(title) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                FooterNote(stringResource(R.string.models_response_speed_note))
+                (listOf(null) + OpenAiServiceTier.entries).forEachIndexed { index, tier ->
+                    RadioRow(serviceTierLabel(tier), selected = selected == tier, first = index == 0, onClick = {
+                        if (onSelect(tier)) open = false else saveFailed = true
+                    })
+                }
+                if (saveFailed) FooterNote(stringResource(R.string.model_context_save_failed), color = MikaTheme.colors.bad)
+            }
+        },
+        confirmButton = { TextButton(onClick = { open = false }) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+@Composable
+private fun serviceTierLabel(tier: OpenAiServiceTier?): String = when (tier) {
+    null -> stringResource(R.string.model_reasoning_default)
+    OpenAiServiceTier.Fast -> "Fast"
+    OpenAiServiceTier.Ultrafast -> "Ultrafast"
 }
 
 /** 模型页(用途、选择页、服务商详情、全部模型)的文字(纯函数,便于测试)。三个用途的说法全 App 只在这里。 */
@@ -902,6 +967,58 @@ object ModelsCopy {
     val UNVERIFIED: String get() = tr(R.string.models_unverified)
     val RETEST: String get() = tr(R.string.models_retest)
     val SEES_IMAGES: String get() = tr(R.string.models_sees_images)
+
+    // ---------- 模型组 ----------
+
+    val GROUPS: String get() = tr(R.string.models_groups)
+    val NEW_GROUP: String get() = tr(R.string.models_group_new)
+    val GROUP_NAME: String get() = tr(R.string.models_group_name)
+    val GROUP_NAME_HINT: String get() = tr(R.string.models_group_name_hint)
+    val GROUP_STRATEGY: String get() = tr(R.string.models_group_strategy)
+    val GROUP_STICKY: String get() = tr(R.string.models_group_sticky)
+    val GROUP_STICKY_NOTE: String get() = tr(R.string.models_group_sticky_note)
+    val GROUP_MEMBERS: String get() = tr(R.string.models_group_members)
+    val GROUP_NO_MEMBERS: String get() = tr(R.string.models_group_no_members)
+    val GROUP_UP: String get() = tr(R.string.models_group_up)
+    val GROUP_DOWN: String get() = tr(R.string.models_group_down)
+    val GROUP_REMOVE: String get() = tr(R.string.models_group_remove)
+    val GROUP_CONTEXT: String get() = tr(R.string.models_group_member_context)
+    val GROUP_ADD_MEMBER: String get() = tr(R.string.models_group_add_member)
+    val GROUP_MAIN_NEEDS_TOOLS: String get() = tr(R.string.models_group_main_needs_tools)
+    val GROUP_VISION_NEEDS_EYES: String get() = tr(R.string.models_group_vision_needs_eyes)
+    val GROUP_PRIVACY: String get() = tr(R.string.models_group_privacy)
+    val GROUP_SAVE_FAILED: String get() = tr(R.string.models_group_save_failed)
+    val GROUP_DELETE: String get() = tr(R.string.models_group_delete)
+    val GROUP_DELETE_BODY: String get() = tr(R.string.models_group_delete_body)
+    val CANCEL: String get() = tr(R.string.cancel)
+    val ADD: String get() = tr(R.string.models_group_add)
+    val groupLead: String get() = tr(R.string.models_group_lead)
+    val groupEmpty: String get() = tr(R.string.models_group_empty)
+    val groupFooter: String get() = tr(R.string.models_group_footer)
+
+    fun groupCount(n: Int): String = tr(R.string.models_group_member_count, n)
+    fun groupDeleteTitle(name: String): String = tr(R.string.models_group_delete_title, name)
+    fun editGroup(name: String): String = tr(R.string.models_group_edit, name)
+    fun groupPriority(n: Int): String = tr(R.string.models_group_priority, n)
+
+    fun groupRoles(roles: RoleChoices, groupId: String): String {
+        val used = ModelRole.entries.filter { roles.resolveGroup(it) == groupId }.map { roleLabel(it) }
+        return if (used.isEmpty()) "" else tr(R.string.models_group_used_by, used.joinToString(tr(R.string.list_sep)))
+    }
+
+    fun strategyTitle(s: GroupStrategy): String = tr(when (s) {
+        GroupStrategy.Failover -> R.string.models_group_strategy_failover
+        GroupStrategy.Weighted -> R.string.models_group_strategy_weighted
+        GroupStrategy.LeastLatency -> R.string.models_group_strategy_latency
+        GroupStrategy.CostFirst -> R.string.models_group_strategy_cost
+    })
+
+    fun strategyNote(s: GroupStrategy): String = tr(when (s) {
+        GroupStrategy.Failover -> R.string.models_group_strategy_failover_note
+        GroupStrategy.Weighted -> R.string.models_group_strategy_weighted_note
+        GroupStrategy.LeastLatency -> R.string.models_group_strategy_latency_note
+        GroupStrategy.CostFirst -> R.string.models_group_strategy_cost_note
+    })
 
     /** 「能看图」开关下的说明:用户说过的、用作看图的、列表写明的、没写未确认的。 */
     fun seesNote(o: ModelOption, usedForVision: Boolean): String = tr(when {
@@ -1129,6 +1246,9 @@ object ModelsCopy {
             RoleChoice.Off -> RoleLine(OFF, OFF_NOTE)
             is RoleChoice.Model -> ui.configs.firstOrNull { it.id == choice.configId }?.let(::modelLine)
                 ?: RoleLine(UNSET, MAIN_PICK, unset = true)
+            is RoleChoice.Group -> ui.groups.firstOrNull { it.id == choice.groupId }?.let { g ->
+                RoleLine(g.name, ModelsCopy.groupCount(g.enabledMembers.size), isModel = false)
+            } ?: RoleLine(UNSET, MAIN_PICK, unset = true)
         }
     }
 

@@ -19,4 +19,9 @@
     <string name="device_access_pin_hint">Usa el PIN actual de 4 a 16 dígitos. Si vuelves a guardarlo, se permite un nuevo intento tras un fallo.</string>
     <string name="device_access_password_hint">Usa la contraseña actual de 4 a 64 caracteres: letras inglesas, números, espacios y símbolos ASCII comunes. No se admiten otros caracteres ni patrones de desbloqueo.</string>
     <string name="device_access_save_failed">No se pudo guardar. Revisa el almacenamiento del teléfono e inténtalo de nuevo.</string>
+    <string name="device_local_group">Tareas locales</string>
+    <string name="device_local_title">Ejecutar tareas con la pantalla bloqueada</string>
+    <string name="device_local_sub">Las tareas iniciadas en este teléfono pueden activar y desbloquear la pantalla para trabajar sin supervisión.</string>
+    <string name="device_local_foot">Desactivado por defecto. Funciona por su cuenta: no cambia «Permitir activación y desbloqueo remotos» en Conectar un ordenador, y ese interruptor tampoco cambia este. Usa la misma credencial cifrada del bloqueo de pantalla de abajo; un intento fallido pausa los siguientes.</string>
+    <string name="device_local_unlock_failed">La tarea no pudo activar ni desbloquear el teléfono. Desbloquéalo tú mismo, o revisa «Ejecutar tareas con la pantalla bloqueada» y la credencial del bloqueo de pantalla guardada en Ajustes › Ejecución de tareas.</string>
 </resources>

@@ -179,5 +179,35 @@ class RuntimePythonTest(unittest.TestCase):
         self.assertIn("python3", err)
 
 
+class PipLockTest(unittest.TestCase):
+    """The pip lock is a required input: the wheels it lists are the runtime's site-packages."""
+
+    def read(self, path):
+        """Read a lock through the real reader; return (exit code, stderr, wheels or None)."""
+        err = io.StringIO()
+        with patch.object(build_runtime, "PIP_LOCK", str(path)), contextlib.redirect_stderr(err):
+            try:
+                wheels = build_runtime.read_pip_lock()
+            except SystemExit as stop:
+                return stop.code, err.getvalue(), None
+        return 0, err.getvalue(), wheels
+
+    def test_an_absent_pip_lock_is_a_build_error(self):
+        # Returning [] baked zero wheels, and the build then rewrote the asset and BundledRuntime.kt
+        # from that result: reportlab, lxml and requests left the shipped runtime saying nothing.
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        code, err, wheels = self.read(Path(directory.name) / "pip-requires.lock")
+        self.assertEqual(1, code, err)
+        self.assertIn("pip-requires.lock", err)
+        self.assertIn("missing", err)
+        self.assertIsNone(wheels)
+
+    def test_the_committed_lock_is_read(self):
+        code, err, wheels = self.read(build_runtime.PIP_LOCK)
+        self.assertEqual(0, code, err)
+        self.assertTrue(wheels)
+
+
 if __name__ == "__main__":
     unittest.main()

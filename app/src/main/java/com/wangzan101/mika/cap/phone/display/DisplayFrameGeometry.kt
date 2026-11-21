@@ -6,6 +6,11 @@ internal data class DisplayFrameGeometry(val bufferWidth: Int, val bufferHeight:
     val width: Int get() = if (sideways) bufferHeight else bufferWidth
     val height: Int get() = if (sideways) bufferWidth else bufferHeight
 
+    /** 视口使用旋转后的逻辑坐标；调整缓冲区时保留当前旋转方向。 */
+    fun resized(width: Int, height: Int): DisplayFrameGeometry =
+        if (sideways) copy(bufferWidth = height, bufferHeight = width)
+        else copy(bufferWidth = width, bufferHeight = height)
+
     /** 按短边限制预览:横竖屏保持相近的像素量,避免横屏只剩一条低分辨率画面。 */
     fun previewWidth(shortSide: Int): Int =
         if (width > height) maxOf(1, (width.toLong() * shortSide / height).toInt()) else shortSide

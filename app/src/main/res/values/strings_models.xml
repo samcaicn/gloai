@@ -52,6 +52,8 @@
     <string name="models_not_listed">This provider’s models haven’t been listed yet.</string>
     <string name="refresh">Refresh</string>
     <string name="models_in_use">In use</string>
+    <string name="models_response_speed">Response speed</string>
+    <string name="models_response_speed_note">Default uses the server setting. Fast and Ultrafast depend on your model and account and may increase cost or plan usage.</string>
     <string name="models_sees_images">Can see images</string>
     <string name="models_sees_note_user">Set by you. When the main model can see, screenshots go straight to it.</string>
     <string name="models_sees_note_vision">Used as the vision model, so it counts as able to see images.</string>
@@ -218,6 +220,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">Voice</string>
     <string name="voice_speed">Speed</string>
+    <string name="voice_streaming">Stream playback</string>
+    <string name="voice_streaming_note">Requires a compatible provider and 1× speed.</string>
     <string name="voice_auto_read">Read every answer aloud</string>
     <string name="voice_speak_tool">Let Mika speak on its own</string>
     <string name="voice_max_chars">Longest read (characters)</string>
@@ -264,4 +268,43 @@
     <string name="tool_image_edit">Edit image</string>
     <string name="tool_image_save">Save image</string>
     <string name="tool_share_image">Share image to app</string>
+
+    <!-- Model groups -->
+    <string name="models_groups">Model groups</string>
+    <string name="models_group_lead">A group tries its models in order when one fails. You can use a group anywhere you pick a model.</string>
+    <string name="models_group_empty">No model groups yet. Create one to list a fallback model.</string>
+    <string name="models_group_footer">A group only sends the request to another provider after a failure. This version never runs the same request in parallel.</string>
+    <string name="models_group_new">New model group</string>
+    <string name="models_group_edit">Edit “%1$s”</string>
+    <string name="models_group_name">Name</string>
+    <string name="models_group_name_hint">e.g. Main with fallback</string>
+    <string name="models_group_strategy">Strategy</string>
+    <string name="models_group_strategy_failover">Switch in order</string>
+    <string name="models_group_strategy_failover_note">Use the next model only when the previous one fails.</string>
+    <string name="models_group_strategy_weighted">Rotate by conversation</string>
+    <string name="models_group_strategy_weighted_note">New conversations are assigned by weight, then stay on that model.</string>
+    <string name="models_group_strategy_latency">Fastest recently</string>
+    <string name="models_group_strategy_latency_note">Prefer the model with the best recent success rate and latency.</string>
+    <string name="models_group_strategy_cost">Cheapest</string>
+    <string name="models_group_strategy_cost_note">Prefer the cheapest member. Requires a cost rank per member.</string>
+    <string name="models_group_sticky">Keep one model per conversation</string>
+    <string name="models_group_sticky_note">Avoids changing the prompt prefix; only switch when a model fails.</string>
+    <string name="models_group_members">Members</string>
+    <string name="models_group_member_count">%1$d models</string>
+    <string name="models_group_no_members">No members yet. Add at least one model.</string>
+    <string name="models_group_priority">Priority %1$d</string>
+    <string name="models_group_up">Up</string>
+    <string name="models_group_down">Down</string>
+    <string name="models_group_remove">Remove</string>
+    <string name="models_group_add_member">Add model</string>
+    <string name="models_group_add">Add</string>
+    <string name="models_group_main_needs_tools">Only models that can call tools can be in a main-model group.</string>
+    <string name="models_group_vision_needs_eyes">A vision group needs at least one model that can see images.</string>
+    <string name="models_group_privacy">If a model fails, the request (including screenshots) may be sent to another provider in this group.</string>
+    <string name="models_group_save_failed">Couldn’t save: check the members and tool support.</string>
+    <string name="models_group_delete">Delete this group</string>
+    <string name="models_group_delete_title">Delete “%1$s”?</string>
+    <string name="models_group_delete_body">Roles using it will go back to unset, none, or the main model.</string>
+    <string name="models_group_used_by">Used as %1$s</string>
+    <string name="models_group_member_context">Context</string>
 </resources>

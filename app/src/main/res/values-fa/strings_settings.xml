@@ -257,4 +257,11 @@
         <item quantity="one">%1$d دقیقه</item>
         <item quantity="other">%1$d دقیقه</item>
     </plurals>
+
+    <string name="settings_sandbox_budget">محدودیت زمان محیط پردازش برای هر کار</string>
+    <string name="settings_sandbox_budget_sub">مجموع زمان اجرای فرمان‌های محیط در یک کار (نصب وابستگی‌ها، ساخت و مانند آن). پیش‌فرض ۳۰ دقیقه است؛ تغییر از کار بعدی اعمال می‌شود.</string>
+    <plurals name="settings_sandbox_budget_minutes_n">
+        <item quantity="one">%1$d دقیقه</item>
+        <item quantity="other">%1$d دقیقه</item>
+    </plurals>
 </resources>

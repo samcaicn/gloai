@@ -80,4 +80,5 @@
     <string name="tool_mika_login_site">請你登入網站</string>
     <string name="tool_mika_confirm_login">核對登入</string>
     <string name="tool_mika_favorites">常用網站</string>
+    <string name="tool_wechat_owner">發送到我的微信</string>
 </resources>

@@ -207,6 +207,9 @@ class ShizukuShellUserService : IMikaShell.Stub {
     override fun startShareFile(displayId: Int, packageName: String, uri: String, mime: String, text: String): Int =
         delegate.startShareFile(displayId, packageName, uri, mime, text)
 
+    override fun resizeDisplay(displayId: Int, surface: Surface, width: Int, height: Int, dpi: Int): Boolean =
+        delegate.resizeDisplay(displayId, surface, width, height, dpi)
+
     override fun destroy() {
         runCatching { delegate.releaseAll() }
         exitProcess(0)

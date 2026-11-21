@@ -21,24 +21,28 @@ data class StepContext(
  * 实验开关 lightSteps 的分工:简单步给轻量模型,其余给主模型。
  * 轻量模型没配、不支持工具调用时恒用主模型。一步出了错误、守卫提示或画面没变,接下来 [TROUBLE_STEPS] 步强制主模型。
  *
- * 现已支持轻量模型多级备援 (Light Waterfall Chain):
- * 当前轻量模型遇限流或故障时，优先平滑降级至下一个轻量备援模型，全部备援耗尽后才回退至主模型。
+ * 轻量侧沿用多级备援(Light Waterfall Chain):当前轻量模型不可用时依次切到下一个,全部用尽才回退主模型。
+ * 主模型、轻量模型都可以是模型组([ModelPool]);[pick] 返回的是池本身,池再按成员选,失败换成员。
  */
 class ModelRouter(
     private val main: ChatModel,
     private val light: ChatModel?,
     private val fallbacks: List<ChatModel> = emptyList(),
 ) {
+    private val mainPool: ModelPool = main.asPool()
+    /** 轻量侧备援链;每一级都可能是单个模型或一个模型组。 */
     private val lightChain: List<ChatModel> = listOfNotNull(light) + fallbacks
+    private val lightPools: List<ModelPool> = lightChain.map { it.asPool() }
     private var lightIndex = 0
     private var forcedMain = 0
     private var disabled = false
 
-    /** 当前活跃的轻量模型 */
+    /** 当前活跃的轻量模型(可能是组)。 */
     val currentLight: ChatModel? get() = lightChain.getOrNull(lightIndex)
+    private val currentPool: ModelPool? get() = lightPools.getOrNull(lightIndex)
 
-    /** 轻量模型能不能接手机步;不能时 lightSteps 不生效。 */
-    val active: Boolean get() = !disabled && currentLight?.capabilities?.toolCalls == true
+    /** 轻量模型能不能接手机步;不能时 lightSteps 不生效。组里只要有一个支持工具的成员就行,具体到每一步再按 need 过滤。 */
+    val active: Boolean get() = !disabled && currentPool?.members?.any { it.model.capabilities.toolCalls } == true
 
     /**
      * 轻量模型出了重试也没用的错(Key、额度、模型名、请求不对):
@@ -74,7 +78,18 @@ class ModelRouter(
     /** 出了状况(含轻量模型调用失败、回复被改派给主模型):之后 [TROUBLE_STEPS] 步用主模型。 */
     fun noteTrouble() { forcedMain = TROUBLE_STEPS }
 
-    fun isLight(m: ChatModel): Boolean = lightChain.any { it === m }
+    /** 这个模型是不是轻量侧(含备援)的成员(不是按对象相等:组里换过成员也要认得出);轻量池本身也算。 */
+    fun isLight(m: ChatModel): Boolean = lightChain.any { it === m } || lightPools.any { it.owns(m) }
+
+    /** 这个成员属于哪个模型组;单模型为 null。组本身作为成员传进来时也算。 */
+    fun groupOf(m: ChatModel): String? {
+        val pool = if (isLight(m)) {
+            lightChain.firstOrNull { it === m }?.asPool() ?: lightPools.firstOrNull { it.owns(m) }
+        } else {
+            mainPool.takeIf { it === m || it.owns(m) }
+        }
+        return pool?.groupName
+    }
 
     companion object {
         const val TROUBLE_STEPS = 2

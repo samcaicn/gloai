@@ -29,4 +29,14 @@ class ToolLabelsTest {
         assertEquals("Browse device files", labels.label("list_device_files"))
         assertEquals("Copy device file", labels.label("copy_device_file"))
     }
+
+    /** 没声明 label 的工具按工具名查界面文字;查不到才显示工具名本身。 */
+    @Test
+    fun toolWithoutDeclaredLabelIsLocalizedByName() {
+        val labels = ToolLabels(knownTools())
+        assertEquals("发送到我的微信", labels.label("wechat_send_owner"))
+        assertEquals("unknown_tool_name", labels.label("unknown_tool_name"))
+        UiText.source = ResFileTexts.english
+        assertEquals("Send to my WeChat", labels.label("wechat_send_owner"))
+    }
 }

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Chat composer: hold to talk -->
-    <string name="voice_placeholder_idle">Konuşmak için basılı tutun, yazmak için dokunun</string>
-    <string name="voice_placeholder_busy">Görevle konuşmak için basılı tutun, yazmak için dokunun</string>
-    <string name="voice_placeholder_answer">Yanıtlamak için basılı tutun, yazmak için dokunun</string>
+    <string name="voice_placeholder_idle">Yazın veya konuşmak için basılı tutun</string>
+    <string name="voice_placeholder_busy">Göreve yazın veya konuşmak için basılı tutun</string>
+    <string name="voice_placeholder_answer">Yanıtınızı yazın veya konuşmak için basılı tutun</string>
     <string name="voice_listening">Dinleniyor</string>
     <string name="voice_steer_to">\“%1$s\”e söyleniyor</string>
     <string name="voice_engine_phone">Telefon</string>

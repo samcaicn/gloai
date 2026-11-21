@@ -240,4 +240,10 @@
     <plurals name="settings_trigger_run_minutes_n">
         <item quantity="other">%1$d분</item>
     </plurals>
+
+    <string name="settings_sandbox_budget">작업별 샌드박스 시간 한도</string>
+    <string name="settings_sandbox_budget_sub">한 작업에서 샌드박스 명령이 총 실행되는 시간(의존성 설치, 빌드 등). 기본값은 30분이며 변경은 다음 작업부터 적용돼요.</string>
+    <plurals name="settings_sandbox_budget_minutes_n">
+        <item quantity="other">%1$d분</item>
+    </plurals>
 </resources>

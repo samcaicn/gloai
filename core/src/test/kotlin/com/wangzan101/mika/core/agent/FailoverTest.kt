@@ -35,6 +35,13 @@ class FailoverTest {
         assertEquals(1, Failover.nextIndex(ModelError.Proxy(ProxyFailure.Unreachable), 0, tags, 3))
     }
 
+    @Test fun groupUnavailableSwitchesToNextChainLink() {
+        // 组内已经无人可用/用尽:链上还有健康模型时要能进下一条
+        assertEquals(1, Failover.nextIndex(ModelError.GroupUnavailable("g"), 0, tags, 3))
+        assertEquals(1, Failover.nextIndex(ModelError.GroupExhausted("g"), 0, tags, 3))
+        assertNull(Failover.nextIndex(ModelError.GroupUnavailable("g"), 1, tags, 2))
+    }
+
     @Test fun taskBudgetNeverSwitches() {
         assertNull(Failover.nextIndex(ModelError.TaskBudgetExceeded(100, 100), 0, tags, 3))
     }

@@ -439,6 +439,22 @@ class WechatStoreTest {
         assertEquals(listOf(PendingWechatMessage("pending", peer, "待登记")), reopened.pending())
     }
 
+    @Test fun boundOwnerPeerRequiresEnabledAccountContextTokenAndAnExistingThread() {
+        val dir = tmp.newFolder()
+        val store = WechatStore(dir, cipher)
+        assertEquals(null, store.boundOwnerPeer())
+        store.saveAccount(WechatAccount("secret", "https://example.test", "bot", "owner"))
+        assertEquals(null, store.boundOwnerPeer())
+        store.setEnabled(true)
+        assertEquals(null, store.boundOwnerPeer())
+        store.rememberContext("owner", "context")
+        assertEquals(null, store.boundOwnerPeer())
+        val peer = store.peer("owner")
+        assertEquals(peer, store.boundOwnerPeer())
+        store.setEnabled(false)
+        assertEquals(null, store.boundOwnerPeer())
+    }
+
     private fun boundStore(dir: File) = WechatStore(dir, cipher).apply {
         saveAccount(WechatAccount("secret", "https://example.test", "bot", "owner"))
         setEnabled(true)

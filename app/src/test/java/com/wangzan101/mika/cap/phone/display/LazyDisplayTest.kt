@@ -41,4 +41,13 @@ class LazyDisplayTest {
         d.get()
         assertEquals(2, tries)
     }
+    @Test fun reportedSizeFollowsTheExistingDisplayAfterResize() = runTest {
+        data class Size(var width: Int, var height: Int)
+        val display = LazyDisplay(720, 1600, sizeOf = { screen: Size -> screen.width to screen.height }) { Size(720, 1600) }
+        val screen = display.get()
+        screen.width = 900; screen.height = 1100
+        assertEquals(900, display.width)
+        assertEquals(1100, display.height)
+        assertSame(screen, display.get())
+    }
 }

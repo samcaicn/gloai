@@ -60,6 +60,12 @@ class VoiceHoldTest {
         override fun start(language: String?): SpeechSession = FakeSession().also { sessions += it }
     }
 
+    /** 引擎不可用的假来源(系统识别没响应);不该有人来起会话。 */
+    private class UnavailableVoice : VoiceSource {
+        override fun spec(): SpeechEngineSpec = SpeechEngineSpec.Unavailable(SpeechEngineSpec.Why.SystemNoResponse)
+        override fun start(language: String?): SpeechSession = error("不可用的引擎不该起会话")
+    }
+
     private val voice = FakeVoice()
 
     @Before fun grantMic() {
@@ -70,13 +76,13 @@ class VoiceHoldTest {
     /** 「松开 发送」发出的字;[composer] 带上 sendVoice = true 时才有这条路。 */
     private val voiceSent = mutableListOf<String>()
 
-    private fun composer(text: String = "", sendVoice: Boolean = false) = compose.setContent {
+    private fun composer(text: String = "", sendVoice: Boolean = false, source: VoiceSource = voice) = compose.setContent {
         MikaTheme {
             var t by remember { mutableStateOf(text) }
             Box(Modifier.fillMaxSize()) {
                 Composer(
                     Modifier, t, { t = it }, ComposerMode.Idle, hasHistory = false, onSend = {}, onStop = {},
-                    voice = voice,
+                    voice = source,
                     onVoiceText = { t = com.wangzan101.mika.voice.HoldToTalk.join(t, it) },
                     onVoiceSend = if (sendVoice) ({ voiceSent += com.wangzan101.mika.voice.HoldToTalk.join(t, it); t = "" }) else null,
                 )
@@ -215,5 +221,38 @@ class VoiceHoldTest {
         session.out.close()
         waitNoTag("voice-listen")
         compose.onNodeWithTag("composer-field").assertTextEquals("订明天的票")
+    }
+
+    /** 引擎不可用功能也不消失:按住照常弹「还不能语音输入」说明页(原因 + 去选引擎的路),按住了说明页留着。 */
+    @Test fun unavailableEngineHoldShowsTheExplanationSheet() {
+        composer(source = UnavailableVoice())
+        compose.onNodeWithTag("composer-field").performTouchInput { down(center) }
+        waitTag("voice-sheet")
+        compose.onNodeWithText("还不能语音输入").assertExists()
+        // 按满半秒以上是故意按住:说明页留着,不收
+        Thread.sleep(700)
+        compose.onNodeWithTag("composer-field").performTouchInput { up() }
+        compose.waitForIdle()
+        compose.onNodeWithTag("voice-sheet").assertExists()
+    }
+
+    /** 引擎不可用时短按仍是点按:说明页弹过也要收掉、输入框聚焦打字(方案A 对说明页同样成立)。 */
+    @Test fun unavailableEngineShortHoldFallsBackToTap() {
+        composer(source = UnavailableVoice())
+        compose.onNodeWithTag("composer-field").performTouchInput { down(center) }
+        // 350ms:过了起听的 300ms(说明页已弹)、不足半秒,松手必须回退点按
+        Thread.sleep(350)
+        compose.onNodeWithTag("composer-field").performTouchInput { up() }
+        waitNoTag("voice-sheet")
+        compose.onNodeWithTag("composer-field").assertIsFocused()
+    }
+
+    /** 引擎不可用时点话筒:直接弹说明页,不弹「按住说话」那句误导提示。 */
+    @Test fun unavailableEngineMicTapOpensTheSheet() {
+        composer(source = UnavailableVoice())
+        waitTag("composer-mic")
+        compose.onNodeWithTag("composer-mic").performClick()
+        waitTag("voice-sheet")
+        compose.onNodeWithText("还不能语音输入").assertExists()
     }
 }

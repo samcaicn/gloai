@@ -108,9 +108,9 @@ class AudioMute(private val port: AudioPort, private val store: MarkerStore) {
 
     /** 恢复记录里的全部 App;恢复不了的留在记录里下次再试。 */
     @Synchronized
-    fun restoreAll(): Boolean {
+    fun restoreAll(setMode: (String, String) -> Boolean = port::setMode): Boolean {
         val saved = store.load() ?: return true
-        val left = saved.filterNot { (pkg, mode) -> port.setMode(pkg, mode ?: "default") }
+        val left = saved.filterNot { (pkg, mode) -> setMode(pkg, mode ?: "default") }
         if (left.isEmpty()) store.clear() else store.save(left)
         return left.isEmpty()
     }
@@ -241,8 +241,17 @@ class TaskRecovery(context: Context, private val sharedShell: SharedShell) {
             ?: error("the Application (${context.applicationContext.javaClass.name}) must implement TaskRecovery.Owner to give the task recovery")
 
         /** 恢复 [records](记录名 → 记录)里不属于 [live] 的全部静音;都恢复了返回 true。 */
-        fun restoreRuns(records: Map<String, MarkerStore>, port: AudioPort, live: Set<String>): Boolean =
-            records.filterKeys { it !in live }.values.map { AudioMute(port, it).restoreAll() }.all { it }
+        fun restoreRuns(records: Map<String, MarkerStore>, port: AudioPort, live: Set<String>): Boolean {
+            // 同一包和用户的相同原值只试一次。若遇到不同的原值，仍按记录顺序恢复。
+            val attempts = HashMap<String, Pair<String, Boolean>>()
+            return records.filterKeys { it !in live }.values.map { store ->
+                AudioMute(port, store).restoreAll { pkg, mode ->
+                    val previous = attempts[pkg]
+                    if (previous?.first == mode) previous.second
+                    else port.setMode(pkg, mode).also { attempts[pkg] = mode to it }
+                }
+            }.all { it }
+        }
 
         /** 按留底把用户原来的剪贴板还回去;只有已还原、用户已复制别的或没有留底时才删掉留底,读不到时留给下次。 */
         fun restoreClip(backup: ClipBackup, restore: (original: String, ours: String) -> Boolean): Boolean {

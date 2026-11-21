@@ -64,7 +64,9 @@ class CallSettings(
             .putBoolean(BACKGROUND_AUTHORIZED, next.backgroundStandbyAuthorized)
             .putInt("auto_answer_delay_seconds", next.autoAnswerDelaySeconds)
             .putString("default_outgoing_sim_id", next.defaultOutgoingSimId)
-            .putBoolean("allow_all", next.allowAllIncoming)
+            .putBoolean("allow_all", next.incomingScope == IncomingScope.ALL)
+            .putString("incoming_scope", next.incomingScope.name)
+            .putStringSet("incoming_types", next.allowedCallTypes.map { it.name }.toSet())
             .putStringSet("allowlist", numbers)
             .putStringSet("bypass_incoming", bypass)
             .putLong("auto_answer_paused_until_ms", next.autoAnswerPausedUntilMs ?: 0L)
@@ -153,7 +155,12 @@ class CallSettings(
             autoAnswerDelaySeconds = prefs.getInt("auto_answer_delay_seconds", defaults.autoAnswerDelaySeconds)
                 .coerceIn(CallConfig.MIN_AUTO_ANSWER_DELAY_SECONDS, CallConfig.MAX_AUTO_ANSWER_DELAY_SECONDS),
             defaultOutgoingSimId = prefs.getString("default_outgoing_sim_id", null),
-            allowAllIncoming = prefs.getBoolean("allow_all", false),
+            incomingScope = prefs.getString("incoming_scope", null)?.let { name ->
+                IncomingScope.entries.find { it.name == name } ?: IncomingScope.LIST
+            } ?: if (prefs.getBoolean("allow_all", false)) IncomingScope.ALL else IncomingScope.LIST,
+            allowedCallTypes = prefs.getStringSet("incoming_types", emptySet()).orEmpty().mapNotNull { name ->
+                IncomingCallType.entries.find { it.name == name }
+            }.toSet(),
             allowedIncomingNumbers = prefs.getStringSet("allowlist", emptySet()).orEmpty()
                 .mapNotNull(CallPolicy::incomingNumber).distinctBy(CallPolicy::incomingMatchKey)
                 .take(CallPolicy.MAX_ALLOWED_NUMBERS).toSet(),

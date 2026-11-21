@@ -53,6 +53,8 @@
     <string name="models_not_listed">Os modelos deste provedor ainda não foram listados.</string>
     <string name="refresh">Atualizar</string>
     <string name="models_in_use">Em uso</string>
+    <string name="models_response_speed">Velocidade de resposta</string>
+    <string name="models_response_speed_note">A opção padrão segue a configuração do servidor. Fast e Ultrafast dependem do modelo e da conta e podem aumentar o custo ou o consumo do plano.</string>
     <string name="models_sees_images">Enxerga imagens</string>
     <string name="models_sees_note_user">Definido por você. Quando o modelo principal enxerga, as capturas de tela vão direto para ele.</string>
     <string name="models_sees_note_vision">Usado como modelo de visão, então conta como capaz de ver imagens.</string>
@@ -221,6 +223,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">Voice</string>
     <string name="voice_speed">Speed</string>
+    <string name="voice_streaming">Reprodução em streaming</string>
+    <string name="voice_streaming_note">Requer um provedor compatível e velocidade de 1×.</string>
     <string name="voice_auto_read">Read every answer aloud</string>
     <string name="voice_speak_tool">Let Mika speak on its own</string>
     <string name="voice_max_chars">Longest read (characters)</string>
@@ -267,4 +271,44 @@
     <string name="tool_image_edit">Edit image</string>
     <string name="tool_image_save">Save image</string>
     <string name="tool_share_image">Share image to app</string>
+
+
+    <!-- Model groups -->
+    <string name="models_groups">Grupos de modelos</string>
+    <string name="models_group_lead">Um grupo tenta os modelos em ordem quando um falha. Você pode usar um grupo em qualquer lugar onde escolhe um modelo.</string>
+    <string name="models_group_empty">Ainda não há grupos de modelos. Crie um para ter um modelo de reserva.</string>
+    <string name="models_group_footer">Um grupo só envia a solicitação a outro provedor depois de uma falha. Esta versão nunca envia a mesma solicitação em paralelo.</string>
+    <string name="models_group_new">Novo grupo de modelos</string>
+    <string name="models_group_edit">Editar “%1$s”</string>
+    <string name="models_group_name">Nome</string>
+    <string name="models_group_name_hint">ex.: Principal com reserva</string>
+    <string name="models_group_strategy">Estratégia</string>
+    <string name="models_group_strategy_failover">Alternar em ordem</string>
+    <string name="models_group_strategy_failover_note">Use o próximo modelo somente quando o anterior falhar.</string>
+    <string name="models_group_strategy_weighted">Alternar por conversa</string>
+    <string name="models_group_strategy_weighted_note">Conversas novas são atribuídas por peso e depois ficam nesse modelo.</string>
+    <string name="models_group_strategy_latency">Mais rápido recentemente</string>
+    <string name="models_group_strategy_latency_note">Prefira o modelo com melhor taxa de sucesso e latência recentes.</string>
+    <string name="models_group_strategy_cost">Mais barato</string>
+    <string name="models_group_strategy_cost_note">Prefira o membro mais barato. Requer uma classificação de custo por membro.</string>
+    <string name="models_group_sticky">Manter um modelo por conversa</string>
+    <string name="models_group_sticky_note">Evita mudar o prefixo do prompt; só troca quando um modelo falha.</string>
+    <string name="models_group_members">Membros</string>
+    <string name="models_group_member_count">%1$d modelos</string>
+    <string name="models_group_no_members">Ainda não há membros. Adicione pelo menos um modelo.</string>
+    <string name="models_group_priority">Prioridade %1$d</string>
+    <string name="models_group_up">Subir</string>
+    <string name="models_group_down">Descer</string>
+    <string name="models_group_remove">Remover</string>
+    <string name="models_group_add_member">Adicionar modelo</string>
+    <string name="models_group_add">Adicionar</string>
+    <string name="models_group_main_needs_tools">Somente modelos que podem chamar ferramentas podem entrar em um grupo de modelo principal.</string>
+    <string name="models_group_vision_needs_eyes">Um grupo de visão precisa de pelo menos um modelo que veja imagens.</string>
+    <string name="models_group_privacy">Se um modelo falhar, a solicitação (incluindo capturas) pode ser enviada a outro provedor deste grupo.</string>
+    <string name="models_group_save_failed">Não foi possível salvar: verifique os membros e o suporte a ferramentas.</string>
+    <string name="models_group_delete">Excluir este grupo</string>
+    <string name="models_group_delete_title">Excluir “%1$s”?</string>
+    <string name="models_group_delete_body">Os papéis que o usam voltarão para não definido, nenhum ou o modelo principal.</string>
+    <string name="models_group_used_by">Usado como %1$s</string>
+    <string name="models_group_member_context">Contexto</string>
 </resources>

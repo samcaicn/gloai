@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_control_hint">Mika が操作中 · タップで引き継ぐ</string>
+    <string name="screen_control_wait">現在の操作が終わるのを待っています…</string>
+    <string name="screen_control_active">あなたが操作中 · タップで戻す</string>
+    <string name="screen_control_failed">操作できないか、画面が変わりました。もう一度お試しください。</string>
+    <string name="screen_control_resume">Mika を再開</string>
+    <string name="screen_control_start">操作を引き継ぐ</string>
+    <string name="screen_control_text">選択した入力欄に入力するテキスト</string>
+    <string name="screen_control_send_text">テキストを入力</string>
+    <string name="screen_resize_panes">ペイン幅を調整</string>
+</resources>

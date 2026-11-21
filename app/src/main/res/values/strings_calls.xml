@@ -144,4 +144,21 @@
     <string name="calls_notification_connecting_audio">Connecting call audio</string>
     <string name="calls_notification_connected_waiting">AI connected. Waiting for the other party to speak. You can take over anytime.</string>
     <string name="calls_notification_connected">AI connected. You can take over anytime.</string>
+    <string name="calls_only_types">Only selected call types</string>
+    <string name="calls_pick_types">Select at least one call type</string>
+    <string name="calls_type_note">Mika uses Accessibility to match the phone app’s label and number to the ringing call. Unrecognized calls are left for you.</string>
+    <string name="calls_type_accessibility">Open Accessibility settings</string>
+    <string name="calls_type_takeout">Food delivery</string>
+    <string name="calls_type_parcel">Parcels</string>
+    <string name="calls_type_delivery">Delivery or logistics (unspecified)</string>
+    <string name="calls_type_sales">Sales and advertising</string>
+    <string name="calls_type_broker">Brokers and agents</string>
+    <string name="calls_type_financial_sales">Insurance and investment sales</string>
+    <string name="calls_type_spam">Spam</string>
+    <string name="calls_type_fraud">Suspected fraud</string>
+    <string name="calls_type_high_risk">High risk</string>
+    <string name="calls_type_business">Businesses and customer service</string>
+    <string name="calls_type_transport">Taxis and ride services</string>
+    <string name="calls_only_strangers">Only numbers outside contacts</string>
+    <string name="calls_strangers_note">Allow Mika to read contacts. AI answers only when the number can be checked and is not saved. Hidden numbers and failed lookups are left for you.</string>
 </resources>

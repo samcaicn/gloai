@@ -619,6 +619,8 @@ class AgentLoop(
             _state.value = TaskState.Running(step, note, progress = progress.state(step))
             offer.refresh()
             var asked = now()
+            tools.manualControl?.awaitAutomatic()
+            val controlVersion = tools.manualControl?.version
             val routed = try {
                 routedOrRedirect(inbox, history, offer.current, track, step, { asked = it }, previewFor(step))
             } catch (e: CancellationException) {
@@ -630,6 +632,11 @@ class AgentLoop(
                 keepInterrupted(history, inbox, step)
                 return null
             }
+            tools.manualControl?.awaitAutomatic()
+            if (controlVersion != tools.manualControl?.version) {
+                history += ctx.notice("manual_control", "The screen changed. Read the current screen and reconsider the next step; the earlier proposed action was not executed.")
+                return null
+            }
             var (reply, used) = routed
             val proposed = reply.parts.firstActionCall()
             if (provenance.origin == RunOrigin.Ui && intentGate != null && proposed != null &&
@@ -639,10 +646,11 @@ class AgentLoop(
                     // 提议的调用尚未写进历史、也没有执行；重问一次，只给直接回答的机会。
                     val discussion = history + ctx.notice("conversation_intent",
                         "The user is discussing or reviewing this time. Answer this question directly, without reading or operating apps, websites or other outside content.")
-                    reply = try { caller.ask(discussion, emptyList(), step, using = model, onText = previewFor(step)) }
+                    val direct = try { caller.askRouted(discussion, emptyList(), step, onText = previewFor(step)) }
                     catch (e: CancellationException) { throw e }
                     catch (e: Exception) { return StopRules.modelFailed(e) }
-                    used = caller.lastMainUsed
+                    reply = direct.first
+                    used = direct.second
                 }
             }
             val rawText = reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim()
@@ -668,6 +676,7 @@ class AgentLoop(
                 now(), step, RunEvent.clip(Redactor.text(text)), tool, argsJson,
                 reply.usage?.inputTokens, reply.usage?.outputTokens, reply.usage?.cachedInputTokens, latencyMs,
                 if (caller.recordRoles) used.name else null, if (caller.recordRoles) caller.roleOf(used) else null, retryWaitMs = retryWaitMs,
+                group = caller.groupOf(used),
                 repliedAtMs = repliedAtMs,
             ))
 
@@ -855,7 +864,7 @@ class AgentLoop(
                         return StopRules.guard(it)
                     }
                     // 应用权限拒绝已经由执行入口作为工具结果交给模型:不结束任务,让模型换路线或向用户说明
-                    if (AppAccessDenied.isAppAccessCode(action.code)) {
+                    if (AppAccessDenied.isAppAccessCode(action.code) || action.code == com.wangzan101.mika.core.run.ManualControl.CHANGED) {
                         track.after(tools.verb(first.name), ok = false, guard = false, changed = null, recovery = false, app = null)
                         return null
                     }
@@ -1165,8 +1174,8 @@ class AgentLoop(
             appendRuntimeState(history, place, labels, step, progress.pending(step))
             _state.value = TaskState.Running(step, "", progress = progress.state(step))
             val asked = now()
-            val reply = try {
-                caller.ask(history, TurnPolicy.finalTools(specs, tools::verb), step, onText = previewFor(step))
+            val (reply, used) = try {
+                caller.askRouted(history, TurnPolicy.finalTools(specs, tools::verb), step, onText = previewFor(step))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ModelError.TaskBudgetExceeded) {
@@ -1182,7 +1191,7 @@ class AgentLoop(
             acceptProgress(parsed)
             val text = parsed.text
             history += Message(Role.Assistant, cleanReplyParts(reply.parts, text), Author.Mika)
-                .also { caller.noteReply(it, caller.lastMainUsed, reply.usage) }
+                .also { caller.noteReply(it, used, reply.usage) }
             val calls = ReplyCalls(reply.parts, ::acceptProgress)
             val call = calls.actions.firstOrNull { tools.verb(it.name) in TurnPolicy.FINAL_VERBS }
             val retryWaitMs = caller.lastRetryWaitMs
@@ -1191,7 +1200,8 @@ class AgentLoop(
             emit(RunEvent.ModelReply(
                 now(), step, RunEvent.clip(Redactor.text(text)), call?.name, call?.let { Redactor.args(tools.verb(it.name), it.argsJson, secretField = false) },
                 reply.usage?.inputTokens, reply.usage?.outputTokens, reply.usage?.cachedInputTokens, latencyMs, retryWaitMs = retryWaitMs,
-                repliedAtMs = repliedAtMs,
+                model = used.name, role = if (caller.recordRoles) caller.roleOf(used) else null,
+                group = caller.groupOf(used), repliedAtMs = repliedAtMs,
             ))
             // 收尾模型也可能正在生成时收到插话。最多重答两次，其余交给下一任务。
             if (attempt < 2 && inbox?.hasSteers() == true) {

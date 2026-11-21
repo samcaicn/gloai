@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="voice_placeholder_idle">按住說話，點一下打字</string>
-    <string name="voice_placeholder_busy">按住說話插話，點一下打字</string>
-    <string name="voice_placeholder_answer">按住說話回答，點一下打字</string>
+    <string name="voice_placeholder_idle">打字，或按住說話</string>
+    <string name="voice_placeholder_busy">打字插話，或按住說話</string>
+    <string name="voice_placeholder_answer">打字回答，或按住說話</string>
     <string name="voice_listening">在聽</string>
     <string name="voice_steer_to">插話給「%1$s」</string>
     <string name="voice_engine_phone">手機自帶</string>

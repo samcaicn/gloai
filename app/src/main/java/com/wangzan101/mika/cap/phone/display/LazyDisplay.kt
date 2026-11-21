@@ -8,7 +8,11 @@ import kotlinx.coroutines.sync.withLock
  * [width]、[height] 是将要建的屏的尺寸,屏还没建时读屏用它们报尺寸。
  * 泛型只为让单元测试能换成假对象,产品里是 [LazyAgentDisplay]。
  */
-class LazyDisplay<T : Any>(val width: Int, val height: Int, private val create: suspend () -> T) {
+class LazyDisplay<T : Any>(width: Int, height: Int, private val sizeOf: ((T) -> Pair<Int, Int>)? = null, private val create: suspend () -> T) {
+    private val initialWidth = width
+    private val initialHeight = height
+    val width: Int get() = made?.let { sizeOf?.invoke(it)?.first } ?: initialWidth
+    val height: Int get() = made?.let { sizeOf?.invoke(it)?.second } ?: initialHeight
     private val lock = Mutex()
     @Volatile private var made: T? = null
 

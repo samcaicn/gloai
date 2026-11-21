@@ -220,6 +220,15 @@ class WechatStore(
         state = next
     }
 
+    /** 机主结果推送的投递目标:已启用、有账号、机主的回复令牌与已有线程都在才返回;缺一项就没有可投递的出口,也不为此新建线程。 */
+    @Synchronized fun boundOwnerPeer(): ChannelPeer? {
+        val current = account ?: return null
+        if (!state.enabled) return null
+        if (state.contextTokens[current.ownerId].isNullOrBlank()) return null
+        val thread = state.threads[current.ownerId] ?: return null
+        return ChannelPeer(WechatChannel.ID, current.ownerId, thread)
+    }
+
     private fun readState(): WechatState = if (stateFile.isFile) runCatching {
         json.decodeFromString(WechatState.serializer(), stateFile.readText())
     }.getOrElse { WechatState() } else WechatState()

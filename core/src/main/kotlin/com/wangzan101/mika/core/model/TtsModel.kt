@@ -1,5 +1,6 @@
 package com.wangzan101.mika.core.model
 
+import kotlinx.coroutines.flow.Flow
 import java.io.ByteArrayOutputStream
 import java.util.Base64
 
@@ -12,6 +13,19 @@ interface TtsModel {
 
     /** 失败时抛 [ModelError] 或 [TtsError]。 */
     suspend fun synthesize(request: TtsRequest): TtsResponse
+}
+
+/** 支持按音频块交付的声音模型。[synthesize] 仍可用于保存完整音频。 */
+interface StreamingTtsModel : TtsModel {
+    /** 收集时发起请求。每次合成交付 PCM 分块或一份完整音频，取消收集时释放连接。 */
+    fun streamAudio(request: TtsRequest): Flow<TtsAudioPart>
+}
+
+sealed interface TtsAudioPart {
+    /** PCM16LE 的完整交错帧。同一次合成的采样率、声道数固定。 */
+    data class Pcm(val bytes: ByteArray, val sampleRate: Int, val channels: Int) : TtsAudioPart
+
+    data class Complete(val response: TtsResponse) : TtsAudioPart
 }
 
 /**

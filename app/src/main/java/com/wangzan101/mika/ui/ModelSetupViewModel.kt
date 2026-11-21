@@ -10,8 +10,10 @@ import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ListedModel
 import com.wangzan101.mika.core.model.ModelEndpoint
 import com.wangzan101.mika.core.model.ModelError
+import com.wangzan101.mika.core.model.ModelGroup
 import com.wangzan101.mika.core.model.ModelListResult
 import com.wangzan101.mika.core.model.ModelRole
+import com.wangzan101.mika.core.model.OpenAiServiceTier
 import com.wangzan101.mika.core.net.LocalHosts
 import com.wangzan101.mika.settings.ModelOption
 import com.wangzan101.mika.settings.ModelOptions
@@ -227,6 +229,7 @@ data class ModelSetupUi(
     val providers: List<Provider> = emptyList(),
     val configs: List<ProviderConfig> = emptyList(),
     val roles: RoleChoices = RoleChoices(),
+    val groups: List<ModelGroup> = emptyList(),
     val keyed: Set<String> = emptySet(),
     val providerKeyMap: Map<String, List<String>> = emptyMap(),
     val listing: Map<String, ListState> = emptyMap(),
@@ -278,10 +281,19 @@ data class ModelSetupUi(
         (providerId == pickToProbe || providers.firstOrNull { it.id == providerId }?.savedUntested == true)
 
     /** 选好了主模型就能「下一步」。 */
-    val canNext: Boolean get() = roles.main != null
+    val canNext: Boolean get() = roles.hasMain
 
-    /** 这个用途实际用的配置(「用主模型」时是主模型的)。 */
-    fun configFor(role: ModelRole): ProviderConfig? = roles.resolve(role)?.let { id -> configs.firstOrNull { it.id == id } }
+    /** 这个用途实际用的配置(「用主模型」时是主模型的;组时是排在最前的启用成员)。 */
+    fun configFor(role: ModelRole): ProviderConfig? =
+        (roles.resolveConfig(role) ?: groups.firstOrNull { it.id == roles.resolveGroup(role) }?.enabledMembers?.firstOrNull()?.configId)
+            ?.let { id -> configs.firstOrNull { it.id == id } }
+
+    /** 配置 id 对应的配置;组里的成员、选择页都用它。 */
+    fun configOf(id: String): ProviderConfig? = configs.firstOrNull { it.id == id }
+
+    /** 组能不能用于这个用途(主模型要求全员支持工具,看图要求至少一个能看图)。 */
+    fun usable(group: ModelGroup, role: ModelRole): Boolean =
+        group.usableFor(role) { id -> configOf(id)?.capabilities }
 
     fun providerOf(cfg: ProviderConfig): Provider? = providers.firstOrNull { it.id == cfg.providerId }
 
@@ -360,7 +372,7 @@ class ModelSetupViewModel(
 
     init {
         // 别处(开发者选项等)改了存储时跟着更新
-        scope.launch { merge(store.providers, store.configs, store.roles).collect { sync() } }
+        scope.launch { merge(store.providers, store.configs, store.roles, store.groups).collect { sync() } }
         speech?.let { s -> scope.launch { s.choice.collect { sync() } } }
         // 登录在别处结束(通知上取消了)或界面重建前就开始了:跟着它的进度
         scope.launch {
@@ -417,7 +429,7 @@ class ModelSetupViewModel(
     private fun snapshot(ui: ModelSetupUi): ModelSetupUi {
         val providers = store.providers.value
         return ui.copy(
-            providers = providers, configs = store.configs.value, roles = store.roles.value,
+            providers = providers, configs = store.configs.value, roles = store.roles.value, groups = store.groups.value,
             keyed = providers.filter { store.hasKey(it.id) }.map { it.id }.toSet(),
             providerKeyMap = providers.associate { it.id to store.providerKeys(it.id) },
             chatGptAccount = store.chatGptProvider()?.let { p ->
@@ -547,7 +559,7 @@ class ModelSetupViewModel(
                         f.providerName, f.kind, baseUrl, key, models, f.sessionHeader, setOf(typed),
                         typed = if (listed == null) setOf(typed) else emptySet(),
                     )
-                    if (!noTools && store.roles.value.main == null) use(ModelRole.Main, p, typed, ModelOptions.ofProvider(p, store.list()))
+                    if (!noTools && !store.roles.value.hasMain) use(ModelRole.Main, p, typed, ModelOptions.ofProvider(p, store.list()))
                 }
                 val note = if (noTools) tr(R.string.model_probe_no_tools, typed) else null
                 _state.update { snapshot(it.copy(form = AddForm.of(ProviderPresets.all.first()), formOpen = false, probeNote = note)) }
@@ -563,7 +575,7 @@ class ModelSetupViewModel(
             val noneUsable = probed.main == null && probed.rejected.isNotEmpty()
             val saved = withContext(io) {
                 val p = store.connect(f.providerName, f.kind, baseUrl, key, models, f.sessionHeader, setOfNotNull(probed.main))
-                if (!noneUsable && store.roles.value.main == null) {
+                if (!noneUsable && !store.roles.value.hasMain) {
                     val options = ModelOptions.ofProvider(p, store.list())
                     (probed.main ?: ModelOptions.defaultMain(options, f.familyTokens) ?: options.firstOrNull()?.id)
                         ?.let { m -> use(ModelRole.Main, p, m, options) }
@@ -616,7 +628,7 @@ class ModelSetupViewModel(
                     form = AddForm.of(ProviderPresets.all.first()), formOpen = false,
                     probeNote = tr(R.string.model_saved_untested, f.providerName),
                     // 没有主模型时,在它里面选主模型会先试调用
-                    pickToProbe = saved.id.takeIf { store.roles.value.main == null },
+                    pickToProbe = saved.id.takeIf { !store.roles.value.hasMain },
                 ))
             }
         }
@@ -855,7 +867,7 @@ class ModelSetupViewModel(
                     )
                     val listed = store.listModels(ProviderConfig.Kind.ChatGpt, ChatGptAuth.API_BASE, session.accessToken)
                     val p = store.connectChatGpt(session, (listed as? ModelListResult.Ok)?.models ?: existing?.models.orEmpty())
-                    if (store.roles.value.main == null) {
+                    if (!store.roles.value.hasMain) {
                         val options = ModelOptions.ofProvider(p, store.list())
                         (ModelOptions.defaultMain(options) ?: options.firstOrNull()?.id)?.let { m -> use(ModelRole.Main, p, m, options) }
                     }
@@ -910,7 +922,7 @@ class ModelSetupViewModel(
                         AccountProvider.Xai -> connectXai(browser)
                         AccountProvider.OpenRouter -> connectOpenRouter(browser)
                     }
-                    if (store.roles.value.main == null) {
+                    if (!store.roles.value.hasMain) {
                         val options = ModelOptions.ofProvider(p, store.list())
                         (ModelOptions.defaultMain(options) ?: options.firstOrNull()?.id)?.let { m -> use(ModelRole.Main, p, m, options) }
                     }
@@ -1018,6 +1030,12 @@ class ModelSetupViewModel(
         sync()
     }
 
+    fun setModelServiceTier(providerId: String, model: String, tier: OpenAiServiceTier?): Boolean {
+        val saved = store.setModelServiceTier(providerId, model, tier)
+        sync()
+        return saved
+    }
+
     /** 把 [providerId] 下的 [model] 用作 [role](选择页和「用作」面板都走这里):没有配置的当场建一条。 */
     fun pick(role: ModelRole, providerId: String, model: String) {
         val m = model.trim()
@@ -1113,6 +1131,27 @@ class ModelSetupViewModel(
             withContext(io) { store.choose(role, choice) }
             sync()
         }
+    }
+
+    /** 把某个用途切到一个模型组;组不可用时不做。 */
+    fun chooseGroup(role: ModelRole, groupId: String) {
+        scope.launch {
+            withContext(io) { store.choose(role, RoleChoice.Group(groupId)) }
+            sync()
+        }
+    }
+
+    /** 保存组(新建或替换同 id);成员配置不存在、或主模型组不满足全员支持工具时返回 false。 */
+    suspend fun saveGroup(group: ModelGroup): Boolean = withContext(io) { store.saveGroup(group) }
+
+    suspend fun deleteGroup(groupId: String) = withContext(io) { store.deleteGroup(groupId) }
+
+    /** 组编辑时把一个「服务商 + 模型」加成成员:复用已有配置,没有就按当前能力建一条。 */
+    suspend fun ensureConfig(providerId: String, model: String): String? = withContext(io) {
+        val p = store.provider(providerId) ?: return@withContext null
+        val caps = ModelOptions.ofProvider(p, store.list()).firstOrNull { it.id == model }?.capabilities
+            ?: ModelOptions.baseOf(p)
+        store.ensureConfig(providerId, model, caps)
     }
 
     /**

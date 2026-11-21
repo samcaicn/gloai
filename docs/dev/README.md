@@ -24,6 +24,7 @@
 | --- | --- |
 | [sms-login.md](sms-login.md) | 用户可控短信验证码登录、权限与隐私边界 |
 | [app-access.md](app-access.md) | 应用访问规则、主动分享授权与标准手机工具的限制边界 |
+| [foldables.md](foldables.md) | 折叠屏布局规则、铰链避让、状态连续性与设备验收 |
 | [persona.md](persona.md) | 人格（可命名的自定义指令）：提示词位置、存储、对话绑定与安全边界 |
 | [account-signin.md](account-signin.md) | 用账号登录模型服务商（不填 Key）的设计，以及明确不做的部分 |
 | [chatgpt-signin-check.md](chatgpt-signin-check.md) | 上手机之前，在电脑上用 App 同一套代码走一遍「用 ChatGPT 登录」 |

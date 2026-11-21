@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Chat composer: hold to talk -->
-    <string name="voice_placeholder_idle">برای صحبت نگه دارید؛ برای تایپ بزنید</string>
-    <string name="voice_placeholder_busy">برای صحبت با کار نگه دارید؛ برای تایپ بزنید</string>
-    <string name="voice_placeholder_answer">برای پاسخ نگه دارید؛ برای تایپ بزنید</string>
+    <string name="voice_placeholder_idle">تایپ کنید یا برای صحبت نگه دارید</string>
+    <string name="voice_placeholder_busy">به کار تایپ کنید یا برای صحبت نگه دارید</string>
+    <string name="voice_placeholder_answer">پاسخ را تایپ کنید یا برای صحبت نگه دارید</string>
     <string name="voice_listening">در حال گوش دادن</string>
     <string name="voice_steer_to">در حال گفتن به «%1$s»</string>
     <string name="voice_engine_phone">گوشی</string>

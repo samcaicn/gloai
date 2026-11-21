@@ -105,6 +105,7 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.window)
     implementation(libs.androidx.webkit)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.okhttp)
@@ -135,6 +136,8 @@ dependencies {
     debugImplementation(libs.compose.ui.test.manifest)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
+    // Compose BOM 的旧传递版本在 Android 17 上调用已移除的 InputManager.getInstance。
+    androidTestImplementation(libs.androidx.test.espresso)
     androidTestImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(libs.junit)
 }

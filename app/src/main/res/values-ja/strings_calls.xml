@@ -144,4 +144,21 @@
     <string name="calls_notification_connecting_audio">通話音声を接続中</string>
     <string name="calls_notification_connected_waiting">AI が接続しました。相手の発話を待っています。いつでも引き継げます。</string>
     <string name="calls_notification_connected">AI が接続しました。いつでも自分で引き継げます。</string>
+    <string name="calls_only_types">選択した種類の着信のみ</string>
+    <string name="calls_pick_types">着信の種類を1つ以上選択してください</string>
+    <string name="calls_type_note">Mika はユーザー補助で電話アプリのラベルと番号を着信に照合します。確認できない着信はご自身で応答できます。</string>
+    <string name="calls_type_accessibility">ユーザー補助設定を開く</string>
+    <string name="calls_type_takeout">フードデリバリー</string>
+    <string name="calls_type_parcel">宅配便</string>
+    <string name="calls_type_delivery">配送・物流（詳細不明）</string>
+    <string name="calls_type_sales">広告・営業</string>
+    <string name="calls_type_broker">仲介業者</string>
+    <string name="calls_type_financial_sales">保険・投資の勧誘</string>
+    <string name="calls_type_spam">迷惑電話</string>
+    <string name="calls_type_fraud">詐欺の疑い</string>
+    <string name="calls_type_high_risk">高リスク</string>
+    <string name="calls_type_business">企業・カスタマーサービス</string>
+    <string name="calls_type_transport">タクシー・配車</string>
+    <string name="calls_only_strangers">連絡先にない番号のみ</string>
+    <string name="calls_strangers_note">Mika に連絡先の読み取りを許可してください。番号が未登録だと確認できた場合のみ AI が応答します。非通知や照合できない着信にはご自身で応答してください。</string>
 </resources>

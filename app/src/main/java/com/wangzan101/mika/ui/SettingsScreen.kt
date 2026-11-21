@@ -110,6 +110,7 @@ fun SettingsScreen(
 ) {
     val configs by store.configs.collectAsState()
     val roles by store.roles.collectAsState()
+    val groups by store.groups.collectAsState()
     // 开发者选项里的「看图定位已验证」跟着看图模型(看图用主模型时是主模型那条配置)
     val visionConfig = remember(configs, roles) { store.configFor(ModelRole.Vision) }
     var page by rememberSaveable { mutableStateOf(if (openPhoneOps) SettingsPage.PhoneOps else SettingsPage.Home) }
@@ -154,6 +155,7 @@ fun SettingsScreen(
     var operatingPace by remember { mutableStateOf(flags.operatingPace()) }
     var stepLimit by remember { mutableStateOf(flags.taskStepLimit()) }
     var triggerRunMinutes by remember { mutableStateOf(flags.triggerRunMinutes()) }
+    var sandboxBudgetMinutes by remember { mutableStateOf(flags.sandboxBudgetMinutes()) }
     var tokenBudget by remember { mutableStateOf(flags.taskTokenBudget()) }
     var selfConfig by remember { mutableStateOf(flags.selfConfig()) }
     var selfOperate by remember { mutableStateOf(flags.selfOperate()) }
@@ -223,7 +225,8 @@ fun SettingsScreen(
     when (visiblePage) {
         SettingsPage.Home -> SettingsContent(
             status = status, androidRelease = androidRelease,
-            mainModel = roles.main?.let { id -> configs.firstOrNull { it.id == id } }?.let(ProviderConnection::displayName),
+            mainModel = roles.main?.let { id -> configs.firstOrNull { it.id == id } }?.let(ProviderConnection::displayName)
+                ?: roles.mainGroup?.let { id -> groups.firstOrNull { it.id == id }?.name },
             onBack = onBack, onProblem = onProblem, onOpenModels = onOpenModels,
             onOpenPhoneOps = { page = SettingsPage.PhoneOps },
             onOpenCalls = { page = SettingsPage.Calls },
@@ -290,6 +293,7 @@ fun SettingsScreen(
             operatingPace = operatingPace, onOperatingPace = { flags.setOperatingPace(it); operatingPace = it },
             stepLimit = stepLimit, onStepLimit = { flags.setTaskStepLimit(it); stepLimit = it },
             triggerRunMinutes = triggerRunMinutes, onTriggerRunMinutes = { flags.setTriggerRunMinutes(it); triggerRunMinutes = it },
+            sandboxBudgetMinutes = sandboxBudgetMinutes, onSandboxBudgetMinutes = { flags.setSandboxBudgetMinutes(it); sandboxBudgetMinutes = it },
             tokenBudget = tokenBudget, onTokenBudget = { flags.setTaskTokenBudget(it); tokenBudget = it },
             showTaskCost = showTaskCost, onShowTaskCost = { flags.setShowTaskCost(it); showTaskCost = it },
             pocketGuard = pocketGuard, onPocketGuard = { pocketPrefs.edit().putBoolean(com.wangzan101.mika.pocket.PocketGuardManager.ENABLED, it).apply(); pocketGuard = it },
@@ -299,6 +303,7 @@ fun SettingsScreen(
             pipOperate = pipOperate, onPipOperate = { flags.setPipOperate(it); pipOperate = it },
             externalSchedule = externalSchedule, onExternalSchedule = { flags.setExternalSchedule(it); externalSchedule = it },
             onOpenAppPace = { page = SettingsPage.AppPace },
+            deviceAccess = (context.applicationContext as com.wangzan101.mika.MikaApp).deviceAccess.settings,
         )
         SettingsPage.AppPace -> AppPaceScreen(operatingPace, flags, onBack = { page = SettingsPage.DuringWork })
         SettingsPage.Language -> LanguageScreen(language, onLanguage = { AppLanguage.set(context, it) }, onBack = toHome)
@@ -511,6 +516,14 @@ fun SettingsContent(
                 RowValue(languageLabel(language))
                 RowChevron()
             }
+            // 人格和语言、外观是一类:定 Mika 怎么表现的全局取值。行尾是现在在用的,主界面上没有别的地方显示它
+            onOpenPersonas?.let { open ->
+                val personas = (LocalContext.current.applicationContext as? com.wangzan101.mika.MikaApp)?.personas
+                ListRow(MikaIcons.Chats, stringResource(R.string.persona_title), stringResource(R.string.persona_sub), onClick = open) {
+                    if (personas != null) RowValue(personaSummaryValue(personas))
+                    RowChevron()
+                }
+            }
             val (notifText, notifTone) = StatusCopy.notificationSummary(status.notificationOverview().summary)
             ListRow(MikaIcons.Bell, StatusCopy.NOTIFICATIONS, stringResource(R.string.settings_notif_sub), onClick = onOpenNotifications) {
                 RowValue(notifText, notifTone)
@@ -529,17 +542,14 @@ fun SettingsContent(
             onOpenMemory?.let {
                 ListRow(MikaIcons.Heart, stringResource(R.string.memory_and_skills), stringResource(R.string.settings_memory_sub), first = true, onClick = it) { RowChevron() }
             }
-            onOpenPersonas?.let {
-                ListRow(MikaIcons.Spark, stringResource(R.string.persona_title), stringResource(R.string.persona_sub), first = onOpenMemory == null, onClick = it) { RowChevron() }
-            }
             onOpenBackup?.let {
-                ListRow(MikaIcons.Archive, stringResource(R.string.backup_title), stringResource(R.string.backup_sub), first = onOpenMemory == null && onOpenPersonas == null, onClick = it) { RowChevron() }
+                ListRow(MikaIcons.Archive, stringResource(R.string.backup_title), stringResource(R.string.backup_sub), first = onOpenMemory == null, onClick = it) { RowChevron() }
             }
             ListRow(
                 MikaIcons.Archive,
                 stringResource(R.string.settings_auto_archive),
                 stringResource(R.string.settings_auto_archive_sub),
-                first = onOpenMemory == null && onOpenPersonas == null && onOpenBackup == null,
+                first = onOpenMemory == null && onOpenBackup == null,
                 onClick = onOpenAutoArchive,
             ) {
                 RowValue(

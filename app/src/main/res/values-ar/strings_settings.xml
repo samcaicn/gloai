@@ -270,4 +270,15 @@
         <item quantity="many">%1$d دقيقة</item>
         <item quantity="other">%1$d دقيقة</item>
     </plurals>
+
+    <string name="settings_sandbox_budget">الحد الزمني لبيئة الحوسبة لكل مهمة</string>
+    <string name="settings_sandbox_budget_sub">إجمالي الوقت الذي قد تعمل فيه أوامر البيئة خلال مهمة واحدة (تثبيت الاعتماديات، البناء وما شابه). الافتراضي 30 دقيقة؛ ويسري التغيير من المهمة التالية.</string>
+    <plurals name="settings_sandbox_budget_minutes_n">
+        <item quantity="zero">%1$d دقيقة</item>
+        <item quantity="one">دقيقة واحدة (%1$d)</item>
+        <item quantity="two">دقيقتان (%1$d)</item>
+        <item quantity="few">%1$d دقائق</item>
+        <item quantity="many">%1$d دقيقة</item>
+        <item quantity="other">%1$d دقيقة</item>
+    </plurals>
 </resources>

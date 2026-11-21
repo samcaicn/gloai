@@ -33,4 +33,10 @@
     <string name="calls_task_review_blocked">撥號前需確認裝置就緒、沒有其他通話，並選擇 SIM。</string>
     <string name="calls_task_sim_override_summary">本次：%1$s · 預設：%2$s</string>
     <string name="calls_voice_settings">語音</string>
+    <string name="calls_contacts_tab">通訊錄</string>
+    <string name="calls_manual_tab">手動輸入</string>
+    <string name="calls_contacts_search">搜尋姓名或號碼</string>
+    <string name="calls_contacts_permission">允許 Mika 讀取通訊錄，即可勾選聯絡人號碼。你也可以直接手動輸入。</string>
+    <string name="calls_contacts_empty">通訊錄中沒有可選的電話號碼。</string>
+    <string name="calls_contacts_failed">無法讀取通訊錄。</string>
 </resources>

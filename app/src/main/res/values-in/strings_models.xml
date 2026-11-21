@@ -51,6 +51,8 @@
     <string name="models_not_listed">Model penyedia ini belum dimuat.</string>
     <string name="refresh">Segarkan</string>
     <string name="models_in_use">Sedang dipakai</string>
+    <string name="models_response_speed">Kecepatan respons</string>
+    <string name="models_response_speed_note">Setelan bawaan mengikuti server. Fast dan Ultrafast bergantung pada model dan akun, serta dapat menambah biaya atau penggunaan paket.</string>
     <string name="models_sees_images">Bisa melihat gambar</string>
     <string name="models_sees_note_user">Diatur oleh Anda. Jika model utama bisa melihat, tangkapan layar langsung dikirim ke sana.</string>
     <string name="models_sees_note_vision">Dipakai sebagai model visual, jadi dianggap bisa melihat gambar.</string>
@@ -211,6 +213,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">Voice</string>
     <string name="voice_speed">Speed</string>
+    <string name="voice_streaming">Pemutaran streaming</string>
+    <string name="voice_streaming_note">Perlu penyedia yang kompatibel dan kecepatan 1×.</string>
     <string name="voice_auto_read">Read every answer aloud</string>
     <string name="voice_speak_tool">Let Mika speak on its own</string>
     <string name="voice_max_chars">Longest read (characters)</string>
@@ -257,4 +261,44 @@
     <string name="tool_image_edit">Edit image</string>
     <string name="tool_image_save">Save image</string>
     <string name="tool_share_image">Share image to app</string>
+
+
+    <!-- Model groups -->
+    <string name="models_groups">Grup model</string>
+    <string name="models_group_lead">Grup mencoba model secara berurutan saat satu gagal. Anda bisa memakai grup di mana pun Anda memilih model.</string>
+    <string name="models_group_empty">Belum ada grup model. Buat satu untuk menaruh model cadangan.</string>
+    <string name="models_group_footer">Grup hanya mengirim permintaan ke penyedia lain setelah gagal. Versi ini tidak pernah menjalankan permintaan yang sama secara paralel.</string>
+    <string name="models_group_new">Grup model baru</string>
+    <string name="models_group_edit">Edit “%1$s”</string>
+    <string name="models_group_name">Nama</string>
+    <string name="models_group_name_hint">mis. Utama dengan cadangan</string>
+    <string name="models_group_strategy">Strategi</string>
+    <string name="models_group_strategy_failover">Beralih berurutan</string>
+    <string name="models_group_strategy_failover_note">Gunakan model berikutnya hanya saat model sebelumnya gagal.</string>
+    <string name="models_group_strategy_weighted">Bergiliran per percakapan</string>
+    <string name="models_group_strategy_weighted_note">Percakapan baru dibagi berdasarkan bobot, lalu tetap pada model itu.</string>
+    <string name="models_group_strategy_latency">Tercepat belakangan ini</string>
+    <string name="models_group_strategy_latency_note">Utamakan model dengan tingkat keberhasilan dan latensi terbaik belakangan ini.</string>
+    <string name="models_group_strategy_cost">Termurah</string>
+    <string name="models_group_strategy_cost_note">Utamakan anggota termurah. Perlu peringkat biaya per anggota.</string>
+    <string name="models_group_sticky">Satu model per percakapan</string>
+    <string name="models_group_sticky_note">Menghindari perubahan awalan prompt; hanya beralih saat model gagal.</string>
+    <string name="models_group_members">Anggota</string>
+    <string name="models_group_member_count">%1$d model</string>
+    <string name="models_group_no_members">Belum ada anggota. Tambahkan setidaknya satu model.</string>
+    <string name="models_group_priority">Prioritas %1$d</string>
+    <string name="models_group_up">Naik</string>
+    <string name="models_group_down">Turun</string>
+    <string name="models_group_remove">Hapus</string>
+    <string name="models_group_add_member">Tambah model</string>
+    <string name="models_group_add">Tambah</string>
+    <string name="models_group_main_needs_tools">Hanya model yang mendukung pemanggilan alat yang bisa masuk grup model utama.</string>
+    <string name="models_group_vision_needs_eyes">Grup visi memerlukan setidaknya satu model yang bisa melihat gambar.</string>
+    <string name="models_group_privacy">Jika model gagal, permintaan (termasuk tangkapan layar) mungkin dikirim ke penyedia lain di grup ini.</string>
+    <string name="models_group_save_failed">Gagal menyimpan: periksa anggota dan dukungan alat.</string>
+    <string name="models_group_delete">Hapus grup ini</string>
+    <string name="models_group_delete_title">Hapus “%1$s”?</string>
+    <string name="models_group_delete_body">Peran yang memakainya akan kembali ke belum dipilih, tidak ada, atau model utama.</string>
+    <string name="models_group_used_by">Digunakan sebagai %1$s</string>
+    <string name="models_group_member_context">Konteks</string>
 </resources>

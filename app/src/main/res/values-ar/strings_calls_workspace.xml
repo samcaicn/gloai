@@ -33,4 +33,10 @@
     <string name="calls_task_review_blocked">للاتصال، يجب أن يكون الهاتف جاهزًا ومن دون مكالمة جارية، مع اختيار بطاقة SIM.</string>
     <string name="calls_task_sim_override_summary">هذه المكالمة: %1$s · المفضلة: %2$s</string>
     <string name="calls_voice_settings">الصوت</string>
+    <string name="calls_contacts_tab">جهات الاتصال</string>
+    <string name="calls_manual_tab">إدخال يدوي</string>
+    <string name="calls_contacts_search">البحث بالاسم أو الرقم</string>
+    <string name="calls_contacts_permission">اسمح لـ Mika بقراءة جهات الاتصال لتحديد أرقامها. يمكنك أيضًا إدخال الأرقام يدويًا.</string>
+    <string name="calls_contacts_empty">لا توجد جهات اتصال برقم هاتف صالح للاختيار.</string>
+    <string name="calls_contacts_failed">تعذرت قراءة جهات الاتصال.</string>
 </resources>

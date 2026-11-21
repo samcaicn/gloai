@@ -23,25 +23,25 @@ import java.io.ByteArrayOutputStream
  */
 class AgentDisplay(
     private val shell: IMikaShell,
-    private val bufferWidth: Int,
-    private val bufferHeight: Int,
-    dpi: Int,
+    @Volatile private var bufferWidth: Int,
+    @Volatile private var bufferHeight: Int,
+    private var dpi: Int,
     private val displayManager: DisplayManager,
 ) {
     private val thread = HandlerThread("agent-display").apply { start() }
     private val handler = Handler(thread.looper)
-    private val reader = ImageReader.newInstance(bufferWidth, bufferHeight, PixelFormat.RGBA_8888, 2)
+    private var reader = ImageReader.newInstance(bufferWidth, bufferHeight, PixelFormat.RGBA_8888, 2)
 
     val displayId: Int
 
-    // ImageReader 始终是建屏时的物理尺寸;应用的逻辑坐标随虚拟屏旋转,与主屏的方向无关。
+    // ImageReader 使用当前缓冲区的物理尺寸;应用的逻辑坐标随虚拟屏旋转,与主屏的方向无关。
     private val geometry get() = DisplayFrameGeometry(bufferWidth, bufferHeight,
         displayManager.getDisplay(displayId)?.rotation ?: Surface.ROTATION_0)
     val width: Int get() = geometry.width
     val height: Int get() = geometry.height
 
     private val _frames = MutableStateFlow<Bitmap?>(null)
-    /** 实时画面:限速 ≤10 帧/秒,缩到短边 ≤360。 */
+    /** 实时画面:限速 ≤10 帧/秒,普通预览短边 ≤360，双栏调整虚拟屏后短边 ≤720。 */
     val frames: StateFlow<Bitmap?> = _frames.asStateFlow()
 
     private val frameLock = Any()
@@ -55,6 +55,9 @@ class AgentDisplay(
     @Volatile private var released = false
 
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private var previewLimit = 360
+    internal val previewWidth get() = geometry.let { it.previewSize(it.previewWidth(previewLimit)).first }
+    internal val previewHeight get() = geometry.let { it.previewSize(it.previewWidth(previewLimit)).second }
 
     private val process = Runnable {
         pending = false
@@ -77,6 +80,45 @@ class AgentDisplay(
         reader.setOnImageAvailableListener({ schedule() }, handler)
         // 建屏期间可能已经有帧排进来;先有正确的屏号,再处理这些帧。
         handler.post { schedule() }
+    }
+
+    /** 在帧线程上换接收器，保持同一 displayId 和应用任务；失败时继续使用旧画面。 */
+    suspend fun resize(newWidth: Int, newHeight: Int, newDpi: Int): Boolean = kotlin.coroutines.suspendCoroutine { continuation ->
+        if (released) { continuation.resumeWith(Result.success(false)); return@suspendCoroutine }
+        val posted = handler.post {
+            if (released) { continuation.resumeWith(Result.success(false)); return@post }
+            val target = geometry.resized(newWidth, newHeight)
+            if (bufferWidth == target.bufferWidth && bufferHeight == target.bufferHeight && dpi == newDpi) {
+                continuation.resumeWith(Result.success(true)); return@post
+            }
+            var next: ImageReader? = null
+            val resized = try {
+                next = ImageReader.newInstance(target.bufferWidth, target.bufferHeight, PixelFormat.RGBA_8888, 2)
+                if (!shell.resizeDisplay(displayId, next.surface, target.bufferWidth, target.bufferHeight, newDpi)) false else {
+                    reader.setOnImageAvailableListener(null, null)
+                    reader.close()
+                    synchronized(frameLock) {
+                        previewLimit = 720
+                        bufferWidth = target.bufferWidth
+                        bufferHeight = target.bufferHeight
+                        dpi = newDpi
+                        fullFrame?.recycle()
+                        fullFrame = null
+                        hasFrame = false
+                        frameTimestampNanos = 0L
+                        _frames.value = null
+                    }
+                    reader = next
+                    next = null
+                    reader.setOnImageAvailableListener({ schedule() }, handler)
+                    schedule()
+                    true
+                }
+            } catch (_: Exception) { false }
+            finally { next?.close() }
+            continuation.resumeWith(Result.success(resized))
+        }
+        if (!posted) continuation.resumeWith(Result.success(false))
     }
 
     private fun schedule() {
@@ -111,7 +153,7 @@ class AgentDisplay(
                 // 限速或线程调度会延后消费，不能把复制位图的时刻记成帧时刻。
                 frameTimestampNanos = image.timestamp
                 frameGeometry = capturedGeometry
-                _frames.value = uprightDisplayFrame(bmp, capturedGeometry, capturedGeometry.previewWidth(PREVIEW_SHORT_SIDE), paint)
+                _frames.value = uprightDisplayFrame(bmp, capturedGeometry, capturedGeometry.previewWidth(previewLimit), paint)
             }
         } finally {
             image.close()
@@ -149,7 +191,7 @@ class AgentDisplay(
 
     private fun closeLocal() {
         released = true
-        handler.removeCallbacksAndMessages(null)
+        handler.removeCallbacks(process)
         // 在帧线程上收尾,避免与正在处理的帧并发
         handler.post {
             reader.close()
@@ -164,7 +206,6 @@ class AgentDisplay(
 
     private companion object {
         const val TAG = "AgentDisplay"
-        const val PREVIEW_SHORT_SIDE = 360
         const val FRAME_INTERVAL_MS = 100L
     }
 }

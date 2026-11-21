@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_control_start">تولّي التحكم</string>
+    <string name="screen_control_hint">يتحكم Mika · انقر لتولّي التحكم</string>
+    <string name="screen_control_active">أنت تتحكم · انقر لإعادة التحكم</string>
+    <string name="screen_control_wait">بانتظار انتهاء الإجراء الحالي…</string>
+    <string name="screen_control_resume">متابعة Mika</string>
+    <string name="screen_control_send_text">إدخال نص</string>
+    <string name="screen_control_text">نص للحقل المحدد</string>
+    <string name="screen_control_failed">التحكم غير متاح أو تغيرت الشاشة. يرجى المحاولة مجددًا.</string>
+    <string name="screen_resize_panes">تغيير حجم الجزأين</string>
+</resources>

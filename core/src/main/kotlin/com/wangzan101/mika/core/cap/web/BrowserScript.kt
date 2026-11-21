@@ -39,7 +39,7 @@ private const val TEXT_DEFAULT_CHARS = 4_000
 private const val WAIT_DEFAULT_MS = 5_000
 
 /** 这些错误一出现整个脚本就停:剩下的动作不再做,交回模型。 */
-private val FATAL = setOf("confirmation_required", "guard_stopped", "handed_over", "tab_crashed", "no_tab_open")
+private val FATAL = setOf(com.wangzan101.mika.core.run.ManualControl.CHANGED, "confirmation_required", "guard_stopped", "handed_over", "tab_crashed", "no_tab_open")
 
 /**
  * 一次 web_script 的 `mika.*` 调用:校验参数、计上限、翻译成工具调用交给 [sub](子步编号 `<callId>.<n>`),

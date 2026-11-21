@@ -122,6 +122,25 @@ class RecommendedTaskStoreTest {
         assertEquals(RecommendedTaskError.SaveFailed, tasks.add("新的", "新的提示词"))
         assertEquals(listOf("原来"), tasks.tasks.value.map { it.title })
     }
+    @Test fun retiredSeedIsRemovedOnlyWhenUntouched() {
+        val file = File(tmp.root, "recommended-tasks.json")
+        file.writeText(
+            """[{"id":"a","title":"整理 PDF 摘要","prompt":"把发来的 PDF 整理成一段摘要"},""" +
+                """{"id":"b","title":"订几个闹钟","prompt":"帮我订明天早上9:40、9:50、10:00 的闹钟"},""" +
+                """{"id":"c","title":"我自己的任务","prompt":"把发来的 PDF 整理成一段摘要"}]""",
+        )
+        val retired = listOf("整理 PDF 摘要" to "把发来的 PDF 整理成一段摘要")
+        val tasks = RecommendedTaskStore(file)
+        tasks.ensureLoaded(seed = { emptyList() }, retired = { retired })
+        // 没动过的下线示例剔掉;同一个提示词但标题是用户自己写的,留着
+        assertEquals(listOf("订几个闹钟", "我自己的任务"), tasks.tasks.value.map { it.title })
+        // 用户加一条后写回文件,下线的也不会再出现在读取结果里
+        assertNull(tasks.add("新的", "新的提示词"))
+        val reopened = RecommendedTaskStore(file)
+        reopened.ensureLoaded(seed = { emptyList() }, retired = { retired })
+        assertEquals(listOf("订几个闹钟", "我自己的任务", "新的"), reopened.tasks.value.map { it.title })
+    }
+
     @Test fun legacyMarkersStayLiteralAndFillInOptInSurvivesReloadAndEdit() {
         val file = File(tmp.root, "tasks.json")
         file.writeText("""[{"id":"old","title":"旧任务","prompt":"保留{{原样}}"}]""")

@@ -51,6 +51,8 @@
     <string name="models_not_listed">이 제공업체의 모델 목록을 아직 가져오지 않았어요.</string>
     <string name="refresh">새로고침</string>
     <string name="models_in_use">사용 중</string>
+    <string name="models_response_speed">응답 속도</string>
+    <string name="models_response_speed_note">기본값은 서버 설정을 따릅니다. Fast와 Ultrafast의 사용 가능 여부는 모델과 계정에 따라 다르며, 비용이나 요금제 사용량이 늘어날 수 있습니다.</string>
     <string name="models_sees_images">이미지 인식 가능</string>
     <string name="models_sees_note_user">직접 설정했어요. 메인 모델이 이미지를 볼 수 있으면 스크린샷을 바로 보내요.</string>
     <string name="models_sees_note_vision">비전 모델로 쓰고 있어서 이미지를 볼 수 있는 것으로 간주해요.</string>
@@ -211,6 +213,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">Voice</string>
     <string name="voice_speed">Speed</string>
+    <string name="voice_streaming">스트리밍 재생</string>
+    <string name="voice_streaming_note">스트리밍을 지원하는 제공업체와 1.0배속이 필요합니다.</string>
     <string name="voice_auto_read">Read every answer aloud</string>
     <string name="voice_speak_tool">Let Mika speak on its own</string>
     <string name="voice_max_chars">Longest read (characters)</string>
@@ -257,4 +261,44 @@
     <string name="tool_image_edit">Edit image</string>
     <string name="tool_image_save">Save image</string>
     <string name="tool_share_image">Share image to app</string>
+
+
+    <!-- Model groups -->
+    <string name="models_groups">모델 그룹</string>
+    <string name="models_group_lead">그룹은 실패했을 때만 다음 모델을 순서대로 시도합니다. 모델을 고르는 곳이면 어디서든 그룹을 선택할 수 있습니다.</string>
+    <string name="models_group_empty">아직 모델 그룹이 없습니다. 만들면 예비 모델을 함께 묶을 수 있습니다.</string>
+    <string name="models_group_footer">그룹은 실패한 뒤에만 요청을 다른 제공자에게 보냅니다. 이 버전은 같은 요청을 병렬로 보내지 않습니다.</string>
+    <string name="models_group_new">새 모델 그룹</string>
+    <string name="models_group_edit">"%1$s" 편집</string>
+    <string name="models_group_name">이름</string>
+    <string name="models_group_name_hint">예: 메인 + 예비</string>
+    <string name="models_group_strategy">전략</string>
+    <string name="models_group_strategy_failover">순서대로 전환</string>
+    <string name="models_group_strategy_failover_note">이전 모델이 실패했을 때만 다음 모델을 사용합니다.</string>
+    <string name="models_group_strategy_weighted">대화별 순환</string>
+    <string name="models_group_strategy_weighted_note">새 대화는 가중치로 배정되고 이후에는 그 모델에 고정됩니다.</string>
+    <string name="models_group_strategy_latency">최근 가장 빠름</string>
+    <string name="models_group_strategy_latency_note">최근 성공률과 지연이 좋은 모델을 우선합니다.</string>
+    <string name="models_group_strategy_cost">가장 저렴함</string>
+    <string name="models_group_strategy_cost_note">비용 순위가 가장 낮은 멤버를 우선합니다. 멤버별 비용 순위가 필요합니다.</string>
+    <string name="models_group_sticky">대화마다 모델 하나 고정</string>
+    <string name="models_group_sticky_note">프롬프트 앞부분을 바꾸지 않아 캐시를 보호합니다. 실패할 때만 전환합니다.</string>
+    <string name="models_group_members">멤버</string>
+    <string name="models_group_member_count">모델 %1$d개</string>
+    <string name="models_group_no_members">멤버가 없습니다. 모델을 하나 이상 추가하세요.</string>
+    <string name="models_group_priority">우선순위 %1$d</string>
+    <string name="models_group_up">위로</string>
+    <string name="models_group_down">아래로</string>
+    <string name="models_group_remove">제거</string>
+    <string name="models_group_add_member">모델 추가</string>
+    <string name="models_group_add">추가</string>
+    <string name="models_group_main_needs_tools">도구 호출을 지원하는 모델만 메인 모델 그룹에 넣을 수 있습니다.</string>
+    <string name="models_group_vision_needs_eyes">이미지 보기 그룹에는 이미지를 볼 수 있는 모델이 하나 이상 필요합니다.</string>
+    <string name="models_group_privacy">멤버가 실패하면 이 요청(스크린샷 포함)이 그룹의 다른 제공자에게 전송될 수 있습니다.</string>
+    <string name="models_group_save_failed">저장하지 못했습니다. 멤버와 도구 지원을 확인하세요.</string>
+    <string name="models_group_delete">이 그룹 삭제</string>
+    <string name="models_group_delete_title">"%1$s"을(를) 삭제할까요?</string>
+    <string name="models_group_delete_body">이 그룹을 사용하는 역할은 미선택, 없음 또는 메인 모델로 돌아갑니다.</string>
+    <string name="models_group_used_by">%1$s(으)로 사용</string>
+    <string name="models_group_member_context">컨텍스트</string>
 </resources>

@@ -56,6 +56,8 @@
     <string name="models_not_listed">لم تُسرد نماذج هذا المزوّد بعد.</string>
     <string name="refresh">تحديث</string>
     <string name="models_in_use">قيد الاستخدام</string>
+    <string name="models_response_speed">سرعة الاستجابة</string>
+    <string name="models_response_speed_note">يستخدم الخيار الافتراضي إعداد الخادم. يعتمد توفّر Fast وUltrafast على النموذج والحساب، وقد يزيدان التكلفة أو استهلاك الباقة.</string>
     <string name="models_sees_images">يستطيع رؤية الصور</string>
     <string name="models_sees_note_user">حدّدته أنت. عندما يستطيع النموذج الرئيسي الرؤية، تُرسل لقطات الشاشة إليه مباشرةً.</string>
     <string name="models_sees_note_vision">يُستخدم كنموذج للرؤية، لذا يُعد قادرًا على رؤية الصور.</string>
@@ -238,6 +240,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">Voice</string>
     <string name="voice_speed">Speed</string>
+    <string name="voice_streaming">التشغيل المتدفق</string>
+    <string name="voice_streaming_note">يتطلب مزودًا يدعم البث وسرعة تشغيل 1×.</string>
     <string name="voice_auto_read">Read every answer aloud</string>
     <string name="voice_speak_tool">Let Mika speak on its own</string>
     <string name="voice_max_chars">Longest read (characters)</string>
@@ -284,4 +288,44 @@
     <string name="tool_image_edit">Edit image</string>
     <string name="tool_image_save">Save image</string>
     <string name="tool_share_image">Share image to app</string>
+
+
+    <!-- Model groups -->
+    <string name="models_groups">مجموعات النماذج</string>
+    <string name="models_group_lead">تجرّب المجموعة نماذجها بالترتيب عند فشل أحدها. يمكنك استخدام مجموعة في أي مكان تختار فيه نموذجًا.</string>
+    <string name="models_group_empty">لا توجد مجموعات نماذج بعد. أنشئ واحدة لوضع نموذج احتياطي.</string>
+    <string name="models_group_footer">لا ترسل المجموعة الطلب إلى مزوّد آخر إلا بعد الفشل. لا يرسل هذا الإصدار الطلب نفسه بالتوازي.</string>
+    <string name="models_group_new">مجموعة نماذج جديدة</string>
+    <string name="models_group_edit">تعديل «%1$s»</string>
+    <string name="models_group_name">الاسم</string>
+    <string name="models_group_name_hint">مثال: رئيسي مع احتياطي</string>
+    <string name="models_group_strategy">الاستراتيجية</string>
+    <string name="models_group_strategy_failover">التبديل بالترتيب</string>
+    <string name="models_group_strategy_failover_note">استخدم النموذج التالي فقط عند فشل السابق.</string>
+    <string name="models_group_strategy_weighted">التناوب حسب المحادثة</string>
+    <string name="models_group_strategy_weighted_note">تُوزّع المحادثات الجديدة حسب الوزن ثم تبقى على ذلك النموذج.</string>
+    <string name="models_group_strategy_latency">الأسرع مؤخرًا</string>
+    <string name="models_group_strategy_latency_note">فضّل النموذج الأفضل في معدل النجاح وزمن الاستجابة مؤخرًا.</string>
+    <string name="models_group_strategy_cost">الأرخص</string>
+    <string name="models_group_strategy_cost_note">فضّل العضو الأرخص. يتطلب ترتيب تكلفة لكل عضو.</string>
+    <string name="models_group_sticky">نموذج واحد لكل محادثة</string>
+    <string name="models_group_sticky_note">يتجنب تغيير بادئة الطلب ويحمي التخزين المؤقت؛ لا يبدّل إلا عند الفشل.</string>
+    <string name="models_group_members">الأعضاء</string>
+    <string name="models_group_member_count">%1$d نماذج</string>
+    <string name="models_group_no_members">لا يوجد أعضاء بعد. أضف نموذجًا واحدًا على الأقل.</string>
+    <string name="models_group_priority">الأولوية %1$d</string>
+    <string name="models_group_up">أعلى</string>
+    <string name="models_group_down">أسفل</string>
+    <string name="models_group_remove">إزالة</string>
+    <string name="models_group_add_member">إضافة نموذج</string>
+    <string name="models_group_add">إضافة</string>
+    <string name="models_group_main_needs_tools">يمكن فقط للنماذج التي تدعم استدعاء الأدوات أن تكون في مجموعة النموذج الرئيسي.</string>
+    <string name="models_group_vision_needs_eyes">تحتاج مجموعة الرؤية إلى نموذج واحد على الأقل يرى الصور.</string>
+    <string name="models_group_privacy">إذا فشل نموذج، فقد يُرسل الطلب (بما فيه لقطات الشاشة) إلى مزوّد آخر في هذه المجموعة.</string>
+    <string name="models_group_save_failed">تعذّر الحفظ: تحقق من الأعضاء ودعم الأدوات.</string>
+    <string name="models_group_delete">حذف هذه المجموعة</string>
+    <string name="models_group_delete_title">حذف «%1$s»؟</string>
+    <string name="models_group_delete_body">ستعود الأدوار التي تستخدمها إلى غير محدد أو بلا أو النموذج الرئيسي.</string>
+    <string name="models_group_used_by">يُستخدم كـ %1$s</string>
+    <string name="models_group_member_context">السياق</string>
 </resources>

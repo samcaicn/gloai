@@ -44,8 +44,6 @@ import com.wangzan101.mika.core.record.RunEvent
 import com.wangzan101.mika.core.skills.SkillNote
 import com.wangzan101.mika.memory.RunNotes
 import com.wangzan101.mika.settings.Prerequisites
-import com.wangzan101.mika.settings.Persona
-import com.wangzan101.mika.settings.PersonaStore
 import com.wangzan101.mika.settings.Problem
 import com.wangzan101.mika.takeover.Takeover
 import com.wangzan101.mika.task.SteerNote
@@ -326,8 +324,6 @@ enum class FollowUpMode { Steer, Queue }
 data class ChatUi(
     val conversationId: String? = null,
     val exchanges: List<Exchange> = emptyList(),
-    /** 这个对话用的人格;新对话还没发第一句话时只是界面状态,发出去时写进旁文件。 */
-    val personaId: String? = null,
     /** 所属项目分组 id;新对话还没发第一句话时只保存在草稿/界面状态,发送首条消息时写入旁文件。 */
     val projectId: String? = null,
     /** 上次发送被拦下时缺的条件;为空表示没被拦。 */
@@ -513,8 +509,6 @@ class ChatViewModel(
     private val voicePlayback: StateFlow<com.wangzan101.mika.voice.VoicePlayback> =
         MutableStateFlow(com.wangzan101.mika.voice.VoicePlayback.Idle),
     private val voiceReady: StateFlow<Boolean> = MutableStateFlow(false),
-    /** 人格;为 null 时不提供选择(测试或没有此功能)。 */
-    private val personaStore: PersonaStore? = null,
     /** 每条完成的回答自动朗读;默认关。 */
     private val autoRead: StateFlow<Boolean> = MutableStateFlow(false),
     /** 播放工作区里的一段音频(对话编号, 路径);默认不做。 */
@@ -691,9 +685,6 @@ class ChatViewModel(
             markCurrent(CurrentChat.Open(id))
         }
     }
-    /** 可选的人格;没有人格存储时是空列表。 */
-    val personas: StateFlow<List<Persona>> = personaStore?.personas ?: MutableStateFlow(emptyList())
-
     /** 删掉了(或正在删)的对话:侧栏当场不再列出,不等删完。 */
     private val _deleted = MutableStateFlow<Set<String>>(emptySet())
     val deleted: StateFlow<Set<String>> = _deleted.asStateFlow()
@@ -1348,13 +1339,6 @@ class ChatViewModel(
         lingerJob?.cancel()
         // 真正开始任务后,草稿图片已在工作区(纯文字不需要图片),可以清掉私有暂存副本。
         if (clearDraftAttachments) discardSharedDraft()
-        // 新对话选好的人格在交给服务之前写进旁文件;任务开局按它读。
-        // 功能关闭时完全不碰旁文件;已经有绑定、界面又没选(例如重建后还没读出来)时只补选中的,不把已有绑定删掉。
-        if (personaStore != null) {
-            _ui.value.personaId?.let { selected ->
-                if (store.persona(id)?.personaId != selected) runCatching { store.setPersona(id, selected) }
-            }
-        }
         val boundProject = (_ui.value.projectId ?: store.projectId(id))?.takeIf { projectStore == null || projectStore.get(it) != null }
         if (boundProject != null && store.projectId(id) != boundProject) {
             runCatching { store.setProject(id, boundProject) }
@@ -1532,7 +1516,6 @@ class ChatViewModel(
                     it.copy(
                         conversationId = conversationId,
                         exchanges = saved(conversationId),
-                        personaId = personaFor(conversationId),
                         projectId = projectFor(conversationId),
                     )
                 }
@@ -1905,10 +1888,6 @@ class ChatViewModel(
     private fun projectFor(conversationId: String?): String? =
         conversationId?.let { store.projectId(it) }?.takeIf { projectStore == null || projectStore.get(it) != null }
 
-    /** 这个对话存下的人格 id;没有人格存储(功能关闭)或没有绑定为 null。 */
-    private fun personaFor(conversationId: String?): String? =
-        if (personaStore == null) null else conversationId?.let { store.persona(it)?.personaId }
-
     /** 创建新项目。 */
     fun createProject(name: String): Result<Project>? = projectStore?.create(name)
 
@@ -1949,22 +1928,6 @@ class ChatViewModel(
         }
     }
 
-    /**
-     * 换这个对话用的人格;null 表示回到默认。任务在跑或排队时不允许切换。
-     * 已经说过话的对话当场写旁文件;新对话只记在界面状态里,第一句话发送时由 [begin] 写。
-     */
-    fun selectPersona(personaId: String?): Boolean {
-        if (personaStore == null || !canSwitchPersona()) return false
-        if (personaId != null && personaStore.get(personaId) == null) return false
-        val id = _ui.value.conversationId
-        if (id != null && store.turns(id).isNotEmpty()) runCatching { store.setPersona(id, personaId) }
-        _ui.update { it.copy(personaId = personaId) }
-        return true
-    }
-
-    /** 这个对话此刻能不能换人格:没有任务在跑,也没有排队的。 */
-    fun canSwitchPersona(): Boolean = !busy() && !currentRunning()
-
     /** 切到某个对话;任务在跑时不切。 */
     fun openConversation(id: String) {
         if (_ui.value.conversationId == id) return
@@ -1977,7 +1940,6 @@ class ChatViewModel(
         liveIndex = -1
         _ui.update {
             restoreDraft(it.rebuildForConversation(conversationId = id, exchanges = past, takeoverStage = it.takeoverStage, projectId = projectFor(id)))
-                .copy(personaId = personaFor(id))
         }
         markCurrent(CurrentChat.Open(id))
         // 这个对话的任务是别处开始的(悬浮胶囊、定时任务):打开就接上它
@@ -2591,7 +2553,8 @@ private val EVIDENCE = Regex("""(^|\n|[。.!！?？]\s*)[\s*#>\-]*\**(?:依据|�
  */
 class ToolLabels(private val tools: ToolIndex, private val legacy: LegacyNames = legacyNames()) {
     fun label(tool: String): String {
-        val declared = (tools[tool] ?: legacy.resolve(tool)?.let { tools[it] })?.label ?: return tool
+        // 没声明 label 的工具用工具名兜底查表(查不到仍显示工具名),声明了的照旧按声明文案查。
+        val declared = (tools[tool] ?: legacy.resolve(tool)?.let { tools[it] })?.label ?: tool
         return TOOL_LABELS[declared]?.let { tr(it) } ?: declared
     }
 
@@ -2696,6 +2659,7 @@ class ToolLabels(private val tools: ToolIndex, private val legacy: LegacyNames =
             "点击" to R.string.tool_tap,
             "输入文字" to R.string.tool_type,
             "清空输入框" to R.string.tool_clear,
+            "wechat_send_owner" to R.string.tool_wechat_owner,
         )
     }
 }

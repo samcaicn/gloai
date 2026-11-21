@@ -157,6 +157,7 @@ The Apache Software Foundation (https://www.apache.org/).
     `compose.material:material-icons-core`、`material-ripple`(以上各含 `-android` 变体)
   - `compose.material3:material3:1.3.1`
   - `activity:activity`、`activity-ktx`、`activity-compose`:1.9.3
+  - `window:window`、`window-core`:1.3.0(折叠姿态与铰链信息)
   - `lifecycle:*`(common、common-java8、livedata-core、process、runtime、runtime-compose、runtime-ktx、viewmodel、
     viewmodel-ktx、viewmodel-savedstate):2.8.3
   - `core:core`、`core-ktx`:1.13.1;`annotation:annotation`:1.8.1;`annotation-experimental`:1.4.1;

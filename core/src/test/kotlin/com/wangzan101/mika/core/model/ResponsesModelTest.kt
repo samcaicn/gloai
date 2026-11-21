@@ -39,6 +39,38 @@ class ResponsesModelTest {
 
     private fun sentBody(): JsonObject = Json.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject
 
+    @Test fun apiAndChatGptRequestsSendTheSelectedServiceTier() = runTest {
+        for (plan in listOf(false, true)) {
+            for ((tier, expected) in listOf(null to null, OpenAiServiceTier.Fast to "priority", OpenAiServiceTier.Ultrafast to "ultrafast")) {
+                server.enqueue(stream(completed()))
+                ResponsesModel(
+                    server.url("/v1").toString(), BearerToken.fixed("k"), "gpt-x", caps, OkHttpClient(),
+                    chatGptPlan = plan, reasoningEffort = "low", serviceTier = tier,
+                ).complete("", user, emptyList())
+                val body = sentBody()
+                assertEquals(expected, body["service_tier"]?.jsonPrimitive?.content)
+                assertEquals("low", body["reasoning"]?.jsonObject?.get("effort")?.jsonPrimitive?.content)
+            }
+        }
+    }
+
+    @Test fun serviceTierRejectionDoesNotRetryAtADifferentSpeed() = runTest {
+        val errors = listOf(false to "invalid_request_error", true to "subscription_sharing_unsupported_capability")
+        for ((plan, code) in errors) {
+            server.enqueue(MockResponse().setResponseCode(400).setBody("""
+                {"error":{"code":"$code","param":"service_tier","message":"Tier is unavailable"}}
+            """.trimIndent()))
+            val model = ResponsesModel(
+                server.url("/v1").toString(), BearerToken.fixed("k"), "gpt-x", caps, OkHttpClient(),
+                chatGptPlan = plan, serviceTier = OpenAiServiceTier.Ultrafast,
+            )
+            val error = runCatching { model.complete("", user, emptyList()) }.exceptionOrNull()
+            assertEquals("Tier is unavailable", (error as? ModelError.ServiceTierRejected)?.detail)
+            assertEquals("ultrafast", sentBody()["service_tier"]?.jsonPrimitive?.content)
+        }
+        assertEquals(errors.size, server.requestCount)
+    }
+
     @Test fun requestKeepsOnlyAllowedFieldsAndPutsSystemPromptInInstructions() = runTest {
         server.enqueue(stream(completed()))
         val history = listOf(

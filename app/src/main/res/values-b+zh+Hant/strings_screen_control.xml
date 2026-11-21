@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_control_hint">Mika 操作 · 點擊接管</string>
+    <string name="screen_control_wait">正在等待目前動作結束…</string>
+    <string name="screen_control_active">你在操作 · 點擊交回</string>
+    <string name="screen_control_failed">暫時無法操作或畫面已變更，請重試。</string>
+    <string name="screen_control_resume">繼續 Mika</string>
+    <string name="screen_control_start">由我操作</string>
+    <string name="screen_control_text">輸入至已選取的輸入框</string>
+    <string name="screen_control_send_text">輸入文字</string>
+    <string name="screen_resize_panes">調整分欄寬度</string>
+</resources>

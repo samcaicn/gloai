@@ -144,4 +144,21 @@
     <string name="calls_notification_connecting_audio">Подключение звука звонка</string>
     <string name="calls_notification_connected_waiting">ИИ подключён. Ожидание речи собеседника. Вы можете перехватить звонок в любой момент.</string>
     <string name="calls_notification_connected">ИИ подключён. Вы можете перехватить звонок в любой момент.</string>
+    <string name="calls_only_types">Только выбранные типы звонков</string>
+    <string name="calls_pick_types">Выберите хотя бы один тип звонков</string>
+    <string name="calls_type_note">Mika использует специальные возможности для сверки метки и номера в приложении телефона с входящим вызовом. Если их не удалось подтвердить, вы можете ответить сами.</string>
+    <string name="calls_type_accessibility">Открыть специальные возможности</string>
+    <string name="calls_type_takeout">Доставка еды</string>
+    <string name="calls_type_parcel">Доставка посылок</string>
+    <string name="calls_type_delivery">Доставка или логистика без уточнения</string>
+    <string name="calls_type_sales">Реклама и продажи</string>
+    <string name="calls_type_broker">Агенты и посредники</string>
+    <string name="calls_type_financial_sales">Предложения страхования и инвестиций</string>
+    <string name="calls_type_spam">Спам</string>
+    <string name="calls_type_fraud">Возможное мошенничество</string>
+    <string name="calls_type_high_risk">Высокий риск</string>
+    <string name="calls_type_business">Компании и поддержка клиентов</string>
+    <string name="calls_type_transport">Такси и перевозки</string>
+    <string name="calls_only_strangers">Только номера вне контактов</string>
+    <string name="calls_strangers_note">Разрешите Mika читать контакты. ИИ ответит, только если проверит номер и не найдёт его в контактах. На звонки со скрытых номеров и при сбое проверки вы отвечаете сами.</string>
 </resources>

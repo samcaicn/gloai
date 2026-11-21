@@ -61,6 +61,11 @@ class AudioMuteLedger(private val file: File?) {
         /** `appops get <pkg> PLAY_AUDIO` 的输出:"PLAY_AUDIO: ignore; time=..." → "ignore";"No operations." → null(没设置过)。 */
         fun parseSetMode(output: String): String? = Regex("""PLAY_AUDIO:\s*([a-z_]+)""").find(output)?.groupValues?.get(1)
 
+        /** 回读时区分未设置(默认 allow)与显式的 default。 */
+        internal fun readMode(output: String): String? = parseSetMode(output)
+            ?: Regex("""(?m)^Default mode: ([a-z_]+)$""").find(output)?.groupValues?.get(1)
+            ?: "allow".takeIf { output.trim() == "No operations." }
+
         internal fun format(modes: Map<String, String>): String = modes.entries.joinToString("") { "${it.key} ${it.value}\n" }
 
         internal fun parse(text: String): Map<String, String> =
