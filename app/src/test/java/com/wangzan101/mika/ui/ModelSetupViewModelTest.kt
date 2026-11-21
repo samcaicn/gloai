@@ -1,6 +1,7 @@
 package com.wangzan101.mika.ui
 
 import com.wangzan101.mika.i18n.ChineseTexts
+import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.core.model.ApiKeyText
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ChatModel
@@ -576,6 +577,50 @@ class ModelSetupViewModelTest {
         vm.setModel("doubao"); vm.testAndSave(); runCurrent()
         assertEquals(ListState.Failed("模型「doubao」不存在。要填服务商文档里完整的模型 ID（例如 deepseek-chat）。"), vm.state.value.form.test)
         assertTrue(store.providers.value.isEmpty())
+    }
+
+    /** Cloudflare Workers AI 预设从选择、校验占位符、填写实际地址与模型到测试保存的完整流程。 */
+    @Test fun cloudflarePresetFullFlowFromAccountIdToVerifiedModel() = runTest {
+        val cf = ProviderPresets.all.first { it.label == "Cloudflare Workers AI" }
+        val store = store()
+        val vm = vm(store)
+
+        vm.selectPreset(cf.label)
+        var form = vm.state.value.form
+        assertTrue(form.isCloudflare)
+        assertFalse("Cloudflare 单独展示 Account ID 输入项", form.urlEditable)
+        assertFalse(form.canTest)
+        assertEquals(tr(com.wangzan101.mika.R.string.model_url_account_id), form.urlProblem)
+
+        // 用户输入 Account ID 与 API Key
+        val actualUrl = "https://api.cloudflare.com/client/v4/accounts/my_acc_123/ai/v1"
+        vm.setAccountId("my_acc_123")
+        vm.setApiKey("cf_token_xyz")
+        form = vm.state.value.form
+        assertEquals("my_acc_123", form.accountId)
+        assertEquals(actualUrl, form.baseUrl)
+        assertNull(form.urlProblem)
+        assertTrue(form.canTest)
+
+        // Cloudflare 不提供列模型接口 (GET /models 返回 405/NotSupported)
+        listing[actualUrl] = ModelListResult.Failed(ListFailure.NotSupported)
+        vm.testAndSave(); runCurrent()
+
+        form = vm.state.value.form
+        assertTrue(form.noList)
+        assertFalse("Requires model name to probe", form.canTest)
+
+        // 用户输入模型名 @cf/openai/gpt-oss-20b
+        vm.setModel("@cf/openai/gpt-oss-20b")
+        assertTrue(vm.state.value.form.canTest)
+
+        vm.testAndSave(); runCurrent()
+        assertFalse("测试通过后关闭表单", vm.state.value.showForm)
+        val saved = store.providers.value.single()
+        assertEquals("Cloudflare Workers AI (my_a…_123)", saved.name)
+        assertEquals(actualUrl, saved.baseUrl)
+        assertEquals(setOf("@cf/openai/gpt-oss-20b"), saved.verifiedModels)
+        assertEquals("@cf/openai/gpt-oss-20b", store.configFor(ModelRole.Main)?.model)
     }
 
     /** 自定义填了某家的官方地址:建议改用那家的预设;地址就是预设的、接口类型不同时一并说;改用时 Key 留着。 */

@@ -22,6 +22,10 @@ class ModelAccessErrorsTest {
         // 404 也可能这样说
         notAvailable(404, """{"error":{"message":"Model not activated for this account"}}""")
         assertEquals("plain text not activated", notAvailable(400, "plain text not activated").detail)
+        val cfError = """{"errors":[{"message":"AiError: Model @cf/zai-org/glm-5.3 is not available on the Workers Free plan: Upgrade to access this model","code":5035}],"success":false}"""
+        val cfE = notAvailable(403, cfError)
+        assertEquals("m", cfE.model)
+        assertTrue(cfE.detail.contains("not available on the Workers Free plan"))
     }
 
     @Test fun modelDoesNotSupportTools() {

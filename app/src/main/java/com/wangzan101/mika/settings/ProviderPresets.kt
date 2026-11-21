@@ -25,6 +25,8 @@ data class ProviderPreset(
      * 只填官方文档确认过的值,不猜;照服务商写明的顺序。
      */
     val reasoningLevels: List<String> = emptyList(),
+    /** 地址中含有需要用户替换的参数(如 {account_id})或服务商要求填入个性化端点:界面上允许编辑地址。 */
+    val urlEditable: Boolean = false,
 )
 
 object ProviderPresets {
@@ -32,7 +34,23 @@ object ProviderPresets {
         Capabilities(toolCalls = true, vision = vision, contextTokens = context, reasoning = false, promptCaching = caching)
 
     /** Base URL 对得上的模板(添加时选了别的模板、或测试里直接给地址时,按地址补上能力的初始值);没有为 null。 */
-    fun forBaseUrl(url: String): ProviderPreset? = all.firstOrNull { it.baseUrl.isNotEmpty() && url.trimEnd('/') == it.baseUrl.trimEnd('/') }
+    fun forBaseUrl(url: String): ProviderPreset? = all.firstOrNull { preset ->
+        preset.baseUrl.isNotEmpty() && (
+            url.trimEnd('/') == preset.baseUrl.trimEnd('/') ||
+            (preset.baseUrl.contains('{') && matchesTemplate(preset.baseUrl, url))
+        )
+    }
+
+    private fun matchesTemplate(template: String, url: String): Boolean {
+        val parts = template.split("{account_id}")
+        if (parts.size != 2) return false
+        val prefix = parts[0]
+        val suffix = parts[1].trimEnd('/')
+        val trimmed = url.trim().trimEnd('/')
+        if (!trimmed.startsWith(prefix) || !trimmed.endsWith(suffix)) return false
+        val middle = trimmed.substring(prefix.length, trimmed.length - suffix.length)
+        return middle.isNotEmpty() && !middle.contains('/')
+    }
 
     /**
      * 主机名和哪个服务商模板的地址一样(路径可以不同):自定义填了某家的官方地址时,建议改用那个模板。
@@ -81,6 +99,8 @@ object ProviderPresets {
         // 列模型接口写明每个模型能不能调用工具、看图和上下文长度
         ProviderPreset("Mistral", ProviderConfig.Kind.OpenAiCompat, "https://api.mistral.ai/v1", caps(vision = true, context = 128_000), familyTokens = listOf("mistral")),
         ProviderPreset("Groq", ProviderConfig.Kind.OpenAiCompat, "https://api.groq.com/openai/v1", caps(context = 128_000)),
+        // Cloudflare Workers AI: OpenAI 兼容端点,地址中的 {account_id} 需替换为用户的 Cloudflare 账户 ID
+        ProviderPreset("Cloudflare Workers AI", ProviderConfig.Kind.OpenAiCompat, "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1", caps(vision = true, context = 128_000), familyTokens = listOf("llama-3.3", "gpt-oss", "llama-4", "llama", "gemma", "mistral"), urlEditable = true),
         // 自己机器上跑的:地址是本机的默认端口,跑在电脑上时改成电脑的局域网地址;不要 Key
         ProviderPreset("Ollama", ProviderConfig.Kind.OpenAiCompat, "http://127.0.0.1:11434/v1", caps(), selfHosted = true),
         ProviderPreset("LM Studio", ProviderConfig.Kind.OpenAiCompat, "http://127.0.0.1:1234/v1", caps(), selfHosted = true),

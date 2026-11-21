@@ -40,6 +40,9 @@
     <string name="cap_reasoning">Razonamiento</string>
     <string name="model_need_url">Introduce la URL base</string>
     <string name="model_url_scheme">La URL base debe empezar por http:// o https://</string>
+    <string name="model_url_account_id">Reemplaza {account_id} con tu ID de cuenta de Cloudflare</string>
+    <string name="model_setup_account_id">ID de cuenta</string>
+    <string name="model_setup_account_id_placeholder">Introduce tu ID de cuenta de Cloudflare</string>
     <string name="model_url_unencrypted">Esta dirección no está cifrada; otras personas de la red podrían ver tu clave de API y tus chats.</string>
     <string name="model_probe_failed">Falló pedirle a %1$s que llamara a una herramienta de prueba: %2$s</string>
     <string name="model_probe_timeout">%1$s no respondió a una llamada de herramienta de prueba en %2$d segundos</string>
@@ -81,4 +84,16 @@
     <string name="model_probe_tried">Se probó %1$s; ninguno pasó la prueba.</string>
     <string name="model_probe_fallback">%1$s, que se probó primero, no pasó la prueba: %2$s. El modelo principal es “%3$s”, que sí la pasó.</string>
     <string name="model_pick_main">Elegir modelo principal</string>
+    <string name="model_fallback_remove_title">¿Eliminar modelo de respaldo?</string>
+    <string name="model_fallback_remove_body">¿Eliminar %1$s de la cadena de conmutación por error de %2$s?</string>
+    <string name="model_fallback_remove_confirm">Eliminar</string>
+    <string name="model_fallback_chain_title">Cadena de conmutación por error de %1$s</string>
+    <string name="model_fallback_active_count">%1$d activos</string>
+    <string name="model_fallback_empty_preview">Sin modelos de respaldo · Toca para configurar</string>
+    <string name="model_fallback_primary_badge">Principal</string>
+    <string name="model_fallback_backup_badge">Respaldo n.º %1$d</string>
+    <string name="model_fallback_add_first">Añadir modelo de respaldo</string>
+    <string name="model_fallback_add_another">Añadir otro modelo de respaldo (%1$d/%2$d)</string>
+    <string name="model_fallback_footer_note">Si %1$s supera los límites de velocidad o cuota, Mika cambiará automáticamente en cadena para que las tareas terminen sin interrupciones.</string>
+    <string name="model_fallback_collapse_hint">Cadena activa · Toca para contraer</string>
 </resources>

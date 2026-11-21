@@ -47,6 +47,7 @@ internal data class AllowanceRoute(
                 "xAI" -> AllowanceRoute(dashboard = "https://console.x.ai/")
                 "Mistral" -> AllowanceRoute(dashboard = "https://admin.mistral.ai/organization/usage")
                 "Groq" -> AllowanceRoute(dashboard = "https://console.groq.com/settings/billing")
+                "Cloudflare Workers AI" -> AllowanceRoute(dashboard = "https://dash.cloudflare.com/")
                 else -> AllowanceRoute()
             }
         }

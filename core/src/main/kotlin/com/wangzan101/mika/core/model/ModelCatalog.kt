@@ -155,6 +155,12 @@ class ModelCatalog(private val http: OkHttpClient) {
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun openAiCompat(baseUrl: String, apiKey: String?, headers: Map<String, String> = emptyMap()): ModelListResult = run {
+        if (isCloudflareWorkersAi(baseUrl)) {
+            val cfResult = cloudflareWorkersAi(baseUrl, apiKey, headers)
+            if (cfResult is ModelListResult.Ok && cfResult.models.isNotEmpty()) {
+                return@run cfResult
+            }
+        }
         val url = endpoint(baseUrl, "/models") ?: return@run badUrl()
         val req = buildRequest {
             Request.Builder().url(url).get().withHeaders(headers)
@@ -303,6 +309,62 @@ class ModelCatalog(private val http: OkHttpClient) {
             displayName = o.str("displayName").orEmpty(),
             contextTokens = o.int("inputTokenLimit"),
             reasoning = o.bool("thinking"),
+        )
+    }
+
+    private fun isCloudflareWorkersAi(baseUrl: String): Boolean {
+        val trimmed = baseUrl.trim()
+        return trimmed.contains("/accounts/", ignoreCase = true) &&
+            (trimmed.contains("api.cloudflare.com", ignoreCase = true) || trimmed.contains("/ai", ignoreCase = true))
+    }
+
+    private suspend fun cloudflareWorkersAi(baseUrl: String, apiKey: String?, headers: Map<String, String>): ModelListResult = run {
+        val trimmed = baseUrl.trim().trimEnd('/')
+        val searchUrl = trimmed.removeSuffix("/v1").trimEnd('/') + "/models/search?task=Text%20Generation"
+        val url = searchUrl.toHttpUrlOrNull() ?: return@run badUrl()
+        val req = buildRequest {
+            Request.Builder().url(url).get().withHeaders(headers)
+                .apply { if (!apiKey.isNullOrEmpty()) headerOrReject("Authorization", "Bearer $apiKey") }.build()
+        } ?: return@run illegalKey()
+        val root = fetch(req).getOrElse { return@run it.asFailure() }
+        val result = root["result"] as? JsonArray ?: return@run ModelListResult.Failed(ListFailure.BadResponse)
+        val models = result.mapNotNull { (it as? JsonObject)?.let(::cloudflareModel) }
+            .sortedWith(compareByDescending<ListedModel> { it.toolCalls == true }.thenBy { it.id })
+            .distinctBy { it.id }
+        ModelListResult.Ok(models)
+    }
+
+    private fun cloudflareModel(o: JsonObject): ListedModel? {
+        val id = (o.str("name") ?: o.str("id"))?.takeIf { it.isNotBlank() } ?: return null
+        val props = (o["properties"] as? JsonArray)?.mapNotNull { item ->
+            val obj = item as? JsonObject ?: return@mapNotNull null
+            val pid = obj.str("property_id") ?: return@mapNotNull null
+            pid to obj["value"]
+        }?.toMap().orEmpty()
+
+        if (props.containsKey("planned_deprecation_date")) return null
+
+        fun propStr(pid: String): String? = (props[pid] as? JsonPrimitive)?.contentOrNull
+        fun propBool(pid: String): Boolean? = propStr(pid)?.toBooleanStrictOrNull()
+
+        val context = propStr("context_window")?.toIntOrNull()
+        val tools = propBool("function_calling")
+        val vision = propBool("vision")
+        val reasoning = propBool("reasoning")
+
+        val efforts = (props["reasoning_effort"] as? JsonObject)?.obj("value")?.let { effortObj ->
+            (effortObj["supported_efforts"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+        }
+
+        return ListedModel(
+            id = id,
+            displayName = id.removePrefix("@cf/"),
+            toolCalls = tools,
+            vision = vision,
+            contextTokens = context,
+            reasoning = reasoning,
+            reasoningEfforts = efforts,
+            chat = true,
         )
     }
 

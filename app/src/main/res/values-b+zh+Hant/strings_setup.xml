@@ -40,6 +40,9 @@
     <string name="cap_reasoning">推理</string>
     <string name="model_need_url">請填寫介面網址</string>
     <string name="model_url_scheme">介面網址要以 http:// 或 https:// 開頭</string>
+    <string name="model_url_account_id">請將網址中的 {account_id} 替換為您的 Cloudflare 帳戶 ID</string>
+    <string name="model_setup_account_id">帳戶 ID</string>
+    <string name="model_setup_account_id_placeholder">輸入您的 Cloudflare 帳戶 ID</string>
     <string name="model_url_unencrypted">這個網址不加密，API Key 和對話內容可能被同一網路裡的人看到。</string>
     <string name="model_probe_failed">試著讓 %1$s 呼叫一個工具沒成功：%2$s</string>
     <string name="model_probe_timeout">試著讓 %1$s 呼叫一個工具，%2$d 秒沒有回應</string>
@@ -81,4 +84,16 @@
     <string name="model_probe_tried">試了 %1$s，都沒測試通過。</string>
     <string name="model_probe_fallback">先試的 %1$s 沒測試通過：%2$s。主模型用了測試通過的「%3$s」。</string>
     <string name="model_pick_main">選主模型</string>
+    <string name="model_fallback_remove_title">移除備用模型？</string>
+    <string name="model_fallback_remove_body">從 %2$s 故障轉移鏈中移除 %1$s？</string>
+    <string name="model_fallback_remove_confirm">移除</string>
+    <string name="model_fallback_chain_title">%1$s 故障轉移鏈</string>
+    <string name="model_fallback_active_count">%1$d 個生效</string>
+    <string name="model_fallback_empty_preview">無備用模型 · 點擊配置</string>
+    <string name="model_fallback_primary_badge">主模型</string>
+    <string name="model_fallback_backup_badge">備用 #%1$d</string>
+    <string name="model_fallback_add_first">添加備用模型</string>
+    <string name="model_fallback_add_another">繼續添加備用模型 (%1$d/%2$d)</string>
+    <string name="model_fallback_footer_note">當 %1$s 遇到速率或配額超限時，Mika 會按順序自動嘗試鏈中的備用模型，保障後台任務順利完成。</string>
+    <string name="model_fallback_collapse_hint">已展開故障轉移鏈 · 點擊收起</string>
 </resources>

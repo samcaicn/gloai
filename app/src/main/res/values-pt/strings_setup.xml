@@ -40,6 +40,9 @@
     <string name="cap_reasoning">Raciocínio</string>
     <string name="model_need_url">Digite a URL base</string>
     <string name="model_url_scheme">A URL base deve começar com http:// ou https://</string>
+    <string name="model_url_account_id">Substitua {account_id} pelo ID da sua conta Cloudflare</string>
+    <string name="model_setup_account_id">ID da conta</string>
+    <string name="model_setup_account_id_placeholder">Digite o ID da sua conta Cloudflare</string>
     <string name="model_url_unencrypted">Este endereço não é criptografado; a sua chave de API e as suas conversas podem ser vistas por outras pessoas na rede.</string>
     <string name="model_probe_failed">Pedir a %1$s que chamasse uma ferramenta de teste falhou: %2$s</string>
     <string name="model_probe_timeout">%1$s não respondeu a uma chamada de ferramenta de teste em %2$d segundos</string>
@@ -81,4 +84,16 @@
     <string name="model_probe_tried">Tentou %1$s; nenhum deles passou no teste.</string>
     <string name="model_probe_fallback">%1$s, testado primeiro, não passou no teste: %2$s. O modelo principal é “%3$s”, que passou.</string>
     <string name="model_pick_main">Escolher modelo principal</string>
+    <string name="model_fallback_remove_title">Remover modelo reserva?</string>
+    <string name="model_fallback_remove_body">Remover %1$s da cadeia de failover de %2$s?</string>
+    <string name="model_fallback_remove_confirm">Remover</string>
+    <string name="model_fallback_chain_title">Cadeia de failover de %1$s</string>
+    <string name="model_fallback_active_count">%1$d ativos</string>
+    <string name="model_fallback_empty_preview">Nenhum modelo reserva · Toque para configurar</string>
+    <string name="model_fallback_primary_badge">Principal</string>
+    <string name="model_fallback_backup_badge">Reserva nº %1$d</string>
+    <string name="model_fallback_add_first">Adicionar modelo reserva</string>
+    <string name="model_fallback_add_another">Adicionar outro modelo reserva (%1$d/%2$d)</string>
+    <string name="model_fallback_footer_note">Se %1$s atingir limites de taxa ou cota, o Mika alternará automaticamente pela cadeia para concluir as tarefas sem interrupção.</string>
+    <string name="model_fallback_collapse_hint">Cadeia ativa · Toque para recolher</string>
 </resources>

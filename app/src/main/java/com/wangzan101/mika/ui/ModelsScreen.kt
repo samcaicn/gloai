@@ -960,8 +960,17 @@ object ModelsCopy {
     val SIGN_IN_BUSY: String get() = tr(R.string.signin_busy)
 
     /** 界面上服务商的名字:授权来的 OpenRouter 加一句来历,和用户自己填 Key 的那一家分得开。 */
-    fun providerName(p: Provider): String =
-        if (p.signIn == ProviderStore.OPENROUTER_SIGN_IN) tr(R.string.signin_openrouter_name, p.name) else p.name
+    fun providerName(p: Provider): String {
+        if (p.signIn == ProviderStore.OPENROUTER_SIGN_IN) return tr(R.string.signin_openrouter_name, p.name)
+        if (p.name == "Cloudflare Workers AI" && p.baseUrl.contains("/accounts/")) {
+            val acc = p.baseUrl.substringAfter("/accounts/").substringBefore("/").trim()
+            if (acc.isNotEmpty() && !acc.contains("{")) {
+                val shortId = if (acc.length >= 8) "${acc.take(4)}…${acc.takeLast(4)}" else acc
+                return "${p.name} ($shortId)"
+            }
+        }
+        return p.name
+    }
     val XAI_CODE_TITLE: String get() = tr(R.string.signin_xai_code_title)
     val XAI_CODE_BODY: String get() = tr(R.string.signin_xai_code_body)
     val XAI_CODE_COPY_REOPEN: String get() = tr(R.string.signin_xai_code_copy_reopen)

@@ -134,18 +134,26 @@ data class AddForm(
     /** 填了的模型名;没显示那一栏时不算。 */
     val typedModel: String get() = if (showModel) model.trim() else ""
 
+    val isCloudflare: Boolean get() = preset == "Cloudflare Workers AI"
+
+    val accountId: String
+        get() = if (baseUrl.contains("/accounts/") && !baseUrl.contains("{account_id}")) {
+            baseUrl.substringAfter("/accounts/").substringBefore("/").trim()
+        } else ""
+
     val isCustom: Boolean get() = preset == ProviderPresets.custom.label
 
     /** 跑在用户自己机器上的服务(见 [ProviderPreset.selfHosted]):地址预填了本机的默认端口,要能改成那台机器的。 */
     val isSelfHosted: Boolean get() = presetFor(preset).selfHosted
 
-    /** 地址要用户填或改:自定义,和自己跑的服务。 */
-    val urlEditable: Boolean get() = isCustom || isSelfHosted
+    /** 地址要用户填或改:自定义,自己跑的服务,或地址含参数的预设。Cloudflare 单独展示 Account ID 输入项。 */
+    val urlEditable: Boolean get() = (isCustom || isSelfHosted || presetFor(preset).urlEditable) && !isCloudflare
 
     val urlProblem: String?
         get() = when {
             baseUrl.isBlank() -> tr(R.string.model_need_url)
             !baseUrl.trim().startsWith("http://") && !baseUrl.trim().startsWith("https://") -> tr(R.string.model_url_scheme)
+            baseUrl.contains("{account_id}") -> tr(R.string.model_url_account_id)
             else -> null
         }
 
@@ -176,14 +184,25 @@ data class AddForm(
     /** 举模型名的例子按哪一类接口:地址对得上某个预设的按那个预设,否则按选的接口类型。 */
     val exampleKind: ProviderConfig.Kind get() = suggestedPreset?.kind ?: kind
 
-    /** 自定义没起名字时用的名字:地址的主机名(地址是某家预设的就用预设名)。 */
-    val defaultName: String get() = ProviderConnection.nameForUrl(baseUrl)
+    val defaultName: String
+        get() = when {
+            isCloudflare && accountId.isNotBlank() -> {
+                val shortId = if (accountId.length >= 8) "${accountId.take(4)}…${accountId.takeLast(4)}" else accountId
+                "$preset ($shortId)"
+            }
+            else -> ProviderConnection.nameForUrl(baseUrl)
+        }
 
     /**
      * 存成服务商时用的名字:预设用预设名,自定义用填的名字、没填用 [defaultName]。
      * 服务商按接口类型、地址和名字归组,同一个地址起不同的名字就是两家(例如同一个中转站的两个 Key)。
      */
-    val providerName: String get() = if (isCustom) name.trim().ifEmpty { defaultName } else preset
+    val providerName: String
+        get() = when {
+            isCustom -> name.trim().ifEmpty { defaultName }
+            isCloudflare -> name.trim().ifEmpty { defaultName }
+            else -> preset
+        }
 
     /** 这家要放会话号的请求头名:选的预设声明了的用它;自定义的地址对得上某个预设也用那个预设的。 */
     val sessionHeader: String? get() = presetFor(preset).sessionHeader ?: ProviderPresets.forBaseUrl(baseUrl.trim())?.sessionHeader
@@ -434,6 +453,21 @@ class ModelSetupViewModel(
     // 换了接口类型或地址,上次「没列出模型」就不作数了,要重新列
     fun setKind(kind: ProviderConfig.Kind) = edit { it.copy(kind = kind, noList = false) }
     fun setBaseUrl(url: String) = edit { it.copy(baseUrl = url, noList = false) }
+
+    fun setAccountId(input: String) {
+        val trimmed = input.trim()
+        val accountId = when {
+            trimmed.contains("/accounts/") -> trimmed.substringAfter("/accounts/").substringBefore("/").trim()
+            trimmed.contains("dash.cloudflare.com/") -> trimmed.substringAfter("dash.cloudflare.com/").substringBefore("/").trim()
+            else -> trimmed
+        }
+        val newUrl = if (accountId.isBlank()) {
+            "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1"
+        } else {
+            "https://api.cloudflare.com/client/v4/accounts/$accountId/ai/v1"
+        }
+        setBaseUrl(newUrl)
+    }
     /** 粘贴或逐字改 Key:去掉零宽;换行和其它放不进请求头的字符原样留下并立刻标出来。 */
     fun setApiKey(key: String) {
         val accepted = ApiKeyText.accept(key)

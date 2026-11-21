@@ -182,9 +182,9 @@ data class Provider(
 /** OkHttp 把超时换算为 Int 毫秒，秒数必须在换算后仍能存下。 */
 internal val MODEL_READ_TIMEOUT_SECONDS = 1..(Int.MAX_VALUE / 1_000)
 
-/** 各用途备援链最长几位。主模型 2、看图/轻量各最多 2，保持界面简洁。 */
-internal const val MAX_MAIN_FALLBACKS = 2
-internal const val MAX_FALLBACKS = 2
+/** 各用途备援链最长几位。支持多达 8 层瀑布级联（Waterfall Cascade）。 */
+internal const val MAX_MAIN_FALLBACKS = 8
+internal const val MAX_FALLBACKS = 8
 
 /**
  * 临时:真机验证「折叠后任务还能干完」之前,给所有模型每 16 轮折一次历史(超出 keepRecent 后);

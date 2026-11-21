@@ -40,6 +40,9 @@
     <string name="cap_reasoning">推論</string>
     <string name="model_need_url">ベース URL を入力してください</string>
     <string name="model_url_scheme">ベース URL は http:// または https:// で始めてください</string>
+    <string name="model_url_account_id">{account_id} を Cloudflare アカウント ID に置き換えてください</string>
+    <string name="model_setup_account_id">アカウント ID</string>
+    <string name="model_setup_account_id_placeholder">Cloudflare アカウント ID を入力</string>
     <string name="model_url_unencrypted">このアドレスは暗号化されていません。API キーやチャットの内容が、同じネットワークの他の人に見られる可能性があります。</string>
     <string name="model_probe_failed">%1$s にテスト用のツールを呼び出してもらうのに失敗しました: %2$s</string>
     <string name="model_probe_timeout">%1$s はテスト用のツール呼び出しに %2$d 秒以内に応答しませんでした</string>
@@ -81,4 +84,16 @@
     <string name="model_probe_tried">%1$s を試しましたが、どれもテストに通りませんでした。</string>
     <string name="model_probe_fallback">最初に試した %1$s はテストに通りませんでした: %2$s。メインモデルは、テストに通った「%3$s」です。</string>
     <string name="model_pick_main">メインモデルを選択</string>
+    <string name="model_fallback_remove_title">バックアップモデルを削除しますか？</string>
+    <string name="model_fallback_remove_body">%2$s のフェイルオーバーチェーンから %1$s を削除しますか？</string>
+    <string name="model_fallback_remove_confirm">削除</string>
+    <string name="model_fallback_chain_title">%1$s フェイルオーバーチェーン</string>
+    <string name="model_fallback_active_count">%1$d 件有効</string>
+    <string name="model_fallback_empty_preview">バックアップモデルなし · タップして設定</string>
+    <string name="model_fallback_primary_badge">プライマリ</string>
+    <string name="model_fallback_backup_badge">バックアップ #%1$d</string>
+    <string name="model_fallback_add_first">バックアップモデルを追加</string>
+    <string name="model_fallback_add_another">さらにバックアップモデルを追加 (%1$d/%2$d)</string>
+    <string name="model_fallback_footer_note">%1$s がレート制限やクォータに達した場合、Mika は自動的に順次バックアップモデルへ切り替え、タスクを中断なく完了させます。</string>
+    <string name="model_fallback_collapse_hint">フェイルオーバーチェーン展開中 · タップして折りたたむ</string>
 </resources>

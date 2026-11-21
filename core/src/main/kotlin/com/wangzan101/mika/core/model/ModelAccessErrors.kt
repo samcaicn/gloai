@@ -38,6 +38,8 @@ object ModelAccessErrors {
         "do not have access to the model", "does not have access to the model", "does not have access to model",
         "do not have access to model", "no access to model", "no permission to access the model", "no permission to use the model",
         "model_not_available", "model is not available", "model not available", "not available for your account",
+        "is not available on", "not available on", "not allowed to access", "require_workers_paid",
+        "has been deprecated", "was deprecated",
         "未开通", "没有开通", "尚未开通", "无权限", "没有权限使用", "无权访问", "无权使用",
         // 模型已经下线
         "no longer available", "has been retired", "has been discontinued", "has been shut down",
@@ -105,7 +107,9 @@ object ModelAccessErrors {
         val parsed = runCatching { json.parseToJsonElement(body) }.getOrNull()
         val root = parsed as? JsonObject ?: (parsed as? JsonArray)?.firstOrNull() as? JsonObject
         val err = root?.get("error")
+        val errorsArray = (root?.get("errors") as? JsonArray)?.firstOrNull() as? JsonObject
         return (err as? JsonObject)?.str("message") ?: (err as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
+            ?: errorsArray?.str("message")
             ?: root?.str("message") ?: root?.str("msg") ?: root?.str("detail")
     }
 

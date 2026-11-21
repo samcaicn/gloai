@@ -40,6 +40,9 @@
     <string name="cap_reasoning">Reasoning</string>
     <string name="model_need_url">Enter the base URL</string>
     <string name="model_url_scheme">The base URL must start with http:// or https://</string>
+    <string name="model_url_account_id">Replace {account_id} with your Cloudflare Account ID</string>
+    <string name="model_setup_account_id">Account ID</string>
+    <string name="model_setup_account_id_placeholder">Enter your Cloudflare Account ID</string>
     <string name="model_url_unencrypted">This address isn’t encrypted; your API key and chats could be seen by others on the network.</string>
     <string name="model_probe_failed">Asking %1$s to call a test tool failed: %2$s</string>
     <string name="model_probe_timeout">%1$s didn’t answer a test tool call within %2$d seconds</string>
@@ -81,4 +84,16 @@
     <string name="model_probe_tried">Tried %1$s; none of them passed the test.</string>
     <string name="model_probe_fallback">%1$s, tried first, didn’t pass the test: %2$s. The main model is “%3$s”, which passed.</string>
     <string name="model_pick_main">Choose main model</string>
+    <string name="model_fallback_remove_title">Remove backup model?</string>
+    <string name="model_fallback_remove_body">Remove %1$s from the %2$s failover chain?</string>
+    <string name="model_fallback_remove_confirm">Remove</string>
+    <string name="model_fallback_chain_title">%1$s Failover Chain</string>
+    <string name="model_fallback_active_count">%1$d active</string>
+    <string name="model_fallback_empty_preview">No backup models · Tap to configure</string>
+    <string name="model_fallback_primary_badge">Primary</string>
+    <string name="model_fallback_backup_badge">Backup #%1$d</string>
+    <string name="model_fallback_add_first">Add Backup Model</string>
+    <string name="model_fallback_add_another">Add Another Backup Model (%1$d/%2$d)</string>
+    <string name="model_fallback_footer_note">If %1$s hits rate limits or quota, Mika automatically switches down the chain in order so tasks finish without interruption.</string>
+    <string name="model_fallback_collapse_hint">Active cascade · Tap to collapse</string>
 </resources>

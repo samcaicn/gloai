@@ -40,6 +40,9 @@
     <string name="cap_reasoning">Penalaran</string>
     <string name="model_need_url">Masukkan URL dasar</string>
     <string name="model_url_scheme">URL dasar harus diawali http:// atau https://</string>
+    <string name="model_url_account_id">Ganti {account_id} dengan ID Akun Cloudflare Anda</string>
+    <string name="model_setup_account_id">ID Akun</string>
+    <string name="model_setup_account_id_placeholder">Masukkan ID Akun Cloudflare Anda</string>
     <string name="model_url_unencrypted">Alamat ini tidak terenkripsi; kunci API dan obrolan Anda bisa dilihat orang lain di jaringan.</string>
     <string name="model_probe_failed">Meminta %1$s memanggil alat uji gagal: %2$s</string>
     <string name="model_probe_timeout">%1$s tidak menjawab panggilan alat uji dalam %2$d detik</string>
@@ -81,4 +84,16 @@
     <string name="model_probe_tried">Sudah mencoba %1$s; tidak satu pun lulus pengujian.</string>
     <string name="model_probe_fallback">%1$s, yang dicoba pertama, tidak lulus pengujian: %2$s. Model utamanya “%3$s”, yang lulus.</string>
     <string name="model_pick_main">Pilih model utama</string>
+    <string name="model_fallback_remove_title">Hapus model cadangan?</string>
+    <string name="model_fallback_remove_body">Hapus %1$s dari rantai failover %2$s?</string>
+    <string name="model_fallback_remove_confirm">Hapus</string>
+    <string name="model_fallback_chain_title">Rantai Failover %1$s</string>
+    <string name="model_fallback_active_count">%1$d aktif</string>
+    <string name="model_fallback_empty_preview">Tidak ada model cadangan · Ketuk untuk mengatur</string>
+    <string name="model_fallback_primary_badge">Utama</string>
+    <string name="model_fallback_backup_badge">Cadangan #%1$d</string>
+    <string name="model_fallback_add_first">Tambah Model Cadangan</string>
+    <string name="model_fallback_add_another">Tambah Model Cadangan Lain (%1$d/%2$d)</string>
+    <string name="model_fallback_footer_note">Jika %1$s mencapai batas kecepatan atau kuota, Mika otomatis beralih ke rantai model cadangan agar tugas selesai tanpa henti.</string>
+    <string name="model_fallback_collapse_hint">Rantai aktif · Ketuk untuk menciutkan</string>
 </resources>

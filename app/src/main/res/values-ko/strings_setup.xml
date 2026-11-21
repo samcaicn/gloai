@@ -40,6 +40,9 @@
     <string name="cap_reasoning">추론</string>
     <string name="model_need_url">기본 URL을 입력하세요</string>
     <string name="model_url_scheme">기본 URL은 http:// 또는 https://로 시작해야 해요</string>
+    <string name="model_url_account_id">{account_id}를 Cloudflare 계정 ID로 바꾸세요</string>
+    <string name="model_setup_account_id">계정 ID</string>
+    <string name="model_setup_account_id_placeholder">Cloudflare 계정 ID 입력</string>
     <string name="model_url_unencrypted">이 주소는 암호화되지 않아요. 같은 네트워크의 다른 사람이 API 키와 채팅을 볼 수 있어요.</string>
     <string name="model_probe_failed">%1$s에 테스트 도구 호출을 요청했지만 실패했어요: %2$s</string>
     <string name="model_probe_timeout">%1$s이(가) %2$d초 안에 테스트 도구 호출에 응답하지 않았어요</string>
@@ -81,4 +84,16 @@
     <string name="model_probe_tried">%1$s을(를) 시도했지만 테스트를 통과한 모델이 없어요.</string>
     <string name="model_probe_fallback">먼저 시도한 %1$s이(가) 테스트를 통과하지 못했어요: %2$s. 메인 모델은 테스트를 통과한 “%3$s”이에요.</string>
     <string name="model_pick_main">메인 모델 선택</string>
+    <string name="model_fallback_remove_title">백업 모델을 삭제하시겠습니까?</string>
+    <string name="model_fallback_remove_body">%2$s 장애 조치 체인에서 %1$s을(를) 삭제하시겠습니까?</string>
+    <string name="model_fallback_remove_confirm">삭제</string>
+    <string name="model_fallback_chain_title">%1$s 장애 조치 체인</string>
+    <string name="model_fallback_active_count">%1$d개 활성</string>
+    <string name="model_fallback_empty_preview">백업 모델 없음 · 눌러서 설정</string>
+    <string name="model_fallback_primary_badge">기본</string>
+    <string name="model_fallback_backup_badge">백업 #%1$d</string>
+    <string name="model_fallback_add_first">백업 모델 추가</string>
+    <string name="model_fallback_add_another">백업 모델 추가 (%1$d/%2$d)</string>
+    <string name="model_fallback_footer_note">%1$s의 요금 한도나 쿼터가 초과되면 Mika가 체인을 따라 자동으로 백업 모델로 전환하여 작업이 중단 없이 완료됩니다。</string>
+    <string name="model_fallback_collapse_hint">장애 조치 체인 펼침 · 눌러서 접기</string>
 </resources>

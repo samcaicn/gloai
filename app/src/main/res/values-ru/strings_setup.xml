@@ -40,6 +40,9 @@
     <string name="cap_reasoning">Рассуждения</string>
     <string name="model_need_url">Введите базовый URL</string>
     <string name="model_url_scheme">Базовый URL должен начинаться с http:// или https://</string>
+    <string name="model_url_account_id">Замените {account_id} идентификатором аккаунта Cloudflare</string>
+    <string name="model_setup_account_id">ID аккаунта</string>
+    <string name="model_setup_account_id_placeholder">Введите идентификатор аккаунта Cloudflare</string>
     <string name="model_url_unencrypted">Этот адрес не зашифрован; ваш ключ API и переписку могут увидеть другие пользователи сети.</string>
     <string name="model_probe_failed">Не удалось попросить %1$s вызвать тестовый инструмент: %2$s</string>
     <string name="model_probe_timeout">%1$s не ответила на вызов тестового инструмента за %2$d с</string>
@@ -81,4 +84,16 @@
     <string name="model_probe_tried">Пробовали: %1$s; ни одна не прошла проверку.</string>
     <string name="model_probe_fallback">%1$s, которую пробовали первой, не прошла проверку: %2$s. Основная модель — «%3$s», она проверку прошла.</string>
     <string name="model_pick_main">Выбрать основную модель</string>
+    <string name="model_fallback_remove_title">Удалить резервную модель?</string>
+    <string name="model_fallback_remove_body">Удалить %1$s из цепочки резервирования %2$s?</string>
+    <string name="model_fallback_remove_confirm">Удалить</string>
+    <string name="model_fallback_chain_title">Цепочка резервирования: %1$s</string>
+    <string name="model_fallback_active_count">Активно: %1$d</string>
+    <string name="model_fallback_empty_preview">Нет резервных моделей · Нажмите для настройки</string>
+    <string name="model_fallback_primary_badge">Основной</string>
+    <string name="model_fallback_backup_badge">Резерв №%1$d</string>
+    <string name="model_fallback_add_first">Добавить резервную модель</string>
+    <string name="model_fallback_add_another">Добавить еще резервную модель (%1$d/%2$d)</string>
+    <string name="model_fallback_footer_note">Если %1$s превысит лимит запросов или квоту, Mika автоматически переключится на резервные модели по цепочке, чтобы завершить задачу без сбоев.</string>
+    <string name="model_fallback_collapse_hint">Цепочка развернута · Нажмите, чтобы свернуть</string>
 </resources>

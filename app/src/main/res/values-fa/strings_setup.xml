@@ -40,6 +40,9 @@
     <string name="cap_reasoning">استدلال</string>
     <string name="model_need_url">نشانی پایه را وارد کنید</string>
     <string name="model_url_scheme">نشانی پایه باید با http:// یا https:// شروع شود</string>
+    <string name="model_url_account_id">{account_id} را با شناسه حساب Cloudflare خود جایگزین کنید</string>
+    <string name="model_setup_account_id">شناسه حساب</string>
+    <string name="model_setup_account_id_placeholder">شناسه حساب Cloudflare خود را وارد کنید</string>
     <string name="model_url_unencrypted">این نشانی رمزگذاری نشده است؛ دیگران در شبکه ممکن است کلید API و گفتگوهای شما را ببینند.</string>
     <string name="model_probe_failed">درخواست فراخوانی ابزار آزمایشی از %1$s ناموفق بود: %2$s</string>
     <string name="model_probe_timeout">%1$s ظرف %2$d ثانیه به فراخوانی ابزار آزمایشی پاسخ نداد</string>
@@ -81,4 +84,16 @@
     <string name="model_probe_tried">%1$s امتحان شد؛ هیچ‌کدام آزمون را نگذرانده‌اند.</string>
     <string name="model_probe_fallback">%1$s ابتدا امتحان شد، اما آزمون را نگذرانْد: %2$s. مدل اصلی «%3$s» است که آزمون را گذرانده است.</string>
     <string name="model_pick_main">انتخاب مدل اصلی</string>
+    <string name="model_fallback_remove_title">حذف مدل پشتیبان؟</string>
+    <string name="model_fallback_remove_body">مدل %1$s از زنجیره پشتیبان %2$s حذف شود؟</string>
+    <string name="model_fallback_remove_confirm">حذف</string>
+    <string name="model_fallback_chain_title">زنجیره پشتیبان %1$s</string>
+    <string name="model_fallback_active_count">%1$d فعال</string>
+    <string name="model_fallback_empty_preview">بدون مدل پشتیبان · برای تنظیم ضربه بزنید</string>
+    <string name="model_fallback_primary_badge">اصلی</string>
+    <string name="model_fallback_backup_badge">پشتیبان شماره %1$d</string>
+    <string name="model_fallback_add_first">افزودن مدل پشتیبان</string>
+    <string name="model_fallback_add_another">افزودن مدل پشتیبان دیگر (%1$d/%2$d)</string>
+    <string name="model_fallback_footer_note">اگر %1$s به محدودیت نرخ یا سهمیه برخورد کند، Mika به‌طور خودکار به مدل‌های بعدی زنجیره سوئیچ می‌کند تا کارها بدون وقفه به پایان برسند.</string>
+    <string name="model_fallback_collapse_hint">زنجیره فعال · برای بستن ضربه بزنید</string>
 </resources>
