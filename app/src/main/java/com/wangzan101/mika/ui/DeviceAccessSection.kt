@@ -38,9 +38,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** 电脑连接页中的主屏准备设置。新凭据不进可恢复状态,不显示旧凭据;编辑时禁止截屏。 */
+/**
+ * 电脑连接页中的主屏准备设置;[localTasks] 为 true 时变体为「任务运行」页的本机任务开关:
+ * 组名/开关行/脚注换本机任务文案,绑定的是独立的 localEnabled 开关;凭据编辑区两个变体整段共用。
+ * 新凭据不进可恢复状态,不显示旧凭据;编辑时禁止截屏。
+ */
 @Composable
-fun DeviceAccessSection(settings: DeviceAccessSettings) {
+fun DeviceAccessSection(settings: DeviceAccessSettings, localTasks: Boolean = false) {
     val config by settings.config.collectAsState()
     val scope = rememberCoroutineScope()
     var editing by remember { mutableStateOf(false) }
@@ -68,10 +72,14 @@ fun DeviceAccessSection(settings: DeviceAccessSettings) {
     }
     fun closeEditor() { value = ""; repeat = ""; editing = false }
 
-    GroupLabel(stringResource(R.string.device_access_group))
+    GroupLabel(stringResource(if (localTasks) R.string.device_local_group else R.string.device_access_group))
     GroupCard {
-        ListRow(MikaIcons.Desktop, stringResource(R.string.device_access_title), stringResource(R.string.device_access_sub), first = true) {
-            MikaSwitch(config.enabled, { on -> change({ settings.setEnabled(on) }) }, Modifier.testTag("device-access-enabled"), enabled = !busy)
+        ListRow(if (localTasks) MikaIcons.Phone else MikaIcons.Desktop,
+            stringResource(if (localTasks) R.string.device_local_title else R.string.device_access_title),
+            stringResource(if (localTasks) R.string.device_local_sub else R.string.device_access_sub), first = true) {
+            MikaSwitch(if (localTasks) config.localEnabled else config.enabled,
+                { on -> change({ if (localTasks) settings.setLocalEnabled(on) else settings.setEnabled(on) }) },
+                Modifier.testTag(if (localTasks) "device-access-local-enabled" else "device-access-enabled"), enabled = !busy)
         }
         val subtitle = when {
             config.blocked -> R.string.device_access_blocked
@@ -86,7 +94,7 @@ fun DeviceAccessSection(settings: DeviceAccessSettings) {
             MikaButton(stringResource(R.string.device_access_clear), { change({ settings.clearCredential() }) }, kind = ButtonKind.Tonal, size = ButtonSize.Small, enabled = !busy)
         }
     }
-    FooterNote(stringResource(R.string.device_access_foot))
+    FooterNote(stringResource(if (localTasks) R.string.device_local_foot else R.string.device_access_foot))
     if (editing) {
         GroupCard {
             RadioRow(stringResource(R.string.device_access_pin), kind == CredentialKind.Pin, first = true,

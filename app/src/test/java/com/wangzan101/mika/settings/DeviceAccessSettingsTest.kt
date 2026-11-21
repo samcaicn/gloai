@@ -52,6 +52,32 @@ class DeviceAccessSettingsTest {
         assertNull(settings().credential())
     }
 
+    @Test fun localSwitchPersistsIndependentlyWithItsOwnAttemptLatch() {
+        val s = settings(); s.setCredential(CredentialKind.Pin, "123456")
+        s.setLocalEnabled(true)
+        assertFalse(s.enabled)
+        s.setEnabled(true)
+        assertTrue(s.localEnabled)
+        // 两个开关独立持久化:重载后各自保持,谁也不带动谁
+        val reloaded = settings()
+        assertTrue(reloaded.enabled)
+        assertTrue(reloaded.localEnabled)
+        reloaded.setLocalEnabled(false)
+        assertFalse(settings().localEnabled)
+        assertTrue(settings().enabled)
+        settings().setLocalEnabled(true)
+        // blocked 占位互不通:远程占位不挡本机占位,本机占位也只放一次且随重启存活
+        val latching = settings()
+        latching.credential()!!.use { assertTrue(latching.beginAttempt(it)) }
+        assertTrue(latching.attemptBlocked)
+        assertTrue(latching.beginLocalAttempt())
+        assertFalse(latching.beginLocalAttempt())
+        val fresh = settings()
+        assertTrue(fresh.attemptBlocked)
+        assertFalse(fresh.beginLocalAttempt())
+        fresh.credential()!!.use { assertFalse(fresh.beginAttempt(it)) }
+    }
+
     @Test fun corruptCiphertextAndLostKeyFailClosed() {
         val s = settings(); s.setCredential(CredentialKind.Pin, "123456"); s.setEnabled(true)
         val other = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()

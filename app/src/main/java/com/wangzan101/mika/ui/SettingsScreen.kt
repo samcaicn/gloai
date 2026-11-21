@@ -299,6 +299,7 @@ fun SettingsScreen(
             pipOperate = pipOperate, onPipOperate = { flags.setPipOperate(it); pipOperate = it },
             externalSchedule = externalSchedule, onExternalSchedule = { flags.setExternalSchedule(it); externalSchedule = it },
             onOpenAppPace = { page = SettingsPage.AppPace },
+            deviceAccess = (context.applicationContext as com.wangzan101.mika.MikaApp).deviceAccess.settings,
         )
         SettingsPage.AppPace -> AppPaceScreen(operatingPace, flags, onBack = { page = SettingsPage.DuringWork })
         SettingsPage.Language -> LanguageScreen(language, onLanguage = { AppLanguage.set(context, it) }, onBack = toHome)

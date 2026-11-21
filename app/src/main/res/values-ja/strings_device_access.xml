@@ -20,4 +20,9 @@
     <string name="device_access_pin_hint">現在使っている 4～16 桁の PIN を入力してください。失敗したあとにもう一度保存すると、1 回だけ試行できるようになります。</string>
     <string name="device_access_password_hint">現在使っている 4～64 文字のパスワードを入力してください。使えるのは英字、数字、スペース、一般的な ASCII 記号です。それ以外の文字とパターンロックには対応していません。</string>
     <string name="device_access_save_failed">保存できませんでした。スマホのストレージを確認して、もう一度お試しください。</string>
+    <string name="device_local_group">このスマホのタスク</string>
+    <string name="device_local_title">ロック中にタスクを実行</string>
+    <string name="device_local_sub">このスマホで開始したタスクは、画面をスリープ解除・ロック解除して、無人で作業できます。</string>
+    <string name="device_local_foot">デフォルトではオフです。単独で動作します。「パソコンと接続」の「リモートでのスリープ解除とロック解除を許可」は変更せず、あちらのスイッチもこのスイッチに影響しません。下の暗号化された画面ロックの認証情報を共用します。入力に 1 回失敗すると、以降の試行は停止します。</string>
+    <string name="device_local_unlock_failed">タスクがスマホのスリープ解除またはロック解除をできませんでした。自分でロックを解除するか、設定 › タスクの実行 で「ロック中にタスクを実行」スイッチと保存済みの画面ロックの認証情報を確認してください。</string>
 </resources>

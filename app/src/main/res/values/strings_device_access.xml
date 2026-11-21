@@ -19,4 +19,9 @@
     <string name="device_access_pin_hint">Use the current 4–16 digit PIN. Saving again allows one new attempt after a failure.</string>
     <string name="device_access_password_hint">Use the current 4–64 character password: English letters, numbers, spaces and common ASCII symbols. Other characters and pattern locks are not supported.</string>
     <string name="device_access_save_failed">Could not save. Check the phone storage and try again.</string>
+    <string name="device_local_group">Local tasks</string>
+    <string name="device_local_title">Run tasks while locked</string>
+    <string name="device_local_sub">Tasks started on this phone can wake and unlock the screen to work unattended.</string>
+    <string name="device_local_foot">Off by default. Works on its own: it does not change “Allow remote wake and unlock” under Connect a computer, and that switch does not change this one. Uses the same encrypted screen-lock credential below; one failed attempt pauses further attempts.</string>
+    <string name="device_local_unlock_failed">The task couldn’t wake or unlock the phone. Unlock it yourself, or check “Run tasks while locked” and the saved screen-lock credential under Settings › Task running.</string>
 </resources>
