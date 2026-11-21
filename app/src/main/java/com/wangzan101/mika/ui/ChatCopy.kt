@@ -21,23 +21,37 @@ object ChatCopy {
     /** 空对话里的一句价值主张:说明 Mika 能干嘛。 */
     val EMPTY_VALUE get() = tr(R.string.chat_empty_value)
 
+    /** 内置示例的类型,只决定首页卡片上的图标和色调。 */
+    enum class ExampleKind { Web, Follow, GroupChat, Alarm, Schedule }
+    data class Example(val kind: ExampleKind, val title: String, val prompt: String)
+
     /**
      * 内置推荐任务的原文。只在本机还没有保存过推荐任务时用来初始化一次;
      * 标题和提示词都用这一句,之后用户在设置里改,不会因为换语言或升级被加回来。
      */
-    enum class ExampleKind { App, Web, File, Schedule, Device }
-    data class Example(val kind: ExampleKind, val title: String, val prompt: String)
-
     val examples get() = listOf(
         Example(ExampleKind.Web, tr(R.string.chat_example_github_star_title), tr(R.string.chat_example_github_star)),
-        Example(ExampleKind.App, tr(R.string.chat_example_follow_title), tr(R.string.chat_example_follow)),
-        Example(ExampleKind.App, tr(R.string.chat_example_group_summary_title), tr(R.string.chat_example_group_summary)),
-        Example(ExampleKind.Device, tr(R.string.chat_example_alarms_title), tr(R.string.chat_example_alarms)),
-        Example(ExampleKind.File, tr(R.string.chat_example_pdf_title), tr(R.string.chat_example_pdf)),
+        Example(ExampleKind.Follow, tr(R.string.chat_example_follow_title), tr(R.string.chat_example_follow)),
+        Example(ExampleKind.GroupChat, tr(R.string.chat_example_group_summary_title), tr(R.string.chat_example_group_summary)),
+        Example(ExampleKind.Alarm, tr(R.string.chat_example_alarms_title), tr(R.string.chat_example_alarms)),
         Example(ExampleKind.Schedule, tr(R.string.chat_example_schedule_title), tr(R.string.chat_example_schedule)),
     )
 
     fun recommendationSeeds(): List<Pair<String, String>> = examples.map { it.title to it.prompt }
+
+    /**
+     * 一条推荐任务属于哪种类型:提示词和内置示例一字不差就是内置的那条(标题改过也认得出);
+     * 自己加的任务没有类型,返回 null,界面上用通用图标。
+     */
+    fun kindOf(prompt: String): ExampleKind? = examples.firstOrNull { it.prompt == prompt }?.kind
+
+    /**
+     * 曾经内置、现在已经去掉的示例。升级时把用户还没动过的那一条从推荐列表里清掉;
+     * 标题或提示词改过的留着——那已经是用户自己的任务了。
+     */
+    fun retiredRecommendationSeeds(): List<Pair<String, String>> = listOf(
+        tr(R.string.chat_example_pdf_title) to tr(R.string.chat_example_pdf),
+    )
 
     /** 对话页顶栏的标题:固定是 App 名;副标题说此刻在做什么。 */
     const val APP_TITLE = "Mika"

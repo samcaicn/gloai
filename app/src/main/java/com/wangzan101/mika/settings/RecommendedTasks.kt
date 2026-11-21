@@ -37,8 +37,12 @@ class RecommendedTaskStore(private val file: File, private val ids: () -> String
     /** 已有文件读不出来。此时不能增删改,避免用空列表盖掉还没读到的内容。 */
     val unreadable: StateFlow<Boolean> = _unreadable.asStateFlow()
 
+    /**
+     * 第一次打开时载入列表:文件还没有时用 [seed] 初始化一次。已有列表时把用户没动过的、
+     * 已经下线不再内置的示例([retired])剔掉;改过标题或提示词的、自己加的一条不动。
+     */
     @Synchronized
-    fun ensureLoaded(seed: () -> List<Pair<String, String>>) {
+    fun ensureLoaded(retired: () -> List<Pair<String, String>> = { emptyList() }, seed: () -> List<Pair<String, String>>) {
         if (loaded || attempted) return
         attempted = true
         when (val read = read()) {
@@ -48,7 +52,10 @@ class RecommendedTaskStore(private val file: File, private val ids: () -> String
                 }
                 if (write(seeded)) publish(seeded)
             }
-            is Read.Ok -> publish(read.tasks)
+            is Read.Ok -> {
+                val gone = retired().toSet()
+                publish(if (gone.isEmpty()) read.tasks else read.tasks.filterNot { (it.title to it.prompt) in gone })
+            }
             Read.Corrupt, Read.Failed -> {
                 _tasks.value = emptyList()
                 _unreadable.value = true

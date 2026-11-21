@@ -16,16 +16,25 @@ import java.time.ZoneId
 class ChatCopyTest {
     @get:Rule val texts = ChineseTexts()
 
-    @Test fun sixDistinctExamplesStartWithGithubStar() {
+    @Test fun fiveDistinctExamplesStartWithGithubStar() {
         val examples = ChatCopy.examples
-        assertEquals(6, examples.size)
-        assertEquals(6, examples.map { it.title }.filter { it.isNotBlank() }.toSet().size)
-        assertEquals(6, examples.map { it.prompt }.filter { it.isNotBlank() }.toSet().size)
+        assertEquals(5, examples.size)
+        assertEquals(5, examples.map { it.title }.filter { it.isNotBlank() }.toSet().size)
+        assertEquals(5, examples.map { it.prompt }.filter { it.isNotBlank() }.toSet().size)
+        assertEquals(examples.size, examples.map { it.kind }.toSet().size)
         assertEquals(ChatCopy.ExampleKind.Web, examples.first().kind)
         assertTrue(examples.first().prompt.contains("https://github.com/wangzan101/mika"))
         // 短标题上卡片、完整提示词进输入框:两者分开存
         assertEquals(ChatCopy.examples.map { it.title }, ChatCopy.recommendationSeeds().map { it.first })
         assertEquals(ChatCopy.examples.map { it.prompt }, ChatCopy.recommendationSeeds().map { it.second })
+    }
+
+    /** 卡片图标按类型挑:提示词和内置示例一字不差才认得出;自己加的任务显示通用图标。 */
+    @Test fun kindsOnlyMatchTheBuiltInExamples() {
+        val examples = ChatCopy.examples
+        examples.forEach { assertEquals(it.kind, ChatCopy.kindOf(it.prompt)) }
+        assertNull(ChatCopy.kindOf("打开设置，把字体调大"))
+        assertNull(ChatCopy.kindOf(examples.first().prompt + "，再顺手点个 watch"))
     }
 
     @Test fun taskCostShowsTwoDecimalPlaces() {
