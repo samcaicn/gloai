@@ -188,9 +188,10 @@ class EachLoopDetectorTest {
     @Test fun failureBreaksTheStreak() {
         val d = EachLoopDetector()
         assertFalse(d.feedAll(List(2) { listOf(Verb.Tap, Verb.Back) }.flatten()).any { it })
-        d.feed(Verb.Tap, false)
-        val fired = d.feedAll(List(3) { listOf(Verb.Back, Verb.Tap) }.flatten())
-        assertFalse(fired.any { it }) // 断裂后序列不再是纯 [Tap,Back] 周期
+        assertFalse(d.feed(Verb.Tap, false))
+        // 失败后重新攒满 3 次才触发(证明失败前的半截没算进去)
+        val fired = d.feedAll(List(3) { listOf(Verb.Tap, Verb.Back) }.flatten())
+        assertEquals(listOf(5), fired.indices.filter { fired[it] })
     }
 
     @Test fun usedDoEachDisarms() {
