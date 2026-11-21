@@ -29,7 +29,7 @@ object FailoverPolicy {
         is ModelError.Server -> e.status >= 500 || e.status == 429
         is ModelError.Auth, is ModelError.QuotaExceeded, is ModelError.ModelNotFound, is ModelError.ModelNotAvailable,
         is ModelError.ToolsUnsupported, is ModelError.ChatGptLimitReached, is ModelError.ChatGptNotEligible,
-        is ModelError.SignInExpired, is ModelError.AccountPlanNotAllowed -> true
+        is ModelError.SignInExpired, is ModelError.AccountPlanNotAllowed, is ModelError.DailyBudgetExceeded -> true
         else -> false
     }
 
@@ -37,7 +37,8 @@ object FailoverPolicy {
     fun cooldownMs(e: Throwable, failures: Int): Long = when (e) {
         is ModelError.RateLimited -> (e.retryAfterMs ?: 30_000L).coerceIn(5_000L, 30 * 60_000L)
         is ModelError.Auth, is ModelError.QuotaExceeded, is ModelError.SignInExpired,
-        is ModelError.ChatGptLimitReached, is ModelError.ChatGptNotEligible, is ModelError.AccountPlanNotAllowed ->
+        is ModelError.ChatGptLimitReached, is ModelError.ChatGptNotEligible, is ModelError.AccountPlanNotAllowed,
+        is ModelError.DailyBudgetExceeded ->
             5 * 60_000L
         else -> (30_000L shl (failures - 1).coerceIn(0, 5)).coerceAtMost(10 * 60_000L)
     }

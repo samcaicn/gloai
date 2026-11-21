@@ -310,6 +310,8 @@ class FailoverPolicyTest {
             ModelError.StreamCut(), ModelError.Server(503), ModelError.ModelNotFound(), ModelError.ModelNotAvailable(),
             ModelError.ToolsUnsupported(), ModelError.ChatGptLimitReached(), ModelError.ChatGptNotEligible(),
             ModelError.SignInExpired(), ModelError.AccountPlanNotAllowed("xAI"),
+            // 预算按服务商算:同组别家成员还有机会,组内要换
+            ModelError.DailyBudgetExceeded("p", 100, 100),
         ).forEach { assertTrue(it::class.simpleName, FailoverPolicy.canFailover(it)) }
     }
 
@@ -327,6 +329,7 @@ class FailoverPolicyTest {
         assertEquals(60_000L, FailoverPolicy.cooldownMs(ModelError.Server(503), 2))
         assertEquals(10 * 60_000L, FailoverPolicy.cooldownMs(ModelError.Server(503), 9))
         assertEquals(5 * 60_000L, FailoverPolicy.cooldownMs(ModelError.Auth(), 1))
+        assertEquals(5 * 60_000L, FailoverPolicy.cooldownMs(ModelError.DailyBudgetExceeded("p", 100, 100), 1))
         assertEquals(12_000L, FailoverPolicy.cooldownMs(ModelError.RateLimited(12_000), 1))
     }
 
