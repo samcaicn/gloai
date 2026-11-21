@@ -57,6 +57,12 @@ class ProjectDeleter(
         try { onDeleted(projectId, deletedIds) } catch (e: CancellationException) { throw e } catch (_: Exception) { }
     }
 
-    private fun memberConversationIds(projectId: String): List<String> =
-        conversations.list(includeArchived = true).filter { it.projectId == projectId }.map { it.id }
+    /**
+     * 项目里的对话:存下了首轮、旁文件指向这个项目的,加上任务在跑或排队、首轮还没存下的。
+     * 新对话发出首句时先写 `.project` 旁文件,首轮等任务收尾才写进对话文件,[ConversationStore.list] 里还没有它;
+     * 漏掉它,删项目时它的任务不停,收尾时又把对话写回来。
+     */
+    fun memberConversationIds(projectId: String): List<String> =
+        (conversations.list(includeArchived = true).filter { it.projectId == projectId }.map { it.id } +
+            active.value.filter { conversations.projectId(it) == projectId }).distinct()
 }
