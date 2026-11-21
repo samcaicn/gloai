@@ -114,8 +114,12 @@ class OperationGuardsTest {
     @Test fun threeStateLoopIsCaught() {
         val g = OperationGuards()
         g.frame("s0", 1L)
-        val v = listOf(2L, 3L, 1L, 2L, 3L).mapIndexed { i, h -> g.noteAction(); g.frame("s${i + 1}", h) }.flatten()
-        assertTrue(v.isEmpty())
+        // 1→2→3 转满三圈(trail 攒到 9)时提醒兜圈;周期循环全程没有 same_state(由 cycle 通道单独说)
+        val seq = listOf(2L, 3L, 1L, 2L, 3L, 1L, 2L, 3L)
+        val verdicts = seq.mapIndexed { i, h -> g.noteAction(); g.frame("s${i + 1}", h) }
+        assertTrue(verdicts.dropLast(1).flatten().none { it.code == "state_cycle" || it.code == "same_state" })
+        assertEquals(listOf("state_cycle"), verdicts.last().map { it.code })
+        assertEquals(Severity.Warn, verdicts.last().single().severity)
     }
 
     @Test fun revisitingKnownScreensWithoutNewContentPromptsReassessment() {
@@ -159,27 +163,33 @@ class OperationGuardsTest {
     @Test fun cycleStopFollowsTheStepBudget() {
         val g = OperationGuards(stepBudget = 30)
         g.frame("s0", 1L)
+        // budget 30 → 梯 [3, 4, max(6, 30/5)=6]:第 5 帧(rounds 3)、第 7 帧(rounds 4)提醒,第 11 帧(rounds 6)叫停
         var stopAt = 0
-        for (i in 1..40) {
-            g.noteAction(); g.effect("done")
-            g.frame("s$i", if (i % 2 == 1) 2L else 1L)
+        val warnAt = mutableListOf<Int>()
+        for (i in 1..11) {
+            g.noteAction()
+            val v = g.frame("s$i", if (i % 2 == 1) 2L else 1L)
+            if (v.any { it.code == "state_cycle" && it.severity == Severity.Warn }) warnAt += i
             if (g.stop != null) { stopAt = i; break }
         }
-        assertNull(g.stop)
-        assertEquals(0, stopAt)
+        assertEquals(listOf(5, 7), warnAt)
+        assertEquals(11, stopAt)
+        assertEquals("state_cycle", g.stop?.code)
     }
 
     @Test fun returningToTheSameScreenWithoutAnythingNewNudgesAtThree() {
         val g = OperationGuards()
         g.frame("s0", 1L)
-        // 1 → 2 → 1 → 3 → 1:2、3 是新的一屏,回到 1 的次数从头算,不提醒
-        val fresh = listOf(2L, 1L, 3L, 1L).mapIndexed { i, h -> g.noteAction(); g.frame("a$i", h) }.flatten()
-        assertTrue(fresh.toString(), fresh.none { it.code == "same_state" })
-        // 之后只在见过的几屏里转:第三次回到 1 时提醒
-        val stuck = listOf(2L, 3L, 1L, 2L, 3L, 1L).mapIndexed { i, h -> g.noteAction(); g.frame("b$i", h) }
-        // 只在见过的几个状态里转:回到同一状态或兜圈,总有一条提醒
-        val same = stuck.flatten().filter { it.code == "same_state" || it.code == "state_cycle" }
-        assertTrue(same.isEmpty())
+        // 每次经不同的新页面回到同一屏(不规则回访,不构成周期):第二次到 1 不提醒,第三次提醒
+        val out1 = listOf(2L, 3L, 4L, 1L).mapIndexed { i, h -> g.noteAction(); g.frame("a$i", h) }.flatten()
+        assertTrue(out1.toString(), out1.none { it.code == "same_state" || it.code == "state_cycle" })
+        val out2 = listOf(5L, 6L, 7L).mapIndexed { i, h -> g.noteAction(); g.frame("b$i", h) }.flatten()
+        assertTrue(out2.toString(), out2.isEmpty())
+        g.noteAction()
+        val last = g.frame("b3", 1L)
+        assertEquals(listOf("same_state"), last.map { it.code })
+        assertEquals(Severity.Warn, last.single().severity)
+        assertTrue(last.single().nudge!!.contains("do_each"))
     }
 
     @Test fun manyActionsWithoutANewScreenNudgeThenStopLate() {

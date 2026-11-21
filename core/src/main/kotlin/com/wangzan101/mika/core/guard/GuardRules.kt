@@ -15,8 +15,8 @@ package com.wangzan101.mika.core.guard
  * | 页面没变时又读了一遍、没读出新内容 | 5、8 | 12 |
  * | 连续失败(第 4 次起附出路) | 2、4 | 8 |
  * | 不可恢复的失败 | 1 | 3 |
- * | 没到过新状态时第 N 次回到同一状态 | 3、6 | 步数上限的 1/4(至少 10) |
- * | 在两三个状态之间兜圈(整圈数) | 2、4 | 步数上限的 1/5(至少 6) |
+ * | 回到同一状态(兜圈时不重复,由兜圈那条说) | 3、6 | 步数上限的 1/4(至少 10) |
+ * | 在两三个状态之间兜圈(整圈数) | 3、4 | 步数上限的 1/5(至少 6) |
  * | 连续 N 个动作没到过任何新状态 | 8、16 | 步数上限的 1/2(至少 24) |
  *
  * 不知道步数上限时按 [DEFAULT_BUDGET] 算。
@@ -54,7 +54,7 @@ internal object GuardRules {
     fun sameStateLadder(budget: Int?) = listOf(3, 6, lateStop(budget, 4, 10))
 
     /** 兜圈的阶梯(整圈数)。 */
-    fun cycleLadder(budget: Int?) = listOf(2, 4, lateStop(budget, 5, 6))
+    fun cycleLadder(budget: Int?) = listOf(3, 4, lateStop(budget, 5, 6))
 
     /** 连续没到过新状态的动作数的阶梯。 */
     fun noNewStateLadder(budget: Int?) = listOf(8, 16, lateStop(budget, 2, 24))
