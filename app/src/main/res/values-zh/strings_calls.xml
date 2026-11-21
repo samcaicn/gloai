@@ -144,4 +144,21 @@
     <string name="calls_notification_connecting_audio">正在连接通话音频</string>
     <string name="calls_notification_connected_waiting">AI 已接通，正在等待对方说话，可随时接管</string>
     <string name="calls_notification_connected">AI 已接通，可随时手动接管</string>
+    <string name="calls_only_types">仅接听所选类型</string>
+    <string name="calls_pick_types">请至少选择一种来电类型</string>
+    <string name="calls_type_note">Mika 通过无障碍读取系统电话显示的标签和号码。无法确认类型或号码时，由你本人接听。</string>
+    <string name="calls_type_accessibility">去开启 Mika 无障碍服务</string>
+    <string name="calls_type_takeout">外卖送餐</string>
+    <string name="calls_type_parcel">快递包裹</string>
+    <string name="calls_type_delivery">配送或物流（未细分）</string>
+    <string name="calls_type_sales">广告推销</string>
+    <string name="calls_type_broker">中介（含房产）</string>
+    <string name="calls_type_financial_sales">保险理财推销</string>
+    <string name="calls_type_spam">骚扰电话</string>
+    <string name="calls_type_fraud">疑似诈骗</string>
+    <string name="calls_type_high_risk">高风险来电</string>
+    <string name="calls_type_business">企业与客服</string>
+    <string name="calls_type_transport">出租车与网约车</string>
+    <string name="calls_only_strangers">仅接听陌生号码</string>
+    <string name="calls_strangers_note">请允许 Mika 读取通讯录。只有查到号码未保存时，AI 才会接听。隐藏号码、通讯录无法读取时，由你本人接听。</string>
 </resources>

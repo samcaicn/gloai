@@ -33,4 +33,10 @@
     <string name="calls_task_review_blocked">To dial, the phone must be ready and idle, with a SIM selected.</string>
     <string name="calls_task_sim_override_summary">This call: %1$s · Preferred: %2$s</string>
     <string name="calls_voice_settings">Voice</string>
+    <string name="calls_contacts_tab">Contacts</string>
+    <string name="calls_manual_tab">Manual entry</string>
+    <string name="calls_contacts_search">Search by name or number</string>
+    <string name="calls_contacts_permission">Allow Mika to read contacts to select their numbers. You can also enter numbers manually.</string>
+    <string name="calls_contacts_empty">No contacts with a usable phone number.</string>
+    <string name="calls_contacts_failed">Couldn’t load contacts.</string>
 </resources>

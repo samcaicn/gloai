@@ -33,4 +33,10 @@
     <string name="calls_task_review_blocked">Для вызова телефон должен быть готов, без активного звонка и с выбранной SIM.</string>
     <string name="calls_task_sim_override_summary">Этот звонок: %1$s · По умолчанию: %2$s</string>
     <string name="calls_voice_settings">Голос</string>
+    <string name="calls_contacts_tab">Контакты</string>
+    <string name="calls_manual_tab">Ввести вручную</string>
+    <string name="calls_contacts_search">Поиск по имени или номеру</string>
+    <string name="calls_contacts_permission">Разрешите Mika читать контакты, чтобы выбрать их номера. Номера также можно ввести вручную.</string>
+    <string name="calls_contacts_empty">Нет контактов с подходящим номером телефона.</string>
+    <string name="calls_contacts_failed">Не удалось загрузить контакты.</string>
 </resources>

@@ -33,4 +33,10 @@
     <string name="calls_task_review_blocked">Aramak için telefon hazır ve boşta olmalı, bir SIM seçilmiş olmalı.</string>
     <string name="calls_task_sim_override_summary">Bu arama: %1$s · Tercih edilen: %2$s</string>
     <string name="calls_voice_settings">Ses</string>
+    <string name="calls_contacts_tab">Kişiler</string>
+    <string name="calls_manual_tab">Elle giriş</string>
+    <string name="calls_contacts_search">Ada veya numaraya göre ara</string>
+    <string name="calls_contacts_permission">Numaraları seçmek için Mika’nın kişilerinizi okumasına izin verin. Numaraları elle de girebilirsiniz.</string>
+    <string name="calls_contacts_empty">Seçilebilecek telefon numarası olan kişi yok.</string>
+    <string name="calls_contacts_failed">Kişiler yüklenemedi.</string>
 </resources>

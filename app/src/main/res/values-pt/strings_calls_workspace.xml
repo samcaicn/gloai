@@ -33,4 +33,10 @@
     <string name="calls_task_review_blocked">Para ligar, o telefone deve estar pronto, sem outra chamada e com um SIM selecionado.</string>
     <string name="calls_task_sim_override_summary">Nesta chamada: %1$s · Padrão: %2$s</string>
     <string name="calls_voice_settings">Voz</string>
+    <string name="calls_contacts_tab">Contatos</string>
+    <string name="calls_manual_tab">Entrada manual</string>
+    <string name="calls_contacts_search">Buscar por nome ou número</string>
+    <string name="calls_contacts_permission">Permita que o Mika leia seus contatos para selecionar os números. Você também pode digitá-los manualmente.</string>
+    <string name="calls_contacts_empty">Nenhum contato com um número de telefone válido.</string>
+    <string name="calls_contacts_failed">Não foi possível carregar os contatos.</string>
 </resources>

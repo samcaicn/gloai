@@ -82,6 +82,7 @@ open class ScreenAccessibility : AccessibilityService() {
                 app.phone.smsLogin.privateLoginActive && event.eventType == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED)) return
         val access = app?.appAccess?.current()
         if (access != null && access.denial(event.packageName?.toString()) != null) return
+        app?.runningCalls?.onCallerLabelEvent(this, event)
         if (app != null && app.teachReady && app.teach.wantsEvents()) {
             val displayId = displayOf(event)
             if (displayId != Display.INVALID_DISPLAY) {

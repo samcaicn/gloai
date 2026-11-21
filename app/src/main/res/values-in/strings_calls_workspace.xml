@@ -33,4 +33,10 @@
     <string name="calls_task_review_blocked">Untuk menelepon, perangkat harus siap, tidak sedang digunakan, dan SIM sudah dipilih.</string>
     <string name="calls_task_sim_override_summary">Panggilan ini: %1$s · Pilihan: %2$s</string>
     <string name="calls_voice_settings">Suara</string>
+    <string name="calls_contacts_tab">Kontak</string>
+    <string name="calls_manual_tab">Input manual</string>
+    <string name="calls_contacts_search">Cari nama atau nomor</string>
+    <string name="calls_contacts_permission">Izinkan Mika membaca kontak untuk memilih nomornya. Anda juga dapat memasukkan nomor secara manual.</string>
+    <string name="calls_contacts_empty">Tidak ada kontak dengan nomor telepon yang dapat dipilih.</string>
+    <string name="calls_contacts_failed">Gagal memuat kontak.</string>
 </resources>

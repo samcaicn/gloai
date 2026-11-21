@@ -110,7 +110,9 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
 
 
     /** 通话功能：设置页负责开关与凭证；CallRuntime 是本地状态与实时语音的宿主，AndroidPhoneCallPort 是交给模型的工具入口。 */
-    val calls by lazy { com.wangzan101.mika.calls.CallRuntime(this) }
+    private val callRuntime = lazy { com.wangzan101.mika.calls.CallRuntime(this) }
+    val calls by callRuntime
+    internal val runningCalls get() = if (callRuntime.isInitialized()) calls else null
     val callPort by lazy { com.wangzan101.mika.calls.AndroidPhoneCallPort(calls) }
 
     /** Web 控制台读的对话与运行中任务;只读,不参与任务执行。 */

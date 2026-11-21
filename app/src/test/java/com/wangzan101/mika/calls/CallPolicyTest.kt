@@ -19,7 +19,7 @@ class CallPolicyTest {
         val restricted = config.copy(allowedIncomingNumbers = setOf("+15551234567"))
         assertTrue(CallPolicy.callerAllowed(restricted, "+1 (555) 123-4567"))
         assertFalse(CallPolicy.callerAllowed(restricted, "5551234567"))
-        val all = config.copy(allowAllIncoming = true)
+        val all = config.copy(incomingScope = IncomingScope.ALL)
         assertTrue(CallPolicy.callerAllowed(all, null))
         assertFalse(CallPolicy.callerAllowed(all.copy(autoAnswer = false), null))
         assertFalse(CallPolicy.callerAllowed(all.copy(credentialsConfigured = false), null))
@@ -50,7 +50,7 @@ class CallPolicyTest {
             assertFalse(CallPolicy.callerAllowed(config, "+113800138000"))
             assertFalse(CallPolicy.callerAllowed(config, "13800138001"))
         }
-        val all = enabled.copy(allowAllIncoming = true)
+        val all = enabled.copy(incomingScope = IncomingScope.ALL)
         assertFalse(CallPolicy.callerAllowed(all, "*#06#"))
         assertFalse(CallPolicy.callerAllowed(all, "13800138000;22"))
     }
@@ -71,8 +71,8 @@ class CallPolicyTest {
         val ready = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true, audioVerified = true,
             allowedIncomingNumbers = setOf("13800138000", "028-8123-4567"),
             bypassIncomingNumbers = setOf("+86 138 0013 8000", "0086 28 8123 4567"))
-        for (allowAll in listOf(false, true)) {
-            val config = ready.copy(allowAllIncoming = allowAll)
+        for (scope in listOf(IncomingScope.LIST, IncomingScope.ALL)) {
+            val config = ready.copy(incomingScope = scope)
             for (number in listOf("13800138000", "008613800138000", "+8613800138000", "02881234567", "+862881234567")) {
                 assertTrue(CallPolicy.isBypassed(config, number))
                 assertFalse(CallPolicy.callerAllowed(config, number))
@@ -81,13 +81,13 @@ class CallPolicyTest {
         for (number in listOf(null, "800138000", "81234567", "+113800138000", "13800138001")) {
             assertFalse(CallPolicy.isBypassed(ready, number))
         }
-        assertTrue(CallPolicy.callerAllowed(ready.copy(allowAllIncoming = true), "13800138001"))
+        assertTrue(CallPolicy.callerAllowed(ready.copy(incomingScope = IncomingScope.ALL), "13800138001"))
     }
 
     @Test fun pauseExpiresForNewCallsWithoutAnsweringCallsThatArrivedDuringIt() {
         val deadline = 100_000L
         val paused = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true, audioVerified = true,
-            allowAllIncoming = true, autoAnswerPausedUntilMs = deadline)
+            incomingScope = IncomingScope.ALL, autoAnswerPausedUntilMs = deadline)
         val resumed = paused.copy(autoAnswerPausedUntilMs = null)
         assertEquals(1L, CallPolicy.autoAnswerPauseRemainingMs(paused, deadline - 1L))
         assertEquals(0L, CallPolicy.autoAnswerPauseRemainingMs(paused, deadline))

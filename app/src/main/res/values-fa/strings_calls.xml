@@ -144,4 +144,21 @@
     <string name="calls_notification_connecting_audio">در حال اتصال صدای تماس</string>
     <string name="calls_notification_connected_waiting">هوش مصنوعی متصل شد. در انتظار صحبت طرف مقابل است؛ هر زمان می‌توانید تماس را بر عهده بگیرید.</string>
     <string name="calls_notification_connected">هوش مصنوعی متصل شد. هر زمان می‌توانید خودتان تماس را بر عهده بگیرید.</string>
+    <string name="calls_only_types">فقط انواع تماس انتخاب‌شده</string>
+    <string name="calls_pick_types">دست‌کم یک نوع تماس انتخاب کنید</string>
+    <string name="calls_type_note">Mika از دسترس‌پذیری برای تطبیق برچسب و شمارهٔ برنامهٔ تلفن با تماس ورودی استفاده می‌کند. اگر تطبیق ممکن نباشد، خودتان می‌توانید پاسخ دهید.</string>
+    <string name="calls_type_accessibility">باز کردن تنظیمات دسترس‌پذیری</string>
+    <string name="calls_type_takeout">ارسال غذا</string>
+    <string name="calls_type_parcel">ارسال بسته</string>
+    <string name="calls_type_delivery">توزیع یا لجستیک (نامشخص)</string>
+    <string name="calls_type_sales">فروش و تبلیغات</string>
+    <string name="calls_type_broker">واسطه‌ها و نمایندگان</string>
+    <string name="calls_type_financial_sales">فروش بیمه و سرمایه‌گذاری</string>
+    <string name="calls_type_spam">تماس مزاحم</string>
+    <string name="calls_type_fraud">احتمال کلاهبرداری</string>
+    <string name="calls_type_high_risk">خطر بالا</string>
+    <string name="calls_type_business">شرکت‌ها و خدمات مشتریان</string>
+    <string name="calls_type_transport">تاکسی و خدمات سفر</string>
+    <string name="calls_only_strangers">فقط شماره‌های ذخیره‌نشده</string>
+    <string name="calls_strangers_note">به Mika اجازهٔ خواندن مخاطبان را بدهید. هوش مصنوعی فقط وقتی پاسخ می‌دهد که مطمئن شود شماره ذخیره نشده است. اگر شماره پنهان باشد یا جستجو ناموفق باشد، پاسخ با شماست.</string>
 </resources>
