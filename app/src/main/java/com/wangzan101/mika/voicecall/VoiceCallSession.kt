@@ -119,7 +119,8 @@ class VoiceCallSession(
     }
 
     /** 就地重试:仅 Failed 态有效,attempt++ 后重跑整个连接流程;安全闸与回声窗不重置。 */
-    fun retry() {        val oldJob: Job?
+    fun retry() {
+        val oldJob: Job?
         val attempt: Int
         synchronized(lock) {
             val failed = _state.value as? VoiceCallState.Failed ?: return

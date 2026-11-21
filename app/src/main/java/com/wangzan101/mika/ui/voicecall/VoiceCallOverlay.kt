@@ -135,12 +135,12 @@ fun VoiceCallOverlay(session: VoiceCallSession, route: VoiceCallRoute, audioRout
             state is VoiceCallState.Connecting || state is VoiceCallState.MicCheck -> VoiceCallShape.Web
             busy -> VoiceCallShape.Orbits
             level > VOICE_WAVE_LEVEL -> VoiceCallShape.Wave
-            else -> VoiceCallShape.Ring
+            else -> VoiceCallShape.Globe
         }
         VoiceCallPage(onCollapse = onCollapse) {
             TopStatus(state)
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                VoiceCallBall(shape, level, Modifier.align(Alignment.Center).size(240.dp).testTag("voicecall-ball"))
+                VoiceCallBall(shape, level, Modifier.align(Alignment.Center).size(240.dp).testTag("voicecall-ball-${shape.name}"))
                 if (state is VoiceCallState.Failed) {
                     Column(
                         Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
@@ -153,12 +153,16 @@ fun VoiceCallOverlay(session: VoiceCallSession, route: VoiceCallRoute, audioRout
                 }
             }
             val active = state is VoiceCallState.Active
-            InputLine(enabled = active, onSend = session::sendUserText)
-            BottomBar(
-                speakerOn = device == RouteDevice.Speaker,
-                onSpeaker = { audioRoute.setSpeakerRequested(device != RouteDevice.Speaker) },
-                onHangup = session::hangup,
-            )
+            val ended = state is VoiceCallState.Ended
+            // 结束后只留「收起」这一条路:输入与免提/挂断都没意义了
+            if (!ended) {
+                InputLine(enabled = active, onSend = session::sendUserText)
+                BottomBar(
+                    speakerOn = device == RouteDevice.Speaker,
+                    onSpeaker = { audioRoute.setSpeakerRequested(device != RouteDevice.Speaker) },
+                    onHangup = session::hangup,
+                )
+            }
         }
     }
 }
@@ -193,10 +197,13 @@ private fun VoiceCallPage(onCollapse: () -> Unit, content: @Composable androidx.
 @Composable
 private fun TopStatus(state: VoiceCallState) {
     val active = state as? VoiceCallState.Active
-    val clock by produceState("0:00", active?.startedAt) {
-        val startedAt = active?.startedAt ?: run { value = "0:00"; return@produceState }
+    // 结束/失败后停在上次的值:通话时长是这通的最终结果,不该在收场瞬间归零
+    val lastClock = remember { mutableStateOf("0:00") }
+    val clock by produceState(lastClock.value, active?.startedAt) {
+        val startedAt = active?.startedAt ?: return@produceState
         while (true) {
             value = ChatCopy.clock(System.currentTimeMillis() - startedAt)
+            lastClock.value = value
             delay(250)
         }
     }
@@ -341,7 +348,7 @@ private fun PageButton(label: String, modifier: Modifier = Modifier, onClick: ()
 enum class VoiceCallGateStage { NeedPermission, PermissionDenied, NeedCredentials }
 
 /**
- * 门禁页:和通话页同一个深色全屏骨架,球安静地转(Ring),中间是说明和按钮。
+ * 门禁页:和通话页同一个深色全屏骨架,球安静地转(Globe),中间是说明和按钮。
  * [stage] 决定文案与主按钮:请求权限 / 去设置 / 去配置。
  */
 @Composable
@@ -364,7 +371,7 @@ fun VoiceCallGate(
         VoiceCallPage(onCollapse = onCollapse) {
             TopStatusPlaceholder()
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                VoiceCallBall(VoiceCallShape.Ring, 0f, Modifier.align(Alignment.Center).size(240.dp).alpha(0.5f))
+                VoiceCallBall(VoiceCallShape.Globe, 0f, Modifier.align(Alignment.Center).size(240.dp).alpha(0.5f))
                 Column(
                     Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 32.dp, vertical = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -504,7 +511,12 @@ class VoiceCallController(
                         stage = null
                         cancelCallScope()
                     }
-                    is VoiceCallState.Failed -> current.call.session.end(EndReason.Hangup)
+                    is VoiceCallState.Failed -> {
+                        // 失败不重试直接收起:落终态收场后把页面一并拆掉(只 end 不收页,用户得再点一次)
+                        current.call.session.end(EndReason.Hangup)
+                        stage = null
+                        cancelCallScope()
+                    }
                     else -> current.call.visible = false
                 }
             }

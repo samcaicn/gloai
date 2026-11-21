@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -165,8 +166,13 @@ class VoiceCallOverlayTest {
         assertTrue(pred())
     }
 
-    private fun ballMode(): String? = compose.onNodeWithTag("voicecall-ball")
-        .fetchSemanticsNode().config.getOrNull(SemanticsProperties.StateDescription)
+    /** 球的形态从 testTag 读(点阵球不再把英文枚举名读给 TalkBack)。 */
+    private fun ballMode(): String? {
+        for (mode in listOf("Web", "Globe", "Wave", "Orbits")) {
+            if (compose.onAllNodesWithTag("voicecall-ball-" + mode).fetchSemanticsNodes().isNotEmpty()) return mode
+        }
+        return null
+    }
 
     private fun awaitBall(mode: String) {
         compose.waitUntil(5_000) { ballMode() == mode }
@@ -190,7 +196,7 @@ class VoiceCallOverlayTest {
 
     // ---------- 连接 → 听 → 播音动画 → 打断 → 挂断 → 重试 → 上限 ----------
 
-    @Test fun connectingShowsStatusAndWebBallThenActiveShowsClockAndRing() {
+    @Test fun connectingShowsStatusAndWebBallThenActiveShowsClockAndGlobe() {
         val gate = kotlinx.coroutines.CompletableDeferred<CallRealtimeSession>()
         val call = Call(fakeRoute(), connect = { gate.await() })
         show(call)
@@ -203,7 +209,7 @@ class VoiceCallOverlayTest {
         reachActive(call)
         compose.onNodeWithText("已连接").assertIsDisplayed()
         compose.onNodeWithTag("voicecall-clock").assertTextEquals("0:00")
-        awaitBall("Ring")
+        awaitBall("Globe")
         call.session.end(EndReason.Hangup)
     }
 
@@ -212,7 +218,7 @@ class VoiceCallOverlayTest {
         call = Call(fakeRoute(), connect = { call.rt })
         show(call)
         reachActive(call)
-        awaitBall("Ring")
+        awaitBall("Globe")
         // 用户开口:响亮采集块进来,球换成 Wave
         repeat(3) { call.audio.offerChunk(amplitude = 4_000) }
         awaitBall("Wave")
@@ -224,7 +230,7 @@ class VoiceCallOverlayTest {
         call = Call(fakeRoute(), connect = { call.rt })
         show(call)
         reachActive(call)
-        awaitBall("Ring")
+        awaitBall("Globe")
         // 助手播音:云端音频进播放队列,电平起来,球换成 Wave
         call.rt.emit(VolcRealtimeEvent.Audio(pcm(4_000, 4_800)))
         awaitBall("Wave")
@@ -243,10 +249,10 @@ class VoiceCallOverlayTest {
         compose.onNodeWithTag("voicecall-send").performClick()
         compose.onNodeWithText("正在打开设置").assertIsDisplayed()
         awaitBall("Orbits")
-        // 办完:终态行高亮,球回 Ring
+        // 办完:终态行高亮,球回 Globe
         flow.value = TaskState.Succeeded("开好了")
         compose.onNodeWithText("已完成").assertIsDisplayed()
-        awaitBall("Ring")
+        awaitBall("Globe")
         compose.onNodeWithTag("voicecall-input").assertTextEquals("")
         call.session.end(EndReason.Hangup)
     }

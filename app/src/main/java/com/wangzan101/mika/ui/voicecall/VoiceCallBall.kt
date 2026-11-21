@@ -12,8 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.wangzan101.mika.ui.theme.MikaTheme
@@ -22,8 +20,8 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-/** 通话球的形态:连接=网,平时=环,听/说=波(随真实电平),办事中=轨道。 */
-enum class VoiceCallShape { Web, Ring, Wave, Orbits }
+/** 通话球的形态:连接=网,平时=球(安静慢转),听/说=波(随真实电平),办事中=轨道。 */
+enum class VoiceCallShape { Web, Globe, Wave, Orbits }
 
 /** 点阵颜色:近处青白,远处深蓝,按投影深度插值。 */
 private val NearColor = Color(0xFF8EFAFF)
@@ -56,7 +54,7 @@ fun VoiceCallBall(shape: VoiceCallShape, level: Float, modifier: Modifier = Modi
             }
         }
     }
-    Canvas(modifier.semantics { stateDescription = shape.name }) {
+    Canvas(modifier) {
         ball.draw(this, shape, level, if (reduceMotion) 0f else timeNanos / 1e9f, reduceMotion)
     }
 }
@@ -136,10 +134,12 @@ private class DotBall(count: Int) {
         val cosT = cos(TILT_X)
         val sinT = sin(TILT_X)
         val w = weights
+        // 待机的球安静地呼吸一下(很轻),显得有生命又不闹
+        val breath = 1f + 0.02f * w[1] * sin(t * 0.7f)
         val n = dots.size
         for (i in 0 until n) {
             val d = dots[i]
-            // 网/环共用球面 xz;环把 y 压扁;波沿半径随电平起伏;轨道沿倾斜轨道跑
+            // 网/球共用整个球面(球安静慢转);波沿半径随电平起伏;轨道沿倾斜轨道跑
             val wave = 1f + WAVE_AMP * smoothLevel * (0.35f + 0.65f * sin(3f * d.theta + t * 3.5f) * sin(2.5f * d.y + t * 2f))
             val orbitAngle = d.orbitAngle + t * orbitSpeed[d.orbit]
             var ox = cos(orbitAngle)
@@ -156,7 +156,7 @@ private class DotBall(count: Int) {
             oz = tz
 
             val bx = (w[0] + w[1]) * d.x + w[2] * d.x * wave + w[3] * ox
-            val by = w[0] * d.y + w[1] * d.y * RING_FLATTEN + w[2] * d.y * wave + w[3] * oy
+            val by = (w[0] + w[1]) * d.y + w[2] * d.y * wave + w[3] * oy
             val bz = (w[0] + w[1]) * d.z + w[2] * d.z * wave + w[3] * oz
             // 整体绕 Y 慢转 + X 轻倾
             val rx = bx * cosY + bz * sinY
@@ -164,8 +164,8 @@ private class DotBall(count: Int) {
             val ry = by * cosT - rz1 * sinT
             val rz = by * sinT + rz1 * cosT
             val persp = CAMERA / (CAMERA - rz)
-            sx[i] = cx + rx * radius * persp * BALL_SCALE
-            sy[i] = cy + ry * radius * persp * BALL_SCALE
+            sx[i] = cx + rx * radius * persp * BALL_SCALE * breath
+            sy[i] = cy + ry * radius * persp * BALL_SCALE * breath
             sr[i] = radius * DOT_RADIUS * persp
             sd[i] = ((rz + 1.3f) / 2.6f).coerceIn(0f, 1f)
             sz[i] = rz
@@ -200,7 +200,7 @@ private class DotBall(count: Int) {
         for (k in 0 until n) {
             val i = order[k]
             val depth = sd[i]
-            var alpha = 0.25f + 0.75f * depth
+            var alpha = 0.38f + 0.62f * depth
             if (webW > 0.01f) alpha *= 1f - webW * (0.3f + 0.3f * sin(t * 2.4f - dots[i].y * 5f))
             scope.drawCircle(lerp(FarColor, NearColor, depth), sr[i], androidx.compose.ui.geometry.Offset(sx[i], sy[i]), alpha = alpha)
         }
@@ -209,10 +209,9 @@ private class DotBall(count: Int) {
     private companion object {
         const val ORBIT_COUNT = 3
         const val WEB_CHORD2 = 0.09f
-        const val RING_FLATTEN = 0.14f
         const val WAVE_AMP = 0.26f
         const val TILT_X = 0.32f
         const val BALL_SCALE = 0.82f
-        const val DOT_RADIUS = 0.02f
+        const val DOT_RADIUS = 0.023f
     }
 }
