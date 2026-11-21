@@ -52,7 +52,8 @@
     <string name="calls_cancel">取消</string>
     <string name="calls_greeting">開場白</string>
     <string name="calls_instructions">通話目的與指示</string>
-    <string name="calls_duration">AI 最長通話時間（15–600 秒）</string>
+    <string name="calls_duration">AI 最長通話時間（0 為不限，15–600 秒）</string>
+    <string name="calls_limits_unlimited">一次一通 · AI 語音時長不限</string>
     <string name="calls_speaker">音色 ID</string>
     <string name="calls_audio_route">通話音訊路徑</string>
     <string name="calls_audio_verified">已實測本機通話雙方均能聽到聲音</string>

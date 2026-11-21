@@ -52,7 +52,8 @@
     <string name="calls_cancel">취소</string>
     <string name="calls_greeting">첫인사</string>
     <string name="calls_instructions">통화 목적 및 지시</string>
-    <string name="calls_duration">최대 AI 응대 시간(15~600초)</string>
+    <string name="calls_duration">최대 AI 응대 시간(0 = 무제한, 15~600초)</string>
+    <string name="calls_limits_unlimited">한 번에 한 통화 · AI 음성 시간 무제한</string>
     <string name="calls_speaker">음성 ID</string>
     <string name="calls_audio_route">통화 오디오 경로</string>
     <string name="calls_audio_verified">이 휴대전화에서 AI 통화 중 양쪽 모두 소리가 들리는지 확인했습니다</string>

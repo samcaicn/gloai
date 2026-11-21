@@ -51,7 +51,7 @@ class CallSettings(
             autoAnswerDelaySeconds = config.autoAnswerDelaySeconds.coerceIn(
                 CallConfig.MIN_AUTO_ANSWER_DELAY_SECONDS, CallConfig.MAX_AUTO_ANSWER_DELAY_SECONDS,
             ),
-            maxCallSeconds = config.maxCallSeconds.coerceIn(15, CallPolicy.MAX_SECONDS),
+            maxCallSeconds = CallPolicy.clampCallSeconds(config.maxCallSeconds),
             greeting = config.greeting.trim(), // An explicitly empty greeting is different from a missing preference.
             systemPrompt = config.systemPrompt.trim(),
             speaker = speaker,
@@ -162,7 +162,7 @@ class CallSettings(
                 .take(CallPolicy.MAX_ALLOWED_NUMBERS).toSet(),
             autoAnswerPausedUntilMs = prefs.getLong("auto_answer_paused_until_ms", 0L)
                 .takeIf { it > System.currentTimeMillis() },
-            maxCallSeconds = prefs.getInt("max_seconds", CallPolicy.DEFAULT_SECONDS).coerceIn(15, CallPolicy.MAX_SECONDS),
+            maxCallSeconds = CallPolicy.clampCallSeconds(prefs.getInt("max_seconds", CallPolicy.DEFAULT_SECONDS)),
             audioMode = prefs.getString("audio_mode", null)?.let(CallAudioMode::valueOf) ?: defaults.audioMode,
             audioVerified = verified,
             credentialsConfigured = runCatching { readLegacyCredentials() }.getOrNull() != null,

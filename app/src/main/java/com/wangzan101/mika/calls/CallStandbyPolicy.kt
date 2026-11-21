@@ -21,7 +21,9 @@ internal object CallStandbyPolicy {
     fun allowsAutomaticAnswer(userUnlocked: Boolean, interactiveForeground: Boolean, serviceRunning: Boolean, notificationsAllowed: Boolean): Boolean =
         userUnlocked && (interactiveForeground || serviceRunning && notificationsAllowed)
 
-    fun activeWakeBudgetMs(maxCallSeconds: Int): Long = maxCallSeconds.coerceIn(15, CallPolicy.MAX_SECONDS) * 1_000L + 10_000L
+    /** 不限时长(0)按最大档给预算;锁自然到期后由运行中的看门狗重新拿。 */
+    fun activeWakeBudgetMs(maxCallSeconds: Int): Long =
+        (if (maxCallSeconds <= 0) CallPolicy.MAX_SECONDS else maxCallSeconds.coerceIn(15, CallPolicy.MAX_SECONDS)) * 1_000L + 10_000L
 }
 
 /** A failed automatic restore must not spin; user retry is always available. */

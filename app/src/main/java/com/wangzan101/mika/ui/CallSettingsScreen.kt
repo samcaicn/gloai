@@ -806,7 +806,8 @@ private fun CallReadinessActions(
         Text(
             when {
                 !config.enabled -> stringResource(R.string.calls_system_default)
-                ready -> stringResource(R.string.calls_limits, config.maxCallSeconds)
+                ready -> if (config.maxCallSeconds > 0) stringResource(R.string.calls_limits, config.maxCallSeconds)
+                    else stringResource(R.string.calls_limits_unlimited)
                 else -> stringResource(R.string.calls_needs_setup)
             },
             style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3,
@@ -1055,7 +1056,7 @@ private fun CallProfileDialog(config: CallConfig, onDismiss: () -> Unit, onSave:
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val duration = seconds.toIntOrNull()?.takeIf { it in 15..CallPolicy.MAX_SECONDS }
+    val duration = seconds.toIntOrNull()?.takeIf { it == 0 || it in CallPolicy.MIN_SECONDS..CallPolicy.MAX_SECONDS }
     val allowedVoice = canEditCallSpeaker(speaker, config.speaker)
     AlertDialog(
         onDismissRequest = { if (!busy) onDismiss() },

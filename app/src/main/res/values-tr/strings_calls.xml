@@ -52,7 +52,8 @@
     <string name="calls_cancel">İptal</string>
     <string name="calls_greeting">Karşılama</string>
     <string name="calls_instructions">Amaç ve talimatlar</string>
-    <string name="calls_duration">En fazla yapay zeka saniyesi (15–600)</string>
+    <string name="calls_duration">En fazla yapay zeka saniyesi (0 = sınırsız, 15–600)</string>
+    <string name="calls_limits_unlimited">Aynı anda bir arama · yapay zeka sesi süresi sınırsız</string>
     <string name="calls_speaker">Ses kimliği</string>
     <string name="calls_audio_route">Arama ses yolu</string>
     <string name="calls_audio_verified">Bu telefonda her iki tarafın da yapay zeka aramalarını duyabildiğini onayladım</string>

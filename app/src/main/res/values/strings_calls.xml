@@ -52,7 +52,8 @@
     <string name="calls_cancel">Cancel</string>
     <string name="calls_greeting">Greeting</string>
     <string name="calls_instructions">Purpose and instructions</string>
-    <string name="calls_duration">Maximum AI seconds (15–600)</string>
+    <string name="calls_duration">Maximum AI seconds (0 = unlimited, 15–600)</string>
+    <string name="calls_limits_unlimited">One call at a time · no limit on AI audio time</string>
     <string name="calls_speaker">Voice ID</string>
     <string name="calls_audio_route">Call audio route</string>
     <string name="calls_audio_verified">I confirmed both parties can hear AI calls on this phone</string>

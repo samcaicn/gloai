@@ -52,7 +52,8 @@
     <string name="calls_cancel">Отмена</string>
     <string name="calls_greeting">Приветствие</string>
     <string name="calls_instructions">Цель и инструкции</string>
-    <string name="calls_duration">Максимальное время работы ИИ (15–600 с)</string>
+    <string name="calls_duration">Максимальное время работы ИИ (0 = без ограничений, 15–600 с)</string>
+    <string name="calls_limits_unlimited">Один звонок за раз · время голосового общения с ИИ не ограничено</string>
     <string name="calls_speaker">Идентификатор голоса</string>
     <string name="calls_audio_route">Маршрут звука звонка</string>
     <string name="calls_audio_verified">Подтверждаю, что обе стороны слышат звук при звонках с ИИ на этом телефоне</string>

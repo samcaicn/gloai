@@ -163,4 +163,27 @@ class CallPolicyTest {
         assertNull(CallPolicy.previousAppOpMode("Permission denial"))
         assertNull(CallPolicy.previousAppOpMode("Uid mode: MANAGE_ONGOING_CALLS: deny\nMANAGE_ONGOING_CALLS: allow"))
     }
+
+    @Test fun callSecondsClampKeepsZeroAsUnlimited() {
+        assertEquals(0, CallPolicy.clampCallSeconds(0))
+        assertEquals(0, CallPolicy.clampCallSeconds(-5))
+        assertEquals(15, CallPolicy.clampCallSeconds(5))
+        assertEquals(120, CallPolicy.clampCallSeconds(120))
+        assertEquals(CallPolicy.MAX_SECONDS, CallPolicy.clampCallSeconds(9999))
+    }
+
+    @Test fun defaultCallSecondsIsTenMinutes() {
+        assertEquals(600, CallPolicy.DEFAULT_SECONDS)
+        assertEquals(600, CallConfig().maxCallSeconds)
+    }
+
+    @Test fun closingLineIsRecognizedAsAnAssistantClosing() {
+        assertTrue(CallFarewellPolicy.isAssistantClosing(CallPolicy.CLOSING_LINE))
+    }
+
+    @Test fun closingDelayOnlyWhenItFitsBeforeTheCap() {
+        assertNull(CallPolicy.closingDelayMs(null))
+        assertNull(CallPolicy.closingDelayMs(10_000))
+        assertEquals(5_000L, CallPolicy.closingDelayMs(CallPolicy.CLOSING_LEAD_MS + 5_000L))
+    }
 }

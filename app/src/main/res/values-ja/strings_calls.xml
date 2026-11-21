@@ -52,7 +52,8 @@
     <string name="calls_cancel">キャンセル</string>
     <string name="calls_greeting">あいさつ</string>
     <string name="calls_instructions">通話の目的と指示</string>
-    <string name="calls_duration">AI の対応時間の上限（15～600 秒）</string>
+    <string name="calls_duration">AI の対応時間の上限（0 = 無制限、15～600 秒）</string>
+    <string name="calls_limits_unlimited">同時に 1 件まで · AI の音声対応は時間無制限</string>
     <string name="calls_speaker">音声 ID</string>
     <string name="calls_audio_route">通話音声の経路</string>
     <string name="calls_audio_verified">この端末で AI 通話の双方に音声が届くことを確認しました</string>

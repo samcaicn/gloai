@@ -52,7 +52,8 @@
     <string name="calls_cancel">取消</string>
     <string name="calls_greeting">开场白</string>
     <string name="calls_instructions">通话目的与说明</string>
-    <string name="calls_duration">AI 最长秒数（15–600）</string>
+    <string name="calls_duration">AI 最长秒数（0 为不限，15–600）</string>
+    <string name="calls_limits_unlimited">一次一通 · AI 时长不限</string>
     <string name="calls_speaker">音色编号</string>
     <string name="calls_audio_route">通话音频通道</string>
     <string name="calls_audio_verified">已实测本机通话双方均能听到声音</string>

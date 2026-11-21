@@ -12,7 +12,7 @@ data class CallConfig(
     val autoAnswer: Boolean = false,
     val allowAllIncoming: Boolean = false,
     val allowedIncomingNumbers: Set<String> = emptySet(),
-    val maxCallSeconds: Int = 120,
+    val maxCallSeconds: Int = CallPolicy.DEFAULT_SECONDS,
     val audioMode: CallAudioMode = CallAudioMode.DIRECT,
     val audioVerified: Boolean = false,
     val credentialsConfigured: Boolean = false,
@@ -41,8 +41,25 @@ data class CallConfig(
 }
 
 internal object CallPolicy {
-    const val DEFAULT_SECONDS = 120
+    const val DEFAULT_SECONDS = 600
+    const val MIN_SECONDS = 15
     const val MAX_SECONDS = 600
+    /** 到上限前多久注入道别(毫秒):道别句不长,这点提前量够说完播完。 */
+    const val CLOSING_LEAD_MS = 15_000L
+    /** 到时上限时替 AI 说的话;尾句要能被 [CallFarewellPolicy.isAssistantClosing] 认下,走自然挂断。 */
+    const val CLOSING_LINE = "时间差不多了，那我们先这样吧"
+
+    /** 到时上限挂断未被确认时的重试次数。 */
+    const val HANGUP_ATTEMPTS = 3
+
+    /** 0 = 不限时长;正数按 [MIN_SECONDS]..[MAX_SECONDS] 收拢。 */
+    fun clampCallSeconds(seconds: Int): Int =
+        if (seconds <= 0) 0 else seconds.coerceIn(MIN_SECONDS, MAX_SECONDS)
+
+    /** 到点前注入道别的延迟;不限时长( null )或剩余时间连道别都不够时不安排。 */
+    fun closingDelayMs(remainingMs: Long?): Long? =
+        remainingMs?.takeIf { it > CLOSING_LEAD_MS }?.minus(CLOSING_LEAD_MS)
+
     const val MAX_ALLOWED_NUMBERS = 100
     const val MAX_AUTO_ANSWER_PAUSE_MINUTES = 24 * 60
     const val MAX_PROMPT_CHARS = 1_200

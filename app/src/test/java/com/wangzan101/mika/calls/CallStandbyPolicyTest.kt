@@ -59,6 +59,8 @@ class CallStandbyPolicyTest {
     @Test fun activeCallWakeLockIsBoundedByConfiguredDurationAndCleanupAllowance() {
         assertEquals(130_000L, CallStandbyPolicy.activeWakeBudgetMs(120))
         assertEquals(610_000L, CallStandbyPolicy.activeWakeBudgetMs(Int.MAX_VALUE))
+        // 不限时长(0)按最大档给预算,运行中的看门狗会在锁自然到期后重新拿
+        assertEquals(610_000L, CallStandbyPolicy.activeWakeBudgetMs(0))
     }
 
     @Test fun foregroundRestoreWaitsForTheLateHelperAndDoesNotRetryAfterFailure() {

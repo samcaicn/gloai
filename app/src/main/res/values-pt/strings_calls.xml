@@ -52,7 +52,8 @@
     <string name="calls_cancel">Cancelar</string>
     <string name="calls_greeting">Saudação</string>
     <string name="calls_instructions">Objetivo e instruções</string>
-    <string name="calls_duration">Tempo máximo da IA (15–600 segundos)</string>
+    <string name="calls_duration">Tempo máximo da IA (0 = sem limite, 15–600 segundos)</string>
+    <string name="calls_limits_unlimited">Uma chamada por vez · áudio com IA sem limite de tempo</string>
     <string name="calls_speaker">ID de voz da plataforma de voz selecionada</string>
     <string name="calls_audio_route">Rota de áudio da chamada</string>
     <string name="calls_audio_verified">Confirmei que ambos os lados conseguem ouvir o áudio nas chamadas com IA neste telefone</string>

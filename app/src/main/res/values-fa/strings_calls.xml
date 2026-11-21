@@ -52,7 +52,8 @@
     <string name="calls_cancel">لغو</string>
     <string name="calls_greeting">پیام خوش‌آمد</string>
     <string name="calls_instructions">هدف و دستورالعمل‌ها</string>
-    <string name="calls_duration">حداکثر ثانیه‌های هوش مصنوعی (۱۵–۶۰۰)</string>
+    <string name="calls_duration">حداکثر ثانیه‌های هوش مصنوعی (۰ = بدون محدودیت، ۱۵–۶۰۰)</string>
+    <string name="calls_limits_unlimited">هر بار یک تماس · صدای هوش مصنوعی بدون محدودیت زمانی</string>
     <string name="calls_speaker">شناسه صدای سرویس صوتی انتخاب‌شده</string>
     <string name="calls_audio_route">مسیر صدای تماس</string>
     <string name="calls_audio_verified">تأیید کردم هر دو طرف می‌توانند تماس‌های هوش مصنوعی را روی این گوشی بشنوند</string>

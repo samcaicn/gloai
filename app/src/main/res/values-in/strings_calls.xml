@@ -52,7 +52,8 @@
     <string name="calls_cancel">Batal</string>
     <string name="calls_greeting">Salam pembuka</string>
     <string name="calls_instructions">Tujuan dan petunjuk</string>
-    <string name="calls_duration">Durasi maksimum AI (15–600 detik)</string>
+    <string name="calls_duration">Durasi maksimum AI (0 = tanpa batas, 15–600 detik)</string>
+    <string name="calls_limits_unlimited">Satu panggilan pada satu waktu · audio AI tanpa batas waktu</string>
     <string name="calls_speaker">ID suara layanan suara yang dipilih</string>
     <string name="calls_audio_route">Rute audio panggilan</string>
     <string name="calls_audio_verified">Saya sudah memastikan kedua pihak dapat mendengar audio saat memakai panggilan AI di ponsel ini</string>

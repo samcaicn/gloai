@@ -52,7 +52,8 @@
     <string name="calls_cancel">إلغاء</string>
     <string name="calls_greeting">التحية</string>
     <string name="calls_instructions">الغرض والتعليمات</string>
-    <string name="calls_duration">الحد الأقصى للمدة بالذكاء الاصطناعي (15–600 ثانية)</string>
+    <string name="calls_duration">الحد الأقصى للمدة بالذكاء الاصطناعي (0 = بلا حدود، 15–600 ثانية)</string>
+    <string name="calls_limits_unlimited">مكالمة واحدة في كل مرة · مدة الصوت بالذكاء الاصطناعي غير محدودة</string>
     <string name="calls_speaker">معرّف الصوت في خدمة الصوت المحددة</string>
     <string name="calls_audio_route">مسار صوت المكالمة</string>
     <string name="calls_audio_verified">تحقّقت من أن الطرفين يسمعان الصوت في مكالمات الذكاء الاصطناعي على هذا الهاتف</string>
