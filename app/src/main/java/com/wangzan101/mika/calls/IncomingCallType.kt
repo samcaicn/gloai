@@ -20,13 +20,18 @@ enum class IncomingCallType(val title: Int, private vararg val labels: String) {
         private val byLabel = entries.flatMap { type -> type.labels.map { it.lowercase() to type } }.toMap()
         private const val count = "[0-9]{1,5}(?:位用户|个用户|人|次)"
         private val prefix = Regex("^(?:(?:该号码|此号码)?(?:已被|被|已有|已)?$count(?:标记|标注)(?:为|成)?|(?:号码标记|来电标记)[：:])\\s*[：:]?\\s*")
-        private val suffix = Regex("\\s*(?:[（(]\\s*(?:$count(?:标记|标注)|(?:腾讯(?:手机管家)?|360(?:手机卫士)?|号码百事通|华为本地黄页)(?:标记)?)\\s*[）)]|$count(?:标记|标注))$")
+        private val suffix = Regex("\\s*(?:[（(]\\s*(?:$count(?:标记|标注)|[^（）()]{1,10}(?:标记|标注))\\s*[）)]|$count(?:标记|标注))$")
+        private val bareSource = Regex("\\s*[（(][^（）()]{1,10}[）)]$")
 
         internal fun fromLabel(text: String, requireMark: Boolean = false): IncomingCallType? {
             if (text.length !in 2..80) return null
             val raw = text.trim()
             var word = raw.replaceFirst(prefix, "")
-            repeat(2) { word = word.replaceFirst(suffix, "").trim() }
+            repeat(2) {
+                word = word.replaceFirst(suffix, "").trim()
+                // 已确认是标记语境时，末尾括号视为来源署名一并剥掉（不点名具体来源）
+                if (word.contains(Regex("标记|标注"))) word = word.replaceFirst(bareSource, "").trim()
+            }
             if (requireMark && word == raw) return null
             word = word.removeSurrounding("“", "”").removeSurrounding("「", "」").removeSurrounding("【", "】")
                 .removeSurrounding("\"").trim().removePrefix("疑似").removePrefix("涉嫌")
