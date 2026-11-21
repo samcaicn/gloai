@@ -63,23 +63,24 @@
 
 ### C. same_state / state_cycle 复活
 
-选择复活而非删除:两条通道互补——A 看动词形状(详情页各不相同的列表),C 看界面状态哈希(界面状态确实在重复的场合),same_state 文案本身就带 do_each 建议。
+选择复活而非删除:两条通道分工——A 看动词形状,精准负责列表逐条场景(详情页是否同构都覆盖);C 看界面状态哈希,负责「不规则反复回访」(A→B→C→A→D→A 式迷路)与周期性兜圈。
 
 - **`frame()` 接线**:新帧 hash 与上一帧不同(且 frameId 更换)时:
   - `trail` 追加该 hash(相邻不同才追加,封顶 TRAIL_KEEP=64)
   - hash 已在 `seenStates`(回到旧状态)→ `out += arrived(hash)`
   - 随后 `out += cycle()`
-- **语义裁决(重要)**:`arrived()` 的注释说「没到过新状态时第 N 次回到同一状态」,但实现里 `visits` 计数**不**因见到新状态而重置。按「重置」语义,列表迭代(每条详情页都是新状态)会让 same_state 永远不触发,复活即失去意义。**按实现为准:visits 不重置,改掉那句注释。** 这正是当年有人发现语义矛盾后把测试断言改成 isEmpty() 的根源,这次一并说清。
-- **cycleLadder 首级 2→3**:A B A B(2 圈)是合法的双屏对比操作,首级 2 太敏感;提到 3(A B A B A B 三个来回才提醒),4 与 stop 级不变。sameStateLadder [3,6,stop] 不变——回到同屏 3 次提醒,列表场景第 3 条回到列表屏时触发,时机可接受。
+- **闸门保持原样(builder check 裁决)**:曾考虑放开 `arrived()` 的 cycle 闸门让列表场景也走 same_state,否决——`cycle()` 对单个来回(rounds=1)就非空,列表场景每次回到列表屏都被抑制;若把闸门放宽到「rounds 达提醒级才抑制」,3-周期循环会连发 3 条 same_state 才轮到 state_cycle,违背提醒滥发反目标。保持「正在兜圈时由 cycle 说」:same_state 覆盖不规则回访,state_cycle 覆盖周期循环,A 通道覆盖列表。
+- **cycleLadder 首级 2→3**:A B A B(2 圈)是合法的双屏对比操作,首级 2 太敏感;提到 3(A B A B A B 三个来回才提醒),4 与 stop 级不变。sameStateLadder [3,6,stop] 不变。
 - **测试恢复真实语义**:
-  - `returningToTheSameScreenWithoutAnythingNewNudgesAtThree`:断言第 3 次回到状态 1 时 same_state Warn(按不重置语义重写用例)。
-  - `threeStateLoopIsCaught`:补足到 3 圈,断言 state_cycle Warn。
+  - `returningToTheSameScreenWithoutAnythingNewNudgesAtThree`:用不规则回访序列(每次经不同的新页面回到同一屏),断言第 3 次到达时 same_state Warn 且提醒带 do_each 建议。
+  - `threeStateLoopIsCaught`:1→2→3 转满三圈,断言 state_cycle Warn(且全程无 same_state——周期循环由 cycle 通道单独说)。
   - `cycleStopFollowsTheStepBudget`:budget 30 → stop 级 max(6, 30/5)=6 圈,断言 stop 在对应帧数出现。
   - `backAndForthBetweenTwoStatesDoesNotStopProgress`:3 帧 2 圈 < 3,首级提高后断言 empty 依然成立,原样保留、名副其实。
 
 ### 不做的一个选项(记录备查)
 
-「按注释语义重置 visits + 删除 state_cycle」:更保守但让 same_state 在最典型的列表场景永远哑火,与目标冲突,弃。
+- 「放宽 arrived() 的 cycle 闸门让列表场景走 same_state」:列表每次回屏都被 rounds=1 的半个周期抑制,放开则 3-周期循环连发 3 条 same_state,违背滥发反目标;列表场景由 A 通道负责,弃。
+- 「按旧注释语义(见过新状态就重置 visits)」:会让 same_state 几乎永不触发,复活即失去意义,弃。
 
 ## 验证
 
