@@ -16,6 +16,14 @@ class EachLoopDetectorTest {
         assertEquals(fired.indices.filter { fired[it] }, listOf(8))
     }
 
+    @Test fun tapWaitBackThreeTimesFiresOnceAtTheNinth() {
+        val d = EachLoopDetector()
+        // 开详情→等加载→返回 的逐条干活:wait 不断 streak(对齐 do_each.md 的含等待示例)
+        val rounds = List(4) { listOf(Verb.Tap, Verb.Wait, Verb.Back) }.flatten()
+        val fired = d.feedAll(rounds)
+        assertEquals(listOf(8), fired.indices.filter { fired[it] })
+    }
+
     @Test fun tapBackPairFiresAtTheSixth() {
         val d = EachLoopDetector()
         val fired = d.feedAll(List(4) { listOf(Verb.Tap, Verb.Back) }.flatten())

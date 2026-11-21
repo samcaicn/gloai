@@ -43,7 +43,7 @@ internal class EachLoopDetector {
         const val WINDOW = REPEATS * MAX_MOTIF
         private val COUNTED = setOf(
             Verb.Observe, Verb.ListElements, Verb.Tap, Verb.TypeText, Verb.ClearText,
-            Verb.Scroll, Verb.Swipe, Verb.Back, Verb.PressKey,
+            Verb.Scroll, Verb.Swipe, Verb.Back, Verb.PressKey, Verb.Wait, Verb.WaitFor,
         )
     }
 }
