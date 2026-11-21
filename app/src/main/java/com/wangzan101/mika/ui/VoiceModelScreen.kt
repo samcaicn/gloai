@@ -36,6 +36,7 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.voice.VoicePlayback
 import com.wangzan101.mika.voice.VoicePlayer
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /**
@@ -82,10 +83,11 @@ fun VoiceModelScreen(store: ProviderStore, onBack: () -> Unit) {
                             val nextVoice = if (switchingProvider) "" else voice
                             val nextSpeed = if (switchingProvider) "1.0" else speed
                             val speedValue = nextSpeed.toFloatOrNull()?.coerceIn(0.25f, 4.0f) ?: 1.0f
+                            val streaming = !switchingProvider && state.choice?.streaming == true
                             model = nextModel
                             voice = nextVoice
                             speed = nextSpeed
-                            settings.setChoice(VoiceChoice(p.id, nextModel, protocol, nextVoice, speedValue))
+                            settings.setChoice(VoiceChoice(p.id, nextModel, protocol, nextVoice, speedValue, streaming))
                             test = null
                         },
                     )
@@ -125,6 +127,17 @@ fun VoiceModelScreen(store: ProviderStore, onBack: () -> Unit) {
                     tr(R.string.voice_protocol_gemini), choice.protocol == TtsProtocol.GeminiTts,
                     onClick = { settings.setChoice(choice.copy(protocol = TtsProtocol.GeminiTts)); test = null },
                 )
+                if (choice.protocol == TtsProtocol.OpenAiSpeech) {
+                    ListRow(
+                        null, tr(R.string.voice_streaming), tr(R.string.voice_streaming_note),
+                        trailing = {
+                            MikaSwitch(choice.streaming, onCheckedChange = {
+                                settings.setChoice(choice.copy(streaming = it))
+                                test = null
+                            })
+                        },
+                    )
+                }
             }
         }
 
@@ -160,19 +173,21 @@ fun VoiceModelScreen(store: ProviderStore, onBack: () -> Unit) {
                 val tts = store.ttsModel(choice, caps) ?: return@MikaButton
                 scope.launch {
                     test = tr(R.string.voice_testing)
-                    test = try {
-                        val response = tts.synthesize(
+                    try {
+                        player.play(
+                            tts,
                             TtsRequest(
                                 "你好，我是 Mika。这是一段声音测试。",
                                 voice.ifBlank { null },
                                 speed.toFloatOrNull()?.coerceIn(0.25f, 4.0f),
                                 "wav",
                             ),
-                        )
-                        player.play(response.bytes, response.mime)
-                        tr(R.string.voice_test_ok)
+                            streaming = choice.streaming,
+                        ) { test = tr(R.string.voice_test_ok) }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
-                        tr(R.string.voice_test_failed, e.message ?: e.javaClass.simpleName)
+                        test = tr(R.string.voice_test_failed, e.message ?: e.javaClass.simpleName)
                     }
                 }
             },

@@ -216,6 +216,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">音色</string>
     <string name="voice_speed">语速</string>
+    <string name="voice_streaming">流式播放</string>
+    <string name="voice_streaming_note">需要服务商支持流式音频，语速为 1.0。</string>
     <string name="voice_auto_read">每条回答自动朗读</string>
     <string name="voice_speak_tool">允许 Mika 主动说话</string>
     <string name="voice_max_chars">单次最长字数</string>

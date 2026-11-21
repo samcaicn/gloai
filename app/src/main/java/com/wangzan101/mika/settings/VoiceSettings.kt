@@ -37,6 +37,7 @@ data class VoiceChoice(
     val protocol: TtsProtocol,
     val voice: String = "",
     val speed: Float = 1.0f,
+    val streaming: Boolean = false,
 )
 
 /**
@@ -72,7 +73,10 @@ class VoiceSettings(private val prefs: SharedPreferences) {
     fun setEnabled(on: Boolean) = update { copy(enabled = on) }
 
     fun setChoice(choice: VoiceChoice?) = update {
-        copy(choice = choice?.copy(speed = choice.speed.coerceIn(0.25f, 4.0f)))
+        copy(choice = choice?.copy(
+            speed = choice.speed.coerceIn(0.25f, 4.0f),
+            streaming = choice.streaming && choice.protocol == TtsProtocol.OpenAiSpeech,
+        ))
     }
 
     fun setAutoRead(on: Boolean) = update { copy(autoRead = on) }
@@ -126,6 +130,7 @@ class VoiceSettings(private val prefs: SharedPreferences) {
             put("protocol", c.protocol.wire)
             put("voice", c.voice)
             put("speed", c.speed)
+            put("streaming", c.streaming)
         }
     }
 
@@ -141,6 +146,7 @@ class VoiceSettings(private val prefs: SharedPreferences) {
             protocol = protocol,
             voice = (obj["voice"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             speed = ((obj["speed"] as? JsonPrimitive)?.contentOrNull?.toFloatOrNull() ?: 1.0f).coerceIn(0.25f, 4.0f),
+            streaming = protocol == TtsProtocol.OpenAiSpeech && bool("streaming", false),
         )
         return VoiceSettingsState(
             enabled = bool("enabled", true),

@@ -215,6 +215,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">Ses</string>
     <string name="voice_speed">Hız</string>
+    <string name="voice_streaming">Akışlı oynatma</string>
+    <string name="voice_streaming_note">Uyumlu bir sağlayıcı ve 1× oynatma hızı gerekir.</string>
     <string name="voice_auto_read">Her yanıtı sesli oku</string>
     <string name="voice_speak_tool">Mika\'nın kendi kendine konuşmasına izin ver</string>
     <string name="voice_max_chars">En uzun okuma (karakter)</string>
