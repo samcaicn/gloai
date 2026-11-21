@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">需要你在任務頁處理，去任務頁看看</string>
+    <string name="voicecall_task_paused">任務暫時停住了</string>
+    <string name="voicecall_task_running">正在處理</string>
+    <string name="voicecall_task_done">已完成</string>
+    <string name="voicecall_task_failed">沒辦成</string>
+    <string name="voicecall_task_cancelled">已取消</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">يتطلب الأمر تدخلك — افتح صفحة المهمة</string>
+    <string name="voicecall_task_paused">المهمة متوقفة مؤقتًا</string>
+    <string name="voicecall_task_running">جارٍ العمل</string>
+    <string name="voicecall_task_done">اكتمل</string>
+    <string name="voicecall_task_failed">لم تنجح</string>
+    <string name="voicecall_task_cancelled">أُلغي</string>
+</resources>

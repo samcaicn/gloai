@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">확인이 필요합니다 — 작업 페이지를 열어 주세요</string>
+    <string name="voicecall_task_paused">일시 중지됨</string>
+    <string name="voicecall_task_running">처리 중</string>
+    <string name="voicecall_task_done">완료</string>
+    <string name="voicecall_task_failed">완료하지 못했습니다</string>
+    <string name="voicecall_task_cancelled">취소됨</string>
+</resources>

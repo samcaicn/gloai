@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">Perlu tindakanmu — buka halaman tugas</string>
+    <string name="voicecall_task_paused">Tugas dijeda</string>
+    <string name="voicecall_task_running">Sedang diproses</string>
+    <string name="voicecall_task_done">Selesai</string>
+    <string name="voicecall_task_failed">Tidak berhasil</string>
+    <string name="voicecall_task_cancelled">Dibatalkan</string>
+</resources>

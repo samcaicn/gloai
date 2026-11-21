@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">Sizin müdahaleniz gerekiyor — görev sayfasını açın</string>
+    <string name="voicecall_task_paused">Görev duraklatıldı</string>
+    <string name="voicecall_task_running">İşleniyor</string>
+    <string name="voicecall_task_done">Tamamlandı</string>
+    <string name="voicecall_task_failed">Tamamlanamadı</string>
+    <string name="voicecall_task_cancelled">İptal edildi</string>
+</resources>

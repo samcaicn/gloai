@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">به اقدام شما نیاز است — صفحهٔ کار را باز کنید</string>
+    <string name="voicecall_task_paused">کار موقتاً متوقف شده</string>
+    <string name="voicecall_task_running">در حال انجام</string>
+    <string name="voicecall_task_done">انجام شد</string>
+    <string name="voicecall_task_failed">انجام نشد</string>
+    <string name="voicecall_task_cancelled">لغو شد</string>
+</resources>

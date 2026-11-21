@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">対応が必要です — タスクページを開いてください</string>
+    <string name="voicecall_task_paused">一時停止中</string>
+    <string name="voicecall_task_running">処理中</string>
+    <string name="voicecall_task_done">完了</string>
+    <string name="voicecall_task_failed">完了できませんでした</string>
+    <string name="voicecall_task_cancelled">キャンセルしました</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">Needs you — open the task page</string>
+    <string name="voicecall_task_paused">Paused for now</string>
+    <string name="voicecall_task_running">Working on it</string>
+    <string name="voicecall_task_done">Done</string>
+    <string name="voicecall_task_failed">Could not finish it</string>
+    <string name="voicecall_task_cancelled">Cancelled</string>
+</resources>
