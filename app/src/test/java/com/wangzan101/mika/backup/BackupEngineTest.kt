@@ -11,6 +11,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.ByteArrayInputStream
+import java.io.RandomAccessFile
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Base64
@@ -169,6 +170,23 @@ class BackupEngineTest {
 
         assertTrue(File(dstPrefs, "device_directory_hints.xml").readText().contains("directories_v1"))
         assertTrue(File(dstPrefs, "plain.xml").readText().contains("nickname\">Vagif</string>"))
+    }
+
+    @Test fun exportRefusesABackupTheImportCouldNotReadBack() {
+        val srcFiles = tmp.newFolder("src-files")
+        val srcPrefs = tmp.newFolder("src-prefs")
+        buildSource(srcFiles, srcPrefs)
+        val huge = File(srcFiles, "conversations/huge.json").also { it.parentFile.mkdirs() }
+        RandomAccessFile(huge, "rw").use { it.setLength(BackupEngine.MAX_BACKUP_BYTES + 1) }
+
+        val out = ByteArrayOutputStream()
+        try {
+            engine(srcFiles, srcPrefs, exportCipher).export(out)
+            fail("an oversized export must be refused")
+        } catch (e: BackupException) {
+            assertTrue(e.message!!.contains("too large"))
+        }
+        assertEquals(0, out.size())
     }
 
     @Test fun inspectDoesNotWriteAnything() {
