@@ -597,8 +597,10 @@ def read_pip_lock():
     """Wheels to bake into site-packages. Every field is verified at build time (SHA-256), so the
     build is reproducible offline: re-download only these exact files."""
     path = PIP_LOCK
+    # Required, not optional: a checkout that lost this file would otherwise build a runtime with
+    # no site-packages at all, rewrite the asset and BundledRuntime.kt from it, and say nothing.
     if not os.path.isfile(path):
-        return []
+        die("runtime/pip-requires.lock is missing; it lists the wheels baked into site-packages")
     data = json.load(open(path, encoding="utf-8"))
     if data.get("spec") != "mika.pip-requires/v1":
         die(f"{path}: unknown spec {data.get('spec')}")
