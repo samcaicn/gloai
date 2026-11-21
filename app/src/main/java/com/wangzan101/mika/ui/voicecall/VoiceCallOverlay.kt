@@ -149,7 +149,8 @@ fun VoiceCallOverlay(session: VoiceCallSession, route: VoiceCallRoute, audioRout
                         PageButton(stringResource(R.string.voicecall_retry), Modifier.testTag("voicecall-retry")) { session.retry() }
                     }
                 } else {
-                    StatusLines(lines, Modifier.align(Alignment.BottomCenter))
+                    // 结束后底部没有输入行兜 inset:状态行自己避开系统导航栏
+                    StatusLines(lines, Modifier.align(Alignment.BottomCenter).then(if (state is VoiceCallState.Ended) Modifier.navigationBarsPadding() else Modifier))
                 }
             }
             val active = state is VoiceCallState.Active
