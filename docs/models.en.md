@@ -16,6 +16,10 @@ The first three roles: the **main model** (does the work; must support tool call
 
 Whether a model can see images: if the provider's model list says, Mika goes by that; if it doesn't (many relays and self-hosted services don't), the preset's initial value applies, and a custom provider is assumed not to see. Tap a model on the provider's page and the sheet has a "Can see images" switch: what you set wins, even over the list. When the main model can see, screenshots go straight to it instead of costing a separate vision call. Picking the main model itself as the vision model (or choosing "use main model") also counts as saying the main model can see; switching away undoes it.
 
+### OpenDesign Go
+
+Subscribe to [OpenDesign Go](https://go.open-design.ai/) and create a workspace API key using its [API setup guide](https://open-design.ai/help/cloud-api/). In Mika, add the **OpenDesign Go** preset, enter that key and tap **Test and save**. The preset uses Chat Completions at `https://amr-link.open-design.ai/v1`; Mika loads the models available to your key. If you type a model name, use an exact ID from that catalog and choose a tool-capable main model. Image support depends on the selected model, so use a suitable vision model for screenshot tasks.
+
 ## Check task cost
 
 When using the official DeepSeek API, turn on **Show task cost** under **Settings › Task running**. After a new task ends, the estimate appears in Chinese yuan next to the token count. Mika uses the official price table and the usage recorded for the task. It shows a range during possible weekday peak hours and marks estimates as partial when some requests cannot be priced. Check your DeepSeek bill for the final charge.

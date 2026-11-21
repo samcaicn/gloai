@@ -25,6 +25,13 @@ class AllowanceRouteTest {
         }
     }
 
+    @Test fun openDesignGoOpensItsDashboardWithoutAnAutomaticKeyQuery() {
+        val go = route("https://amr-link.open-design.ai/v1")
+        assertEquals("https://open-design.ai/cloud/dashboard", go.dashboard)
+        assertNull(go.source)
+        assertEquals(AllowanceRoute(), route("https://amr-link.open-design.ai.example.test/v1"))
+    }
+
     @Test fun onlyRecognizedOfficialAddressesCanUseTheSavedKey() {
         assertEquals(AllowanceSource.DeepSeek, route("https://api.deepseek.com/v1/").source)
         assertEquals(AllowanceSource.Kimi, route("https://api.moonshot.cn/v1/").source)

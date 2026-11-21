@@ -76,6 +76,18 @@ class ProviderPresetsTest {
         }
     }
 
+    @Test fun openDesignGoUsesTheCompatibleEndpointAndRequiresTheUsersKey() {
+        val go = preset("OpenDesign Go")
+        assertEquals(ProviderConfig.Kind.OpenAiCompat, go.kind)
+        assertEquals("https://amr-link.open-design.ai/v1", go.baseUrl)
+        assertTrue(go.familyTokens.isEmpty())
+        assertEquals(go, ProviderPresets.forHost("https://amr-link.open-design.ai/v1/models"))
+        val form = AddForm.of(go)
+        assertTrue(form.keyRequired)
+        assertFalse(form.canTest)
+        assertTrue(form.copy(apiKey = "test-key").canTest)
+    }
+
     /** Coding Plan 的 Key 和标准 API 不通用;地址要落在官方分开的 OpenAI 兼容端点上。 */
     @Test fun codingPlanUsesItsOwnDocumentedEndpoint() {
         val standard = preset("智谱")
