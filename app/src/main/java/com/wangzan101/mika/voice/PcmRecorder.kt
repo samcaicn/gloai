@@ -19,7 +19,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 
 /**
- * 录 16k 单声道 16 位 PCM。start 后每约 50ms 更新一次 [level](0..1,按每块 RMS 归一化);
+ * 录 16k 单声道 16 位 PCM。start 后每约 [chunkMs] 毫秒更新一次 [level](0..1,按每块 RMS 归一化),
+ * 每块读一次 [android.media.AudioRecordingConfiguration.isClientSilenced] 更新 [silenced](系统把麦克风静音置 true,比如别的组件占用时);
  * stop 返回到目前为止的全部 PCM;录满 [maxMs] 自动停止,之后再 stop 仍返回已录的内容。
  * 录音权限由调用方先检查,这里拿不到麦克风就返回 false。stop 会短暂阻塞(等读循环退出),别在主线程调。
  */
@@ -28,12 +29,17 @@ class PcmRecorder(
     private val streaming: Boolean = false,
     /** 流式时不留整段录音、录多久都行(不预留 [maxMs] 的缓冲,也不到点自停);[stop] 返回空。用于不封顶的会话。 */
     private val unbounded: Boolean = false,
+    internal val inputSource: Int = MediaRecorder.AudioSource.MIC,
+    chunkMs: Int = 50,
 ) : StreamingRecorder {
+    internal val chunkSamples: Int = Wav.RATE * chunkMs / 1000
     // At most five seconds while a connection is opening. Never silently drop a sample.
     private val audio = Channel<ShortArray>(100)
     override val chunks: ReceiveChannel<ShortArray> = audio
     private val _level = MutableStateFlow(0f)
     override val level: StateFlow<Float> = _level
+    private val _silenced = MutableStateFlow(false)
+    val silenced: StateFlow<Boolean> = _silenced
 
     private val lock = Any()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -48,10 +54,10 @@ class PcmRecorder(
             if (record != null) return false
             val minBuf = AudioRecord.getMinBufferSize(Wav.RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
             if (minBuf <= 0) return false
-            val chunk = Wav.RATE / 20 // 50ms 一块
+            val chunk = chunkSamples
             val rec = try {
                 AudioRecord(
-                    MediaRecorder.AudioSource.MIC, Wav.RATE,
+                    inputSource, Wav.RATE,
                     AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT,
                     maxOf(minBuf, chunk * 2 * 4),
                 )
@@ -100,6 +106,8 @@ class PcmRecorder(
                 if (record !== rec) return // 已被 stop/cancel
                 // 在锁里、确认还没被停掉之后才写,免得 cancel 刚归零又被这一块的音量盖回去
                 _level.value = lvl
+                // API 29 起;配置偶尔取不到时保留上次的值
+                rec.activeRecordingConfiguration?.let { _silenced.value = it.isClientSilenced }
                 val take = if (unbounded && streaming) n else minOf(n, pcm.size - size)
                 if (!(unbounded && streaming)) {
                     System.arraycopy(buf, 0, pcm, size, take)
