@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">任务已解锁手机</string>
+    <string name="relock_guard_body">任务结束后 Mika 会自动锁回手机。如果 Mika 意外停止，请检查手机是否已锁。</string>
+    <string name="relock_failed_title">手机可能还没锁上</string>
+    <string name="relock_failed_body">Mika 没能确认手机已重新锁上，请检查并手动锁屏。</string>
+    <string name="unlock_recovery_title">解锁手机以继续任务</string>
+    <string name="unlock_recovery_body">任务进行中手机锁屏，自动解锁没有成功。请手动解锁，任务会接着做。</string>
+</resources>

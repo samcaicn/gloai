@@ -69,6 +69,8 @@ open class ScreenAccessibility : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         if (instance.value !== this) return
+        // 只数主屏上的用户交互,不留文字等内容;回锁义务据此判断用户有没有接着用手机
+        if (event.eventType in MAIN_INTERACTIONS && displayOf(event) == Display.DEFAULT_DISPLAY) mainInteractions.incrementAndGet()
         if (event.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED) windowChanges.tryEmit(Unit)
         if (event.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             windowGeneration.incrementAndGet()
@@ -255,6 +257,17 @@ open class ScreenAccessibility : AccessibilityService() {
 
         /** 窗口每加上、拿掉、换页一次就加一(任何屏上的都算);只用来判断「窗口自上次以来变没变」,值本身没有含义。 */
         fun windowGeneration(): Long = windowGeneration.get()
+
+        /** 主屏上用户动过手的次数(点击、长按、滚动、改字、触摸开始);不留事件内容,只数次数。 */
+        private val mainInteractions = java.util.concurrent.atomic.AtomicLong()
+        private val MAIN_INTERACTIONS = setOf(
+            AccessibilityEvent.TYPE_VIEW_CLICKED, AccessibilityEvent.TYPE_VIEW_LONG_CLICKED,
+            AccessibilityEvent.TYPE_VIEW_SCROLLED, AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED,
+            AccessibilityEvent.TYPE_TOUCH_INTERACTION_START,
+        )
+
+        /** 主屏交互的当前计数;只用来判断「自上次以来用户动没动过主屏」,值本身没有含义。 */
+        fun mainInteractionCount(): Long = mainInteractions.get()
         private val notifications = MutableSharedFlow<ScreenEvent>(
             extraBufferCapacity = EVENT_BUFFER,
             onBufferOverflow = BufferOverflow.DROP_OLDEST,

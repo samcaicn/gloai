@@ -27,6 +27,7 @@
     <string name="model_key_clear">Hapus</string>
     <string name="model_key_invisible_removed">Karakter tak terlihat di dalam kunci sudah dihapus.</string>
     <string name="model_key_illegal_chars">Kunci ini berisi karakter yang tidak bisa dipakai. Tempelkan kunci itu saja.</string>
+    <string name="model_key_website">Dapatkan kunci API</string>
     <string name="model_test_save">Uji dan simpan</string>
     <string name="model_testing">Menguji…</string>
     <string name="model_test_note">Mika memuat daftar model penyedia ini, lalu meminta salah satunya memanggil alat uji; jika keduanya berhasil, disimpan.</string>

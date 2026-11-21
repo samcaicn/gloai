@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">اینجا بنویسید</string>
     <string name="selfcheck_target_tick">تیک %1$d</string>
     <string name="selfcheck_target_row">ردیف %1$d</string>
+
+    <string name="selfcheck_screen_off_start">آزمون با صفحه خاموش</string>
+    <string name="selfcheck_screen_off_wait">ظرف ۴۵ ثانیه دکمه پاور را بزنید تا صفحه خاموش و گوشی قفل شود. پس از آزمون به اینجا برگردید تا نتیجه را ببینید.</string>
+    <string name="selfcheck_screen_off_interrupted">حین آزمون صفحه روشن شد، قفل گوشی باز شد یا وظیفه دیگری شروع شد.</string>
+    <string name="selfcheck_screen_off_lock">صفحه خاموش و گوشی قفل است</string>
+    <string name="selfcheck_screen_off_capture">تصویر نمایش مجازی</string>
+    <string name="selfcheck_screen_off_no_app_window">دسترس‌پذیری هیچ پنجره برنامه‌ای روی نمایش مجازی گزارش نکرد</string>
+    <string name="selfcheck_screen_off_no_root">پنجره برنامه پیدا شد اما ریشه آن خوانا نیست</string>
+    <string name="selfcheck_screen_off_no_settings_window">دسترس‌پذیری پنجره تنظیمات را روی نمایش مجازی گزارش نکرد</string>
+    <string name="selfcheck_screen_off_no_elements">پنجره تنظیمات عنصر خوانایی ندارد</string>
+    <string name="selfcheck_screen_off_tree_readable">درخت دسترس‌پذیری تنظیمات خوانا است</string>
+    <string name="selfcheck_screen_off_no_frame">هیچ تصویری از نمایش مجازی نرسید</string>
+    <string name="selfcheck_screen_off_black_frame">تصویر نمایش مجازی سیاه است</string>
+    <string name="selfcheck_screen_off_frame_readable">تصویر نمایش مجازی محتوای قابل‌مشاهده دارد</string>
 </resources>

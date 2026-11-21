@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">Task unlocked the phone</string>
+    <string name="relock_guard_body">Mika will lock the phone again when the task finishes. If Mika stops unexpectedly, check that the phone is locked.</string>
+    <string name="relock_failed_title">Phone may still be unlocked</string>
+    <string name="relock_failed_body">Mika could not confirm that the phone was locked again. Please check and lock it yourself.</string>
+    <string name="unlock_recovery_title">Unlock to continue the task</string>
+    <string name="unlock_recovery_body">The phone locked during the task and automatic unlock did not work. Unlock it yourself and the task will go on.</string>
+</resources>

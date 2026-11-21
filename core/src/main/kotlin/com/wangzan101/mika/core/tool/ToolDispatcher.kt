@@ -280,8 +280,12 @@ class ToolDispatcher internal constructor(
         val outerIdle = ctx.idleScrolls
         ctx.pacedWaitMs = 0
         ctx.idleScrolls = 0
+        var mcpConnector: String? = null
         // 界面上的准备(路线要的目标、改变界面的动作前先看一眼)与收尾都在界面一侧
         val result = surfaces.around(tool, args.o, inlineScreen) { reportsEffect ->
+            // 嵌套调用(页面脚本里的动作):里层走过的连接器归里层这次调用,外层恢复自己那份
+            val outerMcpConnector = ctx.mcpConnector
+            ctx.mcpConnector = null
             ctx.reportsEffect = reportsEffect
             try {
                 if (!tool.yieldsToSteer) tool.execute(args, ctx)
@@ -296,6 +300,8 @@ class ToolDispatcher internal constructor(
                 fail("operation_failed", Feedback.format("operation_failed", "tool" to tool.name, "error" to (e.message ?: e::class.simpleName)))
             } finally {
                 ctx.reportsEffect = false
+                mcpConnector = ctx.mcpConnector
+                ctx.mcpConnector = outerMcpConnector
             }
         }
         val waited = ctx.pacedWaitMs
@@ -308,8 +314,12 @@ class ToolDispatcher internal constructor(
         val seen = remember(result.observations + tool.observations(args.o, result, evidenceLog), tool.capability)
         // 打进输入框的字(端口明确说不是密码框):之后读屏里的输入框回显不给回答作证
         if (tool.verb == Verb.TypeText && ok && result.content["secret"] == JsonPrimitive(false)) args.o.argStr("text")?.let(evidenceLog::noteTyped)
-        // 停留里轻轻滚过页面:只记进运行记录,不给模型
-        val record = if (idled > 0) JsonObject(result.record + ("idleScrolls" to JsonPrimitive(idled))) else result.record
+        // 停留里轻轻滚过页面:只记进运行记录,不给模型;走过的 MCP 连接器也一样只进记录
+        val record = if (idled == 0 && mcpConnector == null) result.record else JsonObject(buildMap {
+            putAll(result.record)
+            if (idled > 0) put("idleScrolls", JsonPrimitive(idled))
+            mcpConnector?.let { put("mcpConnector", JsonPrimitive(it)) }
+        })
         return result.with(observations = seen, place = placeAfter(tool.verb, result.content), waitMs = waited, record = record)
     }
 
@@ -319,6 +329,11 @@ class ToolDispatcher internal constructor(
 
     /** 每条记进证据账本的观察(运行记录据此原样记下,评测能照样重建账本);由循环设置。 */
     var observer: ((Observation) -> Unit)? = null
+
+    /** MCP 调用开始/结束的通知(循环把任务状态标成正在调用哪个连接器)。 */
+    fun observeMcpCalls(onStarted: (String) -> (() -> Unit)) {
+        ctx.onMcpCallStarted = onStarted
+    }
 
     /** 不认识的工具;是改名前的名字时说清现在叫什么(不替模型换成新名执行)。 */
     private fun unknown(name: String, args: JsonObject) = ToolExecution(buildJsonObject {

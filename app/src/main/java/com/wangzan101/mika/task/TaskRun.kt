@@ -563,6 +563,8 @@ class TaskRun(
         runState._pipSoundOn.value = false
         runState._appShown.value = false
         if (c.connection != null) phoneServices.sharedShell.release()
+        // 这次运行解锁过手机才挂着回锁义务;还有别的任务在跑就等,都结束了在这里锁回去(没有义务时立即返回)
+        withContext(Dispatchers.Main + NonCancellable) { service.finishTaskRelock(this@TaskRun) }
     }
 
     suspend fun execute(priorTurns: List<Turn>): TaskState {
@@ -793,12 +795,35 @@ class TaskRun(
                 refreshLocked = states::refresh,
                 unattendedUnlock = unlockAuthorized?.let { authorized ->
                     {
-                        val result = app.deviceAccess.access.unlock(authorized)
-                        states.refresh()
-                        Log.i(TAG, "${provenance.origin} unlock finished: ${result.status}")
-                        result.status
+                        // 回锁走无障碍的全局动作、守卫走通知;两样都不在就立不住「锁回去」的义务,不去解锁
+                        if (ScreenAccessibility.instance.value == null) {
+                            states.refresh()
+                            "accessibility_unavailable"
+                        } else if (!service.startUnlockGuard()) {
+                            states.refresh()
+                            "notification_unavailable"
+                        } else {
+                            val result = try {
+                                app.deviceAccess.access.unlock(authorized)
+                            } catch (e: CancellationException) {
+                                // 取消后系统仍可能完成已注入的输入:换常驻警告,提醒用户检查锁屏
+                                service.notifyRelockFailed()
+                                throw e
+                            } catch (e: Exception) {
+                                service.notifyRelockFailed()
+                                throw e
+                            }
+                            // 真的解开了才挂上回锁义务;本来就没锁(用户在用)的,摘掉刚挂的守卫
+                            if (result.performedUnlock) service.noteTaskUnlock() else service.clearUnlockGuardIfSafe()
+                            states.refresh()
+                            Log.i(TAG, "${provenance.origin} unlock finished: ${result.status}")
+                            result.status
+                        }
                     }
                 },
+                // 本地授权(本机存着的授权)的任务解锁失败后不杀:转为等用户手动解锁
+                recoverUnlockFailure = { unlockAuthorized != null },
+                onRecoveryFailure = { status -> service.notifyUnlockRecoveryNeeded(conversationId, status) },
                 unlockFailureMessage = {
                     tr(if (provenance.origin == RunOrigin.Channel) R.string.wechat_unlock_failed else R.string.trigger_unlock_failed)
                 },
@@ -1075,7 +1100,9 @@ class TaskRun(
                 // 助手断开、被挪走只在这一步用的是手机时才查
                 gate = { w ->
                     if (phoneScreen.acquired && dispatcher?.surface != WEB) phone?.screen?.let { phoneRuntime.awaitUserPick(it, taskGate, w) }
-                    taskGate.pass({ phoneScreen.acquired && dispatcher?.surface != WEB }, w)
+                    // 等关卡期间发生过锁屏周期:按旧屏幕准备好的动作作废,执行入口换成说明结果喂回模型
+                    if (taskGate.pass({ phoneScreen.acquired && dispatcher?.surface != WEB }, w))
+                        throw com.wangzan101.mika.core.gate.ScreenRecoveryRequired()
                 }, knowledge = knowledge, screenMaps = memoryRuntime.screenMaps(), sink = sink, trace = trace, installedApps = { apps },
                 // 选渠道用的事实:装了哪些 App、在 Mika 里登录过哪些网站、有没有内置浏览器
                 channelFacts = {

@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">Tugas membuka kunci ponsel</string>
+    <string name="relock_guard_body">Mika akan mengunci ponsel lagi setelah tugas selesai. Jika Mika berhenti tiba-tiba, periksa apakah ponsel terkunci.</string>
+    <string name="relock_failed_title">Ponsel mungkin masih terbuka</string>
+    <string name="relock_failed_body">Mika tidak dapat memastikan ponsel telah terkunci lagi. Periksa dan kunci sendiri.</string>
+    <string name="unlock_recovery_title">Buka kunci untuk melanjutkan tugas</string>
+    <string name="unlock_recovery_body">Ponsel terkunci saat tugas berjalan dan pembukaan otomatis tidak berhasil. Buka sendiri dan tugas akan berlanjut.</string>
+</resources>

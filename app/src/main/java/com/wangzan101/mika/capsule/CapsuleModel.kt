@@ -398,8 +398,9 @@ class CapsuleModel(private val reasonLabel: (String) -> String? = { null }) {
         val CONTINUING: String get() = tr(R.string.capsule_continuing)
         val KEPT: String get() = tr(R.string.kept_capsule)
 
-        /** 此刻在做什么:回放、批量执行写进度;否则先用模型随调用写的话,再用调用里的用意,都没有用固定说法。 */
+        /** 此刻在做什么:正在调 MCP 先说哪个连接器;回放、批量执行写进度;否则先用模型随调用写的话,再用调用里的用意,都没有用固定说法。 */
         fun runningText(s: TaskState.Running): String {
+            s.mcpConnector?.let { return StatusCopy.callingMcp(it) }
             s.progress?.let { return progressText(it) }
             val said = listOfNotNull(s.narration, s.reason).map(::oneLine).firstOrNull { it.isNotEmpty() }
             return said ?: if (s.step == 0) PREPARING else THINKING

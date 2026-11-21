@@ -70,7 +70,9 @@ class Replayer(
             }
             val verb = tools.index[step.tool]?.takeIf { it.routable }?.verb ?: return diverged("not a replayable action", "")
             // 锁屏、被拿走时先等;等完再读屏,核对和执行都按等完之后的一屏(执行入口不再等第二次)
-            gate()
+            try { gate() } catch (_: com.wangzan101.mika.core.gate.ScreenRecoveryRequired) {
+                return diverged("screen changed during lock; read the current state before continuing", "")
+            }
             val snap = read() ?: return diverged("the screen could not be read", "")
             if (snap.protected) return diverged("the page is protected", PROTECTED_SEEN)
             val seen = summary(snap)

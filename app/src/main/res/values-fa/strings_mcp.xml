@@ -71,4 +71,6 @@
     <string name="mcp_port_dialog_sub">وقتی پورت پیش‌فرض توسط سرویس دیگری در این گوشی اشغال شده است، آن را تغییر دهید. بلافاصله اعمال می‌شود و رایانه روی پورت جدید دوباره متصل می‌شود.</string>
     <string name="mcp_port_invalid">یک عدد صحیح از ۱۰۲۴ تا ۶۵۵۳۵ وارد کنید.</string>
     <string name="mcp_port_title">پورت شنود</string>
+    <string name="progress_calling_mcp">در حال فراخوانی %1$s از طریق MCP…</string>
+    <string name="progress_called_mcp">‏%1$s از طریق MCP فراخوانی شد</string>
 </resources>

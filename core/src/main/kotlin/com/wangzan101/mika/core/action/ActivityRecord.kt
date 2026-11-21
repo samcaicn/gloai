@@ -42,6 +42,7 @@ internal object ActivityRecord {
             exec.observations.map { it.id }.filter { it > 0 }.distinct(), source, callId,
             exec.observations.lastOrNull { !it.title.isNullOrBlank() }?.title?.let { RunEvent.clip(Redactor.text(it)) },
             failed, outward,
+            mcpConnector = (exec.record["mcpConnector"] as? JsonPrimitive)?.contentOrNull?.let { RunEvent.clip(Redactor.text(it)) },
         )
     }
 }

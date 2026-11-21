@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">Buraya yaz</string>
     <string name="selfcheck_target_tick">Sayaç %1$d</string>
     <string name="selfcheck_target_row">Satır %1$d</string>
+
+    <string name="selfcheck_screen_off_start">Ekran kapalıyken sınama</string>
+    <string name="selfcheck_screen_off_wait">45 saniye içinde güç düğmesine basarak ekranı kapatın ve telefonu kilitleyin. Sınama bitince sonucu görmek için buraya dönün.</string>
+    <string name="selfcheck_screen_off_interrupted">Sınama sırasında ekran açıldı, telefonun kilidi çözüldü veya başka bir görev başladı.</string>
+    <string name="selfcheck_screen_off_lock">Ekran kapalı ve telefon kilitli</string>
+    <string name="selfcheck_screen_off_capture">Sanal ekran görüntüsü</string>
+    <string name="selfcheck_screen_off_no_app_window">Erişilebilirlik sanal ekranda uygulama penceresi bildirmedi</string>
+    <string name="selfcheck_screen_off_no_root">Uygulama penceresi bulundu ancak kökü okunamıyor</string>
+    <string name="selfcheck_screen_off_no_settings_window">Erişilebilirlik sanal ekranda Ayarlar penceresi bildirmedi</string>
+    <string name="selfcheck_screen_off_no_elements">Ayarlar penceresinde okunabilir öğe yok</string>
+    <string name="selfcheck_screen_off_tree_readable">Ayarlar erişilebilirlik ağacı okunabiliyor</string>
+    <string name="selfcheck_screen_off_no_frame">Sanal ekrandan kare gelmedi</string>
+    <string name="selfcheck_screen_off_black_frame">Sanal ekran karesi siyah</string>
+    <string name="selfcheck_screen_off_frame_readable">Sanal ekran karesinde görünür içerik var</string>
 </resources>

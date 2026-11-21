@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">ألغت المهمة قفل الهاتف</string>
+    <string name="relock_guard_body">سيعيد Mika قفل الهاتف عند انتهاء المهمة. إذا توقف Mika فجأة، فتحقق من أن الهاتف مقفل.</string>
+    <string name="relock_failed_title">قد يكون الهاتف ما زال مفتوحًا</string>
+    <string name="relock_failed_body">لم يتمكن Mika من تأكيد إعادة قفل الهاتف. تحقق منه واقفله بنفسك.</string>
+    <string name="unlock_recovery_title">افتح القفل لمتابعة المهمة</string>
+    <string name="unlock_recovery_body">انقفل الهاتف أثناء المهمة ولم ينجح فتح القفل التلقائي. افتحه بنفسك وستستأنف المهمة.</string>
+</resources>

@@ -225,6 +225,17 @@ class ReplayerTest {
         assertEquals(0, s.opened)
     }
 
+    // 等待期间发生过锁屏周期:路线不再可信,一步也不执行就交还模型重读
+    @Test fun lockCycleDuringWaitDivergesBeforeAnyStep() = runTest {
+        val s = Notes.screen()
+        val out = replayer(s, gate = { throw com.wangzan101.mika.core.gate.ScreenRecoveryRequired() })
+            .run(RouteChoice(Notes.route(), listOf("x")))
+        assertTrue(out is ReplayOutcome.Diverged)
+        assertEquals(0, (out as ReplayOutcome.Diverged).done)
+        assertFalse(out.executed)
+        assertTrue(s.taps.isEmpty()); assertTrue(s.typed.isEmpty())
+    }
+
     // 执行前就被拒(另一个任务占着 App):executed 为假,错误码交给模型
     @Test fun preExecutionRejectionIsNotExecuted() = runTest {
         val s = LinkScreen(ActionResult.Failed("app_in_use_by_other_task"))

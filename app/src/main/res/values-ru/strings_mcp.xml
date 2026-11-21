@@ -71,4 +71,6 @@
     <string name="mcp_cli_connection_check">Команда connect проверяет подключение. После успешного запроса время выше обновится.</string>
     <string name="mcp_history_title">Разрешить компьютерам просмотр истории</string>
     <string name="mcp_history_detail">Подключённые компьютеры смогут читать все диалоги, записи запусков и сохранённые Trace, включая запросы и ответы модели со скрытыми конфиденциальными данными. Действует для USB и подключений через частные сети.</string>
+    <string name="progress_calling_mcp">Вызов %1$s через MCP…</string>
+    <string name="progress_called_mcp">Вызван %1$s через MCP</string>
 </resources>

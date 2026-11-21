@@ -182,6 +182,8 @@ sealed interface RunEvent {
         val failed: Boolean = false,
         /** 不可逆判定认出这是一次对外动作(发送、提交);停止后交代做了什么时按它数发出了几次。 */
         val outward: Boolean = false,
+        /** 这次调用走过的外部 MCP 连接器(配置里的名字);没走 MCP 为 null。 */
+        val mcpConnector: String? = null,
     ) : RunEvent
 
     @Serializable @SerialName("state")

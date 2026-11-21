@@ -27,6 +27,7 @@
     <string name="model_key_clear">Clear</string>
     <string name="model_key_invisible_removed">Removed invisible characters from the key.</string>
     <string name="model_key_illegal_chars">This key has characters that cannot be used. Paste only the key itself.</string>
+    <string name="model_key_website">Get an API key</string>
     <string name="model_test_save">Test and save</string>
     <string name="model_testing">Testing…</string>
     <string name="model_test_note">Mika lists this provider’s models, then asks one of them to call a test tool; if both work, it’s saved.</string>

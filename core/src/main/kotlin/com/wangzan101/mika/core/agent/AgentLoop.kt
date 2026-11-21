@@ -205,6 +205,16 @@ class AgentLoop(
         require(maxSteps > 0) { "maxSteps must be positive" }
         // 只有开着回放才在写操作前取目标元素与锚点
         tools.captureTargets = flags.replay
+        tools.observeMcpCalls(::showMcpCall)
+    }
+
+    /** MCP 调用进行中把 Running 标上连接器名,结束(含失败、取消)时收回;返回的闭包由调用方在 finally 里调。 */
+    private fun showMcpCall(connector: String): () -> Unit {
+        val before = _state.value
+        if (before !is TaskState.Running) return {}
+        val calling = before.copy(mcpConnector = connector)
+        _state.compareAndSet(before, calling)
+        return { _state.compareAndSet(calling, before) }
     }
 
     /** 运行记录:按因果先后写(见 [RecordOrder])。 */

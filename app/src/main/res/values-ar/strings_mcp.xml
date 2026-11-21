@@ -71,4 +71,6 @@
     <string name="mcp_cli_connection_check">يتحقق connect من الاتصال. يؤدي نجاح الطلب إلى تحديث الوقت أعلاه.</string>
     <string name="mcp_history_title">السماح بعرض السجل</string>
     <string name="mcp_history_detail">السماح لأجهزة الكمبيوتر الموثقة عبر USB والشبكة الخاصة بقراءة المحادثات والتتبع التفصيلي. الإعداد متوقف افتراضيًا.</string>
+    <string name="progress_calling_mcp">جارٍ استدعاء %1$s عبر MCP…</string>
+    <string name="progress_called_mcp">تم استدعاء %1$s عبر MCP</string>
 </resources>

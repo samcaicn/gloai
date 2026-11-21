@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">وظیفه قفل گوشی را باز کرد</string>
+    <string name="relock_guard_body">Mika پس از پایان وظیفه گوشی را دوباره قفل می‌کند. اگر Mika ناگهان متوقف شد، بررسی کنید که گوشی قفل باشد.</string>
+    <string name="relock_failed_title">ممکن است گوشی هنوز قفل نشده باشد</string>
+    <string name="relock_failed_body">Mika نتوانست تأیید کند که گوشی دوباره قفل شده است. آن را بررسی و خودتان قفل کنید.</string>
+    <string name="unlock_recovery_title">برای ادامه وظیفه قفل را باز کنید</string>
+    <string name="unlock_recovery_body">گوشی حین انجام وظیفه قفل شد و بازکردن خودکار موفق نشد. خودتان بازش کنید تا وظیفه ادامه یابد.</string>
+</resources>

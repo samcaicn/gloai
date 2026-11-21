@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">اكتب هنا</string>
     <string name="selfcheck_target_tick">النبضة %1$d</string>
     <string name="selfcheck_target_row">الصف %1$d</string>
+
+    <string name="selfcheck_screen_off_start">فحص الشاشة المطفأة</string>
+    <string name="selfcheck_screen_off_wait">اضغط زر التشغيل لإطفاء الشاشة وقفل الهاتف خلال 45 ثانية. عد إلى هنا بعد الاختبار لرؤية النتيجة.</string>
+    <string name="selfcheck_screen_off_interrupted">أُضيئت الشاشة أو فُتح قفل الهاتف أو بدأت مهمة أخرى أثناء الاختبار.</string>
+    <string name="selfcheck_screen_off_lock">الشاشة مطفأة والهاتف مقفل</string>
+    <string name="selfcheck_screen_off_capture">لقطة الشاشة الافتراضية</string>
+    <string name="selfcheck_screen_off_no_app_window">لم تُبلغ خدمة تسهيل الاستخدام عن أي نافذة تطبيق على الشاشة الافتراضية</string>
+    <string name="selfcheck_screen_off_no_root">وُجدت نافذة تطبيق لكن جذرها غير قابل للقراءة</string>
+    <string name="selfcheck_screen_off_no_settings_window">لم تُبلغ خدمة تسهيل الاستخدام عن نافذة الإعدادات على الشاشة الافتراضية</string>
+    <string name="selfcheck_screen_off_no_elements">لا توجد عناصر قابلة للقراءة في نافذة الإعدادات</string>
+    <string name="selfcheck_screen_off_tree_readable">يمكن قراءة شجرة تسهيل الاستخدام في الإعدادات</string>
+    <string name="selfcheck_screen_off_no_frame">لم تصل أي صورة من الشاشة الافتراضية</string>
+    <string name="selfcheck_screen_off_black_frame">صورة الشاشة الافتراضية سوداء</string>
+    <string name="selfcheck_screen_off_frame_readable">تحتوي صورة الشاشة الافتراضية على محتوى مرئي</string>
 </resources>

@@ -27,6 +27,7 @@
     <string name="model_key_clear">지우기</string>
     <string name="model_key_invisible_removed">키에 있던 보이지 않는 문자를 지웠어요.</string>
     <string name="model_key_illegal_chars">키에 사용할 수 없는 문자가 있어요. 키 자체만 붙여넣으세요.</string>
+    <string name="model_key_website">API 키 발급받기</string>
     <string name="model_test_save">테스트 후 저장</string>
     <string name="model_testing">테스트 중…</string>
     <string name="model_test_note">Mika가 이 제공업체의 모델 목록을 가져온 다음, 그중 하나에 테스트 도구 호출을 요청해요. 둘 다 되면 저장돼요.</string>

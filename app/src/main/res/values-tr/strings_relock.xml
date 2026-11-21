@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">Görev telefonun kilidini açtı</string>
+    <string name="relock_guard_body">Görev bitince Mika telefonu yeniden kilitler. Mika beklenmedik şekilde durursa telefonun kilitli olduğunu kontrol edin.</string>
+    <string name="relock_failed_title">Telefon hâlâ kilitli olmayabilir</string>
+    <string name="relock_failed_body">Mika telefonun yeniden kilitlendiğini doğrulayamadı. Kontrol edip kendiniz kilitleyin.</string>
+    <string name="unlock_recovery_title">Göreve devam etmek için kilidi açın</string>
+    <string name="unlock_recovery_body">Görev sırasında telefon kilitlendi ve otomatik kilit açma başarısız oldu. Kendiniz açın, görev devam edecek.</string>
+</resources>

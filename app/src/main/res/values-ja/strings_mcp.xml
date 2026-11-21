@@ -71,4 +71,6 @@
     <string name="mcp_cli_connection_check">connect で接続を確認できます。リクエストが成功すると、上の時刻が更新されます。</string>
     <string name="mcp_history_title">コンピューターに履歴の閲覧を許可</string>
     <string name="mcp_history_detail">接続したコンピューターは、すべての会話、実行記録、記録済みの Trace 本文を読み取れます。機密情報を伏せたモデルへのリクエストと応答も含みます。USB とプライベートネットワーク接続に適用されます。</string>
+    <string name="progress_calling_mcp">MCP で %1$s を呼び出し中…</string>
+    <string name="progress_called_mcp">MCP で %1$s を呼び出しました</string>
 </resources>

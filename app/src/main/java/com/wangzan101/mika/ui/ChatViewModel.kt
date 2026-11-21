@@ -2391,15 +2391,19 @@ class ChatViewModel(
         /** 按步号归好的动作明细:点开一步时列出来。 */
         private fun actionsOf(activities: List<RunEvent.Activity>, appLabel: (String) -> String, toolLabel: (String) -> String) =
             activities.groupBy { it.step }.mapValues { (_, list) ->
-                // 用工具的界面说法(和运行过程页同一份),不把工具名露给用户
-                list.map { a -> StepAction(toolLabel(a.label), a.target?.let { where(it, appLabel) }, a.effect, a.failed) }
+                // 用工具的界面说法(和运行过程页同一份),不把工具名露给用户;经 MCP 的调用说连接器名
+                list.map { a ->
+                    val label = a.mcpConnector?.let(StatusCopy::calledMcp) ?: toolLabel(a.label)
+                    StepAction(label, a.target?.let { where(it, appLabel) }, a.effect, a.failed)
+                }
             }
 
         private fun state(ex: Exchange, s: TaskState, appLabel: (String) -> String): Exchange = when (s) {
             TaskState.Idle -> ex
             is TaskState.Running -> {
                 val goals = (s.progress as? RunProgress.Task)?.goals
-                val progress = s.progress?.takeIf { goals == null }?.let(StatusCopy::progress)
+                // 正在调 MCP 先说哪个连接器,盖过模型写的话
+                val progress = s.mcpConnector?.let(StatusCopy::callingMcp) ?: s.progress?.takeIf { goals == null }?.let(StatusCopy::progress)
                 // 「在做什么」先用模型随调用写的话,没有再用调用里的用意
                 val said = (s.narration ?: s.reason)?.takeIf(String::isNotBlank)
                 val waiting = progress == null && s.tool == null && said == null
@@ -2449,7 +2453,11 @@ class ChatViewModel(
             val said = mutableSetOf<Int>()
             for (a in ex.activities) {
                 val where = a.target?.let { where(it, appLabel) }
-                if (a.kind == "observe") {
+                val mcp = a.mcpConnector?.let(StatusCopy::calledMcp)
+                if (mcp != null) {
+                    // 经 MCP 的调用单列一行说连接器;失败也看得出是哪个连接器
+                    out += StepRow(a.step, mcp, if (a.failed) failedLabel(a) else "", StepState.Ok)
+                } else if (a.kind == "observe") {
                     // 读成功了却不知道读的是哪里:不列;没读成的照样列出来
                     if (where == null && !a.failed) continue
                     val text = if (where == null) toolLabel(a.label)

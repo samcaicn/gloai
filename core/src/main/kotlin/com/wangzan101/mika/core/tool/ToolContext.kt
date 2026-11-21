@@ -88,6 +88,10 @@ internal class ToolContext(
     var appOpened = false
     /** 本次调用的编号;页面脚本里的动作按它编号。 */
     var callId = ""
+    /** 这次调用走到了哪个外部 MCP 连接器(配置里的名字);只在分发进入 MCP 操作期间非空,进运行记录。 */
+    var mcpConnector: String? = null
+    /** MCP 调用开始时通知一次(界面把任务标成「正在调用 X MCP」);返回的闭包在调用结束时收回。 */
+    var onMcpCallStarted: ((String) -> (() -> Unit))? = null
     /** 自己不动界面的工具(页面脚本)里的动作经它回到执行入口;只读调用、测试里不给时里面的动作一律不做。 */
     var sub: SubActions? = null
     /** 自身工具的当次同意;由 AgentLoop 把等用户回答的那条路接进来,测试里换成假实现。 */

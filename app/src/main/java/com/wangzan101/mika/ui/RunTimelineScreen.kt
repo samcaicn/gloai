@@ -267,8 +267,11 @@ private fun TimelineRow(s: TimelineStep, first: Boolean, last: Boolean, vm: RunT
     val shot = s.screenshotId
     val failed = s.result?.startsWith(stringResource(R.string.result_error_prefix)) == true
     val hasMore = s.said.isNotEmpty() || s.activities.isNotEmpty() || s.tags.isNotEmpty() || shot != null
-    val title = listOfNotNull(s.tool, s.detail).joinToString(" · ")
-        .ifEmpty { s.activities.firstOrNull()?.let { listOfNotNull(it.label, it.target).joinToString(" · ") }.orEmpty() }
+    // 经 MCP 的一步:标题说连接器名,不露出 MCP 工具的原始名字
+    val mcpLabels = s.activities.filter { it.kind == "mcp" }.map { it.label }.distinct()
+    val title = if (mcpLabels.isNotEmpty()) mcpLabels.joinToString(" · ")
+        else listOfNotNull(s.tool, s.detail).joinToString(" · ")
+            .ifEmpty { s.activities.firstOrNull()?.let { listOfNotNull(it.label, it.target).joinToString(" · ") }.orEmpty() }
     StepItem(
         if (failed) StepState.Failed else StepState.Done, first, last,
         Modifier.then(if (hasMore) Modifier.clickable { open = !open } else Modifier),

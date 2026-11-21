@@ -71,4 +71,6 @@
     <string name="mcp_cli_connection_check">connect가 연결을 확인해요. 요청이 성공하면 위의 시간이 갱신돼요.</string>
     <string name="mcp_history_title">컴퓨터의 기록 조회 허용</string>
     <string name="mcp_history_detail">연결된 컴퓨터에서 모든 대화, 실행 기록 및 녹화된 Trace 본문을 읽을 수 있습니다. 민감한 정보를 가린 모델 요청과 응답도 포함됩니다. USB 및 사설 네트워크 연결에 적용됩니다.</string>
+    <string name="progress_calling_mcp">MCP로 %1$s 호출 중…</string>
+    <string name="progress_called_mcp">MCP로 %1$s 호출 완료</string>
 </resources>

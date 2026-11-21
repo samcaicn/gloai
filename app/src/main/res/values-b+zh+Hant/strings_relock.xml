@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">任務已解鎖手機</string>
+    <string name="relock_guard_body">任務結束後 Mika 會自動鎖回手機。如果 Mika 意外停止，請檢查手機是否已鎖定。</string>
+    <string name="relock_failed_title">手機可能尚未鎖定</string>
+    <string name="relock_failed_body">Mika 無法確認手機已重新鎖定，請檢查並手動鎖定螢幕。</string>
+    <string name="unlock_recovery_title">解鎖手機以繼續任務</string>
+    <string name="unlock_recovery_body">任務進行中手機鎖定，自動解鎖未成功。請手動解鎖，任務會繼續進行。</string>
+</resources>

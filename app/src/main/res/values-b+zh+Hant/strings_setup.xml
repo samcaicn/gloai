@@ -27,6 +27,7 @@
     <string name="model_key_clear">清空</string>
     <string name="model_key_invisible_removed">已去掉 Key 裡的不可見字元。</string>
     <string name="model_key_illegal_chars">Key 裡有無法使用的字元，請只貼上密鑰本身。</string>
+    <string name="model_key_website">前往官網申請 Key</string>
     <string name="model_test_save">測試並儲存</string>
     <string name="model_testing">正在測試…</string>
     <string name="model_test_note">先列出這家的模型，再試著讓其中一個呼叫一次工具，都成了才儲存。</string>
