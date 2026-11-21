@@ -1792,7 +1792,7 @@ internal fun Composer(
     val c = MikaTheme.colors
     var fieldFocused by remember { mutableStateOf(false) }
     // 底部从页面底色淡出到透明,输入栏是浮在上面的玻璃
-    val fade = remember(c) { Brush.verticalGradient(0f to c.bg.copy(alpha = 0f), 0.6f to c.bg, 1f to c.bg) }
+    val fade = remember(c) { Brush.verticalGradient(0f to c.bg.copy(alpha = 0f), 0.25f to c.bg, 1f to c.bg) }
     val busy = mode == ComposerMode.Busy
     val context = LocalContext.current
     // 附件功能开着就保留「＋」;此刻不能加时只提示,不展开面板
@@ -1954,8 +1954,8 @@ internal fun Composer(
                             }
                         }
                         Spacer(Modifier.weight(1f))
-                        // 键盘出来以后长按输入框留给系统选字;话筒按住才听,点一下只提示按住
-                        if (fieldFocused && vh != null) {
+                        // 话筒常驻:按住才听,点一下只提示按住;键盘出来以后长按输入框留给系统选字
+                        if (vh != null) {
                             val hint = stringResource(R.string.voice_hold_to_talk)
                             Box(
                                 Modifier.size(MikaSize.IconButton).testTag("composer-mic").holdToTalk(vh) { vh.toast = hint },
