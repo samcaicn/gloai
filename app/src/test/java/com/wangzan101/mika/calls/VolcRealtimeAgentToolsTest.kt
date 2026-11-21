@@ -8,8 +8,11 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -119,6 +122,62 @@ class VolcRealtimeAgentToolsTest {
         }
     }
 
+    @Test fun agentToolsFailFastOnTheOpenAiProtocol() {
+        val error = runCatching {
+            VolcRealtimeConfig(agentTools = true, protocol = CallVoiceProtocol.OPENAI_REALTIME)
+        }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException)
+    }
+
+    @Test fun mikaRequestCallsArriveWithFullLengthUtterancesAndGetResults() = runBlocking {
+        fixture {
+            val session = connectAgent()
+            val events = Channel<VolcRealtimeEvent>(32)
+            val collector = async { session.events.collect { events.send(it) } }
+            // Longer than the 256-char DTMF argument cap, well within the 4096-char utterance cap.
+            val utterance = "把这段话完整交给任务系统执行" + "，一字不落".repeat(500)
+            peer().send(functionFrame(item("call-1", "mika_request", """{"utterance":"$utterance"}""")))
+            val call = nextEvent(events) as VolcRealtimeEvent.FunctionCall
+            assertEquals("call-1", call.callId)
+            assertEquals("mika_request", call.name)
+            assertEquals(utterance, call.arguments.getValue("utterance").jsonPrimitive.content)
+            assertTrue(session.sendToolResult("call-1", buildJsonObject { put("ok", true); put("text", "已转交") }))
+            val returned = nextMessage()
+            assertEquals("conversation.item.create", returned.type)
+            val item = returned.getValue("items").jsonArray.single().jsonObject
+            assertEquals("call-1", item.getValue("call_id").jsonPrimitive.content)
+            finish(session)
+            withTimeout(3_000) { collector.await() }
+        }
+    }
+
+    @Test fun oversizedOrMalformedMikaRequestArgumentsAreAnsweredWithErrors() = runBlocking {
+        fixture {
+            val session = connectAgent()
+            val events = Channel<VolcRealtimeEvent>(32)
+            val collector = async { session.events.collect { events.send(it) } }
+            val cases = listOf(
+                item("huge", "mika_request", """{"utterance":"${"字".repeat(4_200)}"}"""),
+                item("empty", "mika_request", """{"utterance":""}"""),
+                item("extra", "mika_request", """{"utterance":"帮我订个闹钟","note":"x"}"""),
+                item("dtmf", "send_dtmf", """{"digits":"1"}"""),
+                item("other", "dial_number", """{"number":"123"}"""),
+            )
+            for (case in cases) peer().send(functionFrame(case))
+            val errors = (1..cases.size).map { nextMessage() }
+            val contents = errors.flatMap { frame ->
+                frame.getValue("items").jsonArray.map {
+                    it.jsonObject.getValue("content").jsonArray.single().jsonObject.getValue("text").jsonPrimitive.content
+                }
+            }
+            assertTrue(contents.all { it.contains("invalid_arguments") || it.contains("unsupported_tool") })
+            assertTrue(contents.any { it.contains("unsupported_tool") })
+            assertFalse(events.tryReceive().isSuccess)
+            finish(session)
+            withTimeout(3_000) { collector.await() }
+        }
+    }
+
     @Test fun toolSetupTimeoutIsBoundedAndNeverRetries() = runBlocking {
         fixture(autoAck = true, ackTools = false, timeoutMs = 250) {
             val failure = runCatching { client.connect(credentials, VolcRealtimeConfig(agentTools = true)) }
@@ -133,11 +192,28 @@ class VolcRealtimeAgentToolsTest {
     private val credentials = VolcRealtimeCredentials(apiKey = "local-test-key")
     private val JsonObject.type get() = getValue("type").jsonPrimitive.content
 
+    private fun item(id: String, name: String, arguments: String) = buildJsonObject {
+        put("call_id", id); put("name", name); put("arguments", arguments)
+    }
+
+    private fun functionFrame(vararg items: JsonObject) = buildJsonObject {
+        put("type", VolcRealtimeProtocol.FUNCTION_CALL)
+        put("items", JsonArray(items.toList()))
+    }.toString()
+
+    private suspend fun nextEvent(events: Channel<VolcRealtimeEvent>) = withTimeout(3_000) { events.receive() }
+
     private inner class Fixture(val server: MockWebServer, val client: VolcRealtimeClient, val scope: CoroutineScope) : CoroutineScope by scope {
         val messages = Channel<JsonObject>(32)
         val socket = CompletableDeferred<WebSocket>()
         suspend fun peer() = withTimeout(3_000) { socket.await() }
         suspend fun nextMessage() = withTimeout(3_000) { messages.receive() }
+        suspend fun connectAgent(): VolcRealtimeSession {
+            val session = client.connect(credentials, VolcRealtimeConfig(agentTools = true))
+            assertEquals("session.create", nextMessage().type)
+            assertEquals("session.update", nextMessage().type)
+            return session
+        }
         suspend fun finish(session: VolcRealtimeSession) {
             session.close()
             assertEquals("session.close", nextMessage().type)

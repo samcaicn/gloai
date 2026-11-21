@@ -257,7 +257,7 @@ class VolcRealtimeSession internal constructor(
 
     /** Once per call ID. A provider batch is returned together after all its tools finish. */
     @Synchronized override fun sendToolResult(callId: String, result: JsonObject): Boolean {
-        if (phase != Phase.ACTIVE || !config.enablePhoneDtmf ||
+        if (phase != Phase.ACTIVE || !(config.enablePhoneDtmf || config.agentTools) ||
             result.toString().length > VolcRealtimeProtocol.MAX_TOOL_RESULT_CHARS) return false
         val call = toolCalls[callId] ?: return false
         if (call.result != null || call.sent) return false
@@ -517,7 +517,7 @@ class VolcRealtimeSession internal constructor(
     }
 
     private fun receiveFunctionCalls(frame: JsonObject, responseId: String?) {
-        if (!config.enablePhoneDtmf) { invalidFrame(); return }
+        if (!config.enablePhoneDtmf && !config.agentTools) { invalidFrame(); return }
         val items = frame["items"] as? JsonArray
         if (items == null || items.size !in 1..VolcRealtimeProtocol.MAX_FUNCTION_BATCH) {
             invalidFrame(); return
@@ -544,14 +544,17 @@ class VolcRealtimeSession internal constructor(
         for ((id, item) in newCalls) {
             val name = item.string("name")
             val rawArguments = item.string("arguments")
-            val arguments = if (rawArguments != null && rawArguments.length <= VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS) {
+            val arguments = if (rawArguments != null &&
+                rawArguments.length <= VolcRealtimeProtocol.maxArgumentCharsFor(name)) {
                 try { Json.parseToJsonElement(rawArguments) as? JsonObject } catch (_: IllegalArgumentException) { null }
             } else null
             val error = when {
                 stale -> "stale_response"
-                name != VolcRealtimeProtocol.DTMF_FUNCTION -> "unsupported_tool"
-                arguments == null || !VolcRealtimeProtocol.validDtmfArguments(arguments) -> "invalid_arguments"
-                else -> null
+                name == VolcRealtimeProtocol.DTMF_FUNCTION && config.enablePhoneDtmf ->
+                    if (arguments == null || !VolcRealtimeProtocol.validDtmfArguments(arguments)) "invalid_arguments" else null
+                name == VolcRealtimeProtocol.MIKA_REQUEST_FUNCTION && config.agentTools ->
+                    if (arguments == null || !VolcRealtimeProtocol.validAgentArguments(arguments)) "invalid_arguments" else null
+                else -> "unsupported_tool"
             }
             if (error != null) {
                 toolCalls.getValue(id).result = buildJsonObject { put("ok", false); put("error", error) }

@@ -23,6 +23,11 @@ data class VolcRealtimeConfig(
         require(systemPrompt.length <= MAX_PROMPT_CHARS) { "Realtime system prompt is too long" }
         require(speaker.isNotBlank() && speaker.length <= 128) { "Invalid realtime speaker" }
         require(model.isNotBlank() && model.length <= 128 && model.all { it.code in 33..126 }) { "Invalid realtime model" }
+        // The OpenAI realtime path has no mika_request registration or dispatch; fail fast
+        // instead of silently dropping every voice request.
+        require(!(agentTools && protocol == CallVoiceProtocol.OPENAI_REALTIME)) {
+            "agentTools requires the VOLC_DUPLEX realtime protocol"
+        }
     }
 
     companion object {
@@ -57,6 +62,8 @@ internal object VolcRealtimeProtocol {
     const val MAX_FUNCTION_CALLS = 128
     const val MAX_FUNCTION_BATCH = 8
     const val MAX_FUNCTION_ARGUMENT_CHARS = 256
+    /** mika_request carries a full utterance (≤ [MAX_UTTERANCE_CHARS]) plus JSON envelope overhead. */
+    const val MAX_AGENT_FUNCTION_ARGUMENT_CHARS = MAX_UTTERANCE_CHARS + 128
     const val MAX_TOOL_RESULT_CHARS = 2048
     const val SESSION_CLOSED = "session.closed"
     const val INPUT_AUDIO_COMMITTED = "input_audio_buffer.committed"
@@ -168,6 +175,15 @@ internal object VolcRealtimeProtocol {
         return arguments.keys == setOf("digits") && digits.length in 1..MAX_DTMF_DIGITS &&
             digits.all { it in '0'..'9' || it == '*' || it == '#' }
     }
+
+    fun validAgentArguments(arguments: JsonObject): Boolean {
+        val utterance = arguments.string("utterance") ?: return false
+        return arguments.keys == setOf("utterance") && utterance.length in 1..MAX_UTTERANCE_CHARS
+    }
+
+    /** Argument envelopes are tool-sized: a DTMF batch is tiny, an utterance can fill the cap. */
+    fun maxArgumentCharsFor(name: String?): Int =
+        if (name == MIKA_REQUEST_FUNCTION) MAX_AGENT_FUNCTION_ARGUMENT_CHARS else MAX_FUNCTION_ARGUMENT_CHARS
 
     fun greeting(eventId: String, text: String): String = message("speech_text_buffer.commit", eventId) {
         put("text", text)
