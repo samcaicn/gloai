@@ -1,15 +1,22 @@
 package com.wangzan101.mika.selfcheck
 
 import android.app.ActivityManager
+import android.app.KeyguardManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
 import android.hardware.display.DisplayManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.util.DisplayMetrics
 import android.view.Display
+import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewCompat
 import com.wangzan101.mika.BuildConfig
@@ -35,6 +42,7 @@ import com.wangzan101.mika.core.cap.sandbox.CommandResult
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.selfcheck.Advice
 import com.wangzan101.mika.core.selfcheck.CheckOutcome
+import com.wangzan101.mika.core.selfcheck.CheckStatus
 import com.wangzan101.mika.core.selfcheck.DeviceFacts
 import com.wangzan101.mika.core.selfcheck.SelfCheck
 import com.wangzan101.mika.core.selfcheck.SelfCheckPort
@@ -47,6 +55,7 @@ import com.wangzan101.mika.core.uistate.UiTreeNode
 import com.wangzan101.mika.settings.AccessibilityState
 import com.wangzan101.mika.settings.SystemStatus
 import com.wangzan101.mika.shell.IMikaShell
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -114,6 +123,208 @@ class AndroidSelfCheck(context: Context, private val status: () -> SystemStatus)
         SelfCheck.BROWSER -> browser()
         SelfCheck.SANDBOX -> sandbox()
         SelfCheck.APP_COPIES -> appCopies()
+    }
+
+    // ---------- 熄屏自检(手动诊断) ----------
+
+    /**
+     * 手动诊断:主屏熄屏且锁定之后,任务用的那一套(内置助手、虚拟屏、打开系统设置、读树、截图、点按)还能不能工作。
+     * 用真机端口,但持的是 PARTIAL 唤醒锁:不点亮主屏、不走任务解锁。监视挂上之后,主屏亮起、用户回到手机、
+     * 或有任务开跑,这次自检就作废,如实报「被打断」。每段结果经 [report] 交给界面。
+     */
+    internal suspend fun checkScreenOff(taskBusy: () -> Boolean, report: (Int, CheckOutcome) -> Unit) {
+        val displays = app.getSystemService(DisplayManager::class.java)
+        val power = app.getSystemService(PowerManager::class.java)
+        val keyguard = app.getSystemService(KeyguardManager::class.java)
+        fun screenOff() = displays.getDisplay(Display.DEFAULT_DISPLAY)?.state == Display.STATE_OFF
+        fun lockedAndOff() = screenOff() && keyguard.isDeviceLocked
+        val armed = AtomicBoolean()
+        val invalidated = AtomicBoolean()
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (armed.get()) invalidated.set(true)
+            }
+        }
+        val listener = object : DisplayManager.DisplayListener {
+            override fun onDisplayAdded(displayId: Int) = Unit
+            override fun onDisplayRemoved(displayId: Int) = Unit
+            override fun onDisplayChanged(displayId: Int) {
+                if (displayId == Display.DEFAULT_DISPLAY && armed.get() && !lockedAndOff()) invalidated.set(true)
+            }
+        }
+        val lock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Mika:ScreenOffSelfCheck")
+        fun valid() = !invalidated.get() && !taskBusy() && lockedAndOff()
+        val waitStage = R.string.selfcheck_screen_off_lock
+        val finalStage = R.string.selfcheck_screen_off_start
+        var stage = waitStage
+        var registeredReceiver = false
+        var registeredListener = false
+        var completed = false
+        var firstProblem: Pair<Int, CheckOutcome>? = null
+        fun reportStep(label: Int, outcome: CheckOutcome) {
+            if (outcome.status != CheckStatus.Pass && firstProblem == null) firstProblem = label to outcome
+            report(label, outcome)
+        }
+        try {
+            ContextCompat.registerReceiver(app, receiver, IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_USER_PRESENT)
+            }, ContextCompat.RECEIVER_NOT_EXPORTED)
+            registeredReceiver = true
+            displays.registerDisplayListener(listener, Handler(Looper.getMainLooper()))
+            registeredListener = true
+            lock.acquire(SCREEN_OFF_WAKE_LOCK_MS)
+            // 等用户按电源键熄屏并锁定;期间有任务开跑就不开始
+            val ready = withTimeoutOrNull(SCREEN_OFF_READY_MS) {
+                while (!lockedAndOff() && !taskBusy()) delay(POLL_MS)
+                !taskBusy()
+            }
+            if (ready != true) {
+                reportStep(stage, CheckOutcome.fail(
+                    if (taskBusy()) tr(R.string.selfcheck_task_running) else tr(R.string.selfcheck_advice_timeout),
+                    Advice.TimedOut,
+                ))
+                return
+            }
+            armed.set(true)
+            reportStep(stage, CheckOutcome.pass(tr(R.string.selfcheck_status_pass)))
+            val finished = withTimeoutOrNull(SCREEN_OFF_STAGES_MS) {
+                completed = runScreenOffStages(::valid, { stage = it }, ::reportStep)
+                true
+            }
+            if (finished != true && valid()) reportStep(stage, CheckOutcome.fail(tr(R.string.selfcheck_advice_timeout), Advice.TimedOut))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: ScreenOffInterrupted) {
+            // 主屏状态变了:收尾释放虚拟屏之后统一报「被打断」
+        } catch (e: Exception) {
+            reportStep(stage, CheckOutcome.fail(e.javaClass.simpleName, Advice.Error))
+        } finally {
+            try {
+                release()
+                withContext(Dispatchers.Main.immediate) {
+                    if (armed.get() && !valid()) {
+                        report(finalStage, CheckOutcome.fail(tr(R.string.selfcheck_screen_off_interrupted), Advice.MainScreenChanged))
+                    } else {
+                        val problem = firstProblem
+                        if (problem != null) {
+                            val (label, outcome) = problem
+                            report(finalStage, outcome.copy(detail = tr(label)))
+                        } else if (completed) {
+                            report(finalStage, CheckOutcome.pass(tr(R.string.selfcheck_status_pass)))
+                        }
+                    }
+                }
+            } finally {
+                if (registeredListener) displays.unregisterDisplayListener(listener)
+                if (registeredReceiver) app.unregisterReceiver(receiver)
+                if (lock.isHeld) lock.release()
+            }
+        }
+    }
+
+    /** 主屏状态一变就中断在跑的阶段;真正的「被打断」报告在虚拟屏放掉之后才发。 */
+    private class ScreenOffInterrupted : Exception()
+
+    /**
+     * 熄屏自检的几段,顺序和正常自检一致:内置助手 → 虚拟屏 → 打开系统设置 → 读树和截图 → 点按搜索。
+     * 每步前后都核一次主屏状态,变了立即中断;任何一步不过就停。
+     */
+    private suspend fun runScreenOffStages(
+        valid: () -> Boolean,
+        starting: (Int) -> Unit,
+        report: (Int, CheckOutcome) -> Unit,
+    ): Boolean {
+        fun verifyLock() {
+            if (!valid()) throw ScreenOffInterrupted()
+        }
+        suspend fun step(label: Int, work: suspend () -> CheckOutcome): Boolean {
+            starting(label)
+            verifyLock()
+            val outcome = work()
+            verifyLock()
+            report(label, outcome)
+            return outcome.status == CheckStatus.Pass
+        }
+        if (!step(R.string.selfcheck_check_helper, ::helper)) return false
+        if (!step(R.string.selfcheck_check_display, ::virtualDisplay)) return false
+        val sh = checkNotNull(shell)
+        val d = checkNotNull(display)
+        val settings = SystemPickers.settingsPackage(app.packageManager)
+        var deviceScreen: AndroidScreen? = null
+        // 打开系统设置(只打开、不点):主屏熄着,设置要开在刚建好的虚拟屏上
+        if (!step(R.string.selfcheck_check_launch) {
+            val a11y = ScreenAccessibility.instance.value
+            if (a11y == null || settings == null) {
+                return@step CheckOutcome.fail("Settings or accessibility unavailable", Advice.LaunchFailed)
+            }
+            val s = AndroidScreen(a11y, sh, LazyAgentDisplay(d.width, d.height) { d }.also { it.get() })
+            screen = s
+            deviceScreen = s
+            verifyLock()
+            // 开在新建好的虚拟屏上;不去 force-stop 系统设置
+            val opened = s.openApp(settings, cold = false)
+            if (opened is ActionResult.Ok && poll(PAGE_WAIT_MS) {
+                    verifyLock()
+                    topPackage(sh, d.displayId) == settings
+                }) CheckOutcome.pass("Settings opened on the virtual display")
+            else CheckOutcome.fail("Settings: ${reason(opened)}", Advice.LaunchFailed)
+        }) return false
+        val s = checkNotNull(deviceScreen)
+        val pkg = checkNotNull(settings)
+        val treeReadable = step(R.string.selfcheck_check_reading) {
+            var readFailure = R.string.selfcheck_screen_off_no_app_window
+            val readable = poll(PAGE_WAIT_MS) {
+                verifyLock()
+                val snapshot = s.peek()
+                val settingsWindow = selfCheckWindowContent(snapshot, pkg)
+                readFailure = when {
+                    !snapshot.hasWindow -> R.string.selfcheck_screen_off_no_app_window
+                    settingsWindow == null && snapshot.windows.any {
+                        it.type == "application" && it.packageName == null
+                    } -> R.string.selfcheck_screen_off_no_root
+                    settingsWindow == null -> R.string.selfcheck_screen_off_no_settings_window
+                    else -> R.string.selfcheck_screen_off_no_elements
+                }
+                settingsWindow?.elements?.isNotEmpty() == true
+            }
+            if (readable) CheckOutcome.pass(tr(R.string.selfcheck_screen_off_tree_readable))
+            else CheckOutcome.fail(tr(readFailure), Advice.ReadFailed)
+        }
+        val frameReadable = step(R.string.selfcheck_screen_off_capture) {
+            val frame = awaitFrame(d)
+                ?: return@step CheckOutcome.fail(tr(R.string.selfcheck_screen_off_no_frame), Advice.BlankFrames)
+            val black = try { FrameMath.isBlack(frame.width, frame.height, frame::getPixel) }
+                finally { frame.recycle() }
+            if (black) CheckOutcome.fail(tr(R.string.selfcheck_screen_off_black_frame), Advice.BlankFrames)
+            else CheckOutcome.pass(tr(R.string.selfcheck_screen_off_frame_readable))
+        }
+        if (!treeReadable || !frameReadable) return false
+        return step(R.string.selfcheck_check_actions) {
+            val window = selfCheckWindowContent(s.snapshot(), pkg)
+                ?: return@step CheckOutcome.fail("Settings window is no longer readable", Advice.ReadFailed)
+            val search = window.elements.firstOrNull { element ->
+                element.clickable && !element.editable && !element.secret &&
+                    (element.resourceId?.substringAfterLast('/') in SETTINGS_SEARCH_IDS ||
+                        element.name in SETTINGS_SEARCH_LABELS)
+            } ?: return@step CheckOutcome.partial("Settings search button not identified", Advice.ActionFailed)
+            verifyLock()
+            if (s.tapRef(search.ref, window.snapshotId) !is ActionResult.Ok) {
+                return@step CheckOutcome.fail("Settings search tap failed", Advice.ActionFailed)
+            }
+            val changed = poll(PAGE_WAIT_MS) {
+                verifyLock()
+                val target = topPackage(sh, d.displayId)
+                target != null && systemPackage(target) &&
+                    selfCheckWindowContent(s.peek(), target)?.elements.orEmpty().any { element ->
+                        element.editable && !element.secret &&
+                            (element.searchField || element.focused) &&
+                            window.elements.none { old -> old.editable && old.resourceId == element.resourceId && old.name == element.name }
+                    }
+            }
+            if (changed) CheckOutcome.pass("Tapping Settings search opened a search field")
+            else CheckOutcome.fail("Settings search did not open", Advice.ActionFailed)
+        }
     }
 
     // ---------- 2 权限 ----------
@@ -608,6 +819,13 @@ class AndroidSelfCheck(context: Context, private val status: () -> SystemStatus)
         const val MAX_CHARS = 4_000
         const val SETTINGS_IN_USE = "Settings is open on the main screen, so it was not opened"
         const val SETTINGS_ON_MAIN = "Settings opened on the main screen"
+        /** 认系统设置的搜索入口:按资源 id 的末段,或按入口名字(中英文)。 */
+        val SETTINGS_SEARCH_IDS = setOf("search", "search_icon", "search_action_bar_title", "search_button")
+        val SETTINGS_SEARCH_LABELS = setOf("Search", "Search settings", "搜索", "搜索设置", "搜尋", "搜尋設定")
+        /** 熄屏自检:唤醒锁上限(不点亮主屏)、等熄屏锁定的超时、各阶段的总预算。 */
+        const val SCREEN_OFF_WAKE_LOCK_MS = 90_000L
+        const val SCREEN_OFF_READY_MS = 45_000L
+        const val SCREEN_OFF_STAGES_MS = 35_000L
 
         const val COUNT = "selfcheck_count"
         const val BUTTON = "selfcheck_button"

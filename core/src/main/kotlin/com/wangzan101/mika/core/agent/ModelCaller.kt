@@ -74,7 +74,7 @@ internal class ModelCaller(
     /** 插件提示词钩子:拼好的系统提示词发模型前过它;为 null 时原样发。 */
     var promptTransform: (suspend (String) -> String)? = null
 
-    /** 最近一次调用在成功那次请求之前花掉的时间(失败的请求、退避)。 */
+    /** 最近一次调用在成功那次请求之前花掉的时间(失败的请求、退避);从第一次真正发出请求起算。 */
     var lastRetryWaitMs = 0L
         private set
 
@@ -229,7 +229,8 @@ internal class ModelCaller(
         onText: ((String) -> Unit)? = null): ModelReply {
         var retries = 0
         lastRetryWaitMs = 0
-        val began = now()
+        // 第一次真正发出请求的时刻;之前的准备(压缩、等冷却窗口)不算重试等待
+        var firstAttemptAt: Long? = null
         val overhead = TokenEstimate.of(systemPrompt) + specs.sumOf { TokenEstimate.of(it.name + it.description + it.parametersJsonSchema) }
         val contextTokens = using.capabilities.contextTokens
         val compressor = compressorFor(using)
@@ -252,8 +253,10 @@ internal class ModelCaller(
                 if (tools.inlineScreen) tools.setVisibleObservations(visibleReads(sent.messages))
                 // 撞过 429 的话等全局冷却窗口过去再发(不在冷却立即返回,零开销)
                 RateLimitGovernor.awaitClear(using.name)
-                // 这一次之前花掉的(失败的请求、退避)都算重试等待
-                lastRetryWaitMs = now() - began
+                // 从第一次发出请求起算:失败的请求和退避才算重试等待,第一次发出之前的准备不算
+                val sentAt = now()
+                lastRetryWaitMs = firstAttemptAt?.let { sentAt - it } ?: 0L
+                if (firstAttemptAt == null) firstAttemptAt = sentAt
                 suspend fun invokeModel(): ModelReply {
                     val prompt = promptTransform?.invoke(systemPrompt) ?: systemPrompt
                     return if (onText == null) using.complete(prompt, sent.messages, specs)

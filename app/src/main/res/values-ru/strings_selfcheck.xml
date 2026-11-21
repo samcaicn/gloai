@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">Введите здесь</string>
     <string name="selfcheck_target_tick">Отметка %1$d</string>
     <string name="selfcheck_target_row">Строка %1$d</string>
+
+    <string name="selfcheck_screen_off_start">Проверка с выключенным экраном</string>
+    <string name="selfcheck_screen_off_wait">Нажмите кнопку питания, чтобы выключить экран и заблокировать телефон в течение 45 секунд. Вернитесь сюда после проверки, чтобы увидеть результат.</string>
+    <string name="selfcheck_screen_off_interrupted">Во время проверки экран включился, телефон был разблокирован или началась другая задача.</string>
+    <string name="selfcheck_screen_off_lock">Экран выключен, телефон заблокирован</string>
+    <string name="selfcheck_screen_off_capture">Снимок виртуального дисплея</string>
+    <string name="selfcheck_screen_off_no_app_window">Спецвозможности не сообщили об окне приложения на виртуальном дисплее</string>
+    <string name="selfcheck_screen_off_no_root">Окно приложения найдено, но его корень не читается</string>
+    <string name="selfcheck_screen_off_no_settings_window">Спецвозможности не сообщили об окне настроек на виртуальном дисплее</string>
+    <string name="selfcheck_screen_off_no_elements">В окне настроек нет читаемых элементов</string>
+    <string name="selfcheck_screen_off_tree_readable">Дерево спецвозможностей настроек читается</string>
+    <string name="selfcheck_screen_off_no_frame">С виртуального дисплея не поступил кадр</string>
+    <string name="selfcheck_screen_off_black_frame">Кадр виртуального дисплея чёрный</string>
+    <string name="selfcheck_screen_off_frame_readable">Кадр виртуального дисплея содержит видимое содержимое</string>
 </resources>

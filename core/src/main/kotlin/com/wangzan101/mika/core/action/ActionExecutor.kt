@@ -126,7 +126,16 @@ class ActionExecutor(
         if (guards.stop != null) return refuse("guard_stopped", origin, before)
         if (policy.stopOnGuardWarning && before.isNotEmpty()) return refuse("guard_warning", origin, before)
         val writing = tools.writesScreen(call.name)
-        if (writing && !policy.gatedByCaller) gate()
+        if (writing && !policy.gatedByCaller) try {
+            gate()
+        } catch (_: com.wangzan101.mika.core.gate.ScreenRecoveryRequired) {
+            // 等关卡时锁过屏:这一步按的是锁屏前的屏幕,不做;让模型重读现在的屏幕再决定
+            val notice = ToolExecution(buildJsonObject {
+                put("ok", false); put("error", "screen_changed_during_lock"); put("executed", false)
+                put("message", "The phone locked and was unlocked while the task was running. This pending action was not executed. Read the current screen and verify whether the previous action already completed before taking another action.")
+            })
+            return ran(Step(call, args, origin, before, writing = false, offScreen, verb, null, followUp, reads, preset = notice))
+        }
         // 没有可用的同意就不执行,也不计入失败熔断
         var d = decision.judge(call.name, args, origin)
         // 不在屏上、工具声明要问的一步(会改动东西的 root 命令):调用方问得到人就当场问,同意了按这次同意再判一次;

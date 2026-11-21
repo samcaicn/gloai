@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">ここに入力</string>
     <string name="selfcheck_target_tick">チェック %1$d</string>
     <string name="selfcheck_target_row">行 %1$d</string>
+
+    <string name="selfcheck_screen_off_start">画面オフのセルフチェック</string>
+    <string name="selfcheck_screen_off_wait">45 秒以内に電源ボタンを押して画面を消し、スマートフォンをロックしてください。テスト後にここへ戻ると結果を確認できます。</string>
+    <string name="selfcheck_screen_off_interrupted">テスト中に画面が点灯したか、ロックが解除されたか、別のタスクが開始されました。</string>
+    <string name="selfcheck_screen_off_lock">画面オフ・ロック済み</string>
+    <string name="selfcheck_screen_off_capture">仮想ディスプレイのスクリーンショット</string>
+    <string name="selfcheck_screen_off_no_app_window">仮想ディスプレイ上にアプリのウィンドウが報告されませんでした</string>
+    <string name="selfcheck_screen_off_no_root">アプリのウィンドウは見つかりましたが、ルートを読み取れません</string>
+    <string name="selfcheck_screen_off_no_settings_window">仮想ディスプレイ上に設定のウィンドウが報告されませんでした</string>
+    <string name="selfcheck_screen_off_no_elements">設定のウィンドウに読み取れる要素がありません</string>
+    <string name="selfcheck_screen_off_tree_readable">設定のユーザー補助ツリーを読み取れます</string>
+    <string name="selfcheck_screen_off_no_frame">仮想ディスプレイからフレームが届きませんでした</string>
+    <string name="selfcheck_screen_off_black_frame">仮想ディスプレイのフレームが真っ黒です</string>
+    <string name="selfcheck_screen_off_frame_readable">仮想ディスプレイのフレームに表示内容があります</string>
 </resources>

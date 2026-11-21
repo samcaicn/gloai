@@ -27,6 +27,7 @@
     <string name="model_key_clear">پاک کردن</string>
     <string name="model_key_invisible_removed">نویسه‌های نامرئی داخل کلید حذف شد.</string>
     <string name="model_key_illegal_chars">کلید نویسه‌هایی دارد که نمی‌توان استفاده کرد. فقط خود کلید را جای‌گذاری کنید.</string>
+    <string name="model_key_website">دریافت کلید API</string>
     <string name="model_test_save">آزمون و ذخیره</string>
     <string name="model_testing">در حال آزمون…</string>
     <string name="model_test_note">میکا فهرست مدل‌های این ارائه‌دهنده را می‌گیرد و از یکی از آن‌ها می‌خواهد ابزار آزمایشی را فراخوانی کند؛ اگر هر دو موفق باشند، آن را ذخیره می‌کند.</string>

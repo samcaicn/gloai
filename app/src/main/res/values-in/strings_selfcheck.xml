@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">Ketik di sini</string>
     <string name="selfcheck_target_tick">Centang %1$d</string>
     <string name="selfcheck_target_row">Baris %1$d</string>
+
+    <string name="selfcheck_screen_off_start">Uji saat layar mati</string>
+    <string name="selfcheck_screen_off_wait">Tekan tombol daya untuk mematikan layar dan mengunci ponsel dalam 45 detik. Kembali ke sini setelah pengujian untuk melihat hasilnya.</string>
+    <string name="selfcheck_screen_off_interrupted">Layar menyala, ponsel terbuka, atau tugas lain dimulai selama pengujian.</string>
+    <string name="selfcheck_screen_off_lock">Layar mati dan ponsel terkunci</string>
+    <string name="selfcheck_screen_off_capture">Tangkapan layar virtual</string>
+    <string name="selfcheck_screen_off_no_app_window">Aksesibilitas tidak melaporkan jendela aplikasi di layar virtual</string>
+    <string name="selfcheck_screen_off_no_root">Jendela aplikasi ditemukan tetapi akarnya tidak dapat dibaca</string>
+    <string name="selfcheck_screen_off_no_settings_window">Aksesibilitas tidak melaporkan jendela Pengaturan di layar virtual</string>
+    <string name="selfcheck_screen_off_no_elements">Jendela Pengaturan tidak memiliki elemen yang dapat dibaca</string>
+    <string name="selfcheck_screen_off_tree_readable">Pohon aksesibilitas Pengaturan dapat dibaca</string>
+    <string name="selfcheck_screen_off_no_frame">Tidak ada bingkai yang tiba dari layar virtual</string>
+    <string name="selfcheck_screen_off_black_frame">Bingkai layar virtual hitam</string>
+    <string name="selfcheck_screen_off_frame_readable">Bingkai layar virtual berisi konten yang terlihat</string>
 </resources>

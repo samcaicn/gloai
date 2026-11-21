@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">在這裡打字</string>
     <string name="selfcheck_target_tick">計時 %1$d</string>
     <string name="selfcheck_target_row">第 %1$d 行</string>
+
+    <string name="selfcheck_screen_off_start">熄屏自檢</string>
+    <string name="selfcheck_screen_off_wait">請在 45 秒內按電源鍵關閉螢幕並鎖定手機。測試完成後回到這裡查看結果。</string>
+    <string name="selfcheck_screen_off_interrupted">測試期間主螢幕亮起、手機被解鎖，或有其他任務開始。</string>
+    <string name="selfcheck_screen_off_lock">已關閉螢幕並鎖定</string>
+    <string name="selfcheck_screen_off_capture">虛擬螢幕截圖</string>
+    <string name="selfcheck_screen_off_no_app_window">無障礙服務沒有回報虛擬螢幕上的應用程式視窗</string>
+    <string name="selfcheck_screen_off_no_root">找到應用程式視窗，但根節點無法讀取</string>
+    <string name="selfcheck_screen_off_no_settings_window">無障礙服務沒有回報虛擬螢幕上的設定視窗</string>
+    <string name="selfcheck_screen_off_no_elements">設定視窗中沒有可讀取的元素</string>
+    <string name="selfcheck_screen_off_tree_readable">可以讀取設定頁的無障礙樹</string>
+    <string name="selfcheck_screen_off_no_frame">未收到虛擬螢幕的畫面</string>
+    <string name="selfcheck_screen_off_black_frame">虛擬螢幕畫面是黑的</string>
+    <string name="selfcheck_screen_off_frame_readable">虛擬螢幕畫面有可見內容</string>
 </resources>

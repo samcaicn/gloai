@@ -250,6 +250,20 @@ class RunTimelineViewModelTest {
         assertEquals(listOf("act", "act"), rows.drop(1).map { it.kind })
     }
 
+    /** 外部 MCP 连接器调用的活动单独成行,标的是连接器配置的名字;普通的读照旧合并。 */
+    @Test fun mcpCallShowsTheConnectorName() {
+        val id = run("查笔记") {
+            event(RunEvent.ModelReply(clock, 1, "", "mcp_demo__search", "{}", 10, 1, null))
+            event(RunEvent.Activity(clock, 1, "observe", "web_read_page", "example.com", "completed", listOf(1), callId = "r1"))
+            event(RunEvent.Activity(clock, 1, "act", "mcp_demo__search", null, "completed", callId = "m1", mcpConnector = "Team notes"))
+        }
+        val rows = ready(id).steps.single().activities
+        assertEquals(2, rows.size)
+        assertEquals("observe", rows[0].kind)
+        assertEquals("mcp", rows[1].kind)
+        assertEquals("已调用 Team notes MCP", rows[1].label)
+    }
+
     @Test fun showsVerifierAndGuardTags() {
         // 和 AgentLoop 一样用守卫自己的序列化拼结果
         fun withGuard(vararg v: GuardVerdict) =

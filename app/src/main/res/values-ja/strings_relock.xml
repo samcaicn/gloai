@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">タスクがスマートフォンのロックを解除しました</string>
+    <string name="relock_guard_body">タスク終了後に Mika が再度ロックします。Mika が予期せず停止した場合は、ロックされているか確認してください。</string>
+    <string name="relock_failed_title">スマートフォンがロック解除されたままの可能性があります</string>
+    <string name="relock_failed_body">再度ロックされたことを確認できませんでした。確認して手動でロックしてください。</string>
+    <string name="unlock_recovery_title">ロックを解除してタスクを続行</string>
+    <string name="unlock_recovery_body">タスク中にロックされ、自動解除に失敗しました。手動で解除するとタスクが再開します。</string>
+</resources>

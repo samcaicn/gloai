@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">Digite aqui</string>
     <string name="selfcheck_target_tick">Marcar %1$d</string>
     <string name="selfcheck_target_row">Linha %1$d</string>
+
+    <string name="selfcheck_screen_off_start">Teste com a tela desligada</string>
+    <string name="selfcheck_screen_off_wait">Pressione o botão liga/desliga para apagar a tela e bloquear o telefone em 45 segundos. Volte aqui após o teste para ver o resultado.</string>
+    <string name="selfcheck_screen_off_interrupted">A tela acendeu, o telefone foi desbloqueado ou outra tarefa começou durante o teste.</string>
+    <string name="selfcheck_screen_off_lock">Tela desligada e telefone bloqueado</string>
+    <string name="selfcheck_screen_off_capture">Captura da tela virtual</string>
+    <string name="selfcheck_screen_off_no_app_window">A acessibilidade não relatou nenhuma janela de app na tela virtual</string>
+    <string name="selfcheck_screen_off_no_root">Uma janela de app foi encontrada, mas sua raiz não é legível</string>
+    <string name="selfcheck_screen_off_no_settings_window">A acessibilidade não relatou a janela de Configurações na tela virtual</string>
+    <string name="selfcheck_screen_off_no_elements">A janela de Configurações não tem elementos legíveis</string>
+    <string name="selfcheck_screen_off_tree_readable">A árvore de acessibilidade das Configurações é legível</string>
+    <string name="selfcheck_screen_off_no_frame">Nenhum quadro chegou da tela virtual</string>
+    <string name="selfcheck_screen_off_black_frame">O quadro da tela virtual está preto</string>
+    <string name="selfcheck_screen_off_frame_readable">O quadro da tela virtual tem conteúdo visível</string>
 </resources>

@@ -75,6 +75,7 @@ import com.wangzan101.mika.settings.DecisionSettings
 import com.wangzan101.mika.settings.ModelOption
 import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.ProviderConfig
+import com.wangzan101.mika.settings.ProviderKeySites
 import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.RoleChoice
@@ -669,6 +670,15 @@ private fun AddProviderForm(ui: ModelSetupUi, actions: ModelSetupActions) {
                     style = MikaType.Caption, color = c.ok,
                 )
             }
+            // 按地址认得出服务商时,给官方 Key 申请页的直达链接;认不出不显示
+            ProviderKeySites.forBaseUrl(f.baseUrl)?.let { url ->
+                val context = LocalContext.current
+                Text(
+                    ModelSetupCopy.KEY_WEBSITE,
+                    Modifier.padding(top = 6.dp).clickable { openInBrowser(context, url) }.testTag("setup-key-website"),
+                    style = MikaType.Caption, color = c.accent,
+                )
+            }
             Spacer(Modifier.height(10.dp))
         }
         if (f.showModel) {
@@ -1257,6 +1267,7 @@ object ModelSetupCopy {
     val KEY_OPTIONAL: String get() = tr(R.string.model_key_optional)
     val KEY_INVISIBLE_REMOVED: String get() = tr(R.string.model_key_invisible_removed)
     val KEY_ILLEGAL: String get() = tr(R.string.model_key_illegal_chars)
+    val KEY_WEBSITE: String get() = tr(R.string.model_key_website)
     val TEST_AND_SAVE: String get() = tr(R.string.model_test_save)
     val TESTING: String get() = tr(R.string.model_testing)
     val PICK_MAIN: String get() = tr(R.string.model_pick_main)

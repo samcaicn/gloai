@@ -55,7 +55,9 @@ interface DeviceAccessStore {
 data class DeviceAccessResult(val status: String, val state: DeviceState?, val enabled: Boolean,
     val credentialConfigured: Boolean, val attemptBlocked: Boolean,
     val storedKind: CredentialKind? = null, val detectedKind: CredentialKind? = null,
-    val keyguardDiagnostics: List<String> = emptyList())
+    val keyguardDiagnostics: List<String> = emptyList(),
+    /** 这次流程真的把手机从熄屏/锁屏带到可用(唤醒、上滑或注入凭据);用户中途自己解开的不算。 */
+    val performedUnlock: Boolean = false)
 
 /** 整个进程共用一份。并发调用串行化,成功依据系统状态,不依据按键或命令的返回码。 */
 class DeviceAccess(private val port: DeviceAccessPort, private val store: DeviceAccessStore,
@@ -82,18 +84,22 @@ class DeviceAccess(private val port: DeviceAccessPort, private val store: Device
         prepare(authorized)?.let { return@withLock it }
         var now = read() ?: return@withLock result("device_unavailable")
         if (now.ready) return@withLock result("unlocked", now)
+        var woke = false
         if (!now.interactive) {
             if (!allowed()) return@withLock result("disabled", now)
             if (!port.wake()) return@withLock result("wake_failed", read())
+            woke = true
             now = await { !allowed() || it.interactive } ?: return@withLock result("device_unavailable")
             if (!allowed()) return@withLock result("disabled", now)
             if (!now.interactive) return@withLock result("wake_failed", now)
         }
         if (!allowed()) return@withLock result("disabled", now)
+        val wasSecure = now.secure
         if (!port.dismiss()) return@withLock result("dismiss_failed", read())
         now = await { !allowed() || it.ready || it.secure && it.keyguardShowing } ?: return@withLock result("device_unavailable")
         if (!allowed()) return@withLock result("disabled", now)
-        if (now.ready) return@withLock result("unlocked", now)
+        // 非安全锁屏由这次流程上滑解开、或这次流程唤醒了熄屏:算这次解的;安全锁屏没输入凭据就开了是用户同时自己解的
+        if (now.ready) return@withLock result("unlocked", now, performedUnlock = woke || !wasSecure)
         if (!now.secure) return@withLock result("unlock_failed", now)
         if (store.attemptBlocked) return@withLock result("attempt_blocked", now)
         val credential = store.credential() ?: return@withLock result("credential_required", now)
@@ -146,7 +152,7 @@ class DeviceAccess(private val port: DeviceAccessPort, private val store: Device
                 return@withLock result("input_failed", after)
             }
             now = await { s -> s.ready } ?: return@withLock result("device_unavailable")
-            if (now.ready) { store.completeAttempt(it); result("unlocked", now) }
+            if (now.ready) { store.completeAttempt(it); result("unlocked", now, performedUnlock = true) }
             else result("unlock_failed", now)
         }
     }
@@ -167,7 +173,7 @@ class DeviceAccess(private val port: DeviceAccessPort, private val store: Device
         return s
     }
     private fun result(status: String, s: DeviceState? = null, storedKind: CredentialKind? = null, detectedKind: CredentialKind? = null,
-        keyguardDiagnostics: List<String> = emptyList()) =
+        keyguardDiagnostics: List<String> = emptyList(), performedUnlock: Boolean = false) =
         DeviceAccessResult(status, s, store.enabled, store.credentialConfigured, store.attemptBlocked, storedKind, detectedKind,
-            keyguardDiagnostics)
+            keyguardDiagnostics, performedUnlock)
 }

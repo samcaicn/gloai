@@ -819,6 +819,25 @@ class ChatViewModelTest {
         assertEquals("takeOver", calls.last())
     }
 
+    /** 经 MCP 调外部连接器:在跑时说在调哪个;做完单独一行标连接器配置的名字,失败也看得出是哪个连接器。 */
+    @Test fun mcpConnectorNamedOnLiveLineAndSteps() = runTest {
+        val vm = vm()
+        vm.send("查一下团队笔记", ok)
+        emit(TaskState.Running(1, "我去笔记里找找", mcpConnector = "Team notes"))
+        assertEquals("正在调用 Team notes MCP…", liveLine(vm.ui.value.exchanges.single()))
+
+        acts.value = acts.value + RunEvent.Activity(0, 1, "act", "mcp_demo__search", null, "completed", mcpConnector = "Team notes")
+        runCurrent()
+        acts.value = acts.value + RunEvent.Activity(0, 2, "act", "mcp_demo__search", null, "some_error", failed = true, mcpConnector = "Team notes")
+        runCurrent()
+        emit(TaskState.Succeeded("找到了"))
+        val steps = vm.ui.value.exchanges.single().steps
+        assertEquals(StepRow(1, "已调用 Team notes MCP", "", StepState.Ok), steps[0])
+        assertEquals(StepRow(2, "已调用 Team notes MCP", tr(R.string.step_failed), StepState.Ok), steps[1])
+        // 错误码不给人看
+        assertFalse(steps.joinToString().contains("some_error") || steps.joinToString().contains("mcp_demo"))
+    }
+
     @Test fun paymentTakeoverCarriesDetailsAndCanBeSkipped() = runTest {
         val vm = vm()
         vm.send("买一杯咖啡", ok)

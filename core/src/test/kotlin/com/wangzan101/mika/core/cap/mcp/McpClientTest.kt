@@ -4,19 +4,27 @@ import com.wangzan101.mika.core.action.ActionRisk
 import com.wangzan101.mika.core.action.ConfirmDecision
 import com.wangzan101.mika.core.action.Decision
 import com.wangzan101.mika.core.action.Origin
+import com.wangzan101.mika.core.agent.AgentLoop
+import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.observation.Trust
+import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.record.RunSink
 import com.wangzan101.mika.core.run.Attendance
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.core.run.RunProvenance
 import com.wangzan101.mika.core.run.RunSpec
+import com.wangzan101.mika.core.testing.fakeModel
 import com.wangzan101.mika.core.tool.ActionPass
 import com.wangzan101.mika.core.tool.Args
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.tool.ToolDispatcher
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -40,10 +48,15 @@ class McpClientTest {
         var offeredResources: List<McpResourceDescriptor> = emptyList()
         var offeredPrompts: List<McpPromptDescriptor> = emptyList()
         var resourcesError: Exception? = null
+        var lastArguments: JsonObject? = null
         override fun tools() = offered
         override fun resources() = resourcesError?.let { throw it } ?: offeredResources
         override fun prompts() = offeredPrompts
-        override suspend fun call(name: String, arguments: JsonObject): McpResult { calls++; return result }
+        override suspend fun call(name: String, arguments: JsonObject): McpResult {
+            calls++
+            lastArguments = arguments
+            return result
+        }
         override suspend fun readResource(uri: String) = McpResult("resource:$uri")
         override suspend fun getPrompt(name: String, arguments: JsonObject) =
             McpResult("prompt:$name\n$arguments")
@@ -147,6 +160,72 @@ class McpClientTest {
         val result = tools.execute(Part.ToolCall("c", "mcp_demo__search", """{"q":"x"}"""), ActionPass())
         assertEquals(JsonPrimitive(true), result.content["ok"])
         assertEquals(1, endpoint.calls)
+    }
+
+    @Test fun serverCallForwardsOnlyServerArgumentsAndKeepsAnExplicitServerReason() = runBlocking {
+        // reason 是我们给工具统一加的用意说明;服务端自己声明了(属性或 required)才当服务端参数原样转发
+        val query = Part.ToolCall("c", "mcp_demo__search", """{"q":"lights","reason":"check status"}""")
+        for ((schema, expected) in listOf(
+            """{"properties":{"q":{}}}""" to """{"q":"lights"}""",
+            """{"properties":{"q":{},"reason":{}}}""" to query.argsJson,
+            """{"properties":{"q":{}},"required":["reason"]}""" to query.argsJson,
+        )) {
+            val endpoint = endpointWithSchema(schema)
+            val tools = toolDispatcher(FakeScreen(), mcpServers = listOf(McpConnection(endpoint)))
+            assertEquals(JsonPrimitive(true), tools.execute(query, ActionPass()).content["ok"])
+            assertEquals(Json.parseToJsonElement(expected), endpoint.lastArguments)
+        }
+    }
+
+    @Test fun lookupStyleSectionOnlyAppearsWithMcpTools() {
+        val withMcp = toolDispatcher(FakeScreen(), mcpServers = listOf(McpConnection(FakeEndpoint())))
+        val sections = withMcp.promptSections(withMcp.definitions()).joinToString("\n")
+        assertTrue(sections, "the largest batch" in sections)
+        assertTrue(sections, "fullResult" in sections)
+        val without = toolDispatcher(FakeScreen())
+        val baseline = without.promptSections(without.definitions()).joinToString("\n")
+        assertFalse("the largest batch" in baseline)
+        assertFalse("fullResult" in baseline)
+    }
+
+    @Test fun showsConfiguredConnectorWhileTheRemoteCallRunsAndRecordsItsResult() = runTest {
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val endpoint = object : McpEndpoint {
+            override val serverId = "internal-id"
+            override fun tools() = listOf(McpToolDescriptor("search", "Search", buildJsonObject { put("type", "object") }))
+            override suspend fun call(name: String, arguments: JsonObject): McpResult {
+                started.complete(Unit)
+                release.await()
+                throw IllegalStateException("remote request failed")
+            }
+        }
+        val tools = toolDispatcher(FakeScreen(), mcpServers = listOf(
+            McpConnection(endpoint, trust = McpTrust.TrustAnnotations, displayName = "Team notes"),
+        ))
+        val name = tools.definitions().single { it.name.startsWith("mcp_") }.name
+        val model = fakeModel {
+            call(name)
+            answer("Search failed.")
+        }
+        val loop = AgentLoop(model, tools, "BASE")
+        val events = mutableListOf<RunEvent>()
+        loop.events.subscribe(object : RunSink {
+            override fun event(e: RunEvent) { events += e }
+        })
+        val job = async { loop.run("Search project notes.") }
+
+        started.await()
+        assertEquals("Team notes", (loop.state.value as TaskState.Running).mcpConnector)
+        // 调用还在进行:这次调用还没记进运行事件
+        assertTrue(events.filterIsInstance<RunEvent.Activity>().none { it.label == name })
+        release.complete(Unit)
+        job.await()
+
+        val activity = events.filterIsInstance<RunEvent.Activity>().single { it.label == name }
+        assertEquals("Team notes", activity.mcpConnector)
+        assertTrue(activity.failed)
+        assertFalse(loop.state.value is TaskState.Running)
     }
 
     @Test fun oneServerAssemblyFailureKeepsOtherCapabilitiesAndReportsCause() = runBlocking {

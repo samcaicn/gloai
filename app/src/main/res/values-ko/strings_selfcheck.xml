@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">여기에 입력</string>
     <string name="selfcheck_target_tick">체크 %1$d</string>
     <string name="selfcheck_target_row">행 %1$d</string>
+
+    <string name="selfcheck_screen_off_start">화면 꺼짐 자가 진단</string>
+    <string name="selfcheck_screen_off_wait">45초 안에 전원 버튼을 눌러 화면을 끄고 휴대전화를 잠그세요. 테스트 후 여기로 돌아오면 결과를 볼 수 있습니다.</string>
+    <string name="selfcheck_screen_off_interrupted">테스트 중 화면이 켜지거나, 잠금이 해제되거나, 다른 작업이 시작되었습니다.</string>
+    <string name="selfcheck_screen_off_lock">화면 꺼짐 및 잠금 상태</string>
+    <string name="selfcheck_screen_off_capture">가상 디스플레이 스크린샷</string>
+    <string name="selfcheck_screen_off_no_app_window">접근성 서비스가 가상 디스플레이의 앱 창을 보고하지 않았습니다</string>
+    <string name="selfcheck_screen_off_no_root">앱 창은 있지만 루트를 읽을 수 없습니다</string>
+    <string name="selfcheck_screen_off_no_settings_window">접근성 서비스가 가상 디스플레이의 설정 창을 보고하지 않았습니다</string>
+    <string name="selfcheck_screen_off_no_elements">설정 창에 읽을 수 있는 요소가 없습니다</string>
+    <string name="selfcheck_screen_off_tree_readable">설정의 접근성 트리를 읽을 수 있습니다</string>
+    <string name="selfcheck_screen_off_no_frame">가상 디스플레이에서 프레임이 오지 않았습니다</string>
+    <string name="selfcheck_screen_off_black_frame">가상 디스플레이 프레임이 검은색입니다</string>
+    <string name="selfcheck_screen_off_frame_readable">가상 디스플레이 프레임에 보이는 내용이 있습니다</string>
 </resources>

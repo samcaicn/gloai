@@ -71,4 +71,6 @@
     <string name="mcp_cli_connection_check">connect 会验证连接，成功后顶部显示最近请求。</string>
     <string name="mcp_history_title">允许电脑查看历史记录</string>
     <string name="mcp_history_detail">连接的电脑可读取所有对话、运行记录和已录制的 Trace 正文，包括脱敏后的模型请求与回复。适用于 USB 和私有网络连接。</string>
+    <string name="progress_calling_mcp">正在调用 %1$s MCP…</string>
+    <string name="progress_called_mcp">已调用 %1$s MCP</string>
 </resources>

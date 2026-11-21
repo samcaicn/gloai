@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">Type here</string>
     <string name="selfcheck_target_tick">Tick %1$d</string>
     <string name="selfcheck_target_row">Row %1$d</string>
+
+    <string name="selfcheck_screen_off_start">Screen-off self-check</string>
+    <string name="selfcheck_screen_off_wait">Press the power button to turn the screen off and lock the phone within 45 seconds. Come back here after the test to see the result.</string>
+    <string name="selfcheck_screen_off_interrupted">The screen turned on, the phone was unlocked, or another task started during the test.</string>
+    <string name="selfcheck_screen_off_lock">Screen off and phone locked</string>
+    <string name="selfcheck_screen_off_capture">Virtual display screenshot</string>
+    <string name="selfcheck_screen_off_no_app_window">Accessibility reported no app window on the virtual display</string>
+    <string name="selfcheck_screen_off_no_root">Accessibility found an app window but its root is not readable</string>
+    <string name="selfcheck_screen_off_no_settings_window">Accessibility reported no Settings window on the virtual display</string>
+    <string name="selfcheck_screen_off_no_elements">The Settings window has no readable elements</string>
+    <string name="selfcheck_screen_off_tree_readable">The Settings accessibility tree is readable</string>
+    <string name="selfcheck_screen_off_no_frame">No frame arrived from the virtual display</string>
+    <string name="selfcheck_screen_off_black_frame">The virtual display frame is black</string>
+    <string name="selfcheck_screen_off_frame_readable">The virtual display frame has visible content</string>
 </resources>

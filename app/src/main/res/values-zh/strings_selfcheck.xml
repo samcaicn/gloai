@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">在这里打字</string>
     <string name="selfcheck_target_tick">计时 %1$d</string>
     <string name="selfcheck_target_row">第 %1$d 行</string>
+
+    <string name="selfcheck_screen_off_start">熄屏自检</string>
+    <string name="selfcheck_screen_off_wait">请在 45 秒内按电源键熄屏并锁定手机。测试完成后回到这里查看结果。</string>
+    <string name="selfcheck_screen_off_interrupted">测试期间主屏亮起、手机被解锁，或有其他任务开始。</string>
+    <string name="selfcheck_screen_off_lock">已熄屏并锁定</string>
+    <string name="selfcheck_screen_off_capture">虚拟屏截图</string>
+    <string name="selfcheck_screen_off_no_app_window">无障碍服务没有报告虚拟屏上的应用窗口</string>
+    <string name="selfcheck_screen_off_no_root">找到了应用窗口，但根节点读不出来</string>
+    <string name="selfcheck_screen_off_no_settings_window">无障碍服务没有报告虚拟屏上的设置窗口</string>
+    <string name="selfcheck_screen_off_no_elements">设置窗口里没有可读取的元素</string>
+    <string name="selfcheck_screen_off_tree_readable">可以读取设置页的无障碍树</string>
+    <string name="selfcheck_screen_off_no_frame">没有收到虚拟屏的画面</string>
+    <string name="selfcheck_screen_off_black_frame">虚拟屏画面是黑的</string>
+    <string name="selfcheck_screen_off_frame_readable">虚拟屏画面里有可见内容</string>
 </resources>

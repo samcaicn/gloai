@@ -27,6 +27,7 @@
     <string name="model_key_clear">クリア</string>
     <string name="model_key_invisible_removed">キー内の見えない文字を取り除きました。</string>
     <string name="model_key_illegal_chars">キーに使えない文字があります。キー本体だけを貼り付けてください。</string>
+    <string name="model_key_website">APIキーを取得</string>
     <string name="model_test_save">テストして保存</string>
     <string name="model_testing">テスト中…</string>
     <string name="model_test_note">Mika はこのプロバイダーのモデルを一覧にしてから、そのうち 1 つにテスト用のツールを呼び出してもらいます。どちらも成功すると保存されます。</string>

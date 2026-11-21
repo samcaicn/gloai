@@ -27,6 +27,7 @@
     <string name="model_key_clear">Limpar</string>
     <string name="model_key_invisible_removed">Removemos os caracteres invisíveis da chave.</string>
     <string name="model_key_illegal_chars">A chave tem caracteres que não podem ser usados. Cole só a chave.</string>
+    <string name="model_key_website">Obter uma chave de API</string>
     <string name="model_test_save">Testar e salvar</string>
     <string name="model_testing">Testando…</string>
     <string name="model_test_note">O Mika lista os modelos deste provedor e depois pede a um deles que chame uma ferramenta de teste; se as duas coisas funcionarem, ele é salvo.</string>

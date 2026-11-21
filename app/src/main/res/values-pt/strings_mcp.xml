@@ -71,4 +71,6 @@
     <string name="mcp_cli_connection_check">connect verifica a conexão. Uma solicitação bem-sucedida atualiza o horário acima.</string>
     <string name="mcp_history_title">Permitir que computadores vejam o histórico</string>
     <string name="mcp_history_detail">Os computadores conectados podem ler todas as conversas, os registros de execução e o conteúdo dos Trace gravados, incluindo solicitações e respostas do modelo com dados confidenciais ocultos. Aplica-se a USB e a conexões por redes privadas.</string>
+    <string name="progress_calling_mcp">Chamando %1$s via MCP…</string>
+    <string name="progress_called_mcp">%1$s chamado via MCP</string>
 </resources>

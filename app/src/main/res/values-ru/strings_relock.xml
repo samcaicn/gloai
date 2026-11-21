@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">Задача разблокировала телефон</string>
+    <string name="relock_guard_body">Mika снова заблокирует телефон после завершения задачи. Если Mika неожиданно остановится, проверьте, заблокирован ли телефон.</string>
+    <string name="relock_failed_title">Телефон может оставаться разблокированным</string>
+    <string name="relock_failed_body">Mika не удалось подтвердить, что телефон снова заблокирован. Проверьте и заблокируйте его сами.</string>
+    <string name="unlock_recovery_title">Разблокируйте, чтобы продолжить задачу</string>
+    <string name="unlock_recovery_body">Телефон заблокировался во время задачи, автоматическая разблокировка не удалась. Разблокируйте его сами, и задача продолжится.</string>
+</resources>

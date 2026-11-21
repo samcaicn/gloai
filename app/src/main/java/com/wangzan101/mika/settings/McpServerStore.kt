@@ -278,6 +278,7 @@ class McpServerStore(
                 previewChars = config.previewChars,
                 trust = if (config.trust == "trust-annotations") McpTrust.TrustAnnotations else McpTrust.Restricted,
                 allowedTools = config.allowedTools?.toSet(),
+                displayName = config.name,
             )
         }
         _health.update {

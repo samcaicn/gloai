@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">La tarea desbloqueó el teléfono</string>
+    <string name="relock_guard_body">Mika volverá a bloquear el teléfono cuando termine la tarea. Si Mika se detiene de forma inesperada, comprueba que el teléfono esté bloqueado.</string>
+    <string name="relock_failed_title">Es posible que el teléfono siga desbloqueado</string>
+    <string name="relock_failed_body">Mika no pudo confirmar que el teléfono se bloqueó de nuevo. Revísalo y bloquéalo tú mismo.</string>
+    <string name="unlock_recovery_title">Desbloquea para continuar la tarea</string>
+    <string name="unlock_recovery_body">El teléfono se bloqueó durante la tarea y el desbloqueo automático no funcionó. Desbloquéalo tú y la tarea continuará.</string>
+</resources>

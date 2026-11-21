@@ -1,0 +1,8 @@
+<resources>
+    <string name="relock_guard_title">A tarefa desbloqueou o telefone</string>
+    <string name="relock_guard_body">O Mika bloqueará o telefone novamente quando a tarefa terminar. Se o Mika parar inesperadamente, verifique se o telefone está bloqueado.</string>
+    <string name="relock_failed_title">O telefone pode continuar desbloqueado</string>
+    <string name="relock_failed_body">O Mika não conseguiu confirmar que o telefone foi bloqueado novamente. Verifique e bloqueie você mesmo.</string>
+    <string name="unlock_recovery_title">Desbloqueie para continuar a tarefa</string>
+    <string name="unlock_recovery_body">O telefone bloqueou durante a tarefa e o desbloqueio automático não funcionou. Desbloqueie você mesmo e a tarefa continuará.</string>
+</resources>

@@ -43,6 +43,12 @@ data class Explanation(
 )
 
 object StatusCopy {
+    /** 正在经某个 MCP 连接器调用(任务卡片、胶囊的「在做什么」)。 */
+    fun callingMcp(connector: String): String = tr(R.string.progress_calling_mcp, connector)
+
+    /** 已经经某个 MCP 连接器调用过(步骤列表、时间线)。 */
+    fun calledMcp(connector: String): String = tr(R.string.progress_called_mcp, connector)
+
     /** 不经模型连做几步时卡片和通知上的说法。 */
     fun progress(p: RunProgress): String = when (p) {
         is RunProgress.Replay -> tr(R.string.progress_replay, p.step, p.total)

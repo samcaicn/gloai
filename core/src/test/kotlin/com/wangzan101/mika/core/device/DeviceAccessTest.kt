@@ -176,6 +176,45 @@ class DeviceAccessTest {
         assertEquals(0, p.entries)
     }
 
+    /** 回锁义务的依据:只有这次流程真的把手机从熄屏/锁屏带到可用,才标记 performedUnlock。 */
+    @Test fun performedUnlockOnlyWhenThisFlowUnlocked() = runTest {
+        // 本来就可用:不是这次解的
+        val already = Port().apply { current = DeviceState(true, false, false, true, true, true) }
+        assertFalse(DeviceAccess(already, Store()).unlock().performedUnlock)
+        assertEquals(0, already.wakes + already.dismisses + already.entries)
+        // 熄屏唤醒 + 上滑(无安全锁):这次流程带到的
+        val swipe = Port().apply { current = DeviceState(false, true, false, false, true, true) }
+        assertTrue(DeviceAccess(swipe, Store().apply { kind = null }).unlock().performedUnlock)
+        // 亮着但锁屏(滑动锁):这次流程上滑解开的
+        val dismissed = Port().apply { current = DeviceState(true, true, false, false, true, true) }
+        assertTrue(DeviceAccess(dismissed, Store().apply { kind = null }).unlock().performedUnlock)
+        // 输入凭据解开:这次流程解的
+        val typed = Port()
+        assertTrue(DeviceAccess(typed, Store()).unlock().performedUnlock)
+    }
+
+    @Test fun manualUnlockDuringOurFlowIsNotOurUnlock() = runTest {
+        // 等凭据页期间用户自己解了:我们没注入,不算这次解的
+        val manual = Port().apply {
+            readyTarget = false
+            targetHook = { current = current.copy(keyguardShowing = false, deviceLocked = false) }
+        }
+        assertFalse(DeviceAccess(manual, Store(), 10, 30).unlock().performedUnlock)
+        // enter 报失败但系统已可用(用户同时解的):也不算这次解的
+        val raced = object : DeviceAccessPort {
+            private var s = DeviceState(true, true, true, true, true, true)
+            override suspend fun state() = s
+            override suspend fun wake() = true
+            override suspend fun dismiss() = true
+            override suspend fun credentialReady(kind: CredentialKind) = true
+            override suspend fun enter(credential: DeviceCredential): Boolean {
+                s = s.copy(keyguardShowing = false, deviceLocked = false)
+                return false
+            }
+        }
+        assertFalse(DeviceAccess(raced, Store()).unlock().performedUnlock)
+    }
+
     @Test fun pinAndPasswordAreWipedAfterVerifiedSuccess() = runTest {
         for (kind in CredentialKind.entries) {
             val p = Port(); val s = Store().apply { this.kind = kind }

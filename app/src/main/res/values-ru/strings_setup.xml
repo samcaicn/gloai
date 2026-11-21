@@ -27,6 +27,7 @@
     <string name="model_key_clear">Очистить</string>
     <string name="model_key_invisible_removed">Из ключа убраны невидимые символы.</string>
     <string name="model_key_illegal_chars">В ключе есть символы, которые нельзя использовать. Вставьте только сам ключ.</string>
+    <string name="model_key_website">Получить ключ API</string>
     <string name="model_test_save">Проверить и сохранить</string>
     <string name="model_testing">Проверка…</string>
     <string name="model_test_note">Mika получает список моделей провайдера, затем просит одну из них вызвать тестовый инструмент; если всё работает, провайдер сохраняется.</string>

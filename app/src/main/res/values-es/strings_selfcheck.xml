@@ -76,4 +76,18 @@
     <string name="selfcheck_target_input">Escribe aquí</string>
     <string name="selfcheck_target_tick">Marca %1$d</string>
     <string name="selfcheck_target_row">Fila %1$d</string>
+
+    <string name="selfcheck_screen_off_start">Prueba con la pantalla apagada</string>
+    <string name="selfcheck_screen_off_wait">Pulsa el botón de encendido para apagar la pantalla y bloquear el teléfono en 45 segundos. Vuelve aquí después de la prueba para ver el resultado.</string>
+    <string name="selfcheck_screen_off_interrupted">La pantalla se encendió, el teléfono se desbloqueó o empezó otra tarea durante la prueba.</string>
+    <string name="selfcheck_screen_off_lock">Pantalla apagada y teléfono bloqueado</string>
+    <string name="selfcheck_screen_off_capture">Captura de la pantalla virtual</string>
+    <string name="selfcheck_screen_off_no_app_window">Accesibilidad no informó de ninguna ventana de aplicación en la pantalla virtual</string>
+    <string name="selfcheck_screen_off_no_root">Se encontró una ventana de aplicación pero su raíz no es legible</string>
+    <string name="selfcheck_screen_off_no_settings_window">Accesibilidad no informó de la ventana de Ajustes en la pantalla virtual</string>
+    <string name="selfcheck_screen_off_no_elements">La ventana de Ajustes no tiene elementos legibles</string>
+    <string name="selfcheck_screen_off_tree_readable">Se puede leer el árbol de accesibilidad de Ajustes</string>
+    <string name="selfcheck_screen_off_no_frame">No llegó ninguna imagen de la pantalla virtual</string>
+    <string name="selfcheck_screen_off_black_frame">La imagen de la pantalla virtual está en negro</string>
+    <string name="selfcheck_screen_off_frame_readable">La imagen de la pantalla virtual tiene contenido visible</string>
 </resources>

@@ -27,6 +27,7 @@
     <string name="model_key_clear">Temizle</string>
     <string name="model_key_invisible_removed">Anahtardan görünmez karakterler kaldırıldı.</string>
     <string name="model_key_illegal_chars">Bu anahtar kullanılamayacak karakterler içeriyor. Yalnızca anahtarın kendisini yapıştırın.</string>
+    <string name="model_key_website">API anahtarı al</string>
     <string name="model_test_save">Test et ve kaydet</string>
     <string name="model_testing">Test ediliyor…</string>
     <string name="model_test_note">Mika bu sağlayıcının modellerini listeler, sonra birinden bir test aracını çağırmasını ister; ikisi de çalışırsa kaydedilir.</string>
