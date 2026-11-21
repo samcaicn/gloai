@@ -89,7 +89,8 @@ class CliTest(unittest.TestCase):
         self.token_file = self.directory / "token"
         self.token_file.write_text(TOKEN)
 
-    def invoke(self, *args, server=None, script=SCRIPT, stdin=None, env=None, json_option="--json", parse=True):
+    def invoke(self, *args, server=None, script=SCRIPT, stdin=None, env=None, json_option="--json", parse=True,
+               encoding="utf-8"):
         command = [sys.executable, str(script)]
         if json_option is not None:
             command.append(json_option)
@@ -100,9 +101,9 @@ class CliTest(unittest.TestCase):
         process_env.pop("ANDROID_SERIAL", None)
         if env:
             process_env.update(env)
-        result = subprocess.run(command, input=stdin, text=True, encoding="utf-8", capture_output=True,
+        result = subprocess.run(command, input=stdin, encoding=encoding, capture_output=True,
                                 cwd=self.directory, env=process_env, timeout=15)
-        self.assertNotIn(TOKEN, result.stdout + result.stderr)
+        self.assertNotIn(TOKEN if encoding else TOKEN.encode(), result.stdout + result.stderr)
         return result, json.loads(result.stdout) if parse else None
 
     def fake_adb(self, server, **overrides):
@@ -671,20 +672,22 @@ else:
 
     def test_events_flag_prints_jsonl_without_rewrapping(self):
         header = {key: value for key, value in EXPORT.items() if key != "events"}
-        payload = json.dumps(header, ensure_ascii=False) + "\n" + json.dumps(EXPORT["events"][0], ensure_ascii=False) + "\n"
+        event = {"type": "task_started", "goal": "open\u2028settings"}
+        payload = (json.dumps(header) + "\n" + json.dumps(event, ensure_ascii=False) + "\n").encode()
 
-        def respond(method, path, body):
-            if path == "/api/v1":
-                return 200, DISCOVERY_EXPORT, {}
-            if method == "GET" and path == "/api/v1/tasks/t1/export?events=jsonl":
-                return 200, payload.encode(), {"Content-Type": "application/x-ndjson"}
-            return 500, {}, {}
-
-        with api(respond) as server:
-            result, _ = self.invoke("task", "export", "t1", "--events", server=server, parse=False)
+        with events_api(payload) as server:
+            result, _ = self.invoke("task", "export", "t1", "--events", server=server, parse=False, encoding=None)
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertEqual(payload, result.stdout)
             self.assertEqual([("GET", "/api/v1", None), ("GET", "/api/v1/tasks/t1/export?events=jsonl", None)], server.calls)
+
+    def test_events_flag_rejects_malformed_json_after_valid_header(self):
+        header = {key: value for key, value in EXPORT.items() if key != "events"}
+        payload = (json.dumps(header) + '\n{"type":"task_started"\n').encode()
+        with events_api(payload) as server:
+            result, body = self.invoke("task", "export", "t1", "--events", server=server)
+            self.assertEqual(2, result.returncode)
+            self.assertEqual("protocol", body["error"]["code"])
 
     def test_malformed_export_id_does_not_connect(self):
         result, body = self.invoke("task", "export", "../secret", "--adb", "does-not-exist")
@@ -700,6 +703,17 @@ EXPORT = {
     "events": [{"type": "task_started", "goal": "open settings"}],
 }
 DISCOVERY_EXPORT = {**DISCOVERY, "capabilities": ["tasks", "task_steer", "run_export"]}
+
+
+def events_api(payload):
+    def respond(method, path, body):
+        if path == "/api/v1":
+            return 200, DISCOVERY_EXPORT, {}
+        if method == "GET" and path == "/api/v1/tasks/t1/export?events=jsonl":
+            return 200, payload, {"Content-Type": "application/x-ndjson"}
+        return 500, {}, {}
+
+    return api(respond)
 
 
 if __name__ == "__main__":
