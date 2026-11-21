@@ -9,7 +9,7 @@
 **Tech Stack:** Kotlin,coroutines,Jetpack Compose,既有 Outbox/WechatStore/TaskRelock 底座。
 
 **Spec:** `docs/superpowers/specs/2026-11-21-wechat-owner-push-local-unlock-design.md`
-**调研底稿(接口与护栏细节):** `/Users/bolyn/coding-projects/Mika/.superpowers/port-study-note.md`
+**调研底稿(接口与护栏细节):** 会话内调研笔记(不入库);所需接口与护栏已全部抄入上方 Spec,以 Spec 为准
 
 ## Global Constraints
 
