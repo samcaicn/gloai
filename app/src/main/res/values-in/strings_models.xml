@@ -316,4 +316,5 @@
     <string name="models_group_delete_body">Peran yang memakainya akan kembali ke belum dipilih, tidak ada, atau model utama.</string>
     <string name="models_group_used_by">Digunakan sebagai %1$s</string>
     <string name="models_group_member_context">Konteks</string>
+    <string name="model_not_chat_capable">Mika tidak bisa memakai model ini untuk obrolan. Anda tetap bisa menandainya khusus suara di bawah.</string>
 </resources>

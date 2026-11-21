@@ -343,4 +343,5 @@
     <string name="models_group_delete_body">ستعود الأدوار التي تستخدمها إلى غير محدد أو بلا أو النموذج الرئيسي.</string>
     <string name="models_group_used_by">يُستخدم كـ %1$s</string>
     <string name="models_group_member_context">السياق</string>
+    <string name="model_not_chat_capable">لا يمكن لمايكا استخدام هذا النموذج للدردشة. ما زال بإمكانك تعليمه «للصوت فقط» أدناه.</string>
 </resources>

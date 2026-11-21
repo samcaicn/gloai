@@ -322,4 +322,5 @@
     <string name="models_group_delete_body">Roles using it will go back to unset, none, or the main model.</string>
     <string name="models_group_used_by">Used as %1$s</string>
     <string name="models_group_member_context">Context</string>
+    <string name="model_not_chat_capable">Mika can’t use this model for chat. You can still mark it as speech-only below.</string>
 </resources>

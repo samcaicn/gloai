@@ -328,4 +328,5 @@
     <string name="models_group_delete_body">Los roles que lo usan volverán a sin definir, ninguno o el modelo principal.</string>
     <string name="models_group_used_by">Usado como %1$s</string>
     <string name="models_group_member_context">Contexto</string>
+    <string name="model_not_chat_capable">Mika no puede usar este modelo para chatear. Aún puedes marcarlo como solo voz abajo.</string>
 </resources>

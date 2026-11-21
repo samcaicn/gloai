@@ -318,4 +318,5 @@
     <string name="models_group_delete_body">このグループを使っている役割は、未設定・なし・メインモデルに戻ります。</string>
     <string name="models_group_used_by">%1$s として使用</string>
     <string name="models_group_member_context">コンテキスト</string>
+    <string name="model_not_chat_capable">このモデルは Mika のチャットには使えません。下で「音声専用」にすることはできます。</string>
 </resources>

@@ -1036,8 +1036,11 @@ class ModelSetupViewModel(
             if (!p.savedUntested && listed(p, name)) null else verifyTyped(p, name, ModelRole.Main)
         })
 
-    /** [model] 在这家列出的模型目录里(不是手填的)。 */
-    private fun listed(p: Provider, model: String): Boolean = p.models.orEmpty().any { it.id == model }
+    /**
+     * [model] 在这家列出的模型目录里,且 Mika 用得上([ListedModel.usable]:目录写明只有别的接口的不算)。
+     * 用不上的按手填处理,先试调用——目录里有、Mika 不会说的模型不能被静默设成看图/轻量/备援。
+     */
+    private fun listed(p: Provider, model: String): Boolean = p.models.orEmpty().any { it.id == model && it.usable }
 
     /** 备援里手填的模型名:先试调用一次(见 [verifyTyped]),通了才设上;没通过这一位不动。 */
     fun pickFallbackManual(role: ModelRole, slot: Int, providerId: String, model: String, onPicked: () -> Unit = {}) =

@@ -320,4 +320,5 @@
     <string name="models_group_delete_body">نقش‌هایی که از آن استفاده می‌کنند به «انتخاب‌نشده»، «هیچ‌کدام» یا مدل اصلی برمی‌گردند.</string>
     <string name="models_group_used_by">در نقش %1$s استفاده می‌شود</string>
     <string name="models_group_member_context">زمینه</string>
+    <string name="model_not_chat_capable">میکا نمی‌تواند از این مدل برای گفتگو استفاده کند. هنوز می‌توانید آن را در پایین فقط-صدا علامت بزنید.</string>
 </resources>

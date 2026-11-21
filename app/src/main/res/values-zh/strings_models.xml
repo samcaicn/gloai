@@ -319,4 +319,5 @@
     <string name="models_group_delete_body">用这个组的用途会退回没选、不用或用主模型。</string>
     <string name="models_group_used_by">用作 %1$s</string>
     <string name="models_group_member_context">上下文</string>
+    <string name="model_not_chat_capable">Mika 不能用这个模型对话；仍可在下方把它标为仅用于朗读。</string>
 </resources>

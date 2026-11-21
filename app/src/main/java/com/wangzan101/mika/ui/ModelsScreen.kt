@@ -937,6 +937,7 @@ private fun ModelRow(o: ModelOption, roles: List<ModelRole>, tts: Boolean, first
 private fun UseAsSheet(ui: ModelSetupUi, p: Provider, model: String, actions: ProviderDetailActions, onDismiss: () -> Unit) {
     val c = MikaTheme.colors
     val option = ui.options(p).firstOrNull { it.id == model }
+    val chatCapable = option != null
     val tts = model in p.ttsModels
     val usedBy = ModelsCopy.rolesUsing(ui, p.id, model)
     val legacyOverlap = tts && usedBy.isNotEmpty()
@@ -955,14 +956,19 @@ private fun UseAsSheet(ui: ModelSetupUi, p: Provider, model: String, actions: Pr
             Text(model, Modifier.padding(horizontal = 16.dp), style = ModelIdStyle, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(ModelsCopy.useAsSubtitle(ModelsCopy.providerName(p)), Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 6.dp), style = MikaType.Caption, color = c.ink3)
             if (legacyOverlap) FooterNote(tr(R.string.model_legacy_role_overlap), Modifier.testTag("use-as-overlap"), color = c.warn)
-            ModelRole.entries.forEachIndexed { i, role ->
-                val on = ui.picked(role, p.id, model)
-                RadioRow(
-                    ModelsCopy.roleName(role), selected = on, first = i == 0, enabled = !running,
-                    subtitle = if (on) ModelsCopy.IN_USE else ModelsCopy.roleWhat(role),
-                    modifier = Modifier.testTag("model-use-${role.name.lowercase()}"),
-                    onClick = { saveFailed = false; actions.use(role, model, onDismiss) },
-                )
+            if (chatCapable) {
+                ModelRole.entries.forEachIndexed { i, role ->
+                    val on = ui.picked(role, p.id, model)
+                    RadioRow(
+                        ModelsCopy.roleName(role), selected = on, first = i == 0, enabled = !running,
+                        subtitle = if (on) ModelsCopy.IN_USE else ModelsCopy.roleWhat(role),
+                        modifier = Modifier.testTag("model-use-${role.name.lowercase()}"),
+                        onClick = { saveFailed = false; actions.use(role, model, onDismiss) },
+                    )
+                }
+            } else {
+                // 目录里写明只有别的接口的模型:对话用途不列(设了也办不了事),只留「仅用于朗读」
+                FooterNote(tr(R.string.model_not_chat_capable), Modifier.testTag("use-as-not-chat-capable"))
             }
             when {
                 running -> FooterNote(ModelSetupCopy.TESTING, Modifier.testTag("use-as-testing"))

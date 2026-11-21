@@ -326,4 +326,5 @@
     <string name="models_group_delete_body">Os papéis que o usam voltarão para não definido, nenhum ou o modelo principal.</string>
     <string name="models_group_used_by">Usado como %1$s</string>
     <string name="models_group_member_context">Contexto</string>
+    <string name="model_not_chat_capable">A Mika não pode usar este modelo para conversar. Você ainda pode marcá-lo como somente voz abaixo.</string>
 </resources>

@@ -407,6 +407,24 @@ class ModelSetupViewModelTest {
         assertEquals(setOf("vendor/opaque-marked"), saved.ttsModels)
     }
 
+    /** 目录里有、但 Mika 调不了的模型(只写了别的接口):设成看图/轻量前必须试调用,不通就不设。 */
+    @Test fun listedModelMikaCannotCallIsProbedBeforeBecomingVisionOrLight() = runTest {
+        val store = store()
+        val p = store.connect(
+            "Relay", ProviderConfig.Kind.OpenAiCompat, "https://relay.test/v1", "k",
+            listOf(ListedModel("vendor/chat"), ListedModel("vendor/opaque-image", unsupportedApis = listOf("/v1/images/generations"))),
+        )
+        val vm = vm(store)
+        reply = { throw ModelError.ModelNotFound("no chat endpoint") }
+        var done = 0
+        vm.useFromProvider(ModelRole.Vision, p.id, "vendor/opaque-image") { done++ }
+        runCurrent()
+        assertEquals("没通过不落", 0, done)
+        assertTrue(vm.state.value.manualPick[p.id] is ListState.Failed)
+        assertNull(store.configFor(ModelRole.Vision))
+        assertEquals(listOf("vendor/opaque-image"), built.map { it.first })
+    }
+
     /** 首次上手推荐的模型没通过:服务商照样存下、不定主模型,说原因并给「选主模型」;选的时候再试调用。 */
     @Test fun onboardingKeepsTheProviderWithoutAMainWhenTheCandidateFails() = runTest {
         val model = ListedModel("fishaudio/drama-3-int4")
