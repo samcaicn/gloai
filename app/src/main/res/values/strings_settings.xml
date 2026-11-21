@@ -258,4 +258,11 @@
         <item quantity="one">%1$d minute</item>
         <item quantity="other">%1$d minutes</item>
     </plurals>
+
+    <string name="settings_sandbox_budget">Sandbox time limit per task</string>
+    <string name="settings_sandbox_budget_sub">Total time sandbox commands may run in one task (installing dependencies, builds and the like). Default is 30 minutes; a change applies to the next task.</string>
+    <plurals name="settings_sandbox_budget_minutes_n">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
 </resources>

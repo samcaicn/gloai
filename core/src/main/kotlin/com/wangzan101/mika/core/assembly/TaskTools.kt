@@ -11,6 +11,7 @@ import com.wangzan101.mika.core.cap.root.RootGroup
 import com.wangzan101.mika.core.cap.root.RootPort
 import com.wangzan101.mika.core.cap.sandbox.SandboxCapability
 import com.wangzan101.mika.core.cap.sandbox.SANDBOX
+import com.wangzan101.mika.core.cap.sandbox.SANDBOX_BUDGET_MS
 import com.wangzan101.mika.core.cap.sandbox.SandboxGroup
 import com.wangzan101.mika.core.cap.sandbox.SandboxPort
 import com.wangzan101.mika.core.cap.web.WEB
@@ -108,6 +109,8 @@ fun toolDispatcher(
     onSandboxPreparing: () -> Unit = {},
     /** 开始跑技能脚本时;不给就按 [onSandboxCommand] 报。 */
     onSandboxScript: ((String) -> Unit)? = null,
+    /** 这个任务里沙箱命令累计最多跑多久(设置 › 干活时的档位);默认 [SANDBOX_BUDGET_MS]。 */
+    sandboxBudgetMs: Long = SANDBOX_BUDGET_MS,
     /** 发给主模型的图统一编码用;为空时原样发。 */
     imageOps: ImageOps? = vision?.ops,
     /** 开局约束允许的能力；旧调用方不传时仍得到今天的工具。 */
@@ -189,7 +192,8 @@ fun toolDispatcher(
             override fun open(spec: RunSpec) = SandboxCapability(sandbox, workspace, visionEnabled,
                 onSandboxCommand, onSandboxProgress, onSandboxPreparing, onSandboxScript,
                 folderAccess = spec.provenance.origin == com.wangzan101.mika.core.run.RunOrigin.Ui &&
-                    spec.provenance.attendance != com.wangzan101.mika.core.run.Attendance.Unattended && !spec.readOnly)
+                    spec.provenance.attendance != com.wangzan101.mika.core.run.Attendance.Unattended && !spec.readOnly,
+                budgetMs = sandboxBudgetMs)
         },
     ) + listOfNotNull(transcribe?.let { port ->
         object : CapabilityProvider {

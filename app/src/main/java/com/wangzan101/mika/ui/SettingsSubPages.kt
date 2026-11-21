@@ -410,12 +410,14 @@ fun DuringWorkScreen(
     externalSchedule: Boolean = false, onExternalSchedule: (Boolean) -> Unit = {},
     stepLimit: Int? = null, onStepLimit: (Int?) -> Unit = {},
     triggerRunMinutes: Int? = null, onTriggerRunMinutes: (Int?) -> Unit = {},
+    sandboxBudgetMinutes: Int = 30, onSandboxBudgetMinutes: (Int) -> Unit = {},
     tokenBudget: Long? = null, onTokenBudget: (Long?) -> Unit = {},
     showTaskCost: Boolean = false, onShowTaskCost: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     var editingLimit by remember { mutableStateOf(false) }
     var editingTriggerLimit by remember { mutableStateOf(false) }
+    var editingSandboxBudget by remember { mutableStateOf(false) }
     var customLimit by remember { mutableStateOf("") }
     var editingTokenBudget by remember { mutableStateOf(false) }
     var customTokenBudget by remember { mutableStateOf("") }
@@ -454,6 +456,11 @@ fun DuringWorkScreen(
                 onClick = { editingTriggerLimit = true },
             )
             ListRow(
+                MikaIcons.Clock, stringResource(R.string.settings_sandbox_budget),
+                trPlural(R.plurals.settings_sandbox_budget_minutes_n, sandboxBudgetMinutes),
+                onClick = { editingSandboxBudget = true },
+            )
+            ListRow(
                 MikaIcons.Clock, stringResource(R.string.settings_task_token_budget),
                 tokenBudget?.let(::tokenBudgetNumber) ?: stringResource(R.string.settings_token_budget_unlimited),
                 onClick = {
@@ -480,6 +487,11 @@ fun DuringWorkScreen(
             current = triggerRunMinutes,
             onPick = { onTriggerRunMinutes(it); editingTriggerLimit = false },
             onDismiss = { editingTriggerLimit = false },
+        )
+        if (editingSandboxBudget) SandboxBudgetDialog(
+            current = sandboxBudgetMinutes,
+            onPick = { onSandboxBudgetMinutes(it); editingSandboxBudget = false },
+            onDismiss = { editingSandboxBudget = false },
         )
         if (editingTokenBudget) TokenBudgetDialog(
             title = stringResource(R.string.settings_task_token_budget),
@@ -564,6 +576,25 @@ private fun TriggerRunLimitDialog(current: Int?, onPick: (Int?) -> Unit, onDismi
                 RadioRow(stringResource(R.string.settings_step_limit_off), selected = current == null, onClick = { onPick(null) }, first = true)
                 FeatureFlags.TRIGGER_RUN_MINUTES.forEach { m ->
                     RadioRow(trPlural(R.plurals.settings_trigger_run_minutes_n, m), selected = current == m, onClick = { onPick(m) })
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+/** 每任务沙箱命令累计时长:只认几档,默认 30 分钟,没有「不限制」。 */
+@Composable
+private fun SandboxBudgetDialog(current: Int, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+    MikaDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_sandbox_budget)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.settings_sandbox_budget_sub), Modifier.padding(bottom = 8.dp))
+                FeatureFlags.SANDBOX_BUDGET_MINUTES.forEachIndexed { i, m ->
+                    RadioRow(trPlural(R.plurals.settings_sandbox_budget_minutes_n, m), selected = current == m, onClick = { onPick(m) }, first = i == 0)
                 }
             }
         },

@@ -968,6 +968,8 @@ class TaskRun(
             val promptHook = com.wangzan101.mika.plugin.PluginPromptHook(
                 (service.application as MikaApp).plugins, pluginRunner, { model.name },
                 { com.wangzan101.mika.settings.EnvVarStore.get(service).all() })
+            // 一个任务里沙箱命令累计时长上限(设置 › 干活时,默认 30 分钟);主任务和它派的子任务同档,各自独立累计
+            val sandboxBudgetMs = FeatureFlags.get(service).sandboxBudgetMinutes() * 60_000L
             val childRunner = if (provenance.origin == RunOrigin.Ui && web != null) ChildAgentRunner(
                 create = { childSpec, childResources ->
                     val childWeb = if (childSpec.parallelChild) {
@@ -980,6 +982,7 @@ class TaskRun(
                         appPacing = { pace.appPacing() }, appTempo = { pace.of(it).tempo }, appCapped = { pace.capped(it) }, appIdleScroll = { IdleScroll(Random.Default) },
                         sandbox = sandbox, workspace = { workspaceKey.wire }, runSpec = childSpec,
                         conversationId = conversationId, inlineScreen = speed.inlineScreen,
+                        sandboxBudgetMs = sandboxBudgetMs,
                         adaptiveVision = speed.adaptiveVision)
                     AgentLoop(model, childTools, basePrompt, maxSteps = childSpec.stepBudget ?: AgentLoop.UNLIMITED_STEPS,
                         // 子任务跟着询问 / 自主;询问时它也过关卡,子任务里花钱的一步一律不做
@@ -1032,6 +1035,7 @@ class TaskRun(
                 workspacePath = web?.let { { p: String -> sandbox.uploadCheck(workspaceKey, p) } },
                 // 同项目对话共用 p:<projectId>,其余按对话隔离
                 sandbox = sandbox, workspace = { workspaceKey.wire },
+                sandboxBudgetMs = sandboxBudgetMs,
                 deviceFiles = if (provenance.origin == RunOrigin.Ui && !conditionCheck && FeatureFlags.get(service).deviceFiles()) {
                     AndroidDeviceFiles(phoneServices.hub, com.wangzan101.mika.cap.sandbox.SandboxDirs(service), sandbox,
                         com.wangzan101.mika.settings.DeviceDirectoryStore.get(service), DeviceImportStore.get(service),
