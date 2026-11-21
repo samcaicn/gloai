@@ -1326,7 +1326,7 @@ class ShellService(
             }
             appops("set", packageName, user, "deny").first == 0
         } else {
-            val ok = appops("set", packageName, user, AudioMuteLedger.restoreMode(this.muted[key])).first == 0
+            val ok = restoreAudioMode(packageName, user, AudioMuteLedger.restoreMode(this.muted[key]))
             if (ok) this.muted.remove(key)
             ok
         }
@@ -1340,7 +1340,14 @@ class ShellService(
     /** 按记录的键写回一项;键不合格式的当作已处理,免得一直留着。 */
     private fun writeRecorded(key: String, mode: String): Boolean {
         val (pkg, user) = AppAudioKey.parse(key) ?: return true
-        return appops("set", pkg, user, mode).first == 0
+        return restoreAudioMode(pkg, user, mode)
+    }
+
+    private fun restoreAudioMode(packageName: String, user: Int?, mode: String): Boolean {
+        if (appops("set", packageName, user, mode).first == 0) return true
+        // 有些系统禁止 shell 写 AppOps。静音没生效时，回读确认原值仍在就能清掉记录。
+        val (code, output) = appops("get", packageName, user)
+        return code == 0 && AudioMuteLedger.readMode(output) == mode
     }
 
     /** [user] 为空是 Mika 所在的用户。 */
@@ -1375,7 +1382,7 @@ class ShellService(
 
     private fun audioMode(packageName: String, user: Int?, mode: String): Boolean {
         if (!MODE_RE.matches(mode)) return false
-        val ok = appops("set", packageName, user, AudioMuteLedger.restoreMode(mode)).first == 0
+        val ok = restoreAudioMode(packageName, user, AudioMuteLedger.restoreMode(mode))
         if (ok) synchronized(muted) { muted.remove(AppAudioKey.of(packageName, user)) }
         return ok
     }

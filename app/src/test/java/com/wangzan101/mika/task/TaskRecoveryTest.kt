@@ -40,6 +40,39 @@ class TaskRecoveryTest {
         assertFalse(a.saved.isNullOrEmpty())
     }
 
+    @Test fun restoresDuplicateRecordsWithOneWritePerPackageAndUser() {
+        val attempts = mutableListOf<Pair<String, String>>()
+        val audio = object : AudioPort {
+            override fun mode(packageName: String) = error("unexpected read")
+            override fun mute(packageName: String) = error("unexpected mute")
+            override fun setMode(packageName: String, mode: String): Boolean {
+                attempts += packageName to mode
+                return packageName != "clock.app@10"
+            }
+        }
+        val modes = mapOf("clock.app" to "default", "clock.app@10" to "deny")
+        val records = (1..500).associate { "run-$it" to MemoryMarker().apply { save(modes) } }
+
+        repeat(2) {
+            attempts.clear()
+            assertFalse(TaskRecovery.restoreRuns(records, audio, live = emptySet()))
+            val expected = if (it == 0) modes.toList() else listOf("clock.app@10" to "deny")
+            assertEquals(expected, attempts)
+            assertTrue(records.values.all { marker -> marker.saved == mapOf("clock.app@10" to "deny") })
+        }
+    }
+
+    @Test fun restoresDifferentModesInOrderForTheSamePackage() {
+        val audio = FakeAudio(mutableMapOf())
+        val records = listOf("allow", "deny", "allow").mapIndexed { index, mode ->
+            "run-$index" to MemoryMarker().apply { save(mapOf("clock.app" to mode)) }
+        }.toMap()
+
+        assertTrue(TaskRecovery.restoreRuns(records, audio, live = emptySet()))
+        assertEquals("allow", audio.modes["clock.app"])
+        assertTrue(records.values.all { it.saved == null })
+    }
+
     private class XorCipher : KeyCipher {
         override fun encrypt(plain: ByteArray) = plain.map { (it.toInt() xor 0x5a).toByte() }.toByteArray()
         override fun decrypt(data: ByteArray) = encrypt(data)
