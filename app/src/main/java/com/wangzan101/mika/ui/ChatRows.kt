@@ -1,8 +1,20 @@
 package com.wangzan101.mika.ui
 
+import com.wangzan101.mika.cap.phone.setup.PhoneSetupPrompt
 import com.wangzan101.mika.cap.web.KeptPage
 import com.wangzan101.mika.task.SteerNote
 import com.wangzan101.mika.task.SteerState
+
+/**
+ * 「去设置」那行跟在哪一轮后面:对得上运行编号的跟在那轮;对不上(编号还没同步进对话、或那次没开出
+ * 运行记录)返回 -1,照旧挂在最后。不归当前对话、没有触发、或没有轮次可挂时返回 null,不显示。
+ */
+internal fun phoneSetupRow(need: PhoneSetupPrompt.Need?, conversationId: String?, exchanges: List<Exchange>): Int? {
+    if (need == null || exchanges.isEmpty()) return null
+    if (need.conversationId != null && need.conversationId != conversationId) return null
+    val match = need.runId?.let { rid -> exchanges.indexOfFirst { it.runId == rid } } ?: -1
+    return if (match >= 0) match else -1
+}
 
 /**
  * 当前 UI 状态会生成的行 key,按 LazyColumn 里的顺序。自动滚到末尾和“跳到某一轮的消息”都用这一份,
@@ -11,7 +23,7 @@ import com.wangzan101.mika.task.SteerState
 internal fun chatItemKeys(
     exchanges: List<Exchange>,
     kept: KeptPage?,
-    phoneSetupNeeded: Boolean,
+    phoneSetupRow: Int?,
     hasBlocked: Boolean,
 ): List<String> = buildList {
     if (exchanges.isEmpty() && !hasBlocked) add("empty")
@@ -30,8 +42,9 @@ internal fun chatItemKeys(
         if (KeptRow.of(ex, kept) != null) add("k$index")
         if (ex.files.isNotEmpty()) add("f$index")
         if (ex.runId != null && (ex.memoryNotes.isNotEmpty() || ex.skillNotes.isNotEmpty())) add("m$index")
+        if (phoneSetupRow == index) add("ps$index")
     }
-    if (phoneSetupNeeded && exchanges.isNotEmpty()) add("phone-setup")
+    if (phoneSetupRow == -1 && exchanges.isNotEmpty()) add("phone-setup")
     if (hasBlocked) add("blocked")
 }
 
@@ -42,9 +55,9 @@ internal fun chatItemKeys(
 internal fun chatItemCount(
     exchanges: List<Exchange>,
     kept: KeptPage?,
-    phoneSetupNeeded: Boolean,
+    phoneSetupRow: Int?,
     hasBlocked: Boolean,
-): Int = chatItemKeys(exchanges, kept, phoneSetupNeeded, hasBlocked).size
+): Int = chatItemKeys(exchanges, kept, phoneSetupRow, hasBlocked).size
 
 /** 目标消息在 [chatItemKeys] 里的 key;轮次或消息已经不在了时返回 null。 */
 internal fun chatTargetKey(exchanges: List<Exchange>, target: ChatTarget): String? {

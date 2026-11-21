@@ -202,8 +202,8 @@ fun ChatScreen(
     /** 被拦下的提示里的「去设置」。 */
     openSettings: () -> Unit,
     openRun: (String) -> Unit = {},
-    /** 任务要用手机而手机操作没准备好:最后一轮下面放一行去设置。 */
-    phoneSetupNeeded: Boolean = false,
+    /** 任务要用手机而手机操作没准备好:在那轮问答下面放一行去设置(配不上具体轮次时挂在最后)。 */
+    phoneSetupNeed: com.wangzan101.mika.cap.phone.setup.PhoneSetupPrompt.Need? = null,
     openPhoneSetup: () -> Unit = {},
     /** 按运行记录取依据的来处(「来源」胶囊和点开后的截图);读盘的活由调用方放到后台线程。 */
     loadSource: suspend (runId: String) -> EvidenceSource? = { null },
@@ -324,7 +324,8 @@ fun ChatScreen(
     // 返回聊天时同一条内容不重新滚动；新进展仅在跟随末尾时滚动。
     // 目标行直接由当前 UI 状态计算:layoutInfo 还是上一帧的测量结果,发送后立即读它会滚到旧的末尾。
     val last = ui.exchanges.lastOrNull()
-    val rowCount = chatItemCount(ui.exchanges, kept, phoneSetupNeeded, hasBlocked = ui.blocked != null)
+    val setupRow = phoneSetupRow(phoneSetupNeed, ui.conversationId, ui.exchanges)
+    val rowCount = chatItemCount(ui.exchanges, kept, setupRow, hasBlocked = ui.blocked != null)
     val canScrollForward by remember { derivedStateOf { listState.canScrollForward } }
     val showScrollToBottom = ui.exchanges.isNotEmpty() && !followingTail && canScrollForward
     val scrollMarker = "${ui.conversationId}:${ui.exchanges.size}:${last?.steps?.size}:${last?.steers?.size}:${last?.status?.hashCode()}:${ui.blocked?.hashCode()}"
@@ -336,7 +337,7 @@ fun ChatScreen(
     LaunchedEffect(scrollMarker, jump) {
         // 从搜索或文件库过来:先滚到目标消息,期间不要跟末尾;目标不在了就退回原来的逻辑。
         if (jump != null) {
-            val keys = chatItemKeys(ui.exchanges, kept, phoneSetupNeeded, hasBlocked = ui.blocked != null)
+            val keys = chatItemKeys(ui.exchanges, kept, setupRow, hasBlocked = ui.blocked != null)
             val index = chatTargetKey(ui.exchanges, jump.target)?.let(keys::indexOf) ?: -1
             if (index >= 0) {
                 previousScrollMarker = scrollMarker
@@ -456,8 +457,10 @@ fun ChatScreen(
                         },
                         openReport = openReport, openPlayback = openPlayback,
                     )
+                    // 「去设置」挂在发现手机没就绪的那一轮后面;配不上具体轮次时(下面)照旧挂在最后
+                    if (setupRow == i) item("ps$i") { PhoneSetupLine(openPhoneSetup) }
                 }
-                if (phoneSetupNeeded && ui.exchanges.isNotEmpty()) item("phone-setup") { PhoneSetupLine(openPhoneSetup) }
+                if (setupRow == -1) item("phone-setup") { PhoneSetupLine(openPhoneSetup) }
                 ui.blocked?.let { problems ->
                     item("blocked") {
                         NeedCard(
@@ -663,7 +666,7 @@ fun ChatScreen(
             onAttention = {
                 vm.attendPip()
                 val count = listState.layoutInfo.totalItemsCount
-                val after = (if (last?.files?.isNotEmpty() == true) 1 else 0) + (if (phoneSetupNeeded) 1 else 0)
+                val after = (if (last?.files?.isNotEmpty() == true) 1 else 0) + (if (setupRow == ui.exchanges.lastIndex || setupRow == -1) 1 else 0)
                 val card = count - 1 - after
                 if (card >= 0) scope.launch { if (reduceMotion) listState.scrollToItem(card) else listState.animateScrollToItem(card) }
             },

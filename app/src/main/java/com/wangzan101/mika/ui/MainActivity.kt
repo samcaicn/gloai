@@ -521,7 +521,7 @@ private fun MikaRoot(
             Onboarding.start(onboardingInputs())?.let(::goOnboarding)
         }
     }
-    val phoneSetupNeeded by phoneSetup.needed.collectAsState()
+    val phoneSetupNeed by phoneSetup.needed.collectAsState()
     // 页面有自己的返回处理时(设置页里的子页、侧栏)由它们先接;这里只管退回上一页
     BackHandler(enabled = nav.canGoBack) { nav.back() }
     val back: () -> Unit = { nav.back() }
@@ -595,7 +595,7 @@ private fun MikaRoot(
                             openRun = { runId = it; nav.push(Route.Run) },
                             openReport = { reportRunId = it; nav.push(Route.Report) },
                             openPlayback = { reportRunId = it; playbackScreenshotId = null; nav.push(Route.Playback) },
-                            phoneSetupNeeded = phoneSetupNeeded && status.builtinShell != BuiltinShellStatus.Running,
+                            phoneSetupNeed = (if (status.builtinShell != BuiltinShellStatus.Running) phoneSetupNeed else null),
                             openPhoneSetup = { onFix(Fix.OpenPhoneSetup) },
                             loadSource = { id ->
                                 withContext(Dispatchers.IO) { evidenceSource(RunStore(context).events(id)) { ConfirmationNotifier.appLabel(context, it) } }

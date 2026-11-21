@@ -659,7 +659,7 @@ class TaskRun(
                 val conn = connection ?: phoneServices.sharedShell.acquire().also { connection = it }
                 val shell = withTimeoutOrNull(SHELL_WAIT_MS) { conn.shell.filterNotNull().first() }
                     ?: run {
-                        phoneServices.setupPrompt.request()
+                        phoneServices.setupPrompt.request(conversationId, runState.runId.value)
                         // 只用 USB 命令起过的助手停了:照实说要再运行命令,不让人去找无线调试
                         throw PhoneUnavailable(
                             when (phoneServices.shellControl.restart) {

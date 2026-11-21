@@ -1,5 +1,6 @@
 package com.wangzan101.mika.ui
 
+import com.wangzan101.mika.cap.phone.setup.PhoneSetupPrompt
 import com.wangzan101.mika.chat.SharedFile
 import com.wangzan101.mika.task.SteerNote
 import com.wangzan101.mika.task.SteerState
@@ -10,15 +11,15 @@ import org.junit.Test
 class ChatRowsTest {
     private fun count(
         exchanges: List<Exchange>,
-        phoneSetupNeeded: Boolean = false,
+        phoneSetupRow: Int? = null,
         hasBlocked: Boolean = false,
-    ) = chatItemCount(exchanges, kept = null, phoneSetupNeeded, hasBlocked)
+    ) = chatItemCount(exchanges, kept = null, phoneSetupRow, hasBlocked)
 
     @Test
     fun emptyAndBlockedStatesHaveTheirActualRows() {
         assertEquals(1, count(emptyList()))
         assertEquals(1, count(emptyList(), hasBlocked = true))
-        assertEquals(1, count(emptyList(), phoneSetupNeeded = true, hasBlocked = true))
+        assertEquals(1, count(emptyList(), phoneSetupRow = -1, hasBlocked = true))
     }
 
     @Test
@@ -36,14 +37,47 @@ class ChatRowsTest {
         assertEquals(3, count(listOf(working)))
         val done = working.copy(status = ExchangeStatus.Done("回答", null), draft = null, runId = "run")
         assertEquals(2, count(listOf(done)))
-        assertEquals(3, count(listOf(done), phoneSetupNeeded = true))
-        assertEquals(4, count(listOf(done), phoneSetupNeeded = true, hasBlocked = true))
+        assertEquals(3, count(listOf(done), phoneSetupRow = -1))
+        assertEquals(4, count(listOf(done), phoneSetupRow = -1, hasBlocked = true))
+    }
+
+    @Test
+    fun setupLineFollowsTheTurnThatNeededThePhone() {
+        val first = Exchange("开应用", emptyList(), ExchangeStatus.Failed("手机操作没准备好"), live = false, runId = "run-1")
+        val second = Exchange("聊两句", emptyList(), ExchangeStatus.Done("好的", null), live = false, runId = "run-2")
+        val both = listOf(first, second)
+        // 挂在触发它的那一轮后面:第一轮后面多一行,末尾没有
+        assertEquals(
+            listOf("u0", "r0", "ps0", "u1", "r1"),
+            chatItemKeys(both, kept = null, phoneSetupRow = phoneSetupRow(PhoneSetupPrompt.Need("c", "run-1"), "c", both), hasBlocked = false),
+        )
+        // 配不上具体轮次(编号还没同步进来):照旧挂在最后
+        assertEquals(
+            listOf("u0", "r0", "u1", "r1", "phone-setup"),
+            chatItemKeys(both, kept = null, phoneSetupRow = phoneSetupRow(PhoneSetupPrompt.Need("c", "run-9"), "c", both), hasBlocked = false),
+        )
+    }
+
+    @Test
+    fun setupLineStaysOutOfOtherConversationsAndEmptyLists() {
+        val ex = Exchange("问", emptyList(), ExchangeStatus.Done("答", null), live = false, runId = "run-1")
+        val list = listOf(ex)
+        // 别的对话触发的:这里不显示
+        assertEquals(null, phoneSetupRow(PhoneSetupPrompt.Need("other", "run-1"), "c", list))
+        // 本对话、编号对得上:跟在那轮后面
+        assertEquals(0, phoneSetupRow(PhoneSetupPrompt.Need("c", "run-1"), "c", list))
+        // 本对话、编号对不上或没开出记录:挂最后
+        assertEquals(-1, phoneSetupRow(PhoneSetupPrompt.Need("c", "run-9"), "c", list))
+        assertEquals(-1, phoneSetupRow(PhoneSetupPrompt.Need("c", null), "c", list))
+        // 没有触发、没有轮次:都不显示
+        assertEquals(null, phoneSetupRow(null, "c", list))
+        assertEquals(null, phoneSetupRow(PhoneSetupPrompt.Need("c", "run-1"), "c", emptyList()))
     }
 
     @Test
     fun keysListRowsInTheSameOrderTheDslEmitsThem() {
         val working = Exchange("问", emptyList(), ExchangeStatus.Working, live = true, draft = "正在回答")
-        assertEquals(listOf("u0", "d0", "r0"), chatItemKeys(listOf(working), kept = null, phoneSetupNeeded = false, hasBlocked = false))
+        assertEquals(listOf("u0", "d0", "r0"), chatItemKeys(listOf(working), kept = null, phoneSetupRow = null, hasBlocked = false))
 
         val steer = SteerNote("s1", "改成靠窗", SteerState.Joined, interrupted = "被打断", finished = "正在改")
         val done = Exchange(
@@ -53,7 +87,7 @@ class ChatRowsTest {
         )
         assertEquals(
             listOf("u0", "m0-s1", "r0", "f0"),
-            chatItemKeys(listOf(done), kept = null, phoneSetupNeeded = false, hasBlocked = false),
+            chatItemKeys(listOf(done), kept = null, phoneSetupRow = null, hasBlocked = false),
         )
     }
 

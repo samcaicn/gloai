@@ -177,7 +177,7 @@ class ChatViewModelTest {
         assertEquals("我从通知里挑出 1 条", (notice.status as ExchangeStatus.Done).answer)
         assertEquals("run-1", reply.recordedRun)
         // 页面上的行数和画出来的对得上:提醒那一轮只有回答那一行,普通的一轮是原话、回答两行(查看过程收进回答卡的操作区了)
-        assertEquals(1 + 2, chatItemCount(vm.ui.value.exchanges, kept = null, phoneSetupNeeded = false, hasBlocked = false))
+        assertEquals(1 + 2, chatItemCount(vm.ui.value.exchanges, kept = null, phoneSetupRow = null, hasBlocked = false))
         // 对话开着的时候又写进一轮提醒:接在后面,前面的不动、不合并
         store.append("talk", Turn("", "我从通知里挑出 2 条", "succeeded", runId = "notice:n2"))
         runCurrent()
