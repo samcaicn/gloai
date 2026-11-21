@@ -46,8 +46,13 @@ class VoiceCallRoute(
     /** 面板滚动的状态行,最多 [VOICE_LINE_MAX_COUNT] 条,连续重复的只留一条。 */
     val lines: StateFlow<List<String>> = _lines
 
+    private val _busy = MutableStateFlow(false)
+
+    /** 是否有请求正在执行(认领到终态/交还之间);通话页据此把球换成办事形态。 */
+    val busy: StateFlow<Boolean> = _busy
+
     private val lock = Any()
-    private var busy = false
+    private var claimed = false
     private var activeConversationId: String? = null
     private var bargeInGeneration = 0
     private var lastCancelledId: String? = null
@@ -58,8 +63,8 @@ class VoiceCallRoute(
      */
     suspend fun execute(callId: String, text: String) {
         val claimGeneration = synchronized(lock) {
-            if (busy) null else {
-                busy = true
+            if (claimed) null else {
+                claimed = true
                 bargeInGeneration
             }
         }
@@ -67,6 +72,7 @@ class VoiceCallRoute(
             sendResult(callId, RESULT_BUSY)
             return
         }
+        _busy.value = true
         try {
             val conversationId = try {
                 launcher.launch(text)
@@ -110,9 +116,10 @@ class VoiceCallRoute(
             }
         } finally {
             synchronized(lock) {
-                busy = false
+                claimed = false
                 activeConversationId = null
             }
+            _busy.value = false
         }
     }
 
@@ -200,8 +207,8 @@ private fun voiceLineOf(raw: String): String {
 /** 坐标形态:界面树/点击位置常见的 [x,y]、(x,y) 及其全角变体;bounds 是相邻两对,逐对剥。 */
 private val COORDINATE_PATTERN = Regex("""[\[\(（【]\s*\d+\s*[,，、]\s*\d+\s*[\]\)）】]""")
 
-/** 带引号的一段:日程标题、联系人名、消息内容这类细节通常被引起来,整段剥掉。 */
-private val QUOTED_PATTERN = Regex("""「[^」]*」|『[^』]*』|《[^》]*》|"[^"]*"|“[^”]*”|‘[^’]*’|'[^']*'""")
+/** 带引号的一段:日程标题、联系人名、消息内容这类细节通常被引起来,整段剥掉。【】也按引号段剥(非数字形态)。 */
+private val QUOTED_PATTERN = Regex("""「[^」]*」|『[^』]*』|《[^》]*》|【[^】]*】|"[^"]*"|“[^”]*”|‘[^’]*’|'[^']*'""")
 
 private val WHITESPACE_RUN = Regex("""\s+""")
 

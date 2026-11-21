@@ -50,9 +50,10 @@ class VoiceCallTranscript(
     fun turns(): List<Turn> = synchronized(lock) { done + listOfNotNull(open) }
 
     /**
-     * 会话结束写回:把有问有答(或至少有问)的轮次逐条写进发起会话,只写一次——
+     * 会话结束写回:把有问有答的轮次逐条写进发起会话,只写一次——
      * 重复结束不再写;收尾在通话协程域被取消时也照常写完(NonCancellable),
-     * 装配方在通话收尾的 finally 里直接调即可。空问轮(只有助手说过话,如纯问候)不写。
+     * 装配方在通话收尾的 finally 里直接调即可。空问轮(只有助手说过话,如纯问候)不写;
+     * 有问无答的轮次(没等来回答就挂了)也不写——空 outcome 的聊天气泡没有意义。
      */
     suspend fun close() {
         val (snapshot, id) = synchronized(lock) {
@@ -62,7 +63,7 @@ class VoiceCallTranscript(
         }
         if (id == null) return
         withContext(NonCancellable) {
-            snapshot.filter { it.question.isNotBlank() }.forEach { turn ->
+            snapshot.filter { it.question.isNotBlank() && it.answer.isNotBlank() }.forEach { turn ->
                 appendTurn(id, ChatTurn(userText = turn.question, outcome = turn.answer, status = "succeeded", atMs = turn.at))
             }
         }

@@ -222,6 +222,8 @@ fun ChatScreen(
     openPlayback: (String) -> Unit = {},
     /** 人格选择器里的「管理人格」:打开设置里的人格页。 */
     onOpenPersonas: () -> Unit = {},
+    /** 输入栏的听筒按钮:进语音通话;为 null(实时语音凭据没配)时不显示。 */
+    onVoiceCall: (() -> Unit)? = null,
 ) {
     val checklistStore = checklists ?: (LocalContext.current.applicationContext as? MikaApp)?.savedChecklists
     val workflowRuntime = workflows ?: (LocalContext.current.applicationContext as? MikaApp)?.workflows
@@ -586,6 +588,7 @@ fun ChatScreen(
                 vm.send(text, check)
             },
             onPickSpeech = openSpeechModel,
+            onVoiceCall = onVoiceCall,
             steerTarget = null,
             onVoiceHolding = { voiceHolding = it },
             editRequest = editRequest,
@@ -1780,6 +1783,8 @@ internal fun Composer(
     onVoiceSend: ((String) -> Unit)? = null,
     /** 「还不能语音输入」里的「去选」:到设置里选转文字。 */
     onPickSpeech: () -> Unit = {},
+    /** 听筒按钮:进语音通话;为 null 时不显示。 */
+    onVoiceCall: (() -> Unit)? = null,
     /** 任务在跑时说的话交给谁:卡片顶上写「插话给『…』」。 */
     steerTarget: String? = null,
     /** 按着说话时为 true:对话内容跟着虚化。 */
@@ -1955,6 +1960,18 @@ internal fun Composer(
                             }
                         }
                         Spacer(Modifier.weight(1f))
+                        // 听筒:进语音通话(与按住说话共存)
+                        if (onVoiceCall != null) {
+                            val callLabel = stringResource(R.string.voicecall_menu)
+                            Box(
+                                Modifier.size(MikaSize.IconButton).clip(CircleShape)
+                                    .clickable(onClickLabel = callLabel, onClick = onVoiceCall)
+                                    .testTag("composer-call"),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(MikaIcons.Phone, callLabel, Modifier.size(MikaSize.Icon), tint = c.ink)
+                            }
+                        }
                         // 话筒常驻:按住才听,点一下只提示按住;键盘出来以后长按输入框留给系统选字
                         if (vh != null) {
                             val hint = stringResource(R.string.voice_hold_to_talk)

@@ -239,6 +239,34 @@ class VoiceCallRouteTest {
     }
 
     @Test
+    fun `状态行剥掉方头括号包裹的非数字细节`() = runTest {
+        val h = Harness()
+        h.flows["conv-1"] = h.running(1, "点击【通讯录】找到【张三】并呼叫")
+        val run = async { h.route.execute("call-1", "打电话") }
+        runCurrent()
+        // 剥掉后按既有语义直接收拢(中文词间本来没有空格,不补)
+        assertEquals(listOf("点击找到并呼叫"), h.route.lines.value)
+        h.flows.getValue("conv-1").value = TaskState.Succeeded("好了")
+        advanceUntilIdle()
+        assertTrue(run.isCompleted)
+    }
+
+    @Test
+    fun `busy 流跟着路由有没有活走`() = runTest {
+        val h = Harness()
+        assertFalse(h.route.busy.value)
+        h.flowReady = false
+        val run = async { h.route.execute("call-1", "干活") }
+        runCurrent()
+        assertTrue(h.route.busy.value)
+        h.flowReady = true
+        h.flows["conv-1"] = MutableStateFlow(TaskState.Succeeded("好"))
+        advanceUntilIdle()
+        assertTrue(run.isCompleted)
+        assertFalse(h.route.busy.value)
+    }
+
+    @Test
     fun `状态行最长 40 字`() = runTest {
         val h = Harness()
         val long = "正在处理一件说起来特别特别长的事情".repeat(4) // 60 字

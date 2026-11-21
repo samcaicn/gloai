@@ -615,6 +615,48 @@ class VoiceCallSessionTest {
         assertEquals("rejected", h.rt.toolResults.single().second.getValue("status").jsonPrimitive.content)
     }
 
+    @Test fun `a failed call can be ended without a retry and stays ended`() = runTest {
+        val h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { throw VolcRealtimeException(VolcRealtimeException.Kind.AUTH) })
+        runCurrent()
+        assertEquals(VoiceCallState.Failed(VoiceCallError.Auth, 1), h.session.state.value)
+        // 用户不重试、直接离开:通话页负责把 Failed 落进 Ended,前台服务据此收工
+        h.session.end(EndReason.Hangup)
+        assertEquals(VoiceCallState.Ended(EndReason.Hangup), h.session.state.value)
+        h.session.retry() // 落了 Ended 之后重试不再有效
+        runCurrent()
+        assertEquals(VoiceCallState.Ended(EndReason.Hangup), h.session.state.value)
+    }
+
+    @Test fun `typed text dispatches as a verified request and lands in the transcript`() = runTest {
+        val requests = mutableListOf<Pair<String, String>>()
+        lateinit var h: Harness
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onVoiceRequest = { id, text -> requests += id to text })
+        runCurrent()
+        reachActive(h, this)
+        h.session.sendUserText(" 查一下天气 ")
+        assertEquals(listOf("typed-1" to "查一下天气"), requests)
+        assertEquals(listOf("查一下天气" to true), h.userTranscripts)
+        h.session.sendUserText("   ")
+        h.session.sendUserText("")
+        assertEquals("空白不派发", listOf("typed-1" to "查一下天气"), requests)
+        h.session.sendUserText("再定个闹钟")
+        assertEquals(listOf("typed-1" to "查一下天气", "typed-2" to "再定个闹钟"), requests)
+    }
+
+    @Test fun `typed text is ignored outside the active state`() = runTest {
+        val requests = mutableListOf<Pair<String, String>>()
+        lateinit var h: Harness
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onVoiceRequest = { id, text -> requests += id to text })
+        runCurrent() // MicCheck,还没接通
+        h.session.sendUserText("喂")
+        reachActive(h, this)
+        h.session.hangup()
+        h.session.sendUserText("挂了也算")
+        runCurrent()
+        assertTrue(requests.isEmpty())
+        assertTrue(h.userTranscripts.isEmpty())
+    }
+
     private companion object {
         const val GREETING = "你好,我是助手"
     }

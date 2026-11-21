@@ -192,6 +192,8 @@ interface CardActions {
     fun hideCapsule() {}
     /** 空闲卡片上的「教 Mika」。 */
     fun teach() {}
+    /** 空闲卡片上的「语音聊天」:打开 Mika 直进通话页。 */
+    fun voiceChat() {}
     /** 胶囊卡片里切换「引导 / 排队」。 */
     fun setFollowUpMode(mode: FollowUpMode) {}
     /** 标题栏的电源按钮:在卡片里换成「完全退出」的确认,不马上退。 */
@@ -807,7 +809,7 @@ private fun ChatCard(
         }
         if (r != null) Pinned(card.content, r.run.key, actions)
         QueuedLine(queuedCount, onQueued)
-        if (r == null) TeachShelf(actions::teach)
+        if (r == null) TeachShelf(actions::teach, actions::voiceChat)
         input()
         FooterLinks(actions, card.target?.let { id -> CardCopy.BACK_TO_MIKA to { actions.openMika(id) } })
     }
@@ -818,14 +820,17 @@ private fun ChatCard(
  * 收起时箭头朝上,展开时朝下。学习中的浮层不走这里。
  */
 @Composable
-private fun TeachShelf(onTeach: () -> Unit) {
+private fun TeachShelf(onTeach: () -> Unit, onVoiceChat: () -> Unit) {
     var open by remember { mutableStateOf(false) }
     val name = tr(R.string.teach_menu)
     val expandLabel = tr(R.string.teach_shelf_expand)
     val collapseLabel = tr(R.string.teach_shelf_collapse)
     val action = if (open) collapseLabel else expandLabel
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        if (open) TextLink(name, onClick = onTeach)
+        if (open) Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            TextLink(name, onClick = onTeach)
+            TextLink(tr(R.string.voicecall_menu), onClick = onVoiceChat)
+        }
         Box(
             Modifier.testTag("capsule-teach-shelf").widthIn(min = 48.dp).height(28.dp).clip(MikaShapes.Pill)
                 .clickable(role = Role.Button, onClickLabel = action) { open = !open }

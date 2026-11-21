@@ -96,6 +96,29 @@ class VoiceCallTranscriptTest {
     }
 
     @Test
+    fun `末轮有问无答不写成空 outcome`() = runTest {
+        val h = Harness()
+        h.transcript.onUser("带猫去打疫苗")
+        h.transcript.onAssistant("好的，记下了")
+        h.now = 3_000L
+        h.transcript.onUser("顺便买猫粮") // 通话到这就挂了,这句没等来回答
+        h.transcript.close()
+        assertEquals(1, h.appended.size)
+        val (id, turn) = h.appended[0]
+        assertEquals("conv-9", id)
+        assertEquals("带猫去打疫苗", turn.userText)
+        assertEquals("好的，记下了", turn.outcome)
+    }
+
+    @Test
+    fun `全程有问无答一个字也不写`() = runTest {
+        val h = Harness()
+        h.transcript.onUser("喂喂，听得到吗")
+        h.transcript.close()
+        assertTrue(h.appended.isEmpty())
+    }
+
+    @Test
     fun `空问轮不写回`() = runTest {
         val h = Harness()
         h.transcript.onAssistant("你好，我在听")

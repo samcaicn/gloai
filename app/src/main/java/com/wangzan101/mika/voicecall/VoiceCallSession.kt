@@ -85,10 +85,32 @@ class VoiceCallSession(
 
     fun hangup() = end(EndReason.Hangup)
 
-    /** 终态转换:已终态时再调是 no-op(收尾幂等)。 */
+    private var typedCount = 0
+
+    /**
+     * 通话面板的文字输入:打字与说话同路——登记进转写(问),并以合成 callId([TYPED_CALL_PREFIX]+序号)
+     * 直接派发给语音请求处理。打字本就是用户亲述,不过安全闸(闸防的是模型伪造);装配方对
+     * 合成 callId 的结果回本地(进转写/面板),协议层没有它登记的 callId。仅 Active 态受理,空白忽略。
+     */
+    fun sendUserText(text: String) {
+        val clean = text.trim()
+        if (clean.isEmpty()) return
+        if (_state.value !is VoiceCallState.Active) return
+        val callId = TYPED_CALL_PREFIX + (++typedCount)
+        onUserTranscript(clean, true)
+        onVoiceRequest(callId, clean)
+    }
+
+    /**
+     * 终态转换:已终态时再调是 no-op(收尾幂等)。唯一例外是 Failed → Ended:
+     * 失败后用户不重试、直接离开时通话页负责收场,前台服务据此收工;落了 Ended 后 retry 不再有效。
+     */
     fun end(reason: EndReason) {
         val job = synchronized(lock) {
-            if (terminal) return
+            if (terminal) {
+                if (_state.value is VoiceCallState.Failed) _state.value = VoiceCallState.Ended(reason)
+                return
+            }
             terminal = true
             _state.value = VoiceCallState.Ended(reason)
             runJob
@@ -97,8 +119,7 @@ class VoiceCallSession(
     }
 
     /** 就地重试:仅 Failed 态有效,attempt++ 后重跑整个连接流程;安全闸与回声窗不重置。 */
-    fun retry() {
-        val oldJob: Job?
+    fun retry() {        val oldJob: Job?
         val attempt: Int
         synchronized(lock) {
             val failed = _state.value as? VoiceCallState.Failed ?: return
@@ -363,6 +384,7 @@ class VoiceCallSession(
     private class VoiceCallFailure(val error: VoiceCallError) : Exception()
 
     companion object {
+        const val TYPED_CALL_PREFIX = "typed-"
         const val MAX_CALL_DURATION_MS = 10 * 60_000L
         const val RESUMED_TIMEOUT_MS = 3_000L
         const val MIC_CHECK_TIMEOUT_MS = 3_000L

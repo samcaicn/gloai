@@ -1418,6 +1418,12 @@ class CapsuleController(
             runCatching { context.startActivity(intent) }
             collapse()
         }
+        override fun voiceChat() {
+            val intent = com.wangzan101.mika.task.TaskService.openAppIntent(context)
+                .putExtra(com.wangzan101.mika.ui.MainActivity.EXTRA_OPEN_VOICE_CALL, true)
+            runCatching { context.startActivity(intent) }
+            collapse()
+        }
         override fun hideCapsule() {
             // 和设置 › 悬浮胶囊里选「关闭」同一处:开关一变,render 按 CapsuleModel 收掉胶囊和卡片(hide),任务和通知不受影响
             flags.setCapsuleMode(CapsuleMode.Off)
