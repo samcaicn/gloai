@@ -16,6 +16,7 @@ import com.wangzan101.mika.core.uistate.ScreenPort
 import com.wangzan101.mika.core.uistate.ScreenState
 import com.wangzan101.mika.core.uistate.Verification
 import com.wangzan101.mika.core.testing.PromptSurface
+import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.tool.ToolDispatcher
 import com.wangzan101.mika.core.tool.execute
@@ -205,6 +206,7 @@ internal object PromptSurfaceFeedback {
             "no_handback_note" to UserExchange.NO_HANDBACK_NOTE,
             "user_finished_note" to AgentLoop.USER_FINISHED_NOTE,
             "user_finished_prompt" to UserExchange.USER_FINISHED_PROMPT,
+            "loop.repeating_items" to Feedback.format("loop.repeating_items", "count" to EachLoopDetector.REPEATS),
         )
         return PromptSurface.entries(items + loopResults())
     }

@@ -178,7 +178,12 @@ class OperationGuards(private val stepBudget: Int? = null) {
         val out = mutableListOf<GuardVerdict>()
         if (!same) {
             pageChanged()
-            if (seenStates.add(hash)) progress()
+            if (trail.lastOrNull() != hash) {
+                trail.addLast(hash)
+                while (trail.size > TRAIL_KEEP) trail.removeFirst()
+            }
+            if (seenStates.add(hash)) progress() else out += arrived(hash)
+            out += cycle()
         }
         if (didAct && !noted) {
             if (same) { unchanged += 1; out += noProgress() } else resetNoEffect()

@@ -9,7 +9,7 @@ user:
 
 ## main #2
 system: len=29589 #34d71065 | You are Mika, the user's personal assistant on their phone. Your job is to get ⏎…
-tools: #b32dd03d [wait, ask_user, request_confirmation, end_not_done, view_past_screens, hand_to_user, handle_obstacle, phone_observe, phone_list_elements, phone_tap, phone_scroll, phone_swipe, phone_type_text, phone_clear_text, phone_back, phone_press_key, phone_diagnose, phone_query, phone_find, phone_extract, phone_collect, phone_wait, phone_event, phone_dialog, phone_gesture, phone_set_wheel, phone_run, do_each, phone_system_command, phone_list_apps, phone_launch_app, phone_app_after_task, phone_share_text, phone_set_alarm, phone_set_timer, phone_show_alarms, phone_add_calendar_event, phone_calendar_bulk_insert]
+tools: #1a182139 [wait, ask_user, request_confirmation, end_not_done, view_past_screens, hand_to_user, handle_obstacle, phone_observe, phone_list_elements, phone_tap, phone_scroll, phone_swipe, phone_type_text, phone_clear_text, phone_back, phone_press_key, phone_diagnose, phone_query, phone_find, phone_extract, phone_collect, phone_wait, phone_event, phone_dialog, phone_gesture, phone_set_wheel, phone_run, do_each, phone_system_command, phone_list_apps, phone_launch_app, phone_app_after_task, phone_share_text, phone_set_alarm, phone_set_timer, phone_show_alarms, phone_add_calendar_event, phone_calendar_bulk_insert]
 … 1 messages unchanged
 assistant:
   call main_1 phone_observe {}

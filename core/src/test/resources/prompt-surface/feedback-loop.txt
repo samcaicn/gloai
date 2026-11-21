@@ -74,6 +74,8 @@ There was no handback. Do not say the user took care of it; report how the takeo
 The user says they finished it themselves.
 ### user_finished_prompt
 The user says they finished it themselves. Only observe to read the app's current state and check: if it is confirmed done, answer the user directly with what you read; if you cannot confirm it, call end_not_done. Do nothing else.
+### loop.repeating_items
+Your last steps repeat the same cycle — open an item, act on it, go back — 3 times in a row. If items remain, finish them in one do_each call instead of one item per turn: item says how to recognize one entry (role/text/resourceId), body is the steps for ONE item with "@item" as targetText, ending with back.
 ### loop result 1.o1
 {"ok":true,"currentApp":"com.x","snapshotId":"snap1","screenshotId":1,"screenChangedDuringRead":false,"viewport":{"width":1080,"height":2400},"elements":[{"ref":"@e1","role":"button","name":"搜索","center":{"x":500,"y":50},"size":[999,100],"resourceId":"a:id/s"}],"truncated":false,"moreTools":"From your next call on you also have the full phone tools (phone_observe, phone_list_elements, phone_tap, phone_scroll and the rest), with their descriptions and how to use them."}
 ### loop result 1.o2

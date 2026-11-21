@@ -514,6 +514,7 @@ class AgentLoop(
             return advice
         }
         val track = StepTrack()
+        val eachLoop = EachLoopDetector()
         val progress = TaskProgressTracker(::now, ::emit)
         var firstToolStep: Int? = null
         val newData = NewDataTracker()
@@ -689,7 +690,7 @@ class AgentLoop(
                 continue
             }
             if (flags.batchSteps && first.name == DO_STEPS_TOOL) {
-                val end = batch(first, calls, history, specs, guards, executor, track, step, note, tool, reason, narration, recordReply = ::recordReply,
+                val end = batch(first, calls, history, specs, guards, executor, track, eachLoop, step, note, tool, reason, narration, recordReply = ::recordReply,
                     app = { place = it }, steerWaiting = { inbox?.hasSteers() == true },
                     noteVerdicts = { s, sub, v ->
                         // 和单步一样计卡住提醒与同一段字的重复输入
@@ -777,6 +778,10 @@ class AgentLoop(
             noteResultEvents(verb, exec.content)
             exec.place?.let { place = it }
             track.after(tools.verb(first.name), !isError, ran.verdicts.isNotEmpty() || advice != null, exec.changed, false, exec.place?.name)
+            if (eachLoop.feed(verb, !isError)) {
+                history += ctx.notice(EACH_LOOP_SOURCE, Feedback.format("loop.repeating_items", "count" to EachLoopDetector.REPEATS))
+                track.markRecovery()
+            }
             val picture = ran.picture
             val shotId = ran.shotId
             if (picture != null && shotId != null) {
@@ -954,10 +959,12 @@ class AgentLoop(
      */
     private suspend fun batch(
         first: Part.ToolCall, calls: ReplyCalls, history: MutableList<Message>, specs: List<ToolSpec>, guards: OperationGuards,
-        executor: ActionExecutor, track: StepTrack, step: Int, note: String, tool: String?, reason: String?, narration: String?,
+        executor: ActionExecutor, track: StepTrack, eachLoop: EachLoopDetector, step: Int, note: String, tool: String?, reason: String?, narration: String?,
         recordReply: (String?) -> Unit, app: (Place) -> Unit, steerWaiting: () -> Boolean,
         noteVerdicts: (BatchStep, ToolExecution?, List<GuardVerdict>) -> String?,
     ): TaskState? {
+        // 一批打断了逐条干活的连击(这正是提醒想要的方向):连着次数清零重算
+        eachLoop.reset()
         // 收着的组里的工具也能放进批里(和单步一样照常执行、展开它那一组)
         val (parsed, problem) = BatchRunner.parse(first.argsJson, tools.definitions().map { it.name }.toSet(), tools.batchable())
         // 一批只在一块屏上做:混了两块屏的整批不做
@@ -1125,6 +1132,8 @@ class AgentLoop(
         const val UNCONFIRMED_NOTE = "未确认:"
         /** hand_to_user 交给用户付款时的原因;付款是不可逆的事,回答要另请核查。 */
         private const val PAYMENT = "payment"
+        /** 逐条干活重复提醒的来源标签。 */
+        private const val EACH_LOOP_SOURCE = "each loop"
         const val DEFAULT_INPUT_TIMEOUT_MS = 15 * 60_000L
         /** 交回接管后工具结果里的提醒(界面测试按它认)。 */
         val HANDBACK_NOTE: String get() = UserExchange.HANDBACK_NOTE

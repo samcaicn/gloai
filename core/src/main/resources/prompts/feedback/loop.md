@@ -239,3 +239,6 @@ What Mika read and found in these turns is kept: history_read lists them and rea
 
 ## stage_hint
 Display stages: current {{number}} {{current}}, next {{next}} {{goal}}. When starting that next outcome, include "stage":{{next}} inside <task_progress> with the ordinary tool call. A display stage never confirms a goal.
+
+## loop.repeating_items
+Your last steps repeat the same cycle — open an item, act on it, go back — {{count}} times in a row. If items remain, finish them in one do_each call instead of one item per turn: item says how to recognize one entry (role/text/resourceId), body is the steps for ONE item with "@item" as targetText, ending with back.
