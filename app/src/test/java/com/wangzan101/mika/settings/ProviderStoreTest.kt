@@ -30,6 +30,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -130,12 +131,15 @@ class ProviderStoreTest {
                 val m = s.modelForConfig(c.id)!!
                 val reply = m.complete("s", listOf(Message(Role.User, listOf(Part.Text("hi")), Author.Mika)), emptyList())
                 assertEquals("hi", reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text })
-                assertEquals("Bearer sk-bad", server.takeRequest().getHeader("Authorization"))
-                assertEquals("Bearer sk-good", server.takeRequest().getHeader("Authorization"))
-                // 坏 key 已标耗尽:池里只剩好 key 可用,轮询不会再选回坏 key
+                // 轮询位置跨注册保留(#757):先后两棒各用一把,不假设哪把先跑
+                val first = server.takeRequest().getHeader("Authorization")
+                val second = server.takeRequest().getHeader("Authorization")
+                assertNotEquals(first, second)
+                assertEquals(setOf("Bearer sk-bad", "Bearer sk-good"), setOf(first, second))
+                // 401 的那把已标耗尽:池里只剩接手的那把可用,轮询不会再选回去
                 assertEquals(2, KeyPoolManager.shared.keyCount(pid))
                 assertEquals(1, KeyPoolManager.shared.activeKeyCount(pid))
-                assertEquals("sk-good", KeyPoolManager.shared.getActiveKey(pid))
+                assertEquals(second?.removePrefix("Bearer "), KeyPoolManager.shared.getActiveKey(pid))
             } finally {
                 KeyPoolManager.shared.reset(pid)
             }
