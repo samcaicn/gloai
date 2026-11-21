@@ -11,8 +11,9 @@ permissions:
   contents: read
 
 # 同一个 PR 推新提交时取消上一次还没跑完的，main 上的推送各自跑完。
+# 推送和手动触发按 run_id 各占一组，不会被后来的运行取消。
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
