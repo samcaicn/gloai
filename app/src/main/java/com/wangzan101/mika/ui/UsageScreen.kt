@@ -191,8 +191,8 @@ object UsageCopy {
 
     /** 占比:不到 1% 但不是 0 时写「<1%」。 */
     fun percent(share: Double): String {
-        val p = (share * 100).roundToInt()
-        return if (p == 0 && share > 0) "<1%" else "$p%"
+        if (share > 0 && share < 0.01) return "<1%"
+        return "${(share * 100).roundToInt()}%"
     }
 
     fun missing(n: Long) = trPlural(R.plurals.usage_missing, n.toInt())
