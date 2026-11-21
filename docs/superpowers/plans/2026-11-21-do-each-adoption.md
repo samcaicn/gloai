@@ -380,7 +380,8 @@ git commit -m "feat(agent): 逐条干活重复 3 次时提醒改用 do_each,提�
 
 - [ ] **Step 2: 重新生成金样并跑 prompt 测试**
 
-Run: `./gradlew :core:test --tests '*PromptSurface*' -PupdateSnapshots --console=plain -q && ./gradlew :core:test --tests '*PromptSurface*' --console=plain -q`
+Run: `./gradlew :core:test --tests '*PromptSurface*' --tests '*PromptLayoutTest*' -PupdateSnapshots --console=plain -q && ./gradlew :core:test --tests '*PromptSurface*' --console=plain -q`
+注意:`sizes.txt` 金样归 `PromptLayoutTest.layerSizesRendered` 所有,再生成必须带上 `--tests '*PromptLayoutTest*'`,只跑 `*PromptSurface*` 不会更新它。
 Expected: PASS;`git diff --stat core/src/test/resources/prompt-surface/` 只动含 do_each 描述的文件(tools.txt,若 layer 类金样含工具全文也可能有,逐个核对 diff 内容确实只是这句示例)。
 
 - [ ] **Step 3: Commit**
