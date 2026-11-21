@@ -1955,11 +1955,11 @@ internal fun Composer(
                             }
                         }
                         Spacer(Modifier.weight(1f))
-                        // 话筒常驻:按住才听,点一下只提示按住;键盘出来以后长按输入框留给系统选字
+                        // 话筒常驻:按住才听,点一下提示按住(引擎不可用则直接弹说明页);键盘出来以后长按输入框留给系统选字
                         if (vh != null) {
                             val hint = stringResource(R.string.voice_hold_to_talk)
                             Box(
-                                Modifier.size(MikaSize.IconButton).testTag("composer-mic").holdToTalk(vh) { vh.toast = hint },
+                                Modifier.size(MikaSize.IconButton).testTag("composer-mic").holdToTalk(vh) { if (vh.engineUsable) vh.toast = hint else vh.explainUnavailable() },
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(MikaIcons.Mic, hint, Modifier.size(MikaSize.Icon), tint = c.ink)

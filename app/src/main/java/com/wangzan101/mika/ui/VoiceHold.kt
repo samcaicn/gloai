@@ -281,8 +281,14 @@ internal class VoiceHold(private val voice: VoiceSource, private val scope: Coro
     // 「太短」按手指按下算不到半秒:开始听时已经按了 HOLD_MS,状态机只再数剩下的
     val hold = HoldToTalk(clock = SystemClock::elapsedRealtime, maxMs = MAX_MS, minMs = MIN_TOTAL_MS - HOLD_MS)
 
-    /** 引擎现在不可用(识别服务没响应/没配服务商)时,输入行退化成纯打字:点击只开键盘,不当按住说话。 */
+    /** 引擎现在不可用(识别服务没响应/没配服务商)。手势照常进语音流程(begin 弹说明页),这只决定点话筒是提示还是直接弹说明。 */
     internal val engineUsable: Boolean get() = voice.spec() !is SpeechEngineSpec.Unavailable
+
+    /** 点话筒时引擎不可用:弹「还不能语音输入」说明页(原因 + 去选引擎的路),功能不可用也不装死。 */
+    fun explainUnavailable() {
+        toast = null
+        (voice.spec() as? SpeechEngineSpec.Unavailable)?.let { sheet = VoiceSheet.Unavailable(it.why) }
+    }
 
     /** 长按开始以后手指还没离开。 */
     var holding by mutableStateOf(false)
@@ -444,9 +450,8 @@ internal fun Modifier.holdToTalk(vh: VoiceHold, onTap: () -> Unit): Modifier {
         awaitEachGesture {
             val down = awaitFirstDown()
             down.consume()
-            // 引擎不可用时这一层只做点按:不按 HOLD_MS 起听,任何不移动的松手都算点按(长按文本框会进系统选字、键盘被收,那个死胡同不走)
-            // true:点一下;false:手指动了或没了,不算我们的;null:按满了,开始听
-            val tapped = withTimeoutOrNull<Boolean>(if (vh.engineUsable) HOLD_MS else Long.MAX_VALUE) {
+            // true:点一下;false:手指动了或没了,不算我们的;null:按满了开始听——引擎不可用也由 begin 弹说明页,功能入口不消失
+            val tapped = withTimeoutOrNull<Boolean>(HOLD_MS) {
                 var result: Boolean? = null
                 while (result == null) {
                     val ch = awaitPointerEvent().changes.firstOrNull { it.id == down.id }
@@ -465,7 +470,19 @@ internal fun Modifier.holdToTalk(vh: VoiceHold, onTap: () -> Unit): Modifier {
                 null -> Unit
             }
             vh.begin()
-            if (!vh.holding) return@awaitEachGesture
+            if (!vh.holding) {
+                // 没起听:说明页/权限框已经弹出来了。按住了就留着说明页——这是用户发现语音入口、被带去设置的路;
+                // 不足半秒松手照旧回退点按:收掉说明页、当点按处理,不吃手势
+                while (true) {
+                    val ch = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: return@awaitEachGesture
+                    if (!ch.pressed) {
+                        ch.consume()
+                        if (ch.uptimeMillis - down.uptimeMillis < MIN_TOTAL_MS) { vh.sheet = null; onTap() }
+                        return@awaitEachGesture
+                    }
+                    ch.consume()
+                }
+            }
             var ended = false
             try {
                 while (true) {
