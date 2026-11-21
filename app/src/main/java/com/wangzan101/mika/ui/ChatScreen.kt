@@ -1982,7 +1982,7 @@ internal fun Composer(
                                     .clickable(enabled = canSend, onClickLabel = stringResource(R.string.chat_send)) { panel = Panel.Closed; onSend() },
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(MikaIcons.Up, stringResource(R.string.chat_send), Modifier.size(20.dp), tint = if (canSend) c.accent else c.ink3)
+                                Icon(MikaIcons.Up, stringResource(R.string.chat_send), Modifier.size(20.dp), tint = if (canSend) c.accent else c.ink)
                             }
                         }
                     }
