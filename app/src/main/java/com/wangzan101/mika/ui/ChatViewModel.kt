@@ -2591,7 +2591,8 @@ private val EVIDENCE = Regex("""(^|\n|[。.!！?？]\s*)[\s*#>\-]*\**(?:依据|�
  */
 class ToolLabels(private val tools: ToolIndex, private val legacy: LegacyNames = legacyNames()) {
     fun label(tool: String): String {
-        val declared = (tools[tool] ?: legacy.resolve(tool)?.let { tools[it] })?.label ?: return tool
+        // 没声明 label 的工具用工具名兜底查表(查不到仍显示工具名),声明了的照旧按声明文案查。
+        val declared = (tools[tool] ?: legacy.resolve(tool)?.let { tools[it] })?.label ?: tool
         return TOOL_LABELS[declared]?.let { tr(it) } ?: declared
     }
 
@@ -2696,6 +2697,7 @@ class ToolLabels(private val tools: ToolIndex, private val legacy: LegacyNames =
             "点击" to R.string.tool_tap,
             "输入文字" to R.string.tool_type,
             "清空输入框" to R.string.tool_clear,
+            "wechat_send_owner" to R.string.tool_wechat_owner,
         )
     }
 }

@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import com.wangzan101.mika.settings.DeviceAccessSettings
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.ThemeAccent
 import com.wangzan101.mika.settings.ThemeMode
@@ -393,6 +394,7 @@ data class ParallelSetting(val max: Int, val limit: ParallelLimit)
 /**
  * 设置 › 任务运行:自主模式默认关;屏幕常亮、被操作的 App 静音默认开,可以关;[parallel] 不为空(实验开关打开了)时多一行同时进行的任务数。
  * 下面一组是操作节奏:快 / 标准(默认) / 像人,选了下一个任务起生效。
+ * [deviceAccess] 非空时挂「锁屏时运行本机任务」一组:与「连接电脑」的远程开关互不影响,凭据编辑区共用。
  */
 @Composable
 fun DuringWorkScreen(
@@ -412,6 +414,7 @@ fun DuringWorkScreen(
     triggerRunMinutes: Int? = null, onTriggerRunMinutes: (Int?) -> Unit = {},
     tokenBudget: Long? = null, onTokenBudget: (Long?) -> Unit = {},
     showTaskCost: Boolean = false, onShowTaskCost: (Boolean) -> Unit = {},
+    deviceAccess: DeviceAccessSettings? = null,
 ) {
     val context = LocalContext.current
     var editingLimit by remember { mutableStateOf(false) }
@@ -469,6 +472,8 @@ fun DuringWorkScreen(
             }
             parallel?.let { ParallelRow(it, onParallelMax) }
         }
+        // 锁屏时运行本机任务:独立开关 + 共用的锁屏凭据编辑区(组名/脚注说清与远程开关互不影响)
+        deviceAccess?.let { DeviceAccessSection(it, localTasks = true) }
         if (editingLimit) StepLimitDialog(
             current = stepLimit,
             custom = customLimit,

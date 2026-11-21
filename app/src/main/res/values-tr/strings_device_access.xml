@@ -20,4 +20,9 @@
     <string name="device_access_pin_hint">Mevcut 4–16 haneli PIN\'i kullanın. Tekrar kaydetmek, bir başarısızlıktan sonra bir yeni denemeye izin verir.</string>
     <string name="device_access_password_hint">Mevcut 4–64 karakterlik parolayı kullanın: İngilizce harfler, sayılar, boşluklar ve yaygın ASCII simgeleri. Diğer karakterler ve desen kilitleri desteklenmez.</string>
     <string name="device_access_save_failed">Kaydedilemedi. Telefon depolamasını kontrol edip tekrar deneyin.</string>
+    <string name="device_local_group">Yerel görevler</string>
+    <string name="device_local_title">Kilitliyken görev çalıştır</string>
+    <string name="device_local_sub">Bu telefonda başlatılan görevler, gözetimsiz çalışmak için ekranı uyandırıp kilidini açabilir.</string>
+    <string name="device_local_foot">Varsayılan olarak kapalı. Bağımsız çalışır: Bilgisayara bağlan altındaki “Uzaktan uyandırma ve kilit açmaya izin ver” anahtarını değiştirmez, o anahtar da bunu değiştirmez. Aşağıdaki şifrelenmiş ekran kilidi kimliğini paylaşır; bir başarısız deneme sonraki denemeleri duraklatır.</string>
+    <string name="device_local_unlock_failed">Görev telefonu uyandıramadı veya kilidini açamadı. Kendiniz açın ya da Ayarlar › Görev çalışıyor altındaki “Kilitliyken görev çalıştır” anahtarını ve kayıtlı ekran kilidi kimliğini kontrol edin.</string>
 </resources>

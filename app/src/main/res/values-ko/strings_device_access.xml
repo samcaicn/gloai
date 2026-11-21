@@ -20,4 +20,9 @@
     <string name="device_access_pin_hint">현재 쓰는 4~16자리 PIN을 입력하세요. 실패한 뒤 다시 저장하면 한 번 더 시도할 수 있어요.</string>
     <string name="device_access_password_hint">현재 쓰는 4~64자 비밀번호를 입력하세요. 영문, 숫자, 공백, 일반 ASCII 기호만 쓸 수 있어요. 그 밖의 문자와 패턴 잠금은 지원하지 않아요.</string>
     <string name="device_access_save_failed">저장하지 못했어요. 휴대전화 저장 공간을 확인하고 다시 시도하세요.</string>
+    <string name="device_local_group">이 휴대전화 작업</string>
+    <string name="device_local_title">잠금 상태에서 작업 실행</string>
+    <string name="device_local_sub">이 휴대전화에서 시작한 작업이 화면을 깨우고 잠금을 해제해 무인으로 일할 수 있어요.</string>
+    <string name="device_local_foot">기본적으로 꺼져 있어요. 독립적으로 동작해요. 컴퓨터 연결의 “원격 깨우기 및 잠금 해제 허용”을 바꾸지 않고, 그 스위치도 이 스위치에 영향을 주지 않아요. 아래 암호화된 화면 잠금 정보를 함께 사용하며, 한 번 실패하면 이후 시도가 중지돼요.</string>
+    <string name="device_local_unlock_failed">작업이 휴대전화를 깨우거나 잠금을 해제하지 못했어요. 직접 잠금을 해제하거나, 설정 › 작업 실행에서 “잠금 상태에서 작업 실행” 스위치와 저장된 화면 잠금 정보를 확인하세요.</string>
 </resources>

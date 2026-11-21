@@ -80,4 +80,5 @@
     <string name="tool_mika_login_site">Sign in to a site</string>
     <string name="tool_mika_confirm_login">Confirm sign-in</string>
     <string name="tool_mika_favorites">Frequently used sites</string>
+    <string name="tool_wechat_owner">Send to my WeChat</string>
 </resources>

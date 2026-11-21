@@ -20,4 +20,9 @@
     <string name="device_access_pin_hint">Use o PIN atual de 4 a 16 dígitos. Salvar de novo permite uma nova tentativa após uma falha.</string>
     <string name="device_access_password_hint">Use a senha atual de 4 a 64 caracteres: letras do alfabeto inglês, números, espaços e símbolos ASCII comuns. Outros caracteres e padrões de desenho não são aceitos.</string>
     <string name="device_access_save_failed">Não foi possível salvar. Verifique o armazenamento do celular e tente de novo.</string>
+    <string name="device_local_group">Tarefas locais</string>
+    <string name="device_local_title">Executar tarefas com a tela bloqueada</string>
+    <string name="device_local_sub">Tarefas iniciadas neste celular podem ativar e desbloquear a tela para trabalhar sem supervisão.</string>
+    <string name="device_local_foot">Desativado por padrão. Funciona sozinho: não muda “Permitir ativação e desbloqueio remotos” em Conectar um computador, e essa chave também não muda esta. Usa a mesma credencial criptografada do bloqueio de tela abaixo; uma tentativa errada pausa as próximas.</string>
+    <string name="device_local_unlock_failed">A tarefa não conseguiu ativar nem desbloquear o celular. Desbloqueie você mesmo, ou confira “Executar tarefas com a tela bloqueada” e a credencial do bloqueio de tela salva em Ajustes › Execução de tarefas.</string>
 </resources>

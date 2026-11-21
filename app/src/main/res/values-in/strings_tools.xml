@@ -80,4 +80,5 @@
     <string name="tool_mika_login_site">Masuk ke situs</string>
     <string name="tool_mika_confirm_login">Konfirmasi login</string>
     <string name="tool_mika_favorites">Situs sering dipakai</string>
+    <string name="tool_wechat_owner">Kirim ke WeChat saya</string>
 </resources>

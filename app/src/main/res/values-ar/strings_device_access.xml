@@ -19,4 +19,9 @@
     <string name="device_access_pin_hint">Use the current 4–16 digit PIN. Saving again allows one new attempt after a failure.</string>
     <string name="device_access_password_hint">Use the current 4–64 character password: English letters, numbers, spaces and common ASCII symbols. Other characters and pattern locks are not supported.</string>
     <string name="device_access_save_failed">Could not save. Check the phone storage and try again.</string>
+    <string name="device_local_group">المهام المحلية</string>
+    <string name="device_local_title">تشغيل المهام أثناء القفل</string>
+    <string name="device_local_sub">يمكن للمهام التي تبدأ على هذا الهاتف إيقاظ الشاشة وإلغاء قفلها للعمل دون مراقبة.</string>
+    <string name="device_local_foot">متوقف افتراضيًا. يعمل بشكل مستقل: لا يغيّر «السماح بالإيقاظ وإلغاء القفل عن بُعد» ضمن توصيل كمبيوتر، وذلك الخيار لا يغيّر هذا الخيار. يستخدم بيانات اعتماد قفل الشاشة المشفّرة نفسها أدناه؛ تؤدي محاولة واحدة فاشلة إلى إيقاف المحاولات اللاحقة مؤقتًا.</string>
+    <string name="device_local_unlock_failed">تعذّر على المهمة إيقاظ الهاتف أو إلغاء قفله. ألغِ قفله بنفسك، أو تحقّق من «تشغيل المهام أثناء القفل» وبيانات اعتماد قفل الشاشة المحفوظة ضمن الإعدادات › تشغيل المهام.</string>
 </resources>

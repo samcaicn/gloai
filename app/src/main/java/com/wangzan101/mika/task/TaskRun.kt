@@ -84,6 +84,8 @@ import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.RunSpec
 import com.wangzan101.mika.core.run.RunProvenance
 import com.wangzan101.mika.core.run.RunOrigin
+import com.wangzan101.mika.core.wechat.explicitWechatOwnerRequest
+import com.wangzan101.mika.wechat.AndroidWechatOwnerPort
 import com.wangzan101.mika.core.child.ChildAgentRunner
 import com.wangzan101.mika.core.run.RunInbox
 import com.wangzan101.mika.core.run.RunInput
@@ -788,9 +790,15 @@ class TaskRun(
             }
             val app = service.application as MikaApp
             // 微信只使用当前绑定会话的独立授权；仍保留 Channel 来源及原有确认/接管规则。
-            val unlockAuthorized = taskUnlockAuthorization(provenance.origin, channelPeer) { peer ->
+            // 界面任务跟着本机开关走(判定每次重查);定时任务远程/本机两个开关任一即可。
+            val unlockAuthorized = taskUnlockAuthorization(provenance.origin, channelPeer,
+                localUnlockEnabled = { app.deviceAccess.settings.localEnabled }) { peer ->
                 app.wechat.store.canUnlock(peer)
             }
+            // 本机任务(界面/定时)在本机开关开着时走本机分流;远程来源永远走远程分流
+            fun useLocalUnlock() = (provenance.origin == RunOrigin.Ui || provenance.origin == RunOrigin.Trigger) &&
+                app.deviceAccess.settings.localEnabled
+            var unlockWasLocal = false
             val taskGate = TaskGate(states.locked, shellUp,
                 refreshLocked = states::refresh,
                 unattendedUnlock = unlockAuthorized?.let { authorized ->
@@ -803,8 +811,10 @@ class TaskRun(
                             states.refresh()
                             "notification_unavailable"
                         } else {
+                            unlockWasLocal = useLocalUnlock()
                             val result = try {
-                                app.deviceAccess.access.unlock(authorized)
+                                if (unlockWasLocal) app.deviceAccess.access.unlockLocal(authorized)
+                                else app.deviceAccess.access.unlock(authorized)
                             } catch (e: CancellationException) {
                                 // 取消后系统仍可能完成已注入的输入:换常驻警告,提醒用户检查锁屏
                                 service.notifyRelockFailed()
@@ -825,7 +835,12 @@ class TaskRun(
                 recoverUnlockFailure = { unlockAuthorized != null },
                 onRecoveryFailure = { status -> service.notifyUnlockRecoveryNeeded(conversationId, status) },
                 unlockFailureMessage = {
-                    tr(if (provenance.origin == RunOrigin.Channel) R.string.wechat_unlock_failed else R.string.trigger_unlock_failed)
+                    tr(when {
+                        provenance.origin == RunOrigin.Channel -> R.string.wechat_unlock_failed
+                        // 界面任务只有本机分流;定时任务按这次实际走的分流给指引
+                        provenance.origin == RunOrigin.Ui || unlockWasLocal -> R.string.device_local_unlock_failed
+                        else -> R.string.trigger_unlock_failed
+                    })
                 },
             ) {
                 val t = phone?.screen?.target?.value
@@ -1062,6 +1077,10 @@ class TaskRun(
                 // 这两天的通知原文和存着的各天、各周、各月的归纳(主动能力攒下的):只给用户在手机上发起的任务;主动能力没开时不去碰它
                 notices = if (provenance.origin == RunOrigin.Ui && !conditionCheck && FeatureFlags.get(service).proactive()) {
                     (service.application as MikaApp).proactive.noticeSource()
+                } else null,
+                // 机主结果推送:只给用户明说「发我微信」的手机 UI 主任务;绑定快照、复查与同文幂等都在发送器一侧
+                wechatOwner = if (provenance.origin == RunOrigin.Ui && !conditionCheck && explicitWechatOwnerRequest(goal)) {
+                    AndroidWechatOwnerPort(service.application as MikaApp, key)
                 } else null,
                 mcpServers = mcpEndpoints(),
                 // 仅用户明确配置并启用时提供通用搜索;否则继续用浏览器搜索。

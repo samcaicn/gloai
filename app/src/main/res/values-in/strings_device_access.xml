@@ -19,4 +19,9 @@
     <string name="device_access_pin_hint">Gunakan PIN 4–16 digit yang berlaku saat ini. Menyimpan ulang memberi satu kesempatan baru setelah gagal.</string>
     <string name="device_access_password_hint">Gunakan sandi 4–64 karakter yang berlaku saat ini: huruf Inggris, angka, spasi, dan simbol ASCII umum. Karakter lain dan kunci pola tidak didukung.</string>
     <string name="device_access_save_failed">Gagal menyimpan. Periksa penyimpanan ponsel lalu coba lagi.</string>
+    <string name="device_local_group">Tugas lokal</string>
+    <string name="device_local_title">Jalankan tugas saat terkunci</string>
+    <string name="device_local_sub">Tugas yang dimulai di ponsel ini dapat membangunkan dan membuka kunci layar untuk bekerja tanpa pengawasan.</string>
+    <string name="device_local_foot">Nonaktif secara default. Berfungsi sendiri: tidak mengubah “Izinkan bangun dan buka kunci jarak jauh” di Hubungkan komputer, dan saklar itu juga tidak mengubah saklar ini. Memakai kredensial kunci layar terenkripsi yang sama di bawah; satu percobaan gagal menjeda percobaan berikutnya.</string>
+    <string name="device_local_unlock_failed">Tugas tidak dapat membangunkan atau membuka kunci ponsel. Buka kunci sendiri, atau periksa “Jalankan tugas saat terkunci” dan kredensial kunci layar tersimpan di Setelan › Menjalankan tugas.</string>
 </resources>

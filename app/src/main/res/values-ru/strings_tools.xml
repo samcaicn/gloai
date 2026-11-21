@@ -80,4 +80,5 @@
     <string name="tool_mika_login_site">Войти на сайт</string>
     <string name="tool_mika_confirm_login">Подтвердить вход</string>
     <string name="tool_mika_favorites">Частые сайты</string>
+    <string name="tool_wechat_owner">Отправить в мой WeChat</string>
 </resources>
