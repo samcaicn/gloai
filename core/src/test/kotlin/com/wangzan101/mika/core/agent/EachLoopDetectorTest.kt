@@ -3,12 +3,11 @@ package com.wangzan101.mika.core.agent
 import com.wangzan101.mika.core.tool.Verb
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EachLoopDetectorTest {
-    private fun EachLoopDetector.feedAll(varbs: List<Verb>, ok: Boolean = true): List<Boolean> =
-        varbs.map { feed(it, ok) }
+    private fun EachLoopDetector.feedAll(verbs: List<Verb>, ok: Boolean = true): List<Boolean> =
+        verbs.map { feed(it, ok) }
 
     @Test fun openActBackThreeTimesFiresOnceAtTheNinth() {
         val d = EachLoopDetector()
