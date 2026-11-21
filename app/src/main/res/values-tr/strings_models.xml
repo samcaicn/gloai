@@ -51,6 +51,8 @@
     <string name="models_not_listed">Bu sağlayıcının modelleri henüz listelenmedi.</string>
     <string name="refresh">Yenile</string>
     <string name="models_in_use">Kullanımda</string>
+    <string name="models_response_speed">Yanıt hızı</string>
+    <string name="models_response_speed_note">Varsayılan seçenek sunucu ayarını kullanır. Fast ve Ultrafast model ve hesaba bağlıdır, maliyeti veya plan kullanımını artırabilir.</string>
     <string name="models_sees_images">Görüntüleri görebilir</string>
     <string name="models_sees_note_user">Sizin tarafınızdan ayarlandı. Ana model görebildiğinde ekran görüntüleri doğrudan ona gider.</string>
     <string name="models_sees_note_vision">Görüntü modeli olarak kullanılıyor, bu yüzden görüntüleri görebilir sayılır.</string>

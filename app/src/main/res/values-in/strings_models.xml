@@ -51,6 +51,8 @@
     <string name="models_not_listed">Model penyedia ini belum dimuat.</string>
     <string name="refresh">Segarkan</string>
     <string name="models_in_use">Sedang dipakai</string>
+    <string name="models_response_speed">Kecepatan respons</string>
+    <string name="models_response_speed_note">Setelan bawaan mengikuti server. Fast dan Ultrafast bergantung pada model dan akun, serta dapat menambah biaya atau penggunaan paket.</string>
     <string name="models_sees_images">Bisa melihat gambar</string>
     <string name="models_sees_note_user">Diatur oleh Anda. Jika model utama bisa melihat, tangkapan layar langsung dikirim ke sana.</string>
     <string name="models_sees_note_vision">Dipakai sebagai model visual, jadi dianggap bisa melihat gambar.</string>

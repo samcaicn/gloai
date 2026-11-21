@@ -52,6 +52,8 @@
     <string name="models_not_listed">This provider’s models haven’t been listed yet.</string>
     <string name="refresh">Refresh</string>
     <string name="models_in_use">In use</string>
+    <string name="models_response_speed">Response speed</string>
+    <string name="models_response_speed_note">Default uses the server setting. Fast and Ultrafast depend on your model and account and may increase cost or plan usage.</string>
     <string name="models_sees_images">Can see images</string>
     <string name="models_sees_note_user">Set by you. When the main model can see, screenshots go straight to it.</string>
     <string name="models_sees_note_vision">Used as the vision model, so it counts as able to see images.</string>

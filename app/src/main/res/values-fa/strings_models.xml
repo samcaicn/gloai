@@ -52,6 +52,8 @@
     <string name="models_not_listed">فهرست مدل‌های این ارائه‌دهنده هنوز دریافت نشده است.</string>
     <string name="refresh">تازه‌سازی</string>
     <string name="models_in_use">در حال استفاده</string>
+    <string name="models_response_speed">سرعت پاسخ</string>
+    <string name="models_response_speed_note">گزینهٔ پیش‌فرض از تنظیم سرور پیروی می‌کند. دسترسی به Fast و Ultrafast به مدل و حساب بستگی دارد و ممکن است هزینه یا مصرف طرح را افزایش دهد.</string>
     <string name="models_sees_images">قابلیت دیدن تصویر</string>
     <string name="models_sees_note_user">توسط شما تنظیم شده است. وقتی مدل اصلی قابلیت دیدن داشته باشد، عکس‌های صفحه مستقیم به آن ارسال می‌شوند.</string>
     <string name="models_sees_note_vision">به‌عنوان مدل بینایی استفاده می‌شود، بنابراین دارای قابلیت دیدن تصویر در نظر گرفته می‌شود.</string>

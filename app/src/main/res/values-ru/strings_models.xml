@@ -54,6 +54,8 @@
     <string name="models_not_listed">Список моделей этого провайдера ещё не получен.</string>
     <string name="refresh">Обновить</string>
     <string name="models_in_use">Используется</string>
+    <string name="models_response_speed">Скорость ответа</string>
+    <string name="models_response_speed_note">По умолчанию действуют настройки сервера. Доступность Fast и Ultrafast зависит от модели и аккаунта, а их использование может увеличить стоимость или расход лимита тарифа.</string>
     <string name="models_sees_images">Видит изображения</string>
     <string name="models_sees_note_user">Задано вами. Если основная модель умеет видеть, снимки экрана уходят прямо ей.</string>
     <string name="models_sees_note_vision">Используется как зрительная модель, поэтому считается способной видеть изображения.</string>

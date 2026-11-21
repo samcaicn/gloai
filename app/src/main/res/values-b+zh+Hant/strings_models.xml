@@ -51,6 +51,8 @@
     <string name="models_not_listed">還沒列出這家的模型。</string>
     <string name="refresh">重新整理</string>
     <string name="models_in_use">正在用這個</string>
+    <string name="models_response_speed">回應速度</string>
+    <string name="models_response_speed_note">預設沿用伺服器設定。Fast 和 Ultrafast 是否可用取決於模型和帳號，可能增加費用或方案用量。</string>
     <string name="models_sees_images">能看圖</string>
     <string name="models_sees_note_user">按你的設定。主模型能看圖時，截圖直接給它看。</string>
     <string name="models_sees_note_vision">已用作看圖模型，算能看圖。</string>

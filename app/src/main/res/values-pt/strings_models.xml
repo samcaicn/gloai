@@ -53,6 +53,8 @@
     <string name="models_not_listed">Os modelos deste provedor ainda não foram listados.</string>
     <string name="refresh">Atualizar</string>
     <string name="models_in_use">Em uso</string>
+    <string name="models_response_speed">Velocidade de resposta</string>
+    <string name="models_response_speed_note">A opção padrão segue a configuração do servidor. Fast e Ultrafast dependem do modelo e da conta e podem aumentar o custo ou o consumo do plano.</string>
     <string name="models_sees_images">Enxerga imagens</string>
     <string name="models_sees_note_user">Definido por você. Quando o modelo principal enxerga, as capturas de tela vão direto para ele.</string>
     <string name="models_sees_note_vision">Usado como modelo de visão, então conta como capaz de ver imagens.</string>

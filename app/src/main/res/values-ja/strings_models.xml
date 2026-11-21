@@ -51,6 +51,8 @@
     <string name="models_not_listed">このプロバイダーのモデルは、まだ一覧にしていません。</string>
     <string name="refresh">更新</string>
     <string name="models_in_use">使用中</string>
+    <string name="models_response_speed">応答速度</string>
+    <string name="models_response_speed_note">デフォルトではサーバーの設定に従います。Fast と Ultrafast の利用可否はモデルとアカウントによって異なり、料金やプランの使用量が増える場合があります。</string>
     <string name="models_sees_images">画像を見られる</string>
     <string name="models_sees_note_user">あなたの設定です。メインモデルが画像を見られる場合、スクリーンショットはそのまま送られます。</string>
     <string name="models_sees_note_vision">ビジョンモデルとして使っているため、画像を見られるものとして扱います。</string>

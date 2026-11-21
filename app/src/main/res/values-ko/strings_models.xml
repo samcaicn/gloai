@@ -51,6 +51,8 @@
     <string name="models_not_listed">이 제공업체의 모델 목록을 아직 가져오지 않았어요.</string>
     <string name="refresh">새로고침</string>
     <string name="models_in_use">사용 중</string>
+    <string name="models_response_speed">응답 속도</string>
+    <string name="models_response_speed_note">기본값은 서버 설정을 따릅니다. Fast와 Ultrafast의 사용 가능 여부는 모델과 계정에 따라 다르며, 비용이나 요금제 사용량이 늘어날 수 있습니다.</string>
     <string name="models_sees_images">이미지 인식 가능</string>
     <string name="models_sees_note_user">직접 설정했어요. 메인 모델이 이미지를 볼 수 있으면 스크린샷을 바로 보내요.</string>
     <string name="models_sees_note_vision">비전 모델로 쓰고 있어서 이미지를 볼 수 있는 것으로 간주해요.</string>

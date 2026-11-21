@@ -56,6 +56,8 @@
     <string name="models_not_listed">لم تُسرد نماذج هذا المزوّد بعد.</string>
     <string name="refresh">تحديث</string>
     <string name="models_in_use">قيد الاستخدام</string>
+    <string name="models_response_speed">سرعة الاستجابة</string>
+    <string name="models_response_speed_note">يستخدم الخيار الافتراضي إعداد الخادم. يعتمد توفّر Fast وUltrafast على النموذج والحساب، وقد يزيدان التكلفة أو استهلاك الباقة.</string>
     <string name="models_sees_images">يستطيع رؤية الصور</string>
     <string name="models_sees_note_user">حدّدته أنت. عندما يستطيع النموذج الرئيسي الرؤية، تُرسل لقطات الشاشة إليه مباشرةً.</string>
     <string name="models_sees_note_vision">يُستخدم كنموذج للرؤية، لذا يُعد قادرًا على رؤية الصور.</string>
