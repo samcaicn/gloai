@@ -19,6 +19,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ListedModel
 import com.wangzan101.mika.core.model.ModelRole
+import com.wangzan101.mika.core.model.OpenAiServiceTier
 import com.wangzan101.mika.settings.Provider
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.ModelContextSettings
@@ -272,6 +273,7 @@ class ModelSetupScreenTest {
         }
         compose.onNodeWithTag("model-deepseek-coder").performClick()
         compose.awaitOne(ModelsCopy.useAsSubtitle("DeepSeek")).assertIsDisplayed()
+        compose.onNodeWithTag("model-response-speed").assertDoesNotExist()
         compose.awaitOne(ModelsCopy.roleName(ModelRole.Vision)).performClick()
         compose.waitForIdle()
         assertEquals(listOf("Vision deepseek-coder"), used)
@@ -284,6 +286,33 @@ class ModelSetupScreenTest {
         compose.awaitOne(ModelSetupCopy.CANCEL).performClick()
         compose.waitForIdle()
         compose.onNodeWithText(ModelsCopy.IN_USE).assertDoesNotExist()
+    }
+
+    @Test fun openAiModelSheetSavesTheSelectedSpeedForThatModel() {
+        val model = "gpt-test"
+        var provider by mutableStateOf(Provider(
+            "openai", "OpenAI", ProviderConfig.Kind.OpenAiResponses, "https://api.openai.com/v1",
+            models = listOf(ListedModel(model)),
+        ))
+        compose.setContent {
+            MikaTheme {
+                ProviderDetailContent(
+                    ModelSetupUi(form, providers = listOf(provider)), provider,
+                    ProviderDetailActions(setServiceTier = { modelId, tier ->
+                        if (modelId != model || tier == null) false else {
+                            provider = provider.copy(serviceTiers = mapOf(modelId to tier))
+                            true
+                        }
+                    }),
+                    onBack = {},
+                )
+            }
+        }
+        compose.onNodeWithTag("model-$model").performScrollTo().performClick()
+        compose.onNodeWithTag("model-response-speed").performScrollTo().performClick()
+        compose.awaitOne("Ultrafast", inDialog = true).performClick()
+        compose.runOnIdle { assertEquals(OpenAiServiceTier.Ultrafast, provider.serviceTiers[model]) }
+        compose.onNodeWithTag("model-response-speed").assertTextContains("Ultrafast")
     }
 
     @Test fun allModelsSearchesAndRefreshes() {

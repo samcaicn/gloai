@@ -144,4 +144,21 @@
     <string name="calls_notification_connecting_audio">Menghubungkan audio panggilan</string>
     <string name="calls_notification_connected_waiting">AI terhubung. Menunggu lawan bicara berbicara. Anda dapat mengambil alih kapan saja.</string>
     <string name="calls_notification_connected">AI terhubung. Anda dapat berbicara sendiri kapan saja.</string>
+    <string name="calls_only_types">Hanya jenis panggilan yang dipilih</string>
+    <string name="calls_pick_types">Pilih minimal satu jenis panggilan</string>
+    <string name="calls_type_note">Mika menggunakan Aksesibilitas untuk mencocokkan label dan nomor di aplikasi telepon dengan panggilan masuk. Jika tidak dapat dipastikan, Anda bisa menjawabnya sendiri.</string>
+    <string name="calls_type_accessibility">Buka setelan aksesibilitas</string>
+    <string name="calls_type_takeout">Pesan antar makanan</string>
+    <string name="calls_type_parcel">Pengiriman paket</string>
+    <string name="calls_type_delivery">Pengiriman atau logistik (tidak diperinci)</string>
+    <string name="calls_type_sales">Penjualan dan iklan</string>
+    <string name="calls_type_broker">Agen dan perantara</string>
+    <string name="calls_type_financial_sales">Penawaran asuransi dan investasi</string>
+    <string name="calls_type_spam">Panggilan spam</string>
+    <string name="calls_type_fraud">Dugaan penipuan</string>
+    <string name="calls_type_high_risk">Risiko tinggi</string>
+    <string name="calls_type_business">Perusahaan dan layanan pelanggan</string>
+    <string name="calls_type_transport">Taksi dan transportasi daring</string>
+    <string name="calls_only_strangers">Hanya nomor di luar kontak</string>
+    <string name="calls_strangers_note">Izinkan Mika membaca kontak. AI hanya menjawab jika nomor dipastikan belum tersimpan. Nomor tersembunyi atau yang gagal diperiksa dapat Anda jawab sendiri.</string>
 </resources>

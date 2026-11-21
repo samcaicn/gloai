@@ -34,6 +34,16 @@ class AudioMuteLedgerTest {
         for (m in listOf("allow", "ignore", "deny", "foreground")) assertEquals(m, AudioMuteLedger.restoreMode(m))
     }
 
+    @Test fun verifiesRestoredModeFromAppOpsOutput() {
+        assertEquals("allow", AudioMuteLedger.readMode("No operations."))
+        assertEquals("allow", AudioMuteLedger.readMode("No operations.\nDefault mode: allow\n"))
+        assertEquals("ignore", AudioMuteLedger.readMode("No operations.\nDefault mode: ignore\n"))
+        assertEquals("deny", AudioMuteLedger.readMode("PLAY_AUDIO: deny; time=+1d"))
+        assertEquals("default", AudioMuteLedger.readMode("PLAY_AUDIO: default"))
+        assertNull(AudioMuteLedger.readMode(""))
+        assertNull(AudioMuteLedger.readMode("Error: No UID for a.app"))
+    }
+
     @Test fun recordsSurviveRestartAndAreRemovedOnRestore() {
         val a = AudioMuteLedger(file())
         a.put("a.app", "default")

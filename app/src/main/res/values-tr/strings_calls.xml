@@ -144,4 +144,21 @@
     <string name="calls_notification_connecting_audio">Arama sesi bağlanıyor</string>
     <string name="calls_notification_connected_waiting">Yapay zeka bağlandı. Karşı tarafın konuşması bekleniyor. İstediğiniz an devralabilirsiniz.</string>
     <string name="calls_notification_connected">Yapay zeka bağlandı. İstediğiniz an devralabilirsiniz.</string>
+    <string name="calls_only_types">Yalnızca seçili arama türleri</string>
+    <string name="calls_pick_types">En az bir arama türü seçin</string>
+    <string name="calls_type_note">Mika, telefon uygulamasındaki etiket ve numarayı gelen aramayla eşleştirmek için erişilebilirliği kullanır. Eşleşme doğrulanamazsa aramayı kendiniz yanıtlayabilirsiniz.</string>
+    <string name="calls_type_accessibility">Erişilebilirlik ayarlarını aç</string>
+    <string name="calls_type_takeout">Yemek teslimatı</string>
+    <string name="calls_type_parcel">Kargo</string>
+    <string name="calls_type_delivery">Teslimat veya lojistik (belirtilmemiş)</string>
+    <string name="calls_type_sales">Satış ve reklam</string>
+    <string name="calls_type_broker">Aracılar ve acenteler</string>
+    <string name="calls_type_financial_sales">Sigorta ve yatırım pazarlaması</string>
+    <string name="calls_type_spam">İstenmeyen arama</string>
+    <string name="calls_type_fraud">Dolandırıcılık şüphesi</string>
+    <string name="calls_type_high_risk">Yüksek risk</string>
+    <string name="calls_type_business">Şirketler ve müşteri hizmetleri</string>
+    <string name="calls_type_transport">Taksi ve araç çağırma</string>
+    <string name="calls_only_strangers">Yalnızca rehberde olmayan numaralar</string>
+    <string name="calls_strangers_note">Mika uygulamasına kişileri okuma izni verin. Yapay zekâ yalnızca numaranın kayıtlı olmadığını doğrularsa yanıtlar. Gizli numaraları ve sorgulanamayan aramaları siz yanıtlarsınız.</string>
 </resources>

@@ -18,6 +18,7 @@ All of Mika's documentation lives here. If you're new, reading the "Getting star
 | --- | --- |
 | [Features in detail](features.en.md) | The details behind each item under "What it can do" in the README: background screen, browser, the screen you're looking at, schedules, interrupting, memory, sandbox and more |
 | [FAQ](faq.en.md) | Questions about installing, phone control, models, computers, language and privacy |
+| [For AI assistants: writing a persona](persona-writing.en.md) | Persona-writing rules for an AI assistant: what a persona can change, picking options, writing instructions, how to deliver |
 | [Disclaimer, data and privacy](disclaimer.en.md) | Beta notes, risks of use, where your data is stored and where it goes |
 
 ## Using it from a computer

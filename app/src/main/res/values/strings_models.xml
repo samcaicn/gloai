@@ -52,6 +52,8 @@
     <string name="models_not_listed">This provider’s models haven’t been listed yet.</string>
     <string name="refresh">Refresh</string>
     <string name="models_in_use">In use</string>
+    <string name="models_response_speed">Response speed</string>
+    <string name="models_response_speed_note">Default uses the server setting. Fast and Ultrafast depend on your model and account and may increase cost or plan usage.</string>
     <string name="models_sees_images">Can see images</string>
     <string name="models_sees_note_user">Set by you. When the main model can see, screenshots go straight to it.</string>
     <string name="models_sees_note_vision">Used as the vision model, so it counts as able to see images.</string>
@@ -218,6 +220,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">Voice</string>
     <string name="voice_speed">Speed</string>
+    <string name="voice_streaming">Stream playback</string>
+    <string name="voice_streaming_note">Requires a compatible provider and 1× speed.</string>
     <string name="voice_auto_read">Read every answer aloud</string>
     <string name="voice_speak_tool">Let Mika speak on its own</string>
     <string name="voice_max_chars">Longest read (characters)</string>

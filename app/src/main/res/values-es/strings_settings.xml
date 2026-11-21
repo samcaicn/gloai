@@ -252,4 +252,12 @@
         <item quantity="many">%1$d minutos</item>
         <item quantity="other">%1$d minutos</item>
     </plurals>
+
+    <string name="settings_sandbox_budget">Límite de tiempo del entorno de cómputo por tarea</string>
+    <string name="settings_sandbox_budget_sub">Tiempo total que los comandos del entorno pueden ejecutarse en una tarea (instalar dependencias, compilar y similares). El predeterminado es 30 minutos; el cambio se aplica a partir de la siguiente tarea.</string>
+    <plurals name="settings_sandbox_budget_minutes_n">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="many">%1$d minutos</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
 </resources>

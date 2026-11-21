@@ -240,4 +240,10 @@
     <plurals name="settings_trigger_run_minutes_n">
         <item quantity="other">%1$d 分钟</item>
     </plurals>
+
+    <string name="settings_sandbox_budget">每个任务的沙箱时间上限</string>
+    <string name="settings_sandbox_budget_sub">一个任务里沙箱命令累计最多能跑多久（装依赖、编译这类活）。默认 30 分钟；改了之后下一个任务起生效。</string>
+    <plurals name="settings_sandbox_budget_minutes_n">
+        <item quantity="other">%1$d 分钟</item>
+    </plurals>
 </resources>

@@ -27,6 +27,8 @@ internal class SandboxCapability(
     onPreparing: () -> Unit,
     onScript: ((String) -> Unit)?,
     folderAccess: Boolean = false,
+    /** 这个任务里沙箱命令累计最多跑多久(设置 › 干活时的档位);默认 30 分钟。 */
+    private val budgetMs: Long = SANDBOX_BUDGET_MS,
 ) : Capability {
     override val id = SANDBOX
 
@@ -82,7 +84,7 @@ internal class SandboxCapability(
         ctx[KEY] = this
     }
 
-    override fun guard(): OffScreenGuard = SandboxGuard()
+    override fun guard(): OffScreenGuard = SandboxGuard(budgetMs)
 
     companion object {
         val KEY = CapabilityKey<SandboxCapability>(SANDBOX)

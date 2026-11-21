@@ -51,6 +51,8 @@
     <string name="models_not_listed">Bu sağlayıcının modelleri henüz listelenmedi.</string>
     <string name="refresh">Yenile</string>
     <string name="models_in_use">Kullanımda</string>
+    <string name="models_response_speed">Yanıt hızı</string>
+    <string name="models_response_speed_note">Varsayılan seçenek sunucu ayarını kullanır. Fast ve Ultrafast model ve hesaba bağlıdır, maliyeti veya plan kullanımını artırabilir.</string>
     <string name="models_sees_images">Görüntüleri görebilir</string>
     <string name="models_sees_note_user">Sizin tarafınızdan ayarlandı. Ana model görebildiğinde ekran görüntüleri doğrudan ona gider.</string>
     <string name="models_sees_note_vision">Görüntü modeli olarak kullanılıyor, bu yüzden görüntüleri görebilir sayılır.</string>
@@ -213,6 +215,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">Ses</string>
     <string name="voice_speed">Hız</string>
+    <string name="voice_streaming">Akışlı oynatma</string>
+    <string name="voice_streaming_note">Uyumlu bir sağlayıcı ve 1× oynatma hızı gerekir.</string>
     <string name="voice_auto_read">Her yanıtı sesli oku</string>
     <string name="voice_speak_tool">Mika\'nın kendi kendine konuşmasına izin ver</string>
     <string name="voice_max_chars">En uzun okuma (karakter)</string>

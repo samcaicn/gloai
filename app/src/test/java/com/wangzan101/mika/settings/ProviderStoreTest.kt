@@ -13,6 +13,7 @@ import com.wangzan101.mika.core.model.ModelProtocol
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.ModelSession
+import com.wangzan101.mika.core.model.OpenAiServiceTier
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
@@ -66,6 +67,45 @@ class ProviderStoreTest {
     )
 
     private val none = Capabilities(toolCalls = false, vision = false, contextTokens = 64_000, reasoning = false)
+
+    @Test fun openAiServiceTiersSurviveReloadAndApplyPerProviderAndModel() {
+        val s = store()
+        val base = "https://api.openai.com/v1"
+        val api = s.connect("OpenAI", ProviderConfig.Kind.OpenAiResponses, base, "api-key",
+            listOf(ListedModel("gpt-x"), ListedModel("gpt-y")))
+        val plan = s.connect("ChatGPT", ProviderConfig.Kind.ChatGpt, base, null, listOf(ListedModel("gpt-x")))
+        assertTrue(s.use(ModelRole.Main, api.id, "gpt-x", none))
+        assertTrue(s.use(ModelRole.Light, plan.id, "gpt-x", none))
+        assertTrue(s.use(ModelRole.Vision, api.id, "gpt-y", none))
+        assertTrue(s.setModelServiceTier(api.id, "gpt-x", OpenAiServiceTier.Fast))
+        assertTrue(s.setModelServiceTier(plan.id, "gpt-x", OpenAiServiceTier.Ultrafast))
+
+        val reloaded = store()
+        reloaded.modelFor(ModelRole.Main)
+        reloaded.modelForRoleConfig(ModelRole.Light, reloaded.configFor(ModelRole.Light)!!.id)
+        reloaded.modelFor(ModelRole.Vision)
+        assertEquals(listOf(OpenAiServiceTier.Fast, OpenAiServiceTier.Ultrafast, null), setups.map { it.serviceTier })
+
+        assertTrue(reloaded.setModelServiceTier(api.id, "gpt-x", null))
+        store().modelFor(ModelRole.Main)
+        assertNull(setups.last().serviceTier)
+    }
+
+    @Test fun openAiServiceTierDoesNotApplyToThirdPartyEndpoints() {
+        val s = store()
+        val base = "https://api.openai.com/v1"
+        val thirdPartyEndpoint = ModelEndpoint(ModelProtocol.Responses, "https://other.test/v1")
+        val custom = s.connect("Custom", ProviderConfig.Kind.OpenAiResponses, thirdPartyEndpoint.baseUrl, null, emptyList())
+        assertFalse(s.setModelServiceTier(custom.id, "gpt-x", OpenAiServiceTier.Fast))
+
+        val direct = s.connect("OpenAI", ProviderConfig.Kind.OpenAiResponses, base, "api-key", emptyList())
+        assertTrue(s.use(ModelRole.Main, direct.id, "gpt-x", none))
+        assertTrue(s.setModelServiceTier(direct.id, "gpt-x", OpenAiServiceTier.Fast))
+        s.rememberModels(direct.id, listOf(ListedModel("gpt-x", endpoint = thirdPartyEndpoint)))
+        assertFalse(s.provider(direct.id)!!.supportsServiceTier("gpt-x"))
+        s.modelFor(ModelRole.Main)
+        assertNull(setups.last().serviceTier)
+    }
 
     /** 存一条配置并让它当主模型(没人用的配置会被清掉)。 */
     private fun ProviderStore.saveAsMain(c: ProviderConfig, apiKey: String?) {

@@ -130,6 +130,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-provider: basic
+      - name: Relay Go unit tests
+        working-directory: tools/relay
+        run: go test ./...
       # relayTest 会先 go build 出真实网关，再在回环上跑 Kotlin→网关→隧道全链路。
       - name: Relay integration test
         run: ./gradlew :core:relayTest --stacktrace

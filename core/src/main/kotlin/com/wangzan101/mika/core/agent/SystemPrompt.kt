@@ -2,6 +2,7 @@ package com.wangzan101.mika.core.agent
 
 import com.wangzan101.mika.core.capability.PromptEnv
 import com.wangzan101.mika.core.capability.PromptSections
+import com.wangzan101.mika.core.prompt.PersonaPrompt
 import com.wangzan101.mika.core.prompt.Prompts
 
 /**
@@ -11,7 +12,21 @@ import com.wangzan101.mika.core.prompt.Prompts
  * 任务开始时拼一次,任务内一字不变。
  */
 object SystemPrompt {
-    fun identity(): String = listOf(Prompts.system("identity"), Prompts.system("principles"), read(GENERAL)).joinToString("\n\n")
+    /**
+     * [assistant] 是助理的自称(人格里的「称呼」),默认 Mika;进提示词前在这里由 [PersonaPrompt.nickname] 清洗。
+     * 不是 Mika 时身份句用它,并紧跟一段说明:Mika 是所在 App 的名字,后文和工具说明里的 Mika 指这个 App 和它自己。
+     * 是 Mika 时和没有这个参数之前逐字节一样。
+     */
+    fun identity(assistant: String = PersonaPrompt.DEFAULT_NICKNAME): String {
+        // 称呼落在围栏之外,这里自己再清洗一遍,不指望调用方洗过
+        val name = PersonaPrompt.nickname(assistant)
+        return listOfNotNull(
+            Prompts.fill(Prompts.system("identity"), mapOf("assistant" to name)),
+            if (name == PersonaPrompt.DEFAULT_NICKNAME) null else Prompts.fill(Prompts.read("persona/renamed.md"), mapOf("assistant" to name)),
+            Prompts.system("principles"),
+            read(GENERAL),
+        ).joinToString("\n\n")
+    }
 
     /** 在身份、准则、通用规则之后接人格层;没有人格时原样返回。 */
     fun withPersona(base: String, layer: String?): String = if (layer == null) base else "$base\n\n$layer"

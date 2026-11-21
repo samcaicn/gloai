@@ -38,6 +38,7 @@ import com.wangzan101.mika.core.model.ModelProtocol
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.ModelSession
 import com.wangzan101.mika.core.model.OpenAiCompatModel
+import com.wangzan101.mika.core.model.OpenAiServiceTier
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.PromptCaching
 import com.wangzan101.mika.core.model.ResponsesModel
@@ -67,6 +68,7 @@ import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -168,8 +170,20 @@ data class Provider(
     val visionOverrides: Map<String, Boolean> = emptyMap(),
     /** 这家每天所有模型、用途合计的已报告 Token 预算；null 不限制。 */
     val dailyTokenBudget: Long? = null,
+    /** OpenAI 直连和 ChatGPT 登录的速度档位，按模型名保存。 */
+    val serviceTiers: Map<String, OpenAiServiceTier> = emptyMap(),
 ) {
     val key: String get() = ProviderConnection.keyOf(kind, baseUrl, name)
+
+    fun supportsServiceTier(model: String, endpoint: ModelEndpoint? = models?.firstOrNull { it.id == model }?.endpoint): Boolean {
+        if (kind != ProviderConfig.Kind.OpenAiResponses && kind != ProviderConfig.Kind.ChatGpt) return false
+        if (endpoint != null && endpoint.protocol != ModelProtocol.Responses) return false
+        val url = (endpoint?.adapterBaseUrl ?: baseUrl).toHttpUrlOrNull()
+        return url?.isHttps == true && url.host == "api.openai.com"
+    }
+
+    internal fun requestedServiceTier(model: String, endpoint: ModelEndpoint?): OpenAiServiceTier? =
+        serviceTiers[model]?.takeIf { supportsServiceTier(model, endpoint) }
 
     /**
      * [model] 在这家还没测试通过:这家没有可用的列表(不提供,或跳过测试存下时没列过),模型名是手填的,又没在
@@ -306,6 +320,7 @@ data class ClientSetup(
     val reasoningEffort: String? = null,
     val thinkingTypes: List<String>? = null,
     val readTimeoutSeconds: Int? = null,
+    val serviceTier: OpenAiServiceTier? = null,
 )
 
 /** 「测试并保存」试调用(见 [ProviderStore.probe])的结果。 */
@@ -688,14 +703,15 @@ class ProviderStore(
         if (!settings.validFor(cfg.capabilities.contextTokens)) return false
         val saved = if (settings == ModelContextSettings()) p.contextSettings - cfg.model
             else p.contextSettings + (cfg.model to settings)
-        val updated = _providers.value.map { if (it.id == p.id) p.copy(contextSettings = saved) else it }
-        try {
-            writeAtomically(configFile, configJson(updated))
-        } catch (_: Exception) {
-            return false
-        }
-        _providers.value = updated
-        return true
+        return saveProviderSettings(p.copy(contextSettings = saved))
+    }
+
+    @Synchronized
+    fun setModelServiceTier(providerId: String, model: String, tier: OpenAiServiceTier?): Boolean {
+        val p = provider(providerId) ?: return false
+        if (model.isBlank() || !p.supportsServiceTier(model)) return false
+        val tiers = if (tier == null) p.serviceTiers - model else p.serviceTiers + (model to tier)
+        return saveProviderSettings(p.copy(serviceTiers = tiers))
     }
 
     /** 修改这家每日 Token 预算；写盘失败时保留内存和盘上原值。 */
@@ -703,7 +719,11 @@ class ProviderStore(
     fun setDailyTokenBudget(providerId: String, limit: Long?): Boolean {
         if (limit != null && !TokenBudgetLimits.valid(limit)) return false
         val p = provider(providerId) ?: return false
-        val updated = _providers.value.map { if (it.id == p.id) p.copy(dailyTokenBudget = limit) else it }
+        return saveProviderSettings(p.copy(dailyTokenBudget = limit))
+    }
+
+    private fun saveProviderSettings(p: Provider): Boolean {
+        val updated = _providers.value.map { if (it.id == p.id) p else it }
         try {
             writeAtomically(configFile, configJson(updated))
         } catch (_: Exception) {
@@ -815,6 +835,7 @@ class ProviderStore(
         return modelFactory(configured, apiKey(cfg.id), listed?.endpoint, ClientSetup(
             headers(p?.sessionHeader, session), maxOutputTokens = cap, reasoningEffort = effort,
             thinkingTypes = listed?.thinkingTypes, readTimeoutSeconds = settings?.readTimeoutSeconds,
+            serviceTier = p?.requestedServiceTier(cfg.model, listed?.endpoint),
         )).metered(source, usage, beforeRetry = beforeRetry, beforeCall = beforeCall)
     }
 
@@ -868,6 +889,7 @@ class ProviderStore(
         return modelFactory(configured, apiKey(raw.id), listed?.endpoint, ClientSetup(
             headers(p?.sessionHeader, session), reasoningEffort = effort, thinkingTypes = listed?.thinkingTypes,
             readTimeoutSeconds = settings?.readTimeoutSeconds,
+            serviceTier = p?.requestedServiceTier(raw.model, listed?.endpoint),
         )).metered(source, usage, beforeCall = ::checkDailyBudget)
     }
 
@@ -1275,10 +1297,10 @@ class ProviderStore(
                 )
             ProviderConfig.Kind.OpenAiResponses ->
                 ResponsesModel(baseUrl, BearerToken.fixed(apiKey), cfg.model, cfg.capabilities, http, headers = setup.headers,
-                    reasoningEffort = setup.reasoningEffort)
+                    reasoningEffort = setup.reasoningEffort, serviceTier = setup.serviceTier)
             ProviderConfig.Kind.ChatGpt ->
                 ResponsesModel(baseUrl, tokensFor(cfg.providerId), cfg.model, cfg.capabilities, http, chatGptPlan = true, headers = setup.headers,
-                    reasoningEffort = setup.reasoningEffort)
+                    reasoningEffort = setup.reasoningEffort, serviceTier = setup.serviceTier)
             ProviderConfig.Kind.Xai ->
                 ResponsesModel(baseUrl, accountTokensFor(cfg.providerId), cfg.model, cfg.capabilities, http, headers = setup.headers,
                     reasoningEffort = setup.reasoningEffort, accountLogin = XAI_ACCOUNT)
@@ -1421,6 +1443,10 @@ class ProviderStore(
         sessionHeader = o["sessionHeader"]?.jsonPrimitive?.content ?: ProviderPresets.forBaseUrl(o.str("baseUrl"))?.sessionHeader,
         signIn = o["signIn"]?.jsonPrimitive?.content,
         dailyTokenBudget = o.positiveLong("dailyTokenBudget")?.takeIf(TokenBudgetLimits::valid),
+        serviceTiers = (o["serviceTiers"] as? JsonObject).orEmpty().mapNotNull { (model, raw) ->
+            val value = (raw as? JsonPrimitive)?.contentOrNull
+            OpenAiServiceTier.entries.firstOrNull { it.requestValue == value }?.let { model to it }
+        }.toMap(),
         verifiedModels = o["verifiedModels"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet().orEmpty(),
         contextSettings = (o["contextSettings"] as? JsonObject).orEmpty().mapNotNull { (model, raw) ->
             val entry = raw as? JsonObject ?: return@mapNotNull null
@@ -1521,6 +1547,9 @@ class ProviderStore(
                         p.sessionHeader?.let { put("sessionHeader", it) }
                         p.signIn?.let { put("signIn", it) }
                         p.dailyTokenBudget?.let { put("dailyTokenBudget", it) }
+                        if (p.serviceTiers.isNotEmpty()) putJsonObject("serviceTiers") {
+                            for ((model, tier) in p.serviceTiers) put(model, tier.requestValue)
+                        }
                         if (p.savedUntested) put("untested", true)
                         if (p.verifiedModels.isNotEmpty()) putJsonArray("verifiedModels") { p.verifiedModels.forEach { add(it) } }
                         if (p.contextSettings.isNotEmpty()) putJsonObject("contextSettings") {

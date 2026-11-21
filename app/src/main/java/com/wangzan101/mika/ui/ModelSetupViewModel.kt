@@ -12,6 +12,7 @@ import com.wangzan101.mika.core.model.ModelEndpoint
 import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.model.ModelListResult
 import com.wangzan101.mika.core.model.ModelRole
+import com.wangzan101.mika.core.model.OpenAiServiceTier
 import com.wangzan101.mika.core.net.LocalHosts
 import com.wangzan101.mika.settings.ModelOption
 import com.wangzan101.mika.settings.ModelOptions
@@ -1016,6 +1017,12 @@ class ModelSetupViewModel(
     fun setModelVision(providerId: String, model: String, sees: Boolean) {
         store.setModelVision(providerId, model, sees)
         sync()
+    }
+
+    fun setModelServiceTier(providerId: String, model: String, tier: OpenAiServiceTier?): Boolean {
+        val saved = store.setModelServiceTier(providerId, model, tier)
+        sync()
+        return saved
     }
 
     /** 把 [providerId] 下的 [model] 用作 [role](选择页和「用作」面板都走这里):没有配置的当场建一条。 */

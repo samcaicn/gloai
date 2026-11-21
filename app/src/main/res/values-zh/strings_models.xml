@@ -51,6 +51,8 @@
     <string name="models_not_listed">还没列出这家的模型。</string>
     <string name="refresh">刷新</string>
     <string name="models_in_use">正在用这个</string>
+    <string name="models_response_speed">响应速度</string>
+    <string name="models_response_speed_note">默认沿用服务端设置。Fast 和 Ultrafast 是否可用取决于模型和账号，可能增加费用或套餐用量。</string>
     <string name="models_sees_images">能看图</string>
     <string name="models_sees_note_user">按你的设定。主模型能看图时，截图直接给它看。</string>
     <string name="models_sees_note_vision">已用作看图模型，算能看图。</string>
@@ -214,6 +216,8 @@
     <string name="voice_protocol_gemini">Gemini TTS</string>
     <string name="voice_name">音色</string>
     <string name="voice_speed">语速</string>
+    <string name="voice_streaming">流式播放</string>
+    <string name="voice_streaming_note">需要服务商支持流式音频，语速为 1.0。</string>
     <string name="voice_auto_read">每条回答自动朗读</string>
     <string name="voice_speak_tool">允许 Mika 主动说话</string>
     <string name="voice_max_chars">单次最长字数</string>

@@ -33,4 +33,10 @@
     <string name="calls_task_review_blocked">拨号前需确认设备就绪、没有其他通话，并选择 SIM。</string>
     <string name="calls_task_sim_override_summary">本次：%1$s · 默认：%2$s</string>
     <string name="calls_voice_settings">语音</string>
+    <string name="calls_contacts_tab">通讯录</string>
+    <string name="calls_manual_tab">手工输入</string>
+    <string name="calls_contacts_search">搜索姓名或号码</string>
+    <string name="calls_contacts_permission">允许 Mika 读取通讯录，即可勾选联系人号码。你也可以直接手工输入。</string>
+    <string name="calls_contacts_empty">通讯录里没有可选的电话号码。</string>
+    <string name="calls_contacts_failed">读取通讯录失败。</string>
 </resources>

@@ -607,7 +607,8 @@ def export_record(client, task_id, events):
     if events:
         text = client.request("GET", "/tasks/" + task_id + "/export?events=jsonl",
                               accept="application/x-ndjson, application/json", expect="application/x-ndjson", max_bytes=limit)
-        lines = [line for line in text.splitlines() if line.strip()]
+        # Only LF separates records. Other line separators can occur inside JSON strings.
+        lines = [line for line in text.split("\n") if line.strip(" \t\r")]
         if not lines:
             raise CliError("protocol", "Mika returned an invalid run export.")
         try:
@@ -784,7 +785,10 @@ def main(argv=None):
         text = result
         for secret in secrets:
             text = text.replace(secret, "[redacted]")
-        print(text, end="" if text.endswith("\n") else "\n")
+        # Keep the phone's JSONL delimiters intact when stdout is redirected on Windows.
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(newline="\n")
+        sys.stdout.write(text)
         return code
     redacted = redact(result, secrets)
     style = {"separators": (",", ":") if compact else None, "indent": None if compact else 2}

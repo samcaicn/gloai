@@ -56,8 +56,8 @@ Success: **exactly one** device is listed, with state `device`.
 adb shell getprop ro.build.version.sdk
 ```
 
-- Below 30 (older than Android 11): Mika cannot be installed. Tell the user the system is too old and stop.
-- 30 (Android 11): Mika installs, but cannot operate apps (phone control needs Android 12). Only web, files and chat work. Tell the user and ask whether to continue.
+- On API 28 or lower (Android 9 or earlier), tell the user their system is too old to install Mika, which requires Android 10 or later. Stop the installation.
+- On API 29 or 30 (Android 10 or 11), Mika can be installed for web browsing, files and chat. Tell the user that phone control requires Android 12 (API 31) or later and ask whether to continue installing.
 - 31 to 33 (Android 12 and 13): tasks work, but background work may briefly take input focus away from the main screen. 34 or higher (Android 14+) is best.
 
 ### 1.4 CPU architecture
@@ -116,7 +116,7 @@ Success: no output.
 
 ## Step 5: Turn on Mika's accessibility service
 
-Only do this for phone app control on Android 12+. Skip it on Android 11 or for chat, web and files only; accessibility being off is not an installation failure in those cases.
+Only do this for phone app control on Android 12+. Skip this step if the phone runs Android 10 or 11, or if the user only needs chat, web and files. In those cases, installation can succeed with accessibility turned off.
 
 Mika uses its accessibility service to read the screen and tap. Turn it on by writing the system setting over adb. The reason: for apps installed from outside an app store, Android often blocks turning accessibility on by hand ("Restricted setting"); writing the setting over adb does not hit that block.
 
@@ -176,7 +176,7 @@ adb shell am start -n com.wangzan101.mika/.ui.MainActivity
 
 `adb shell monkey -p com.wangzan101.mika 1` also works. On first launch Mika walks the user through adding a model; they can skip that for now ("Not now" or similar) and do it in step 8.
 
-On Android 11 or for chat, web and files only, go to step 8 after opening the app. The helper is only needed for phone app control; "Phone control" does not need to be ready in those cases.
+After opening the app, go straight to step 8 if the phone runs Android 10 or 11, or if the user only needs chat, web and files. Only phone app control requires the helper to be ready.
 
 For phone app control, the goal is to give Mika's built-in helper the adb shell identity (uid 2000). Both wireless debugging pairing and USB debugging can provide that identity: pair when the system has a working Wireless debugging page; if the system has removed that page, start over USB directly without a pairing code.
 
