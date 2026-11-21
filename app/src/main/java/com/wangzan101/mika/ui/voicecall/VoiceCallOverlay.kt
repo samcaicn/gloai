@@ -550,7 +550,9 @@ class VoiceCallController(
         // close 幂等且 NonCancellable,已写过不重复、域被取消也写完。
         val session = current.call.session
         val transcript = current.call.transcript
-        deps.scope.launch {
+        // 必须挂在比页面长寿的作用域上:teardown 只在组合销毁时触发,此时 deps.scope 正被取消,
+        // 在那里 launch 的函数体根本轮不到执行、join 也会因父作用域取消而抛掉 close
+        deps.appScope.launch {
             session.awaitFinished()
             transcript.close()
         }
@@ -626,6 +628,8 @@ class VoiceCallController(
 class VoiceCallDeps(
     val context: android.content.Context,
     val scope: CoroutineScope,
+    /** 应用级作用域(比页面长寿):页面销毁后仍要跑完的收尾用它。 */
+    val appScope: CoroutineScope,
     val profile: () -> CallVoiceProfile,
     val credentials: (String) -> VolcRealtimeCredentials?,
     val foregroundResumed: StateFlow<Boolean>,

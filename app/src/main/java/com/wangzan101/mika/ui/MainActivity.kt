@@ -458,6 +458,7 @@ private fun MikaRoot(
         VoiceCallDeps(
             context = context,
             scope = voiceCallScope,
+            appScope = app.appScope,
             profile = { app.calls.activeVoiceProfile() },
             credentials = { app.calls.voiceProfiles.credentials(it) },
             foregroundResumed = voiceCallResumed,
