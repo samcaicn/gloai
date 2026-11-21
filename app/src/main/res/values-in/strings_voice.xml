@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="voice_placeholder_idle">Tahan untuk bicara, ketuk untuk mengetik</string>
-    <string name="voice_placeholder_busy">Tahan untuk bicara ke tugas, ketuk untuk mengetik</string>
-    <string name="voice_placeholder_answer">Tahan untuk menjawab, ketuk untuk mengetik</string>
+    <string name="voice_placeholder_idle">Ketik, atau tahan untuk bicara</string>
+    <string name="voice_placeholder_busy">Ketik ke tugas, atau tahan untuk bicara</string>
+    <string name="voice_placeholder_answer">Ketik jawaban, atau tahan untuk bicara</string>
     <string name="voice_listening">Mendengarkan</string>
     <string name="voice_steer_to">Memberi tahu “%1$s”</string>
     <string name="voice_engine_phone">Ponsel</string>

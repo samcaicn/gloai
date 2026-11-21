@@ -679,11 +679,11 @@ internal fun VoiceConverting(modifier: Modifier = Modifier) {
     }
 }
 
-/** 能按住说话时的灰字：在可用输入区域里居中。 */
+/** 能按住说话时的灰字：左对齐,和光标位置一致(这行第一身份是文本框)。 */
 @Composable
 internal fun VoicePlaceholder(mode: ComposerMode, modifier: Modifier = Modifier) {
     val c = MikaTheme.colors
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+    Row(modifier.fillMaxWidth()) {
         Text(ChatCopy.voicePlaceholder(mode), style = MikaType.Body, color = c.ink3, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

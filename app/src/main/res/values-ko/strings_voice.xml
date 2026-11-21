@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="voice_placeholder_idle">길게 눌러 말하기, 눌러서 입력</string>
-    <string name="voice_placeholder_busy">길게 눌러 작업에 말하기, 눌러서 입력</string>
-    <string name="voice_placeholder_answer">길게 눌러 답하기, 눌러서 입력</string>
+    <string name="voice_placeholder_idle">입력 또는 길게 눌러 말하기</string>
+    <string name="voice_placeholder_busy">작업에 입력 또는 길게 눌러 말하기</string>
+    <string name="voice_placeholder_answer">답변 입력 또는 길게 눌러 말하기</string>
     <string name="voice_listening">듣는 중</string>
     <string name="voice_steer_to">“%1$s”에게 전달 중</string>
     <string name="voice_engine_phone">휴대전화</string>

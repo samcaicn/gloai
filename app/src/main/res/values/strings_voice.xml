@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Chat composer: hold to talk -->
-    <string name="voice_placeholder_idle">Hold to talk, tap to type</string>
-    <string name="voice_placeholder_busy">Hold to talk to the task, tap to type</string>
-    <string name="voice_placeholder_answer">Hold to answer, tap to type</string>
+    <string name="voice_placeholder_idle">Type, or hold to talk</string>
+    <string name="voice_placeholder_busy">Type to the task, or hold to talk</string>
+    <string name="voice_placeholder_answer">Type your answer, or hold to talk</string>
     <string name="voice_listening">Listening</string>
     <string name="voice_steer_to">Telling “%1$s”</string>
     <string name="voice_engine_phone">Phone</string>

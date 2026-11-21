@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Chat composer: hold to talk -->
-    <string name="voice_placeholder_idle">اضغط مطولًا للتحدث، أو انقر للكتابة</string>
-    <string name="voice_placeholder_busy">اضغط مطولًا للتحدث إلى المهمة، أو انقر للكتابة</string>
-    <string name="voice_placeholder_answer">اضغط مطولًا للإجابة، أو انقر للكتابة</string>
+    <string name="voice_placeholder_idle">اكتب، أو اضغط مطولًا للتحدث</string>
+    <string name="voice_placeholder_busy">اكتب إلى المهمة، أو اضغط مطولًا للتحدث</string>
+    <string name="voice_placeholder_answer">اكتب إجابتك، أو اضغط مطولًا للتحدث</string>
     <string name="voice_listening">جارٍ الاستماع</string>
     <string name="voice_steer_to">جارٍ إخبار «%1$s»</string>
     <string name="voice_engine_phone">الهاتف</string>

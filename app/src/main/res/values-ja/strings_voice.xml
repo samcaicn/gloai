@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Chat composer: hold to talk -->
-    <string name="voice_placeholder_idle">長押しで話す、タップで入力</string>
-    <string name="voice_placeholder_busy">長押しでタスクに話す、タップで入力</string>
-    <string name="voice_placeholder_answer">長押しで答える、タップで入力</string>
+    <string name="voice_placeholder_idle">入力、または長押しで話す</string>
+    <string name="voice_placeholder_busy">タスクに入力、または長押しで話す</string>
+    <string name="voice_placeholder_answer">回答を入力、または長押しで話す</string>
     <string name="voice_listening">聞き取り中</string>
     <string name="voice_steer_to">「%1$s」に伝える</string>
     <string name="voice_engine_phone">スマホ</string>
