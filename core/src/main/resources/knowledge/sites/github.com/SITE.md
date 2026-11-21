@@ -4,7 +4,7 @@ display: GitHub
 description: 代码托管与协作网站，可浏览仓库、代码、问题和拉取请求
 domains: ["github.com"]
 aliases: ["GitHub", "github"]
-apps: []
+apps: ["github"]
 open: github.com
 mode: desktop
 ---

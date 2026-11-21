@@ -3,7 +3,7 @@ name: youtube.com
 display: YouTube
 domains: ["youtube.com", "youtu.be"]
 aliases: ["YouTube", "油管"]
-apps: []
+apps: ["youtube"]
 open: youtube.com
 mode: desktop
 description: 视频平台,可搜视频和频道,看说明、评论与字幕文字

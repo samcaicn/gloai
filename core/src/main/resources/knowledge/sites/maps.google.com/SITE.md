@@ -4,7 +4,7 @@ display: Google Maps
 description: 查地点详情,以及驾车、公交、步行等路线
 domains: ["maps.google.com"]
 aliases: ["Google Maps", "谷歌地图"]
-apps: []
+apps: ["google-maps"]
 open: maps.google.com
 mode: desktop
 ---

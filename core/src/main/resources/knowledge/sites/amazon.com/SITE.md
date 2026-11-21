@@ -3,7 +3,7 @@ name: amazon.com
 display: Amazon
 domains: ["amazon.com", "amazon.sg", "amazon.co.uk", "amazon.de", "amazon.co.jp"]
 aliases: ["Amazon", "亚马逊"]
-apps: []
+apps: ["amazon"]
 open: amazon.com
 mode: desktop
 description: 跨境电商平台,搜商品,看价格、变体、库存,可加入购物车。

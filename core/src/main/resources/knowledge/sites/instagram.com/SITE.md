@@ -4,7 +4,7 @@ display: Instagram
 description: 公开主页、帖子、Reels、搜索与话题标签的查看
 domains: ["instagram.com"]
 aliases: ["Instagram", "IG", "照片墙"]
-apps: []
+apps: ["instagram"]
 open: instagram.com
 mode: desktop
 ---
