@@ -62,6 +62,12 @@ class DocsConsistencyTest {
     private val tool = Regex("""[a-z][a-z0-9]*(_[a-z0-9]+)+""")
     // 状态码不是模型工具名,即使其前缀与工具相同;微信消息里的字段名也一样(不是发给模型的工具)。
     private val nonToolNames = setOf("copy_not_found", "copy_not_opened", "task_progress", "image_item")
+
+    /**
+     * 实时语音会话里注册给模型的工具(定义在 app 的通话协议层,不在 core 的工具表里):
+     * 文档提到它们时按「确实存在」放过。
+     */
+    private val sessionToolNames = setOf("mika_request")
     private val classLike = Regex("""[A-Z][A-Za-z0-9]*""")
 
     private val toolNames: Set<String> by lazy { knownToolNames() }
@@ -127,7 +133,7 @@ class DocsConsistencyTest {
             if (notIdentifier.containsMatchIn(s)) return@mapNotNull null
             when {
                 isPath(s) -> if (pathExists(s)) null else "$rel: 路径 `$s` 在仓库里找不到"
-                tool.matches(s) -> if (s in remoteApiNames || s in nonToolNames || s.substringBefore('_') !in toolPrefixes || s in toolNames) null else "$rel: 工具名 `$s` 不在现有工具里"
+                tool.matches(s) -> if (s in remoteApiNames || s in nonToolNames || s in sessionToolNames || s.substringBefore('_') !in toolPrefixes || s in toolNames) null else "$rel: 工具名 `$s` 不在现有工具里"
                 classLike.matches(s) && s.count { it.isUpperCase() } >= 2 && s.any { it.isLowerCase() } ->
                     if (classExists(s) || importedFromOutside(s)) null else "$rel: 类名 `$s` 在 core/app 的源码里找不到"
                 else -> null
