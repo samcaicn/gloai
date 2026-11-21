@@ -1,0 +1,1 @@
+Send the final result of this task to the phone owner's bound WeChat chat. Use it once, only because the user explicitly asked for the result there, and never send the same text twice. A delivered status means the channel accepted the message, not that the owner has read it; if delivery fails or is uncertain, report exactly that.
