@@ -15,6 +15,8 @@ data class VolcRealtimeConfig(
     val model: String = MODEL,
     /** Tools are enabled only for an owned carrier call, never a briefing or connection test. */
     val enablePhoneDtmf: Boolean = false,
+    /** In-app voice requests: every complete utterance is handed to the task system via mika_request. */
+    val agentTools: Boolean = false,
     val protocol: CallVoiceProtocol = CallVoiceProtocol.VOLC_DUPLEX,
 ) {
     init {
@@ -46,7 +48,12 @@ internal object VolcRealtimeProtocol {
     const val SESSION_UPDATED = "session.updated"
     const val FUNCTION_CALL = "response.function_call_arguments.done"
     const val DTMF_FUNCTION = "send_dtmf"
+    const val MIKA_REQUEST_FUNCTION = "mika_request"
     const val MAX_DTMF_DIGITS = 32
+    const val MAX_UTTERANCE_CHARS = 4_096
+
+    /** Session instructions section appended whenever agentTools is on (same placement as CallRuntime.PHONE_DTMF_PROMPT). */
+    const val AGENT_TOOLS_PROMPT = "\n对用户的每段完整话语，只调用一次 mika_request，把这段话语完整原样作为 utterance 传入，其余时间保持沉默，不自行回答。工具结果返回后，只把结果向用户复述一次，不追加发挥，不重复调用。"
     const val MAX_FUNCTION_CALLS = 128
     const val MAX_FUNCTION_BATCH = 8
     const val MAX_FUNCTION_ARGUMENT_CHARS = 256
@@ -68,7 +75,8 @@ internal object VolcRealtimeProtocol {
     fun create(eventId: String, config: VolcRealtimeConfig): String = message("session.create", eventId) {
         putJsonObject("session") {
             put("model", config.model)
-            if (config.systemPrompt.isNotBlank()) put("instructions", config.systemPrompt)
+            val instructions = if (config.agentTools) config.systemPrompt + AGENT_TOOLS_PROMPT else config.systemPrompt
+            if (instructions.isNotBlank()) put("instructions", instructions)
             putJsonObject("audio") {
                 putJsonObject("input") {
                     putJsonObject("format") {
@@ -91,10 +99,13 @@ internal object VolcRealtimeProtocol {
         put("audio", Base64.getEncoder().encodeToString(if (bytes.size == count) bytes else bytes.copyOf(count)))
     }
 
-    /** tools is a complete replacement, not an incremental addition (Seeduplex API). */
-    fun enablePhoneTools(eventId: String): String = message("session.update", eventId) {
+    /** tools is a complete replacement, not an incremental addition (Seeduplex API), so one update carries every enabled tool. */
+    fun enableTools(eventId: String, config: VolcRealtimeConfig): String = message("session.update", eventId) {
         putJsonObject("session") {
-            put("tools", phoneTools())
+            put("tools", JsonArray(mutableListOf<kotlinx.serialization.json.JsonElement>().apply {
+                if (config.enablePhoneDtmf) addAll(phoneTools())
+                if (config.agentTools) add(mikaRequestTool())
+            }))
         }
     }
 
@@ -117,6 +128,26 @@ internal object VolcRealtimeProtocol {
             put("additionalProperties", false)
         }
     }))
+
+    /** Every complete user utterance goes to the task system exactly once; the model never answers it itself. */
+    fun mikaRequestTool(): JsonObject = buildJsonObject {
+        put("type", "function")
+        put("name", MIKA_REQUEST_FUNCTION)
+        put("description", "Hand the user's complete spoken request to the task system for execution. Pass the utterance verbatim; never answer or act on it yourself.")
+        putJsonObject("parameters") {
+            put("type", "object")
+            putJsonObject("properties") {
+                putJsonObject("utterance") {
+                    put("type", "string")
+                    put("minLength", 1)
+                    put("maxLength", MAX_UTTERANCE_CHARS)
+                    put("description", "The user's complete utterance, verbatim.")
+                }
+            }
+            put("required", JsonArray(listOf(JsonPrimitive("utterance"))))
+            put("additionalProperties", false)
+        }
+    }
 
     fun toolResults(eventId: String, results: List<Pair<String, JsonObject>>): String =
         message("conversation.item.create", eventId) {

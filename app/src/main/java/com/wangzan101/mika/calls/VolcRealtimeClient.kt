@@ -104,7 +104,7 @@ class VolcRealtimeClient internal constructor(
     private val client = http.newBuilder().followRedirects(false).followSslRedirects(false)
         .retryOnConnectionFailure(false).build()
 
-    /** Returns after session.create and, when enabled, the phone tools update are acknowledged. */
+    /** Returns after session.create and, when enabled, the tools update are acknowledged. */
     suspend fun connect(
         credentials: VolcRealtimeCredentials,
         config: VolcRealtimeConfig = VolcRealtimeConfig(),
@@ -309,9 +309,9 @@ class VolcRealtimeSession internal constructor(
                 if (openAi) {
                     phase = Phase.CONFIGURING_TOOLS
                     send(OpenAiCallProtocol.configure(config))
-                } else if (config.enablePhoneDtmf) {
+                } else if (config.enablePhoneDtmf || config.agentTools) {
                     phase = Phase.CONFIGURING_TOOLS
-                    send(VolcRealtimeProtocol.enablePhoneTools(nextId()))
+                    send(VolcRealtimeProtocol.enableTools(nextId(), config))
                 } else {
                     phase = Phase.ACTIVE
                     ready.complete(Unit)
