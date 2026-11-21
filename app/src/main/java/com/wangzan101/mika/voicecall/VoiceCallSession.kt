@@ -118,6 +118,15 @@ class VoiceCallSession(
         job?.cancel()
     }
 
+    /**
+     * 等当前这次尝试的收尾跑完(挂断后仍有一路 finally:关实时会话、停采集与播放)。
+     * 页面销毁时先等它,最后一段转写才不会丢;不能在本会话自己的协程域里调(会自等)。
+     */
+    suspend fun awaitFinished() {
+        val job = synchronized(lock) { runJob }
+        job?.join()
+    }
+
     /** 就地重试:仅 Failed 态有效,attempt++ 后重跑整个连接流程;安全闸与回声窗不重置。 */
     fun retry() {
         val oldJob: Job?
@@ -252,6 +261,16 @@ class VoiceCallSession(
                 launch {
                     delay(timeLimitMs)
                     end(EndReason.TimeLimit)
+                }
+                // 系统通话(来电/去电)会顶掉我们的通话:通话中轮询音频模式,进来就以「来电」收场
+                launch {
+                    while (true) {
+                        delay(PHONE_CALL_POLL_MS)
+                        if (audio.isTelephonyBusy()) {
+                            end(EndReason.IncomingCall)
+                            return@launch
+                        }
+                    }
                 }
                 readEvents(realtime, queue)
             }
@@ -389,6 +408,8 @@ class VoiceCallSession(
         const val MAX_CALL_DURATION_MS = 10 * 60_000L
         const val RESUMED_TIMEOUT_MS = 3_000L
         const val MIC_CHECK_TIMEOUT_MS = 3_000L
+        /** 通话中查系统音频模式的间隔:来电/去电抢走通话音频时尽快收场。 */
+        const val PHONE_CALL_POLL_MS = 1_000L
         private const val MAX_ASSISTANT_TURN_CHARS = 1_024
         private const val LEVEL_FULL_SCALE = 8_000.0
     }

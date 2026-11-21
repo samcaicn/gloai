@@ -376,6 +376,17 @@ class VoiceCallSessionTest {
         assertEquals(VoiceCallState.Ended(EndReason.Hangup), h.session.state.value)
     }
 
+    @Test fun `phone call arriving mid-call ends it as incoming call`() = runTest {
+        lateinit var h: Harness
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt })
+        runCurrent()
+        reachActive(h, this)
+        h.audio.telephonyBusy = true
+        advanceTimeBy(VoiceCallSession.PHONE_CALL_POLL_MS + 1)
+        runCurrent()
+        assertEquals(VoiceCallState.Ended(EndReason.IncomingCall), h.session.state.value)
+    }
+
     @Test fun `ten minute limit ends the call`() = runTest {
         lateinit var h: Harness
         h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt })

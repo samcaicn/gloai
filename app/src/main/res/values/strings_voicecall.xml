@@ -39,4 +39,6 @@
     <string name="voicecall_setup_title">Set up realtime voice first</string>
     <string name="voicecall_setup_body">Voice chat runs on the realtime voice service (the same setup as AI calls). Add credentials to start.</string>
     <string name="voicecall_go_setup">Set up</string>
+    <string name="voicecall_protocol_title">Voice chat needs a compatible setup</string>
+    <string name="voicecall_protocol_body">Voice chat only runs on a duplex realtime voice setup. The selected one uses a different protocol — add a compatible setup to start.</string>
 </resources>

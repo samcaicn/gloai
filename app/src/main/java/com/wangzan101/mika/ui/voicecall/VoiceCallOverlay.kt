@@ -62,6 +62,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.wangzan101.mika.R
 import com.wangzan101.mika.calls.CallRealtimeSession
 import com.wangzan101.mika.calls.CallVoiceProfile
+import com.wangzan101.mika.calls.CallVoiceProtocol
 import com.wangzan101.mika.calls.VolcRealtimeClient
 import com.wangzan101.mika.calls.VolcRealtimeConfig
 import com.wangzan101.mika.calls.VolcRealtimeCredentials
@@ -345,8 +346,11 @@ private fun PageButton(label: String, modifier: Modifier = Modifier, onClick: ()
     }
 }
 
-/** 进通话前的门:没权限、权限被拒过、没配凭据,各占一页;都在页内给按钮,不自动弹系统框。 */
-enum class VoiceCallGateStage { NeedPermission, PermissionDenied, NeedCredentials }
+/**
+ * 进通话前的门:没权限、权限被拒过、没配凭据、配置的协议不支持通话,各占一页;
+ * 都在页内给按钮,不自动弹系统框。
+ */
+enum class VoiceCallGateStage { NeedPermission, PermissionDenied, NeedCredentials, UnsupportedProtocol }
 
 /**
  * 门禁页:和通话页同一个深色全屏骨架,球安静地转(Globe),中间是说明和按钮。
@@ -397,6 +401,12 @@ fun VoiceCallGate(
                         VoiceCallGateStage.NeedCredentials -> {
                             title = stringResource(R.string.voicecall_setup_title)
                             body = stringResource(R.string.voicecall_setup_body)
+                            action = stringResource(R.string.voicecall_go_setup)
+                            go = onGoConfigure
+                        }
+                        VoiceCallGateStage.UnsupportedProtocol -> {
+                            title = stringResource(R.string.voicecall_protocol_title)
+                            body = stringResource(R.string.voicecall_protocol_body)
                             action = stringResource(R.string.voicecall_go_setup)
                             go = onGoConfigure
                         }
@@ -473,6 +483,11 @@ class VoiceCallController(
             return
         }
         val profile = deps.profile()
+        // 应用内通话只用双向实时语音协议:别的协议进不去,也不静默失败,门禁页说明并引到配置
+        if (profile.protocol != CallVoiceProtocol.VOLC_DUPLEX) {
+            stage = VoiceCallStage.Gate(VoiceCallGateStage.UnsupportedProtocol)
+            return
+        }
         if (!profile.credentialsConfigured || deps.credentials(profile.id) == null) {
             stage = VoiceCallStage.Gate(VoiceCallGateStage.NeedCredentials)
             return
@@ -531,11 +546,23 @@ class VoiceCallController(
         if (current.call.session.state.value !is VoiceCallState.Ended) current.call.session.end(EndReason.Hangup)
         stage = null
         cancelCallScope()
+        // 页面销毁后状态收集也随之没了:写回在这里兜底。先等会话收尾(最后一段转写先落进聚合),
+        // close 幂等且 NonCancellable,已写过不重复、域被取消也写完。
+        val session = current.call.session
+        val transcript = current.call.transcript
+        deps.scope.launch {
+            session.awaitFinished()
+            transcript.close()
+        }
     }
 
     private fun openCall() {
         cancelCallScope()
         val profile = deps.profile()
+        if (profile.protocol != CallVoiceProtocol.VOLC_DUPLEX) {
+            stage = VoiceCallStage.Gate(VoiceCallGateStage.UnsupportedProtocol)
+            return
+        }
         val originConversation = deps.conversationId()
         val transcript = VoiceCallTranscript(
             conversationId = { originConversation },

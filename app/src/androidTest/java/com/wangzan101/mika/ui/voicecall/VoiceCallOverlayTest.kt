@@ -364,4 +364,22 @@ class VoiceCallOverlayTest {
         compose.onNodeWithText("去配置").performClick()
         assertEquals(1, setups.get())
     }
+
+    @Test fun unsupportedProtocolGateExplainsAndPointsToSetup() {
+        val setups = AtomicInteger(0)
+        compose.setContent {
+            MikaTheme {
+                VoiceCallGate(
+                    VoiceCallGateStage.UnsupportedProtocol,
+                    onRequestPermission = {},
+                    onOpenSettings = {},
+                    onGoConfigure = { setups.incrementAndGet() },
+                    onCollapse = {},
+                )
+            }
+        }
+        compose.onNodeWithText("语音通话需要兼容的配置").assertIsDisplayed()
+        compose.onNodeWithText("去配置").performClick()
+        assertEquals(1, setups.get())
+    }
 }

@@ -385,8 +385,8 @@ class VolcRealtimeSession internal constructor(
                     userText = item!!.text
                 }
                 val text = item?.text ?: userText
-                // Seeduplex's official Web demo replaces the owner question for each ASR
-                // delta (setQuestion), while appending assistant text (appendAnswer). ASR
+                // The protocol replaces the owner question for each ASR delta
+                // (setQuestion) while appending assistant text (appendAnswer). ASR
                 // events are full, revisable snapshots despite the event's "delta" name.
                 // Never infer this by text overlap: genuine repeated words must survive.
                 text.setLength(0)
@@ -608,7 +608,7 @@ class VolcRealtimeSession internal constructor(
         userTurnActive = false
     }
 
-    // Same field priority as the official Seeduplex Web demo's extractEventText.
+    // Field priority when extracting ASR text: first non-empty field in ASR_TEXT_FIELDS wins.
     private fun asrText(frame: JsonObject): String? = ASR_TEXT_FIELDS.firstNotNullOfOrNull { key ->
         frame.string(key)?.takeIf { it.isNotEmpty() }
     }

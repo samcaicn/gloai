@@ -40,7 +40,7 @@
 2. **`calls/VolcRealtimeProtocol`(+~80,改)**:`mikaActions` 配置项、`mika_request` 工具注册帧、`functionResult` 帧、`synthesize` 帧(朗读复用)、`response.done` 事件解析。
 3. **`calls/VolcRealtimeClient`(+~60,改)**:`VolcRealtimeConfig.agentTools`、`sendFunctionResult(callId, text)`、`synthesize(text)`、`VolcRealtimeEvent.ResponseDone`。
 4. **`voicecall/VoiceCallSession`(~350,新)**:通话编排,**显式枚举状态机**(Connecting→MicCheck→Active→Ended/Error;禁布尔拼接,`ensureActive()` 区分外部取消):RESUMED 等待、焦点、开麦校验(3s 首块 + isSilenced + VOICE_COMMUNICATION→MIC 回退)、提示音、问候语一次、播放 writer(复用 CallPlaybackQueue)、打断(队列作废+pause/flush/play+通知路由取消任务)、10 分钟上限、8 类错误文案 + 就地重试、回声守卫(播音时与助手已说内容 500 字环形缓冲互为子串的「用户转写」丢弃,阈值可调)。
-5. **`voicecall/VoiceCallRequest`(~120,新)**:执行安全闸——只有「当轮、final 且 complete」的用户转写能喂执行;`utterance` 参数与转写做归一化子串兼容校验(不匹配不消费该转写);callId 一次性(含重连重放);助手回声剔除;转写每轮一次性消费。按语义自行重写。
+5. **`voicecall/VoiceCallRequest`(~120,新)**:执行安全闸——只有「当轮、final 且 complete」的用户转写能喂执行;`utterance` 参数与转写做归一化**单向**包含校验——utterance 必须落在当轮转写里,比转写还长(模型添了用户没说的话)一律拒(不匹配不消费该转写);callId 一次性(含重连重放);助手回声剔除;转写每轮一次性消费。按语义自行重写。
 6. **`voicecall/VoiceCallRoute`(~200,新)**:语音请求→既有聊天/工作任务入口的一次性目的地路由(先到先得);订阅 TaskState 出短状态行;任务需确认/接管时提示「去任务页看」;打断取消已启动未完成任务;结果回 `sendFunctionResult`。
 7. **`voicecall/VoiceCallTranscript`(~50,新)**:事件→Turn(问/答/时间)聚合,结束写回发起会话。
 8. **`voicecall/VoiceCallService`(~130,新)**:麦克风型前台服务 + CATEGORY_CALL ongoing 通知(含挂断动作);`select` 竞速通话协程与通知挂断;Android 14+ mic FGS 只能前台起;锁屏不开通话页。

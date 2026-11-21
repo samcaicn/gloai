@@ -39,4 +39,6 @@
     <string name="voicecall_setup_title">ابتدا صدای بی‌درنگ را تنظیم کنید</string>
     <string name="voicecall_setup_body">گفت‌وگوی صوتی از سرویس صدای بی‌درنگ استفاده می‌کند (همان تنظیمات تماس‌های هوش مصنوعی). برای شروع اعتبارنامه اضافه کنید.</string>
     <string name="voicecall_go_setup">رفتن به تنظیمات</string>
+    <string name="voicecall_protocol_title">گفتگوی صوتی به تنظیمات سازگار نیاز دارد</string>
+    <string name="voicecall_protocol_body">گفتگوی صوتی فقط با تنظیمات صدای بی‌درنگ دوطرفه کار می‌کند. تنظیم انتخاب‌شده پروتکل دیگری دارد — برای شروع یک تنظیم سازگار اضافه کنید.</string>
 </resources>

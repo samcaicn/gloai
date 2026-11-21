@@ -14,17 +14,24 @@ enum class RouteDevice { Speaker, Earpiece, Wired, Bluetooth }
 /**
  * 免提路由决策,纯函数,全组合可测。
  *
- * 策略:私密设备优先于扬声器——有线 > 蓝牙 > 听筒(有线在场几乎总是用户刚插上,蓝牙常是环境常驻连接);
- * 无私密设备时留扬声器(无听筒的平板形态);用户显式请求免提时扬声器胜出,扬声器不可用退回私密最优。
+ * 策略,三态 [speakerRequested]:
+ * - `true`(用户要免提):扬声器在场就用,不在场退回私密最优。
+ * - `false`(用户关免提):私密最优——有线 > 蓝牙 > 听筒,无私密设备才留扬声器(平板形态)。
+ * - `null`(还没表态,自动):有线 > 蓝牙 > 扬声器——插着的耳机几乎总是用户刚接上的,直接接管;
+ *   没人贴耳听助手说话,所以自动态跳过听筒。
  * 决策本身与 SDK 无关:[sdkInt] 只在落地层分流(API 31+ setCommunicationDevice,以下 speakerphone 开关),
  * 参数保留在签名里让调用点不必另写分流。
  */
-fun chooseRoute(available: List<RouteDevice>, sdkInt: Int, speakerRequested: Boolean): RouteDevice {
+fun chooseRoute(available: List<RouteDevice>, sdkInt: Int, speakerRequested: Boolean?): RouteDevice {
     val set = available.toSet()
-    if (speakerRequested && RouteDevice.Speaker in set) return RouteDevice.Speaker
+    if (speakerRequested == true && RouteDevice.Speaker in set) return RouteDevice.Speaker
+    when {
+        RouteDevice.Wired in set -> return RouteDevice.Wired
+        RouteDevice.Bluetooth in set -> return RouteDevice.Bluetooth
+    }
     return when {
-        RouteDevice.Wired in set -> RouteDevice.Wired
-        RouteDevice.Bluetooth in set -> RouteDevice.Bluetooth
+        speakerRequested == false && RouteDevice.Earpiece in set -> RouteDevice.Earpiece
+        RouteDevice.Speaker in set -> RouteDevice.Speaker
         RouteDevice.Earpiece in set -> RouteDevice.Earpiece
         else -> RouteDevice.Speaker
     }
@@ -52,7 +59,7 @@ class VoiceCallAudioRoute(context: Context) {
 
     private val lock = Any()
     private var active = false
-    private var speakerRequested = true // 通话默认免提起播(接通链:扬声器起播)
+    private var speakerRequested: Boolean? = null // 没表态:自动——插着的耳机接管,否则外放(见 chooseRoute)
     private var legacySpeakerBefore = false
 
     private val hotPlug = object : AudioDeviceCallback() {
@@ -60,8 +67,8 @@ class VoiceCallAudioRoute(context: Context) {
         override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) = refresh()
     }
 
-    /** 通话开始:接管路由并注册热插拔监听。可重复调用(幂等)。 */
-    fun begin(speaker: Boolean = true) {
+    /** 通话开始:接管路由并注册热插拔监听。可重复调用(幂等);[speaker] 只由界面上的免提开关给。 */
+    fun begin(speaker: Boolean? = null) {
         synchronized(lock) {
             if (!active) {
                 active = true
@@ -149,7 +156,13 @@ class VoiceCallAudioRoute(context: Context) {
             AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
             AudioDeviceInfo.TYPE_USB_HEADSET,
             -> RouteDevice.Wired
-            AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> RouteDevice.Bluetooth
+            AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+            AudioDeviceInfo.TYPE_BLE_HEADSET,
+            AudioDeviceInfo.TYPE_HEARING_AID,
+            -> RouteDevice.Bluetooth
+            AudioDeviceInfo.TYPE_USB_DEVICE,
+            AudioDeviceInfo.TYPE_USB_ACCESSORY,
+            -> RouteDevice.Wired
             else -> null
         }
     }

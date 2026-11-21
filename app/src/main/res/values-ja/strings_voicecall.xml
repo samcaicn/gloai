@@ -39,4 +39,6 @@
     <string name="voicecall_setup_title">まずリアルタイム音声を設定してください</string>
     <string name="voicecall_setup_body">音声チャットはリアルタイム音声サービスを使います（AI 電話と同じ設定です）。認証情報を追加すれば始められます。</string>
     <string name="voicecall_go_setup">設定へ</string>
+    <string name="voicecall_protocol_title">音声通話には対応する設定が必要です</string>
+    <string name="voicecall_protocol_body">音声通話は双方向リアルタイム音声の設定でのみ動きます。現在の設定は別のプロトコルです。対応する設定を追加すると開始できます。</string>
 </resources>

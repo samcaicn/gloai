@@ -39,4 +39,6 @@
     <string name="voicecall_setup_title">Configura primero la voz en tiempo real</string>
     <string name="voicecall_setup_body">El chat de voz usa el servicio de voz en tiempo real (la misma configuración que las llamadas de IA). Añade las credenciales para empezar.</string>
     <string name="voicecall_go_setup">Configurar</string>
+    <string name="voicecall_protocol_title">La llamada de voz necesita una configuración compatible</string>
+    <string name="voicecall_protocol_body">La llamada de voz solo funciona con una configuración de voz en tiempo real bidireccional. La seleccionada usa otro protocolo; añade una compatible para empezar.</string>
 </resources>

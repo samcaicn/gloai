@@ -32,12 +32,21 @@ class VoiceCallRequestTest {
         assertEquals(VoiceCallDecision.Accept("你好,世界!"), gate.offer("c1", "你好 世界"))
     }
 
-    // 规则③正例:互为子串,不要求等长——转写比 utterance 长也过
+    // 规则③正例:单向包含,不要求等长——utterance 是转写的片段也过,执行的是用户完整的原话
     @Test
     fun partialOverlapAccepts() {
         val gate = VoiceCallRequest(RingBuffer(10))
         gate.onUserTranscript("帮我打开微信好吗")
         assertEquals(VoiceCallDecision.Accept("帮我打开微信好吗"), gate.offer("c1", "打开微信"))
+    }
+
+    // 规则③反例:utterance 比当轮转写还长——模型往里添了用户没说的话 → Reject 且不消费转写
+    @Test
+    fun utteranceLongerThanTranscriptRejectsAndKeepsTranscript() {
+        val gate = VoiceCallRequest(RingBuffer(10))
+        gate.onUserTranscript("打开微信")
+        assertEquals(VoiceCallDecision.Reject, gate.offer("c1", "打开微信再发个红包"))
+        assertEquals(VoiceCallDecision.Accept("打开微信"), gate.offer("c2", "打开微信"))
     }
 
     // 规则③反例:不匹配 → Reject 且不消费转写,后续匹配的 offer 仍可用这条转写

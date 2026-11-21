@@ -37,7 +37,7 @@ data class VolcRealtimeConfig(
     }
 }
 
-/** Volcengine Seeduplex 3.0 uses JSON WebSocket text frames with Base64 PCM. */
+/** The realtime dialogue API uses JSON WebSocket text frames with Base64 PCM. */
 internal object VolcRealtimeProtocol {
     const val ENDPOINT = "wss://openspeech.bytedance.com/api/v3/duplex/realtime/dialogue"
     const val RESOURCE = "volc.speech.dialog"
@@ -106,7 +106,7 @@ internal object VolcRealtimeProtocol {
         put("audio", Base64.getEncoder().encodeToString(if (bytes.size == count) bytes else bytes.copyOf(count)))
     }
 
-    /** tools is a complete replacement, not an incremental addition (Seeduplex API), so one update carries every enabled tool. */
+    /** tools is a complete replacement, not an incremental addition (server-side semantics), so one update carries every enabled tool. */
     fun enableTools(eventId: String, config: VolcRealtimeConfig): String = message("session.update", eventId) {
         putJsonObject("session") {
             put("tools", JsonArray(mutableListOf<kotlinx.serialization.json.JsonElement>().apply {

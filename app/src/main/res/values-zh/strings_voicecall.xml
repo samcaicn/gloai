@@ -39,4 +39,6 @@
     <string name="voicecall_setup_title">先配置实时语音</string>
     <string name="voicecall_setup_body">语音通话走实时语音服务（和 AI 电话同一份配置），配上凭据就能用。</string>
     <string name="voicecall_go_setup">去配置</string>
+    <string name="voicecall_protocol_title">语音通话需要兼容的配置</string>
+    <string name="voicecall_protocol_body">语音通话只用双向实时语音协议；当前配置用的是另一种协议。新增一套兼容配置即可开始。</string>
 </resources>

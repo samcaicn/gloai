@@ -39,4 +39,6 @@
     <string name="voicecall_setup_title">Сначала настройте голосовой сервис</string>
     <string name="voicecall_setup_body">Голосовой чат работает через сервис реального времени (та же настройка, что и у ИИ-звонков). Добавьте учётные данные, чтобы начать.</string>
     <string name="voicecall_go_setup">Настроить</string>
+    <string name="voicecall_protocol_title">Для голосового звонка нужна совместимая настройка</string>
+    <string name="voicecall_protocol_body">Голосовой звонок работает только с двусторонней настройкой голоса в реальном времени. Выбранная использует другой протокол — добавьте совместимую, чтобы начать.</string>
 </resources>

@@ -39,4 +39,6 @@
     <string name="voicecall_setup_title">先設定即時語音</string>
     <string name="voicecall_setup_body">語音通話走即時語音服務（和 AI 電話同一份設定），配上憑據就能用。</string>
     <string name="voicecall_go_setup">去設定</string>
+    <string name="voicecall_protocol_title">語音通話需要相容的設定</string>
+    <string name="voicecall_protocol_body">語音通話只用雙向即時語音協定；目前設定用的是另一種協定。新增一組相容設定即可開始。</string>
 </resources>

@@ -39,4 +39,6 @@
     <string name="voicecall_setup_title">Önce gerçek zamanlı sesi ayarlayın</string>
     <string name="voicecall_setup_body">Sesli sohbet, gerçek zamanlı ses hizmetini kullanır (yapay zeka aramalarıyla aynı kurulum). Başlamak için kimlik bilgisi ekleyin.</string>
     <string name="voicecall_go_setup">Ayarla</string>
+    <string name="voicecall_protocol_title">Sesli sohbet uyumlu bir kurulum gerektirir</string>
+    <string name="voicecall_protocol_body">Sesli sohbet yalnızca çift yönlü gerçek zamanlı ses kurulumuyla çalışır. Seçili olan farklı bir protokol kullanıyor — başlamak için uyumlu bir kurulum ekleyin.</string>
 </resources>

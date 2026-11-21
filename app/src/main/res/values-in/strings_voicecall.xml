@@ -39,4 +39,6 @@
     <string name="voicecall_setup_title">Siapkan suara waktu-nyata dulu</string>
     <string name="voicecall_setup_body">Obrolan suara memakai layanan suara waktu-nyata (pengaturan yang sama dengan panggilan AI). Tambahkan kredensial untuk mulai.</string>
     <string name="voicecall_go_setup">Buka pengaturan</string>
+    <string name="voicecall_protocol_title">Panggilan suara butuh pengaturan yang kompatibel</string>
+    <string name="voicecall_protocol_body">Panggilan suara hanya berjalan pada pengaturan suara real-time dua arah. Yang dipilih memakai protokol lain — tambahkan yang kompatibel untuk mulai.</string>
 </resources>

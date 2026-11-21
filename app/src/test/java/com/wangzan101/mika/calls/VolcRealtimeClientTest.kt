@@ -292,8 +292,8 @@ class VolcRealtimeClientTest {
 
     private val JsonObject.type get() = getValue("type").jsonPrimitive.content
 
-    @Test fun seeduplexAsrSnapshotsReplaceProgressivePrefixesAndPreserveLegitimateRepeats() = runBlocking {
-        // The official Seeduplex Web demo calls setQuestion for ASR delta, but
+    @Test fun asrSnapshotsReplaceProgressivePrefixesAndPreserveLegitimateRepeats() = runBlocking {
+        // The protocol calls setQuestion for ASR delta, but
         // appendAnswer for assistant delta. These are revisable full snapshots.
         val observed = observeFrames(listOf(
             """{"type":"conversation.item.input_audio_transcription.started","item_id":"u1"}""",
@@ -312,7 +312,7 @@ class VolcRealtimeClientTest {
         assertEquals(listOf("好", "好"), observed.filterIsInstance<VolcRealtimeEvent.AssistantTranscript>().map { it.delta })
     }
 
-    @Test fun seeduplexAsrUsesOfficialDemoTextFieldPriorityAndCompletedPayload() = runBlocking {
+    @Test fun asrUsesExpectedTextFieldPriorityAndCompletedPayload() = runBlocking {
         val observed = observeFrames(listOf(
             """{"type":"conversation.item.input_audio_transcription.started"}""",
             """{"type":"conversation.item.input_audio_transcription.delta","text":"完整快照","delta":"不能追加"}""",
@@ -325,7 +325,7 @@ class VolcRealtimeClientTest {
         assertTrue(observed.filterIsInstance<VolcRealtimeEvent.UserTranscript>().last().isCompleteFinal)
     }
 
-    @Test fun seeduplexCompletedCannotAuthorizeTruncatedSnapshotOrExplicitlyBlankFinal() = runBlocking {
+    @Test fun completedEventCannotAuthorizeTruncatedSnapshotOrExplicitlyBlankFinal() = runBlocking {
         val tooLong = "长".repeat(16_385)
         val observed = observeFrames(listOf(
             """{"type":"conversation.item.input_audio_transcription.started","item_id":"long"}""",
@@ -341,7 +341,7 @@ class VolcRealtimeClientTest {
         assertTrue(finals.none { it.isCompleteFinal })
     }
 
-    @Test fun seeduplexSnapshotAuthorizationNeedsCurrentCompletedEventAndNotJustPartialText() = runBlocking {
+    @Test fun snapshotAuthorizationNeedsCurrentCompletedEventAndNotJustPartialText() = runBlocking {
         val observed = observeFrames(listOf(
             """{"type":"conversation.item.input_audio_transcription.started","item_id":"old"}""",
             """{"type":"conversation.item.input_audio_transcription.delta","item_id":"old","delta":"我说完了，你去打"}""",

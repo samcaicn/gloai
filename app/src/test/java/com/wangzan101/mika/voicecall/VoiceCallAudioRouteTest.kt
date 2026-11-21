@@ -20,7 +20,7 @@ class VoiceCallAudioRouteTest {
     private fun assertRoute(
         expected: RouteDevice,
         available: List<RouteDevice>,
-        speakerRequested: Boolean,
+        speakerRequested: Boolean?,
     ) {
         for (sdk in sdks) {
             assertEquals(
@@ -121,5 +121,33 @@ class VoiceCallAudioRouteTest {
     fun orderOfAvailableListDoesNotMatter() {
         assertRoute(Wired, listOf(Bluetooth, Wired, Earpiece, Speaker), speakerRequested = false)
         assertRoute(Bluetooth, listOf(Earpiece, Bluetooth, Speaker), speakerRequested = false)
+    }
+
+    // ---- 自动(用户还没表态):耳机接管,没人贴耳听助手,跳过听筒 ----
+
+    @Test
+    fun auto_withWired_picksWiredOverEverything() {
+        assertRoute(Wired, listOf(Speaker, Earpiece, Wired, Bluetooth), speakerRequested = null)
+    }
+
+    @Test
+    fun auto_withBluetooth_picksBluetooth() {
+        assertRoute(Bluetooth, listOf(Speaker, Earpiece, Bluetooth), speakerRequested = null)
+    }
+
+    @Test
+    fun auto_withEarpieceOnly_staysSpeaker() {
+        assertRoute(Speaker, listOf(Speaker, Earpiece), speakerRequested = null)
+    }
+
+    @Test
+    fun auto_withoutSpeaker_fallsBackToEarpiece() {
+        assertRoute(Earpiece, listOf(Earpiece), speakerRequested = null)
+    }
+
+    @Test
+    fun auto_speakerOnly_staysSpeaker() {
+        assertRoute(Speaker, listOf(Speaker), speakerRequested = null)
+        assertRoute(Speaker, emptyList(), speakerRequested = null)
     }
 }
