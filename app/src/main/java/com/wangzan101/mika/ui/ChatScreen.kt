@@ -1903,7 +1903,8 @@ internal fun Composer(
                 VoiceFloat(vh, vState, title, backdrop, reduceMotion)
             }
             Box(Modifier.fillMaxWidth()) {
-            GlassBar(Modifier.fillMaxWidth().keepsKeyboard(), backdrop) {
+            // 实底卡片:半透明玻璃在两行身后衬的底不一致会显出两个色,输入栏不走高斯模糊
+            GlassBar(Modifier.fillMaxWidth().keepsKeyboard()) {
                 val canSend = AttachTray.canSend(text, attachments, importing)
                 // 两行:第一行纯输入,第二行按钮;字再多按钮排布也不动
                 Column(Modifier.weight(1f)) {
