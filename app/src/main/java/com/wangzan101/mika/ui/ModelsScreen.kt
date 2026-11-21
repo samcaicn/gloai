@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wangzan101.mika.core.chatgpt.SignInFailure
 import com.wangzan101.mika.core.model.ApiKeyText
+import com.wangzan101.mika.core.model.GroupStrategy
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.OpenAiServiceTier
 import com.wangzan101.mika.settings.ModelOption
@@ -67,6 +68,7 @@ import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.RoleChoice
+import com.wangzan101.mika.settings.RoleChoices
 import com.wangzan101.mika.ui.components.BarIconButton
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize
@@ -194,6 +196,10 @@ class RolePickerActions(
     val pickManual: (String, String) -> Unit = { _, _ -> },
     /** 看图、轻量的固定选项(用主模型、不用)。 */
     val choose: (RoleChoice) -> Unit = {},
+    /** 选一个模型组。 */
+    val chooseGroup: (String) -> Unit = {},
+    /** 打开模型组管理页。 */
+    val manageGroups: () -> Unit = {},
     val addProvider: () -> Unit = {},
 )
 
@@ -224,6 +230,23 @@ fun RolePickerContent(ui: ModelSetupUi, role: ModelRole, actions: RolePickerActi
         val hint = hintOverride ?: ModelsCopy.roleHint(role)
         if (hint.isNotEmpty()) {
             Text(hint, Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
+        }
+        if (ui.groups.isNotEmpty()) {
+            GroupLabel(ModelsCopy.GROUPS)
+            GroupCard {
+                ui.groups.forEachIndexed { i, g ->
+                    val ok = ui.usable(g, role)
+                    RadioRow(
+                        g.name, selected = ui.roles[role] == RoleChoice.Group(g.id),
+                        onClick = { if (ok) actions.chooseGroup(g.id) }, first = i == 0, enabled = ok,
+                        subtitle = if (ok) ModelsCopy.groupCount(g.enabledMembers.size)
+                        else if (role == ModelRole.Vision) ModelsCopy.GROUP_VISION_NEEDS_EYES else ModelsCopy.GROUP_MAIN_NEEDS_TOOLS,
+                    )
+                }
+            }
+            GroupCard(Modifier.padding(top = 8.dp)) {
+                ListRow(MikaIcons.Plus, ModelsCopy.GROUPS, first = true, titleColor = c.accent, tone = TileTone.Accent, onClick = actions.manageGroups)
+            }
         }
         val fixed = fixedChoices(role)
         if (fixed.isNotEmpty()) {
@@ -945,6 +968,58 @@ object ModelsCopy {
     val RETEST: String get() = tr(R.string.models_retest)
     val SEES_IMAGES: String get() = tr(R.string.models_sees_images)
 
+    // ---------- 模型组 ----------
+
+    val GROUPS: String get() = tr(R.string.models_groups)
+    val NEW_GROUP: String get() = tr(R.string.models_group_new)
+    val GROUP_NAME: String get() = tr(R.string.models_group_name)
+    val GROUP_NAME_HINT: String get() = tr(R.string.models_group_name_hint)
+    val GROUP_STRATEGY: String get() = tr(R.string.models_group_strategy)
+    val GROUP_STICKY: String get() = tr(R.string.models_group_sticky)
+    val GROUP_STICKY_NOTE: String get() = tr(R.string.models_group_sticky_note)
+    val GROUP_MEMBERS: String get() = tr(R.string.models_group_members)
+    val GROUP_NO_MEMBERS: String get() = tr(R.string.models_group_no_members)
+    val GROUP_UP: String get() = tr(R.string.models_group_up)
+    val GROUP_DOWN: String get() = tr(R.string.models_group_down)
+    val GROUP_REMOVE: String get() = tr(R.string.models_group_remove)
+    val GROUP_CONTEXT: String get() = tr(R.string.models_group_member_context)
+    val GROUP_ADD_MEMBER: String get() = tr(R.string.models_group_add_member)
+    val GROUP_MAIN_NEEDS_TOOLS: String get() = tr(R.string.models_group_main_needs_tools)
+    val GROUP_VISION_NEEDS_EYES: String get() = tr(R.string.models_group_vision_needs_eyes)
+    val GROUP_PRIVACY: String get() = tr(R.string.models_group_privacy)
+    val GROUP_SAVE_FAILED: String get() = tr(R.string.models_group_save_failed)
+    val GROUP_DELETE: String get() = tr(R.string.models_group_delete)
+    val GROUP_DELETE_BODY: String get() = tr(R.string.models_group_delete_body)
+    val CANCEL: String get() = tr(R.string.cancel)
+    val ADD: String get() = tr(R.string.models_group_add)
+    val groupLead: String get() = tr(R.string.models_group_lead)
+    val groupEmpty: String get() = tr(R.string.models_group_empty)
+    val groupFooter: String get() = tr(R.string.models_group_footer)
+
+    fun groupCount(n: Int): String = tr(R.string.models_group_member_count, n)
+    fun groupDeleteTitle(name: String): String = tr(R.string.models_group_delete_title, name)
+    fun editGroup(name: String): String = tr(R.string.models_group_edit, name)
+    fun groupPriority(n: Int): String = tr(R.string.models_group_priority, n)
+
+    fun groupRoles(roles: RoleChoices, groupId: String): String {
+        val used = ModelRole.entries.filter { roles.resolveGroup(it) == groupId }.map { roleLabel(it) }
+        return if (used.isEmpty()) "" else tr(R.string.models_group_used_by, used.joinToString(tr(R.string.list_sep)))
+    }
+
+    fun strategyTitle(s: GroupStrategy): String = tr(when (s) {
+        GroupStrategy.Failover -> R.string.models_group_strategy_failover
+        GroupStrategy.Weighted -> R.string.models_group_strategy_weighted
+        GroupStrategy.LeastLatency -> R.string.models_group_strategy_latency
+        GroupStrategy.CostFirst -> R.string.models_group_strategy_cost
+    })
+
+    fun strategyNote(s: GroupStrategy): String = tr(when (s) {
+        GroupStrategy.Failover -> R.string.models_group_strategy_failover_note
+        GroupStrategy.Weighted -> R.string.models_group_strategy_weighted_note
+        GroupStrategy.LeastLatency -> R.string.models_group_strategy_latency_note
+        GroupStrategy.CostFirst -> R.string.models_group_strategy_cost_note
+    })
+
     /** 「能看图」开关下的说明:用户说过的、用作看图的、列表写明的、没写未确认的。 */
     fun seesNote(o: ModelOption, usedForVision: Boolean): String = tr(when {
         o.visionByUser != null -> R.string.models_sees_note_user
@@ -1171,6 +1246,9 @@ object ModelsCopy {
             RoleChoice.Off -> RoleLine(OFF, OFF_NOTE)
             is RoleChoice.Model -> ui.configs.firstOrNull { it.id == choice.configId }?.let(::modelLine)
                 ?: RoleLine(UNSET, MAIN_PICK, unset = true)
+            is RoleChoice.Group -> ui.groups.firstOrNull { it.id == choice.groupId }?.let { g ->
+                RoleLine(g.name, ModelsCopy.groupCount(g.enabledMembers.size), isModel = false)
+            } ?: RoleLine(UNSET, MAIN_PICK, unset = true)
         }
     }
 

@@ -121,6 +121,10 @@ internal fun userReason(e: ModelError): String = when (e) {
         }
         userReason(e.primary) + "本任务把整条备援链都试过了，全部失败：$trail。"
     }
+    is ModelError.GroupUnavailable ->
+        "模型组「${e.group}」没有可用的模型${if (e.detail.isEmpty()) "" else "(${e.detail})"}。请到设置 › 模型检查组成员是否启用、能力是否符合,或稍后再试。"
+    is ModelError.GroupExhausted ->
+        "模型组「${e.group}」的模型都达到限额了${if (e.detail.isEmpty()) "" else "(${e.detail})"}。请稍后再试或调整组设置。"
 }
 
 /** 链失败记录里每个错误的短标签:认得出的写 HTTP 状态码,其余写故障名。 */

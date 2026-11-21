@@ -278,4 +278,44 @@
     <string name="tool_image_edit">Edit image</string>
     <string name="tool_image_save">Save image</string>
     <string name="tool_share_image">Share image to app</string>
+
+
+    <!-- Model groups -->
+    <string name="models_groups">Группы моделей</string>
+    <string name="models_group_lead">Группа пробует модели по порядку, когда одна не срабатывает. Группу можно выбрать везде, где выбирается модель.</string>
+    <string name="models_group_empty">Групп моделей пока нет. Создайте группу, чтобы указать запасную модель.</string>
+    <string name="models_group_footer">Группа отправляет запрос другому провайдеру только после сбоя. В этой версии один и тот же запрос никогда не отправляется параллельно.</string>
+    <string name="models_group_new">Новая группа моделей</string>
+    <string name="models_group_edit">Изменить «%1$s»</string>
+    <string name="models_group_name">Название</string>
+    <string name="models_group_name_hint">напр. Основная с запасной</string>
+    <string name="models_group_strategy">Стратегия</string>
+    <string name="models_group_strategy_failover">Переключать по порядку</string>
+    <string name="models_group_strategy_failover_note">Использовать следующую модель, только если предыдущая не сработала.</string>
+    <string name="models_group_strategy_weighted">Чередовать по диалогам</string>
+    <string name="models_group_strategy_weighted_note">Новые диалоги распределяются по весу, затем остаются на этой модели.</string>
+    <string name="models_group_strategy_latency">Самая быстрая за последнее время</string>
+    <string name="models_group_strategy_latency_note">Предпочитать модель с лучшей недавней успешностью и задержкой.</string>
+    <string name="models_group_strategy_cost">Самая дешёвая</string>
+    <string name="models_group_strategy_cost_note">Предпочитать самого дешёвого участника. Нужен ранг стоимости для каждого участника.</string>
+    <string name="models_group_sticky">Одна модель на диалог</string>
+    <string name="models_group_sticky_note">Не менять префикс запроса и защищать кэш; переключаться только при сбое.</string>
+    <string name="models_group_members">Участники</string>
+    <string name="models_group_member_count">Моделей: %1$d</string>
+    <string name="models_group_no_members">Участников пока нет. Добавьте хотя бы одну модель.</string>
+    <string name="models_group_priority">Приоритет %1$d</string>
+    <string name="models_group_up">Вверх</string>
+    <string name="models_group_down">Вниз</string>
+    <string name="models_group_remove">Удалить</string>
+    <string name="models_group_add_member">Добавить модель</string>
+    <string name="models_group_add">Добавить</string>
+    <string name="models_group_main_needs_tools">В группу основной модели можно включать только модели с поддержкой вызова инструментов.</string>
+    <string name="models_group_vision_needs_eyes">Группе распознавания изображений нужна хотя бы одна модель, которая видит изображения.</string>
+    <string name="models_group_privacy">Если модель не сработает, запрос (включая снимки экрана) может быть отправлен другому провайдеру в этой группе.</string>
+    <string name="models_group_save_failed">Не удалось сохранить: проверьте участников и поддержку инструментов.</string>
+    <string name="models_group_delete">Удалить эту группу</string>
+    <string name="models_group_delete_title">Удалить «%1$s»?</string>
+    <string name="models_group_delete_body">Роли, использующие её, вернутся к не выбрано, нет или основной модели.</string>
+    <string name="models_group_used_by">Используется как %1$s</string>
+    <string name="models_group_member_context">Контекст</string>
 </resources>

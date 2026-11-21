@@ -73,6 +73,8 @@ sealed interface RunEvent {
         val model: String? = null,
         /** 大小模型分工起作用时:main / light / light_rejected(轻量模型的回复没执行,改问了主模型);否则 null。 */
         val role: String? = null,
+        /** 实际回答的成员属于哪个模型组;单模型为 null。 */
+        val group: String? = null,
         /** 重试前花掉的时间:失败的那几次请求加退避等待。 */
         val retryWaitMs: Long = 0,
         /**

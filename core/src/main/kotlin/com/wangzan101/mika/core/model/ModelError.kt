@@ -86,4 +86,22 @@ sealed class ModelError(message: String, cause: Throwable? = null) : Exception(m
      */
     class ChainFailed(val primary: ModelError, val entries: List<Pair<String, ModelError>>) :
         ModelError(primary.message.orEmpty())
+
+    /** 模型组里没有可用成员:全部停用、能力不符、冷却或限额。[detail] 说明是哪一类,不含内容。 */
+    class GroupUnavailable(val group: String = "", val detail: String = "") :
+        ModelError(if (detail.isEmpty()) "模型组「$group」没有可用的模型" else "模型组「$group」没有可用的模型: $detail")
+
+    /** 模型组里成员都达到限额。 */
+    class GroupExhausted(val group: String = "", val detail: String = "") :
+        ModelError(if (detail.isEmpty()) "模型组「$group」的模型都达到限额" else "模型组「$group」的模型都达到限额: $detail")
+}
+
+/** 错误分类的共用判断:哪些错误是一时的,过一会儿再发同一个请求可能就好。 */
+object ModelErrors {
+    fun transient(e: Throwable): Boolean = when (e) {
+        is ModelError.RateLimited, is ModelError.Network, is ModelError.StreamCut -> true
+        is ModelError.Server -> e.status in 500..599
+        is ModelError.Proxy -> e.failure == ProxyFailure.Unreachable
+        else -> false
+    }
 }

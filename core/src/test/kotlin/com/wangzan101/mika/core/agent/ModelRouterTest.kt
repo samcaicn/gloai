@@ -4,9 +4,13 @@ import com.wangzan101.mika.core.observation.Place
 import com.wangzan101.mika.core.tool.placeOf
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ChatModel
+import com.wangzan101.mika.core.model.GroupMember
+import com.wangzan101.mika.core.model.MemberKey
 import com.wangzan101.mika.core.model.Message
+import com.wangzan101.mika.core.model.ModelGroup
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.ToolSpec
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -26,6 +30,23 @@ class ModelRouterTest {
 
     @Test fun firstStepUsesMain() {
         assertSame(main, ModelRouter(main, light).pick(clean(1)))
+    }
+
+    @Test fun lightGroupPoolIsRecognizedAndActive() {
+        val tool = NamedModel("tool")
+        val plain = NamedModel("plain", toolCalls = false)
+        val g = ModelGroup("g", "轻量组", members = listOf(GroupMember("a"), GroupMember("b")))
+        val pool = GroupPool(
+            g,
+            listOf(PoolMember(MemberKey("p", "tool"), tool), PoolMember(MemberKey("p", "plain"), plain, priority = 1)),
+            ModelHealthRegistry(), StickyTable(), null,
+        )
+        val r = ModelRouter(main, pool)
+        // 只要有一个成员支持工具就启用 lightSteps;具体到需要工具的步再按成员过滤
+        assertTrue(r.active)
+        assertSame(pool, r.pick(clean(2)))
+        assertTrue(r.isLight(pool))
+        assertEquals("轻量组", r.groupOf(pool))
     }
 
     @Test fun lightAfterCleanStep() {
