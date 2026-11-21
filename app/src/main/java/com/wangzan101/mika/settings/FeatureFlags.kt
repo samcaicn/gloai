@@ -3,7 +3,6 @@ package com.wangzan101.mika.settings
 import android.content.Context
 import android.content.SharedPreferences
 import com.wangzan101.mika.capsule.CapsuleCardScale
-import com.wangzan101.mika.BuildConfig
 import com.wangzan101.mika.capsule.CapsuleDock
 import com.wangzan101.mika.capsule.CardDocking
 import com.wangzan101.mika.capsule.CapsuleIdleOpacity
@@ -313,8 +312,8 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }.distinctUntilChanged()
 
-    /** 人格:调试版默认可见,发布版默认关;合并前再决定默认值。 */
-    fun persona(): Boolean = prefs.getBoolean(PERSONA, BuildConfig.DEBUG)
+    /** 人格:默认开。开关留着,出问题时能整体关掉(关掉后界面不显示入口,任务也不读对话上的绑定)。 */
+    fun persona(): Boolean = prefs.getBoolean(PERSONA, true)
 
     fun setPersona(on: Boolean) {
         prefs.edit().putBoolean(PERSONA, on).commit()

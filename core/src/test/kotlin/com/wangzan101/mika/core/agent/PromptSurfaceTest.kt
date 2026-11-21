@@ -124,6 +124,24 @@ class PromptSurfaceTest {
         PromptSurface.check("persona/layer", com.wangzan101.mika.core.prompt.PersonaPrompt.layer("测试人格", "先给结论,再展开;少用感叹号。")!!)
     }
 
+    /** 改了称呼之后模型多看到、看到不一样的那几段:身份那一段、「Mika 是 App 的名字」的说明、人格层的固定头。 */
+    @Test fun personaRenamed() {
+        val identity = SystemPrompt.identity("辉夜").substringBefore("\n\nPrinciples:")
+        val layer = com.wangzan101.mika.core.prompt.PersonaPrompt.layer("测试人格", "先给结论。", assistant = "辉夜")!!.substringBefore("\n\nWhat the persona may change")
+        PromptSurface.check("persona/renamed", identity + "\n\n---\n\n" + layer)
+    }
+
+    /** 带选项的人格层:固定头尾 + 选项的句子 + 用户写的。 */
+    @Test fun personaLayerWithOptions() {
+        val style = com.wangzan101.mika.core.prompt.PersonaStyle(
+            base = com.wangzan101.mika.core.prompt.PersonaStyle.Base.Crisp,
+            emoji = com.wangzan101.mika.core.prompt.PersonaStyle.Level.Less,
+            length = com.wangzan101.mika.core.prompt.PersonaStyle.Level.Less,
+            progress = com.wangzan101.mika.core.prompt.PersonaStyle.Level.Less,
+        )
+        PromptSurface.check("persona/layer-options", com.wangzan101.mika.core.prompt.PersonaPrompt.layer("测试人格", "先给结论,再展开;少用感叹号。", style)!!)
+    }
+
     @Test fun feedbackFromTools() {
         PromptSurface.check("feedback-tools", runBlocking { PromptSurfaceFeedback.tools() })
     }

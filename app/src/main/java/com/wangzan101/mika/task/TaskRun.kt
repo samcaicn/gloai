@@ -922,19 +922,22 @@ class TaskRun(
             }
             // 这个对话里用户发来的屏幕(跟着对话存在工作区里)
             val userScreens = (service.application as MikaApp).userScreens.source(conversationId)
-            // 人格只属于这个对话;条件检查是内部只读 JSON 检查,不继承人格。
-            // 人格被删除时 get 返回 null,按无人格跑;界面另行提示。
-            val persona = if (conditionCheck || !FeatureFlags.get(service).persona()) null else {
-                val app = service.application as MikaApp
-                app.conversations.persona(conversationId)?.personaId?.let(app.personas::get)
-            }
+            // 人格是设置里选的在用的那一套,对所有对话一样;条件检查是内部只读 JSON 检查,不继承人格。
+            // 评测换掉模型来源时也不带(和备援链一样):这台设备上选了什么人格不该改变评测结果。
+            // 对话旁文件里以前存的绑定不再读。
+            val persona = if (conditionCheck || !FeatureFlags.get(service).persona() ||
+                env.modelFactory !== TaskEnvironment.defaultModelFactory) null
+            else (service.application as MikaApp).personas.active()
+            // 称呼是助理的自称(默认 Mika):身份句和人格层的固定头都用它。
+            val assistant = PersonaPrompt.nickname(persona?.nickname)
             // 人格拼在身份、准则、通用规则之后;子任务和主任务用同一份。
-            // 正文为空时没有可拼的层,也不记成「这一轮用了某个人格」。
-            val personaLayer = persona?.let { PersonaPrompt.layer(it.name, it.prompt) }
+            // 选项全默认、正文也为空时没有可拼的层。
+            val personaLayer = persona?.let { PersonaPrompt.layer(it.name, it.prompt, it.style, assistant) }
             val appLang = AppLanguage.current(service)
-            val promptWithPersona = SystemPrompt.withPersona(SystemPrompt.identity(), personaLayer)
+            val promptWithPersona = SystemPrompt.withPersona(SystemPrompt.identity(assistant), personaLayer)
             val basePrompt = SystemPrompt.withLanguage(promptWithPersona, appLang.tag)
-            val personaLabel = if (personaLayer != null && persona != null) {
+            // 这一轮用了人格:拼出了人格层,或者只改了称呼;两样都没有就不记
+            val personaLabel = if (persona != null && (personaLayer != null || assistant != PersonaPrompt.DEFAULT_NICKNAME)) {
                 Redactor.text("${persona.name} · v${persona.revision}")
             } else null
             val stepLimit = if (conditionCheck) null else FeatureFlags.get(service).taskStepLimit()

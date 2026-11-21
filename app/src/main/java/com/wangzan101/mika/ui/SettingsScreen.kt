@@ -513,6 +513,14 @@ fun SettingsContent(
                 RowValue(languageLabel(language))
                 RowChevron()
             }
+            // 人格和语言、外观是一类:定 Mika 怎么表现的全局取值。行尾是现在在用的,主界面上没有别的地方显示它
+            onOpenPersonas?.let { open ->
+                val personas = (LocalContext.current.applicationContext as? com.wangzan101.mika.MikaApp)?.personas
+                ListRow(MikaIcons.Chats, stringResource(R.string.persona_title), stringResource(R.string.persona_sub), onClick = open) {
+                    if (personas != null) RowValue(personaSummaryValue(personas))
+                    RowChevron()
+                }
+            }
             val (notifText, notifTone) = StatusCopy.notificationSummary(status.notificationOverview().summary)
             ListRow(MikaIcons.Bell, StatusCopy.NOTIFICATIONS, stringResource(R.string.settings_notif_sub), onClick = onOpenNotifications) {
                 RowValue(notifText, notifTone)
@@ -531,17 +539,14 @@ fun SettingsContent(
             onOpenMemory?.let {
                 ListRow(MikaIcons.Heart, stringResource(R.string.memory_and_skills), stringResource(R.string.settings_memory_sub), first = true, onClick = it) { RowChevron() }
             }
-            onOpenPersonas?.let {
-                ListRow(MikaIcons.Spark, stringResource(R.string.persona_title), stringResource(R.string.persona_sub), first = onOpenMemory == null, onClick = it) { RowChevron() }
-            }
             onOpenBackup?.let {
-                ListRow(MikaIcons.Archive, stringResource(R.string.backup_title), stringResource(R.string.backup_sub), first = onOpenMemory == null && onOpenPersonas == null, onClick = it) { RowChevron() }
+                ListRow(MikaIcons.Archive, stringResource(R.string.backup_title), stringResource(R.string.backup_sub), first = onOpenMemory == null, onClick = it) { RowChevron() }
             }
             ListRow(
                 MikaIcons.Archive,
                 stringResource(R.string.settings_auto_archive),
                 stringResource(R.string.settings_auto_archive_sub),
-                first = onOpenMemory == null && onOpenPersonas == null && onOpenBackup == null,
+                first = onOpenMemory == null && onOpenBackup == null,
                 onClick = onOpenAutoArchive,
             ) {
                 RowValue(

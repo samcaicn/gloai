@@ -530,7 +530,6 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             speakText = { text -> speak(text) },
             stopVoice = { voicePlayer.stop() },
             voiceFailed = voicePlayer::fail,
-            personaStore = if (FeatureFlags.get(this).persona()) personas else null,
             projectStore = projects,
             projectDeletionImpact = projectDeleter::impact,
             removeProject = { pid ->
