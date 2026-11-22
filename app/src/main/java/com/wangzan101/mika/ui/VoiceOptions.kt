@@ -72,7 +72,10 @@ internal fun VoiceModel.traits(capability: VoiceCapability): List<VoiceTrait> = 
     VoiceCapability.STT -> when (stt?.protocol) {
         SttProtocol.AndroidSystem -> listOf(VoiceTrait.Live, VoiceTrait.Free)
         SttProtocol.DoubaoStreaming, SttProtocol.FunAsrStreaming, SttProtocol.BailianStreaming -> listOf(VoiceTrait.Live)
-        SttProtocol.AudioTranscriptions, SttProtocol.ChatInputAudio, SttProtocol.GeminiInline -> listOf(VoiceTrait.AfterSpeech)
+        SttProtocol.AudioTranscriptions, SttProtocol.ChatInputAudio, SttProtocol.GeminiInline,
+        SttProtocol.ElevenLabsUpload, SttProtocol.DeepgramUpload, SttProtocol.AzureShortAudio,
+        SttProtocol.TencentSentence, SttProtocol.XfyunDictation,
+        -> listOf(VoiceTrait.AfterSpeech)
         null -> emptyList()
     }
     VoiceCapability.TTS -> when (tts?.protocol) {
@@ -80,6 +83,7 @@ internal fun VoiceModel.traits(capability: VoiceCapability): List<VoiceTrait> = 
         TtsProtocol.OpenAiSpeech -> listOf(VoiceTrait.StreamingRead)
         TtsProtocol.GeminiTts -> listOf(VoiceTrait.WholeRead)
         null -> emptyList()
+        else -> listOf(VoiceTrait.WholeRead)
     }
     VoiceCapability.REALTIME -> when (realtime?.protocol) {
         // 应用内语音通话目前只接双向实时协议,其余的只能用于 AI 接打电话

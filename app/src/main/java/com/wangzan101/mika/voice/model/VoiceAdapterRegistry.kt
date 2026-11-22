@@ -12,6 +12,8 @@ import com.wangzan101.mika.voice.model.adapters.ProviderSttAdapter
 import com.wangzan101.mika.voice.model.adapters.RealtimeAdapter
 import com.wangzan101.mika.voice.model.adapters.SttAdapter
 import com.wangzan101.mika.voice.model.adapters.TtsAdapter
+import com.wangzan101.mika.voice.model.adapters.VendorSttAdapter
+import com.wangzan101.mika.voice.model.adapters.VendorTtsAdapter
 import com.wangzan101.mika.voice.model.adapters.VolcDuplexRealtimeAdapter
 
 class VoiceAdapterRegistry(
@@ -23,12 +25,12 @@ class VoiceAdapterRegistry(
         DoubaoSttAdapter(),
         FunAsrSttAdapter(),
         BailianSttAdapter(),
-    ),
+    ) + VendorSttAdapter.PROTOCOLS.map(::VendorSttAdapter),
     ttsAdapters: List<TtsAdapter> = listOf(
         OpenAiSpeechTtsAdapter(),
         GeminiTtsAdapter(),
         AndroidSystemTtsAdapter(),
-    ),
+    ) + VendorTtsAdapter.PROTOCOLS.map(::VendorTtsAdapter),
     realtimeAdapters: List<RealtimeAdapter> = listOf(
         VolcDuplexRealtimeAdapter(),
         OpenAiRealtimeAdapter(),

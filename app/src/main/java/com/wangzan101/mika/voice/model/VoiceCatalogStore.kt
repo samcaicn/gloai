@@ -130,6 +130,36 @@ class VoiceCatalogStore(
         }
     }
 
+    /** Engine, think model, turn silence and barge-in for voice calls. */
+    @Synchronized
+    fun setCallStyle(engine: CallEngine? = null, think: ThinkModel? = null, silenceMs: Int? = null, bargeIn: Boolean? = null) {
+        commit {
+            val s = it.selections
+            it.copy(selections = s.copy(
+                engine = engine ?: s.engine,
+                think = think ?: s.think,
+                silenceMs = (silenceMs ?: s.silenceMs).coerceIn(VoiceSelections.MIN_SILENCE_MS, VoiceSelections.MAX_SILENCE_MS),
+                bargeIn = bargeIn ?: s.bargeIn,
+            ))
+        }
+    }
+
+    /**
+     * AI phone calls' own engine and listen/speak models. Every argument is the full new value: null follows the
+     * voice-call choice. The call voice is dropped when calls follow the shared speak model.
+     */
+    @Synchronized
+    fun setPhoneVoice(engine: CallEngine?, stt: VoiceModelRef?, tts: VoiceModelRef?, ttsVoice: String) {
+        commit {
+            it.copy(selections = it.selections.copy(
+                callEngine = engine,
+                callStt = stt,
+                callTts = tts,
+                callTtsVoice = if (tts == null) "" else ttsVoice.trim(),
+            ))
+        }
+    }
+
     @Synchronized
     fun markVerification(ref: VoiceModelRef, status: VoiceVerification, scope: String = "") {
         commit { current ->
@@ -228,6 +258,8 @@ class VoiceCatalogStore(
         validateOptionalSelection(snapshot.selections.tts, VoiceCapability.TTS, snapshot.models)
         validateOptionalSelection(snapshot.selections.realtime, VoiceCapability.REALTIME, snapshot.models)
         validateOptionalSelection(snapshot.selections.callRealtime, VoiceCapability.REALTIME, snapshot.models)
+        validateOptionalSelection(snapshot.selections.callStt, VoiceCapability.STT, snapshot.models)
+        validateOptionalSelection(snapshot.selections.callTts, VoiceCapability.TTS, snapshot.models)
         require(snapshot.verifications.map { it.ref to it.scope }.distinct().size == snapshot.verifications.size)
         snapshot.verifications.forEach { record -> validateRef(record.ref, record.ref.capability, snapshot.models) }
     }
@@ -256,6 +288,9 @@ class VoiceCatalogStore(
             realtime = selections.realtime?.takeIf { it.selectable(models) },
             callRealtime = selections.callRealtime?.takeIf { it.selectable(models) },
             callSpeaker = if (selections.callRealtime?.selectable(models) == true) selections.callSpeaker else "",
+            callStt = selections.callStt?.takeIf { it.selectable(models) },
+            callTts = selections.callTts?.takeIf { it == SYSTEM_TTS_REF || it.selectable(models) },
+            callTtsVoice = if (selections.callTts?.let { it == SYSTEM_TTS_REF || it.selectable(models) } == true) selections.callTtsVoice else "",
         )
     }
 
@@ -274,6 +309,7 @@ class VoiceCatalogStore(
     /** Binding fields that determine connection identity; cosmetic fields (Realtime speaker) are ignored. */
     private fun verificationIdentity(binding: Any?): Any? = when (binding) {
         is RealtimeBinding -> RealtimeBinding(binding.protocol, binding.endpoint, speaker = "")
+        is TtsBinding -> binding.copy(voice = "", voices = emptyList())
         else -> binding
     }
 

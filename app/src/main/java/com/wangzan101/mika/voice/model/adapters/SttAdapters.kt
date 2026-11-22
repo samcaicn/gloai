@@ -23,6 +23,7 @@ import com.wangzan101.mika.voice.SpeechEvent
 import com.wangzan101.mika.voice.SpeechFailure
 import com.wangzan101.mika.voice.SpeechServiceTarget
 import com.wangzan101.mika.voice.SpeechSession
+import com.wangzan101.mika.voice.StreamingRecorder
 import com.wangzan101.mika.voice.SystemCapability
 import com.wangzan101.mika.voice.SystemSpeech
 import com.wangzan101.mika.voice.SystemSpeechSession
@@ -48,6 +49,8 @@ data class SttHooks(
     val attempts: List<String?>? = null,
     val compatibility: Boolean = false,
     val serviceWithoutMic: (String?, Boolean) -> SpeechServiceTarget? = { _, _ -> null },
+    /** Audio fed from outside (a call) instead of the microphone; device recognition cannot use it. */
+    val recorder: StreamingRecorder? = null,
 )
 
 typealias SttSessionFactory = (Context, ResolvedVoiceModel, String, SttHooks) -> SpeechSession
@@ -77,7 +80,7 @@ private class CategorizedSpeechSession(
     override fun cancel() = delegate.cancel()
 }
 
-private fun categorizedSession(factory: () -> SpeechSession): SpeechSession = try {
+internal fun categorizedSession(factory: () -> SpeechSession): SpeechSession = try {
     CategorizedSpeechSession(factory())
 } catch (error: CancellationException) {
     throw error
@@ -97,6 +100,7 @@ class AndroidSystemSttAdapter(
 
     override fun start(context: Context, model: ResolvedVoiceModel, language: String?, hooks: SttHooks): SpeechSession {
         spec(model)
+        if (hooks.recorder != null) return FailedSession(SpeechFailure.Unavailable(SpeechEngineSpec.Why.SystemGone))
         val capability = hooks.systemCapability ?: SystemSpeech.capability(context)
         if (!capability.usable) {
             return FailedSession(SpeechFailure.Unavailable(
@@ -225,12 +229,12 @@ private val defaultSystemSession: SttSessionFactory = { context, _, tag, hooks -
     )
 }
 
-private val defaultProviderSession: SttSessionFactory = { _, model, tag, _ ->
+private val defaultProviderSession: SttSessionFactory = { _, model, tag, hooks ->
     val spec = model.speechSpec<SpeechEngineSpec.Provider>()
     val headers = (model.account as? ResolvedAccount.ExistingProvider)?.headers.orEmpty()
     val key = model.account.credentials.apiKey.ifBlank { null }
     val transcriber = Transcriber(ProviderStore.modelHttp, headers)
-    ProviderSpeech(PcmRecorder(), { wav ->
+    ProviderSpeech(hooks.recorder ?: PcmRecorder(), { wav ->
         transcriber.transcribe(
             spec.provider,
             key,
@@ -242,34 +246,34 @@ private val defaultProviderSession: SttSessionFactory = { _, model, tag, _ ->
     })
 }
 
-private val defaultDoubaoSession: SttSessionFactory = { _, model, _, _ ->
+private val defaultDoubaoSession: SttSessionFactory = { _, model, _, hooks ->
     val spec = model.speechSpec<SpeechEngineSpec.Doubao>()
     val credentials = model.doubaoCredentials()
     val endpoint = model.model.stt!!.endpoint.ifBlank { DoubaoProtocol.ENDPOINT }
-    DoubaoSpeech(PcmRecorder(streaming = true), { DoubaoTransport(endpoint = endpoint).connect(credentials, spec.resourceId) })
+    DoubaoSpeech(hooks.recorder ?: PcmRecorder(streaming = true), { DoubaoTransport(endpoint = endpoint).connect(credentials, spec.resourceId) })
 }
 
-private val defaultFunAsrSession: SttSessionFactory = { _, model, tag, _ ->
+private val defaultFunAsrSession: SttSessionFactory = { _, model, tag, hooks ->
     val spec = model.speechSpec<SpeechEngineSpec.FunAsr>()
     LiveSpeech(
-        PcmRecorder(streaming = true, unbounded = true),
+        hooks.recorder ?: PcmRecorder(streaming = true, unbounded = true),
         FunAsrProtocol(asrLanguage(tag)),
         { LiveAsrTransport().connect(spec.url) },
     )
 }
 
-private val defaultBailianSession: SttSessionFactory = { _, model, tag, _ ->
+private val defaultBailianSession: SttSessionFactory = { _, model, tag, hooks ->
     val spec = model.speechSpec<SpeechEngineSpec.Bailian>()
     val key = model.account.credentials.apiKey
     val endpoint = model.model.stt!!.endpoint.ifBlank { spec.region.endpoint(spec.workspace) }
     LiveSpeech(
-        PcmRecorder(streaming = true, unbounded = true),
+        hooks.recorder ?: PcmRecorder(streaming = true, unbounded = true),
         BailianProtocol(model.model.id, asrLanguage(tag)),
         { LiveAsrTransport().connect(endpoint, mapOf("Authorization" to "Bearer $key")) },
     )
 }
 
-private fun languageTag(context: Context, language: String?): String =
+internal fun languageTag(context: Context, language: String?): String =
     language ?: SystemSpeech.speechTag(AppLanguage.current(context))
 
 private fun asrLanguage(tag: String): AsrLanguage = AsrLanguage.of(SystemSpeech.isoCode(tag))
@@ -279,7 +283,7 @@ private fun bailianRegion(binding: SttBinding): BailianRegion =
         ?: if (binding.region.isBlank()) BailianRegion.Beijing
         else throw VoiceModelError.IncompleteConfig("Bailian region is invalid")
 
-private fun ResolvedVoiceModel.sttBinding(protocol: SttProtocol): SttBinding {
+internal fun ResolvedVoiceModel.sttBinding(protocol: SttProtocol): SttBinding {
     val binding = model.stt ?: throw VoiceModelError.Unsupported(VoiceCapability.STT)
     if (binding.protocol != protocol) throw VoiceModelError.Unsupported(VoiceCapability.STT, binding.protocol.name)
     return binding
@@ -293,6 +297,7 @@ private inline fun <reified T : SpeechEngineSpec> ResolvedVoiceModel.speechSpec(
         SttProtocol.DoubaoStreaming -> DoubaoSttAdapter()
         SttProtocol.FunAsrStreaming -> FunAsrSttAdapter()
         SttProtocol.BailianStreaming -> BailianSttAdapter()
+        else -> VendorSttAdapter(model.stt!!.protocol)
     }
     return adapter.spec(this) as T
 }

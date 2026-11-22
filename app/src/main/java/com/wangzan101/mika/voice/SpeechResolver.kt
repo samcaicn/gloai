@@ -18,6 +18,8 @@ sealed interface SpeechEngineSpec {
     data class Doubao(val resourceId: String) : SpeechEngineSpec
     data class FunAsr(val url: String, val language: AsrLanguage = AsrLanguage.Auto) : SpeechEngineSpec
     data class Bailian(val model: String, val region: BailianRegion, val workspace: String = "", val language: AsrLanguage = AsrLanguage.Auto) : SpeechEngineSpec
+    /** A vendor's own recognition API (upload per utterance). */
+    data class Vendor(val model: String) : SpeechEngineSpec
     data class Unavailable(val why: Why) : SpeechEngineSpec
     /**
      * [SystemNoResponse]:手机自带识别系统说有,但请求发过去一直没有回应(已记下,用户重新选它时清掉)。

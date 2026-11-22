@@ -58,7 +58,7 @@ private class CategorizedStreamingTtsModel(
     }
 }
 
-private fun categorized(delegate: TtsModel): TtsModel = when (delegate) {
+internal fun categorized(delegate: TtsModel): TtsModel = when (delegate) {
     is StreamingTtsModel -> CategorizedStreamingTtsModel(delegate)
     else -> CategorizedTtsModel(delegate)
 }
@@ -131,7 +131,7 @@ class GeminiTtsAdapter(
 private val ttsHttp: OkHttpClient
     get() = ProviderStore.modelHttp.newBuilder().readTimeout(120, TimeUnit.SECONDS).build()
 
-private fun ResolvedVoiceModel.ttsBinding(protocol: TtsProtocol): TtsBinding {
+internal fun ResolvedVoiceModel.ttsBinding(protocol: TtsProtocol): TtsBinding {
     val binding = model.tts ?: throw VoiceModelError.Unsupported(VoiceCapability.TTS)
     if (binding.protocol != protocol) throw VoiceModelError.Unsupported(VoiceCapability.TTS, binding.protocol.name)
     return binding

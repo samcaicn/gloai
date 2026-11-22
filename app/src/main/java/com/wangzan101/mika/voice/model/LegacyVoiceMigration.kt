@@ -283,6 +283,7 @@ fun SttSelection.toLegacySelection(snapshot: VoiceCatalogSnapshot): SpeechChoice
                     workspace = binding.businessSpace,
                     language = AsrLanguage.of(binding.language),
                 )
+                else -> throw VoiceModelError.IncompleteConfig("Vendor STT has no legacy form")
             }
         }
     }

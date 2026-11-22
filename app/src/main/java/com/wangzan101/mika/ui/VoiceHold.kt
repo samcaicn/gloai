@@ -225,6 +225,7 @@ internal object VoiceCopy {
         is SpeechEngineSpec.Bailian -> spec.model
         is SpeechEngineSpec.System -> tr(if (spec.onDevice) R.string.voice_engine_phone_offline else R.string.voice_engine_phone)
         is SpeechEngineSpec.Provider -> spec.model
+        is SpeechEngineSpec.Vendor -> spec.model
         is SpeechEngineSpec.Unavailable -> ""
     }
 

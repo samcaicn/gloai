@@ -4,11 +4,14 @@ import android.content.Context
 import com.wangzan101.mika.core.model.TtsCapabilities
 import com.wangzan101.mika.core.model.TtsModel
 
-/** Maps a catalog TTS protocol to the legacy settings protocol used for capability hints. */
+/**
+ * Maps a catalog TTS protocol to the settings protocol family used for capability hints. Vendor protocols
+ * deliver WAV/PCM only, the same output family as the device engine.
+ */
 internal fun TtsProtocol.settingsProtocol(): com.wangzan101.mika.settings.TtsProtocol = when (this) {
     TtsProtocol.OpenAiSpeech -> com.wangzan101.mika.settings.TtsProtocol.OpenAiSpeech
     TtsProtocol.GeminiTts -> com.wangzan101.mika.settings.TtsProtocol.GeminiTts
-    TtsProtocol.AndroidSystem -> com.wangzan101.mika.settings.TtsProtocol.AndroidSystem
+    else -> com.wangzan101.mika.settings.TtsProtocol.AndroidSystem
 }
 
 /** Reads and writes only TTS selection; resolution and protocol work happen when speech is actually used. */

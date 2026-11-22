@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>语音听和说原型</title>
+<style>
+  :root {
+    --bg: #F7F7F8; --surface: #FFFFFF; --fill: rgba(0,0,0,.04);
+    --ink: #1C1C1E; --ink2: #5F6068; --ink3: #9A9BA3; --hair: rgba(0,0,0,.07);
+    --accent: #0A7CFF; --accent-soft: rgba(10,124,255,.10); --on-accent: #fff;
+    --ok: #1F9D55; --ok-soft: rgba(31,157,85,.12);
+    --warn: #B86E00; --warn-soft: rgba(255,159,10,.14);
+    --bad: #E5483D; --bad-soft: rgba(229,72,61,.10);
+    --page: #ECECEF; --frame: #1C1C1E; --note: #FFFFFF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E0E10; --surface: #1A1A1D; --fill: rgba(255,255,255,.06);
+      --ink: #F2F2F4; --ink2: #A4A5AD; --ink3: #6C6D75; --hair: rgba(255,255,255,.08);
+      --accent: #3D97FF; --accent-soft: rgba(61,151,255,.16);
+      --ok: #3CCF7A; --ok-soft: rgba(60,207,122,.14);
+      --warn: #FFB340; --warn-soft: rgba(255,159,10,.16);
+      --bad: #FF6961; --bad-soft: rgba(255,105,97,.14);
+      --page: #050506; --frame: #2A2A2E; --note: #1A1A1D;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E0E10; --surface: #1A1A1D; --fill: rgba(255,255,255,.06);
+    --ink: #F2F2F4; --ink2: #A4A5AD; --ink3: #6C6D75; --hair: rgba(255,255,255,.08);
+    --accent: #3D97FF; --accent-soft: rgba(61,151,255,.16);
+    --ok: #3CCF7A; --ok-soft: rgba(60,207,122,.14);
+    --warn: #FFB340; --warn-soft: rgba(255,159,10,.16);
+    --bad: #FF6961; --bad-soft: rgba(255,105,97,.14);
+    --page: #050506; --frame: #2A2A2E; --note: #1A1A1D;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+  .top h1 { font-size: 22px; margin: 0 0 4px; }
+  .top p { margin: 0 0 18px; color: var(--ink2); font-size: 14px; }
+  .principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 22px; }
+  .pr { background: var(--note); border-radius: 12px; padding: 12px 14px; font-size: 13px; color: var(--ink2); }
+  .pr b { display: block; color: var(--ink); font-size: 14px; margin-bottom: 2px; }
+  .stage { display: flex; gap: 28px; align-items: flex-start; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .tab { border: 0; background: var(--note); color: var(--ink2); border-radius: 20px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .tab.on { background: var(--ink); color: var(--bg); }
+
+  /* phone */
+  .phone { flex: 0 0 auto; width: 372px; height: 780px; background: var(--frame); border-radius: 44px; padding: 10px; box-shadow: 0 20px 50px rgba(0,0,0,.18); }
+  .screen { width: 100%; height: 100%; background: var(--bg); border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .status { height: 30px; flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font-size: 12px; font-weight: 600; color: var(--ink); }
+  .bar { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 4px 8px 8px; }
+  .back { width: 40px; height: 40px; border: 0; background: transparent; color: var(--ink); border-radius: 20px; cursor: pointer; font-size: 22px; line-height: 1; }
+  .back:hover { background: var(--fill); }
+  .bar h2 { margin: 0; font-size: 18px; font-weight: 650; }
+  .body { flex: 1; overflow-y: auto; padding: 0 16px 28px; }
+  .body::-webkit-scrollbar { width: 0; }
+  .lead { font-size: 13px; color: var(--ink2); margin: 0 4px 12px; }
+  .label { font-size: 12.5px; color: var(--ink3); margin: 18px 6px 6px; font-weight: 600; }
+  .card { background: var(--surface); border-radius: 14px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 56px; cursor: default; position: relative; }
+  .row + .row::before { content: ""; position: absolute; top: 0; left: 52px; right: 0; height: 1px; background: var(--hair); }
+  .row.plain + .row.plain::before { left: 14px; }
+  .row.tap { cursor: pointer; }
+  .row.tap:hover { background: var(--fill); }
+  .ico { flex: 0 0 26px; height: 26px; border-radius: 8px; background: var(--fill); display: grid; place-items: center; color: var(--ink2); }
+  .ico svg { width: 16px; height: 16px; }
+  .txt { flex: 1; min-width: 0; }
+  .t { font-size: 15px; color: var(--ink); }
+  .s { font-size: 12.5px; color: var(--ink2); margin-top: 1px; }
+  .chev { color: var(--ink3); font-size: 18px; }
+  .pill { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .pill.ok { color: var(--ok); background: var(--ok-soft); }
+  .pill.warn { color: var(--warn); background: var(--warn-soft); }
+  .pill.mute { color: var(--ink2); background: var(--fill); }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .tag { font-size: 11px; padding: 1px 7px; border-radius: 6px; background: var(--fill); color: var(--ink2); }
+  .tag.good { background: var(--ok-soft); color: var(--ok); }
+  .radio { flex: 0 0 22px; height: 22px; border-radius: 50%; border: 2px solid var(--ink3); display: grid; place-items: center; }
+  .radio.on { border-color: var(--accent); }
+  .radio.on::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .mini { border: 0; background: var(--accent-soft); color: var(--accent); font-size: 12.5px; font-weight: 600; padding: 5px 10px; border-radius: 14px; cursor: pointer; white-space: nowrap; }
+  .mini:disabled { opacity: .5; cursor: default; }
+  .probe { margin: 0 14px 12px 52px; font-size: 12.5px; border-radius: 10px; padding: 8px 10px; background: var(--fill); color: var(--ink2); display: none; }
+  .probe.show { display: block; }
+  .probe.ok { background: var(--ok-soft); color: var(--ok); }
+  .foot { font-size: 12px; color: var(--ink3); margin: 10px 6px 0; }
+  .btn { display: block; width: 100%; border: 0; border-radius: 14px; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+  .btn.primary { background: var(--accent); color: var(--on-accent); }
+  .btn.ghost { background: var(--surface); color: var(--accent); }
+  .switch { flex: 0 0 44px; height: 26px; border-radius: 13px; background: var(--ink3); position: relative; cursor: pointer; transition: background .15s; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .switch.on { background: var(--ok); }
+  .switch.on::after { left: 21px; }
+  .field { padding: 10px 14px; position: relative; }
+  .field + .field::before { content: ""; position: absolute; top: 0; left: 14px; right: 0; height: 1px; background: var(--hair); }
+  .field label { display: block; font-size: 12.5px; color: var(--ink2); margin-bottom: 4px; }
+  .field input { width: 100%; border: 0; background: transparent; color: var(--ink); font-size: 15px; padding: 2px 0; outline: none; font-family: inherit; }
+  .field input::placeholder { color: var(--ink3); }
+  .seg { display: flex; gap: 6px; margin-top: 2px; }
+  .seg button { flex: 1; border: 1px solid var(--hair); background: transparent; color: var(--ink2); border-radius: 10px; padding: 7px; font-size: 13px; cursor: pointer; }
+  .seg button.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .unlock { display: flex; align-items: center; gap: 8px; padding: 12px 14px 4px; }
+  .unlock b { font-size: 14.5px; }
+  .unlock span { font-size: 12px; color: var(--ink2); }
+  .where { font-size: 12px; color: var(--accent); padding: 0 14px 12px; cursor: pointer; }
+  .preset { display: flex; gap: 12px; align-items: center; }
+  .logo { flex: 0 0 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; }
+  .slider { width: 100%; accent-color: var(--accent); }
+  .empty { background: var(--surface); border-radius: 14px; padding: 18px 16px; text-align: center; }
+  .empty .big { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .empty p { margin: 0; font-size: 13px; color: var(--ink2); }
+  .result { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; position: relative; }
+  .result + .result::before { content: ""; position: absolute; top: 0; left: 14px; right: 0; height: 1px; background: var(--hair); }
+  .mark { flex: 0 0 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+  .mark.ok { background: var(--ok-soft); color: var(--ok); }
+  .mark.no { background: var(--fill); color: var(--ink3); }
+  select.sel { border: 0; background: transparent; color: var(--ink2); font-size: 14px; font-family: inherit; text-align: right; cursor: pointer; }
+  .toast { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--bg); font-size: 13px; padding: 8px 14px; border-radius: 18px; opacity: 0; transition: all .2s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* notes */
+  .notes { flex: 1; min-width: 0; }
+  .note { background: var(--note); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+  .note h3 { margin: 0 0 8px; font-size: 16px; }
+  .note p, .note li { font-size: 13.5px; color: var(--ink2); }
+  .note ul { margin: 6px 0 0; padding-left: 18px; }
+  .note li { margin: 3px 0; }
+  .note b { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  th { color: var(--ink3); font-weight: 600; font-size: 12px; }
+  td:first-child { color: var(--ink); white-space: nowrap; }
+  td { color: var(--ink2); }
+  @media (max-width: 860px) {
+    .stage { flex-direction: column; align-items: center; }
+    .phone { width: 100%; max-width: 372px; height: 760px; }
+    .notes { width: 100%; }
+  }
+  .vgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .vcard { background: var(--surface); border-radius: 14px; padding: 12px; cursor: pointer; }
+  .vcard:hover { background: var(--fill); }
+  .vcard .nm { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .caps { display: flex; gap: 4px; margin-top: 6px; align-items: center; }
+  .cap { font-size: 11px; padding: 1px 7px; border-radius: 6px; background: var(--fill); color: var(--ink3); }
+  .cap.y { background: var(--accent-soft); color: var(--accent); }
+  .done { margin-left: auto; white-space: nowrap; font-size: 10.5px; color: var(--ok); font-weight: 600; }
+  .pipe { display: flex; align-items: center; gap: 4px; padding: 14px; font-size: 12px; color: var(--ink2); }
+  .pipe .st { flex: 1; text-align: center; background: var(--fill); border-radius: 10px; padding: 8px 4px; }
+  .pipe .st b { display: block; color: var(--ink); font-size: 13px; }
+  .pipe .ar { color: var(--ink3); }
+  .vhead { display: flex; align-items: center; gap: 10px; padding: 12px 14px 6px; }
+  .vhead .logo { flex-basis: 26px; height: 26px; border-radius: 8px; font-size: 12px; }
+  .vhead b { font-size: 14.5px; }
+  .vhead span { font-size: 11.5px; color: var(--ink3); }
+  .mrow { display: flex; align-items: center; gap: 12px; padding: 9px 14px 9px 50px; cursor: pointer; }
+  .mrow:hover { background: var(--fill); }
+  .mrow .radio { flex-basis: 20px; height: 20px; }
+  .card + .card.grp { margin-top: 10px; }
+  .now { display: flex; align-items: center; gap: 12px; padding: 14px; }
+  .now .k { font-size: 11.5px; color: var(--ink3); }
+  .now .v { font-size: 15px; font-weight: 600; }
+  .legend { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--ink2); margin: 0 4px 10px; }
+  .legend i { font-style: normal; background: var(--surface); border-radius: 6px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>语音 + AI 接打电话 · 原型</h1>
+    <p>和大模型一样分两层：<b>服务商</b>是你填 Key 的账号，<b>模型</b>是这家账号下能用的具体模型。一家服务商下面可能同时有识别模型、合成模型、实时模型。</p>
+  </div>
+  <div class="principles">
+    <div class="pr"><b>服务商填一次 Key</b>在「语音服务」里接入一家，它下面所有识别、合成、实时模型就都能用了。</div>
+    <div class="pr"><b>选的是模型</b>「听」「说」页里按服务商分组列模型，组头是服务商，下面一行一个模型，选中的是模型。</div>
+    <div class="pr"><b>通话 = 听 → 想 → 说</b>对方静音几秒没新字算说完 → 聊天模型出文字 → 按逗号句号分段合成播放。</div>
+    <div class="pr"><b>实时语音收进高级</b>通话方式默认「标准」；要能随时打断的实时模型再切「实时」。</div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="stage">
+    <div class="phone"><div class="screen" id="screen"></div></div>
+    <div class="notes" id="notes"></div>
+  </div>
+</div>
+
+<script>
+const ICON = {
+  mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  speaker: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6.4 5.2a9.1 9.1 0 0 1 12.4 12.4 2.5 2.5 0 0 1-2.5-4.3 4.1 4.1 0 0 0-5.6-5.6 2.5 2.5 0 0 1-4.3-2.5z"/></svg>',
+  key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+  brain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01M9 15c1.5 1 4.5 1 6 0"/></svg>',
+  device: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>',
+  bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+};
+
+/* ---------- 内置服务商，每家下面挂模型。live=边说边出字/边生成边读 ---------- */
+const L = (name, live) => ({ name, live });
+const VENDORS = [
+  { id: 'device', name: '本机', c: '#8E8E93', builtin: true, fields: [],
+    stt: [L('手机自带识别', 1)], tts: [L('手机自带合成', 0)], rt: [], voices: ['默认'] },
+  { id: 'bailian', name: '阿里云百炼', c: '#FF6A00', chat: true, fields: ['API Key', '地域'],
+    stt: [L('Fun-ASR 实时', 1), L('Paraformer 实时 v2', 1), L('千问 ASR', 0)], tts: [L('CosyVoice v3', 1), L('千问 TTS', 1)], rt: [L('千问 Omni 实时', 1)], voices: ['龙小淳', '龙婉', '龙城'] },
+  { id: 'volc', name: '火山引擎', c: '#3370FF', fields: ['API Key'],
+    stt: [L('豆包流式识别 2.0', 1), L('豆包录音文件识别', 0)], tts: [L('豆包语音合成 2.0', 1)], rt: [L('豆包实时语音', 1)], voices: ['温柔女声', '沉稳男声', '活泼少女'] },
+  { id: 'minimax', name: 'MiniMax', c: '#E5484D', fields: ['API Key', '国内 / 海外'],
+    stt: [], tts: [L('Speech 2.6 HD', 1), L('Speech 2.6 Turbo', 1)], rt: [], voices: ['青涩青年', '成熟女性', '甜美女性'] },
+  { id: 'openai', name: 'OpenAI', c: '#10A37F', chat: true, fields: ['API Key'],
+    stt: [L('gpt-4o-transcribe', 0), L('gpt-4o-mini-transcribe', 0), L('whisper-1', 0)], tts: [L('gpt-4o-mini-tts', 1), L('tts-1', 1)], rt: [L('gpt-realtime', 1)], voices: ['alloy', 'nova', 'verse'] },
+  { id: 'gemini', name: 'Gemini', c: '#4285F4', chat: true, fields: ['API Key'],
+    stt: [L('2.5 Flash', 0)], tts: [L('2.5 Flash TTS', 0), L('2.5 Pro TTS', 0)], rt: [L('Live 2.5 Flash', 1)], voices: ['Kore', 'Puck', 'Charon'] },
+  { id: 'silicon', name: '硅基流动', c: '#7C3AED', fields: ['API Key'],
+    stt: [L('SenseVoiceSmall', 0)], tts: [L('CosyVoice2', 1)], rt: [], voices: ['alex', 'anna', 'bella'] },
+  { id: 'zhipu', name: '智谱', c: '#2D5BFF', fields: ['API Key'],
+    stt: [L('GLM-ASR', 0)], tts: [L('GLM-TTS', 0)], rt: [], voices: ['彤彤', '小陈'] },
+  { id: 'tencent', name: '腾讯云', c: '#006EFF', fields: ['SecretId', 'SecretKey'],
+    stt: [L('实时识别 16k', 1), L('实时识别 8k 电话', 1)], tts: [L('精品音色合成', 1)], rt: [], voices: ['智瑜', '智聆'] },
+  { id: 'xfyun', name: '讯飞开放平台', c: '#1E66F5', fields: ['APPID', 'APIKey', 'APISecret'],
+    stt: [L('实时语音转写', 1)], tts: [L('超拟人合成', 1)], rt: [], voices: ['小燕', '许久'] },
+  { id: 'azure', name: 'Azure 语音', c: '#0078D4', fields: ['Key', '区域'],
+    stt: [L('实时转写', 1)], tts: [L('神经网络语音', 1)], rt: [], voices: ['晓晓', '云希'] },
+  { id: 'eleven', name: 'ElevenLabs', c: '#111111', fields: ['API Key'],
+    stt: [L('Scribe v1', 0)], tts: [L('Multilingual v2', 1), L('Flash v2.5', 1)], rt: [], voices: ['Rachel', 'Adam'] },
+  { id: 'deepgram', name: 'Deepgram', c: '#13A870', fields: ['API Key'],
+    stt: [L('Nova-3', 1)], tts: [L('Aura 2', 1)], rt: [], voices: ['asteria', 'orion'] },
+  { id: 'groq', name: 'Groq', c: '#F55036', fields: ['API Key'],
+    stt: [L('whisper-large-v3', 0), L('whisper-large-v3-turbo', 0)], tts: [], rt: [], voices: [] },
+];
+const V = id => VENDORS.find(v => v.id === id);
+const BUILTIN = VENDORS.filter(v => !v.builtin);
+
+/* 选中项 = { v: 服务商, m: 模型下标 } */
+const state = {
+  added: {}, stt: { v: 'device', m: 0 }, tts: { v: 'device', m: 0 }, rt: { v: 'openai', m: 0 },
+  voice: '默认', speed: 1.0, autoRead: false,
+  engine: 'standard', think: 'light', silence: 1.5, bargeIn: true,
+  callFollow: true, callEngine: 'standard',
+  form: 'minimax', vendor: 'bailian',
+};
+const usable = v => v.builtin || v.chat || state.added[v.id];
+const src = v => v.builtin ? '免费' : v.chat ? '用聊天账号的 Key' : '已接入';
+const modelOf = (kind, sel = state[kind]) => V(sel.v)[kind][sel.m];
+const selName = kind => `${V(state[kind].v).name} · ${modelOf(kind).name}`;
+const liveTag = (kind, m) => kind === 'stt' ? (m.live ? ['边说边出字', 'good'] : ['说完再转']) : kind === 'tts' ? (m.live ? ['边生成边读', 'good'] : ['按句合成']) : ['能打断', 'good'];
+
+const SCREENS = {
+  home: { title: '模型', tab: '① 总入口' },
+  stt: { title: '听 · 语音识别', tab: '② 听：选模型' },
+  tts: { title: '说 · 语音合成', tab: '③ 说：选模型' },
+  talk: { title: '通话方式', tab: '④ 通话方式' },
+  rt: { title: '实时语音模型', tab: '⑤ 实时（高级）' },
+  services: { title: '语音服务', tab: '⑥ 服务商列表' },
+  vendor: { title: '', tab: '⑦ 一家服务商' },
+  add: { title: '添加语音服务', tab: '⑧ 内置服务商' },
+  form: { title: '', tab: '⑨ 填 Key' },
+  formDone: { title: '', tab: '⑩ 接入结果' },
+  phone: { title: 'AI 接打电话', tab: '⑪ 电话·接/打/记录', gear: true },
+  phoneLive: { title: '通话中', tab: '⑫ 通话中' },
+  phoneSetup: { title: '准备清单', tab: '⑬ 准备清单' },
+  phoneSettings: { title: '电话设置', tab: '⑭ 电话设置' },
+  callVoice: { title: '电话用的听和说', tab: '⑮ 电话听说' },
+  callAudio: { title: '通话音频', tab: '⑯ 通话音频' },
+  phoneRules: { title: '接谁的电话', tab: '⑰ 接听范围' },
+  phoneTalk: { title: '接起来怎么说', tab: '⑱ 开场白与交代' },
+  phoneRecord: { title: '通话记录', tab: '⑲ 记录详情' },
+};
+let current = 'home';
+const navStack = [];
+function go(id, push = true) { if (push && id !== current) navStack.push(current); current = id; render(); }
+function back() { current = navStack.pop() || 'home'; render(); }
+function toast(msg) {
+  const t = document.querySelector('.toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove('show'), 1600);
+}
+function row({ icon, title, sub, right = '', tap, cls = '' }) {
+  return `<div class="row ${tap ? 'tap' : ''} ${icon ? '' : 'plain'} ${cls}" ${tap ? `onclick="${tap}"` : ''}>
+    ${icon ? `<div class="ico">${ICON[icon]}</div>` : ''}
+    <div class="txt"><div class="t">${title}</div>${sub ? `<div class="s">${sub}</div>` : ''}</div>${right}</div>`;
+}
+const chev = '<span class="chev">›</span>';
+const sw = (on, js) => `<div class="switch ${on ? 'on' : ''}" onclick="${js};render()"></div>`;
+const logo = v => `<div class="logo" style="background:${v.c}">${v.name.slice(0, 1)}</div>`;
+const caps = (v, extra = '') => `<div class="caps"><span class="cap ${v.stt.length ? 'y' : ''}">听 ${v.stt.length || ''}</span><span class="cap ${v.tts.length ? 'y' : ''}">说 ${v.tts.length || ''}</span><span class="cap ${v.rt.length ? 'y' : ''}">实时 ${v.rt.length || ''}</span>${extra}</div>`;
+
+/* 按服务商分组的模型选择：组头是服务商，下面一行一个模型 */
+function modelPicker(kind, label) {
+  return VENDORS.filter(v => usable(v) && v[kind].length).map(v => `
+    <div class="card grp">
+      <div class="vhead">${logo(v)}<b>${v.name}</b><span>${src(v)}</span></div>
+      ${v[kind].map((m, i) => {
+        const on = state[kind].v === v.id && state[kind].m === i;
+        const [t, c] = liveTag(kind, m);
+        return `<div class="mrow" onclick="pick('${kind}','${v.id}',${i})"><div class="radio ${on ? 'on' : ''}"></div>
+          <div class="txt"><div class="t">${m.name}</div><div class="tags"><span class="tag ${c || ''}">${t}</span></div></div>
+          <button class="mini" onclick="event.stopPropagation();probe(this,'${kind}')">${label}</button></div>`;
+      }).join('')}
+    </div>`).join('');
+}
+function pick(kind, v, m) {
+  state[kind] = { v, m };
+  if (kind === 'tts') state.voice = V(v).voices[0];
+  render(); toast('已选用 ' + V(v)[kind][m].name);
+}
+function probe(btn, kind) {
+  const old = btn.textContent; btn.disabled = true;
+  btn.textContent = kind === 'stt' ? '请说一句…' : kind === 'tts' ? '播放中…' : '连接中…';
+  setTimeout(() => { btn.textContent = '✓ 正常'; setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 1400); }, 1100);
+}
+function nowCard(kind, icon, label) {
+  return `<div class="card"><div class="now"><div class="ico">${ICON[icon]}</div>
+    <div class="txt"><div class="k">服务商</div><div class="v">${V(state[kind].v).name}</div>
+    <div class="k" style="margin-top:6px">模型</div><div class="v">${modelOf(kind).name}</div></div>
+    <button class="mini" onclick="probe(this,'${kind}')">${label}</button></div></div>`;
+}
+
+/* ---------- 屏幕 ---------- */
+function screenHome() {
+  const n = BUILTIN.filter(usable).length;
+  const talk = state.engine === 'standard' ? '标准 · 听 → 想 → 说' : '实时 · ' + selName('rt');
+  return `
+    <div class="label">对话模型</div>
+    <div class="card">
+      ${row({ icon: 'chat', title: '主模型', sub: 'Claude Sonnet', right: chev })}
+      ${row({ icon: 'chat', title: '轻模型', sub: 'Qwen Flash', right: chev })}
+    </div>
+    <div class="label">语音</div>
+    <div class="card">
+      ${row({ icon: 'mic', title: '听 · 语音识别', sub: selName('stt'), right: chev, tap: "go('stt')" })}
+      ${row({ icon: 'speaker', title: '说 · 语音合成', sub: selName('tts') + ' · ' + state.voice, right: chev, tap: "go('tts')" })}
+      ${row({ icon: 'phone', title: '通话方式', sub: talk, right: chev, tap: "go('talk')" })}
+    </div>
+    <div class="card" style="margin-top:10px">
+      ${row({ icon: 'key', title: '语音服务', sub: `${n} 家已接入 · 共内置 ${BUILTIN.length} 家`, right: chev, tap: "go('services')" })}
+    </div>
+    <div class="foot">「听」「说」显示的是「服务商 · 模型」。Key 在「语音服务」里按服务商填。</div>
+    <div class="label">用到语音的功能</div>
+    <div class="card">
+      ${row({ icon: 'device', title: 'AI 接打电话', sub: state.callFollow ? '听和说跟随上面' : '电话单独设置', right: chev, tap: "go('phone')" })}
+    </div>`;
+}
+
+function screenStt() {
+  return `
+    <p class="lead">把你说的话、电话里对方说的话转成文字。</p>
+    <div class="label">正在用</div>
+    ${nowCard('stt', 'mic', '试一句')}
+    <div class="label">换一个 · 按服务商分组</div>
+    ${modelPicker('stt', '试一句')}
+    <div class="card" style="margin-top:10px">
+      ${row({ icon: 'plus', title: '接入更多服务商', sub: '接入后，它的识别模型会出现在上面', right: chev, tap: "go('add')" })}
+    </div>
+    <div class="label">偏好</div>
+    <div class="card">
+      ${row({ title: '识别语言', right: '<select class="sel"><option>跟随界面语言</option><option>中文</option><option>English</option><option>粤语</option></select>' })}
+    </div>
+    <div class="foot">只列已接入服务商下面的「识别模型」。MiniMax 没有识别模型，所以这页不出现。</div>`;
+}
+
+function screenTts() {
+  const vs = V(state.tts.v).voices;
+  return `
+    <p class="lead">把文字读出来。朗读回答和通话里 Mika 的声音都用它。</p>
+    <div class="label">正在用</div>
+    ${nowCard('tts', 'speaker', '试听')}
+    <div class="card" style="margin-top:10px">
+      ${row({ title: '音色', right: `<select class="sel" onchange="state.voice=this.value;render()">${vs.map(v => `<option ${v === state.voice ? 'selected' : ''}>${v}</option>`).join('')}</select>` })}
+      ${row({ title: '语速', sub: state.speed.toFixed(1) + '×', right: `<input class="slider" style="width:130px" type="range" min="0.5" max="2" step="0.1" value="${state.speed}" oninput="state.speed=+this.value;this.closest('.row').querySelector('.s').textContent=(+this.value).toFixed(1)+'×'">` })}
+    </div>
+    <div class="label">换一个 · 按服务商分组</div>
+    ${modelPicker('tts', '试听')}
+    <div class="card" style="margin-top:10px">
+      ${row({ icon: 'plus', title: '接入更多服务商', sub: 'MiniMax、火山、ElevenLabs…', right: chev, tap: "go('add')" })}
+    </div>
+    <div class="label">朗读回答</div>
+    <div class="card">${row({ title: '自动朗读回答', sub: '每条回答完成后自动读', right: sw(state.autoRead, 'state.autoRead=!state.autoRead') })}</div>
+    <div class="foot">「按句合成」的模型，按逗号句号分段合成，读完一段接一段。</div>`;
+}
+
+function screenTalk() {
+  const std = state.engine === 'standard';
+  return `
+    <p class="lead">语音通话和 AI 接打电话用哪种方式。</p>
+    <div class="card">
+      <div class="row tap" onclick="state.engine='standard';render()"><div class="radio ${std ? 'on' : ''}"></div>
+        <div class="txt"><div class="t">标准</div><div class="s">听 → 想 → 说，用上面选好的识别模型、聊天模型、合成模型。</div>
+        <div class="tags"><span class="tag good">推荐</span><span class="tag">每句等几秒</span></div></div></div>
+      <div class="row tap" onclick="state.engine='realtime';render()"><div class="radio ${std ? '' : 'on'}"></div>
+        <div class="txt"><div class="t">实时（高级）</div><div class="s">一个实时语音模型直接听和说，反应快、能随时打断，只有少数服务商有。</div></div></div>
+    </div>
+    ${std ? `
+    <div class="label">标准方式的三步</div>
+    <div class="card">
+      <div class="pipe"><div class="st"><b>听</b>${modelOf('stt').name}</div><span class="ar">→</span>
+        <div class="st"><b>想</b>${state.think === 'light' ? '轻模型' : '主模型'}</div><span class="ar">→</span>
+        <div class="st"><b>说</b>${modelOf('tts').name}</div></div>
+      ${row({ icon: 'mic', title: '听', sub: selName('stt'), right: chev, tap: "go('stt')" })}
+      ${row({ icon: 'brain', title: '想', sub: state.think === 'light' ? '轻模型 · Qwen Flash（回得快）' : '主模型 · Claude Sonnet', right: `<select class="sel" onchange="state.think=this.value;render()"><option value="light" ${state.think === 'light' ? 'selected' : ''}>轻模型</option><option value="main" ${state.think === 'main' ? 'selected' : ''}>主模型</option></select>` })}
+      ${row({ icon: 'speaker', title: '说', sub: selName('tts') + ' · ' + state.voice, right: chev, tap: "go('tts')" })}
+    </div>
+    <div class="label">对话节奏</div>
+    <div class="card">
+      ${row({ title: '对方说完的判断', sub: `静音 ${state.silence.toFixed(1)} 秒没有新字就算说完`, right: `<input class="slider" style="width:120px" type="range" min="0.6" max="4" step="0.1" value="${state.silence}" oninput="state.silence=+this.value;this.closest('.row').querySelector('.s').textContent='静音 '+(+this.value).toFixed(1)+' 秒没有新字就算说完'">` })}
+      ${row({ title: '对方开口就停下', sub: 'Mika 说话时对方说了话，就停下来听', right: sw(state.bargeIn, 'state.bargeIn=!state.bargeIn') })}
+    </div>` : `
+    <div class="label">实时语音模型</div>
+    <div class="card">${row({ icon: 'bolt', title: '实时模型', sub: selName('rt'), right: chev, tap: "go('rt')" })}</div>
+    <div class="foot">实时方式下，听、想、说都由这一个模型完成。</div>`}`;
+}
+
+function screenRt() {
+  const off = BUILTIN.filter(v => v.rt.length && !usable(v));
+  return `
+    <p class="lead">能同时听和说的模型，只在通话方式选「实时」时用到。</p>
+    ${modelPicker('rt', '连接')}
+    ${off.length ? `<div class="label">这些服务商也有实时模型，接入后出现在上面</div><div class="card">
+      ${off.map(v => `<div class="row tap" onclick="state.form='${v.id}';go('form')">${logo(v)}<div class="txt"><div class="t">${v.name}</div><div class="s">${v.rt.map(m => m.name).join('、')}</div></div>${chev}</div>`).join('')}</div>` : ''}`;
+}
+
+function screenServices() {
+  const on = VENDORS.filter(usable), off = BUILTIN.filter(v => !usable(v));
+  return `
+    <p class="lead">一家服务商填一次 Key，它下面的识别、合成、实时模型就都能选了。</p>
+    <div class="legend">标签里的数字 = 这家有几个模型：<i>听 2</i><i>说 1</i></div>
+    <div class="label">已接入</div>
+    <div class="card">
+      ${on.map(v => `<div class="row tap" onclick="state.vendor='${v.id}';go('vendor')">${logo(v)}<div class="txt"><div class="t">${v.name}</div>${caps(v, `<span class="done">${src(v)}</span>`)}</div>${chev}</div>`).join('')}
+    </div>
+    <div class="label">内置，填 Key 就能用</div>
+    <div class="card">
+      ${off.slice(0, 4).map(v => `<div class="row tap" onclick="state.form='${v.id}';go('form')">${logo(v)}<div class="txt"><div class="t">${v.name}</div>${caps(v)}</div>${chev}</div>`).join('')}
+      ${row({ icon: 'plus', title: `全部 ${BUILTIN.length} 家`, right: chev, tap: "go('add')" })}
+    </div>`;
+}
+
+function screenVendor() {
+  const v = V(state.vendor);
+  SCREENS.vendor.title = v.name;
+  const sec = (kind, label) => v[kind].length ? `
+    <div class="label">${label}（${v[kind].length}）</div>
+    <div class="card">${v[kind].map((m, i) => {
+      const inUse = state[kind].v === v.id && state[kind].m === i;
+      const [t, c] = liveTag(kind, m);
+      return `<div class="row plain"><div class="txt"><div class="t">${m.name}</div><div class="tags"><span class="tag ${c || ''}">${t}</span></div></div>
+        ${inUse ? '<span class="pill ok">使用中</span>' : `<button class="mini" onclick="pick('${kind}','${v.id}',${i})">${({stt:'设为听',tts:'设为说',rt:'设为实时'})[kind]}</button>`}</div>`;
+    }).join('')}</div>` : '';
+  return `
+    <div class="card"><div class="row">${logo(v)}<div class="txt"><div class="t">${v.name}</div><div class="s">${v.builtin ? '手机自带，不用 Key' : v.chat ? 'Key 来自聊天账号，改 Key 去聊天账号' : 'API Key ••••••3f9a'}</div></div>
+      ${v.builtin || v.chat ? '' : '<button class="mini">改 Key</button>'}</div></div>
+    ${sec('stt', '听的模型')}${sec('tts', '说的模型')}${sec('rt', '实时模型')}
+    <div class="foot">这一页回答「这家能干什么」：一家服务商下面列出它所有的语音模型。</div>`;
+}
+
+function screenAdd() {
+  return `
+    <p class="lead">选一家，只问这家要的东西（大多一个 API Key）。接入后它下面的模型都能用。</p>
+    <div class="vgrid">
+      ${BUILTIN.map(v => `<div class="vcard" onclick="${usable(v) ? `state.vendor='${v.id}';go('vendor')` : `state.form='${v.id}';go('form')`}">
+        <div class="nm">${logo(v).replace('34px', '26px')}${v.name}</div>${caps(v, usable(v) ? '<span class="done">✓</span>' : '')}</div>`).join('')}
+    </div>
+    <div class="label">高级</div>
+    <div class="card">
+      ${row({ icon: 'plus', title: 'OpenAI 兼容服务', sub: '自己填地址、Key、模型名', right: chev })}
+      ${row({ icon: 'plus', title: '自建识别服务', sub: '局域网里的流式识别，只填地址', right: chev })}
+    </div>`;
+}
+
+function screenForm() {
+  const v = V(state.form);
+  SCREENS.form.title = v.name;
+  return `
+    <div class="card"><div class="row">${logo(v)}<div class="txt"><div class="t">${v.name}</div>${caps(v)}</div></div></div>
+    <div class="label">需要填的</div>
+    <div class="card">
+      ${v.fields.map(f => f.includes('/') || f === '地域' || f === '区域'
+        ? `<div class="field"><label>${f}</label><div class="seg">${(f === '地域' ? ['北京', '新加坡'] : f === '区域' ? ['eastasia', 'eastus'] : f.split(' / ')).map((o, i) => `<button class="${i ? '' : 'on'}">${o}</button>`).join('')}</div></div>`
+        : `<div class="field"><label>${f}</label><input placeholder="粘贴 ${f}" type="password"></div>`).join('')}
+    </div>
+    <div class="where">在哪里找 ${v.fields[0]}？</div>
+    <button class="btn primary" onclick="state.added['${v.id}']=true;go('formDone')">保存并测试</button>
+    <div class="foot">凭据加密保存在这台手机上。不用选模型，这家所有模型都会出现在「听」「说」里。</div>`;
+}
+
+function screenFormDone() {
+  const v = V(state.form);
+  SCREENS.formDone.title = v.name;
+  const item = (kind, label) => `<div class="result"><div class="mark ${v[kind].length ? 'ok' : 'no'}">${v[kind].length ? '✓' : '–'}</div>
+    <div class="txt"><div class="t">${label}</div><div class="s">${v[kind].length ? v[kind].map(m => m.name).join('、') : '这家没有'}</div></div>
+    ${v[kind].length ? (state[kind].v === v.id ? '<span class="pill ok">使用中</span>' : `<button class="mini" onclick="pick('${kind}','${v.id}',0)">${({stt:'用来听',tts:'用来说',rt:'用来实时通话'})[kind]}</button>`) : ''}</div>`;
+  return `
+    <p class="lead">Key 可用。这家下面的模型已经加进对应列表。想马上换，点「用来…」（用的是第一个模型，之后能换）。</p>
+    <div class="card">${item('stt', '听的模型')}${item('tts', '说的模型')}${item('rt', '实时模型')}</div>
+    <button class="btn ghost" onclick="navStack.length=0;go('home',false)">完成</button>`;
+}
+
+/* ================= AI 接打电话 ================= */
+Object.assign(state, {
+  ptab: 'in', auto: true, paused: false, scope: 'list', delay: 5, bypass: 3, listN: 4,
+  ready: { voice: true, perm: true, helper: true, audio: false, standby: false },
+  greeting: '你好，我是机主的助理，他现在不方便接听。', maxSec: 180, summary: true, sim: 'ask',
+  audioMode: 'auto', recFilter: 'all',
+});
+const READY = [
+  ['voice', '听和说', () => state.callFollow ? `跟随语音设置 · ${modelOf('stt').name} / ${modelOf('tts').name}` : '电话单独设置', "go('callVoice')"],
+  ['perm', '电话权限和通知', '读取通话状态、拨号、来电通知', ''],
+  ['helper', '音频助手', 'AI 在电话里听和说要靠它', ''],
+  ['audio', '实测一通电话', '打一通测试电话，确认两边都听得见', "go('callAudio')"],
+  ['standby', '后台待命', '锁屏、后台时也能自动接听', ''],
+];
+const callSttBad = () => state.callFollow && state.stt.v === 'device';
+const isReady = k => k === 'voice' ? !callSttBad() : state.ready[k];
+const missing = () => READY.filter(([k]) => !isReady(k)).length;
+
+function readyCard() {
+  const n = missing();
+  if (!n) return `<div class="card"><div class="now"><div class="mark ok" style="flex-basis:28px;height:28px">✓</div>
+    <div class="txt"><div class="v">已就绪</div><div class="s">${state.auto && !state.paused ? `自动接听待命中 · 符合规则的来电等 ${state.delay} 秒接` : '可以手动让 AI 接听或拨打'}</div></div>
+    <button class="mini" onclick="go('phoneSetup')">查看</button></div></div>`;
+  return `<div class="card" style="background:var(--warn-soft)"><div class="now">
+    <div class="txt"><div class="v" style="color:var(--warn)">还差 ${n} 步就能用</div>
+    <div class="s">${READY.filter(([k]) => !isReady(k)).map(([k, t]) => k === 'voice' ? '给电话换一个在线识别模型' : t).join('、')}</div></div>
+    <button class="mini" onclick="go('phoneSetup')">去完成</button></div></div>`;
+}
+
+function screenPhone() {
+  const seg = `<div class="seg" style="margin:0 0 12px">${[['in', '接电话'], ['out', '打电话'], ['rec', '记录']].map(([k, t]) =>
+    `<button class="${state.ptab === k ? 'on' : ''}" onclick="state.ptab='${k}';render()">${t}</button>`).join('')}</div>`;
+  return seg + (state.ptab === 'in' ? phoneIn() : state.ptab === 'out' ? phoneOut() : phoneRec());
+}
+
+function phoneIn() {
+  const scope = { all: '所有来电', list: `名单里的 ${state.listN} 个号码`, strangers: '陌生号码', types: '所选类型（快递、推销…）' }[state.scope];
+  return `
+    ${readyCard()}
+    <div class="card" style="margin-top:10px">
+      <div class="now"><div class="ico">${ICON.phone}</div><div class="txt"><div class="v">来电演示</div><div class="s">138 0000 1234 · 正在响铃</div></div>
+      <button class="mini" onclick="go('phoneLive')">AI 接听</button></div>
+    </div>
+    <div class="label">自动接听</div>
+    <div class="card">
+      ${row({ title: '自动接听来电', sub: !state.auto ? '关闭 · 来电照常响铃，可手动让 AI 接' : state.paused ? '已暂停 · 16:30 自动恢复' : `开 · 等 ${state.delay} 秒没人接就由 AI 接`, right: sw(state.auto, 'state.auto=!state.auto') })}
+      ${state.auto ? `<div style="display:flex;gap:6px;padding:0 14px 12px">${state.paused
+        ? '<button class="mini" onclick="state.paused=false;render()">恢复</button>'
+        : '<button class="mini" onclick="state.paused=true;render()">暂停 30 分钟</button><button class="mini" onclick="state.paused=true;render()">暂停 2 小时</button>'}</div>` : ''}
+    </div>
+    <div class="label">接谁的电话</div>
+    <div class="card">
+      ${row({ icon: 'phone', title: '接听范围', sub: scope + ` · 响 ${state.delay} 秒后接`, right: chev, tap: "go('phoneRules')" })}
+      ${row({ icon: 'device', title: '始终由本人接听', sub: `${state.bypass} 个号码，AI 永远不接`, right: chev, tap: "go('phoneRules')" })}
+    </div>
+    <div class="label">接起来怎么说</div>
+    <div class="card">
+      ${row({ icon: 'chat', title: '开场白', sub: state.greeting || '留空 · 等对方先开口', right: chev, tap: "go('phoneTalk')" })}
+      ${row({ icon: 'brain', title: '接听交代', sub: '快递外卖、业务询问 · 2 条生效', right: chev, tap: "go('phoneTalk')" })}
+    </div>
+    <div class="foot">通话时只把通话声音发给你选的识别、合成服务商和聊天模型，不存录音；文字记录加密存在本机。</div>`;
+}
+
+function phoneOut() {
+  return `
+    ${missing() ? readyCard() : ''}
+    <div class="label">打给谁</div>
+    <div class="card">
+      <div class="field"><label>电话号码</label><input placeholder="输入号码，或从通讯录选" value="400 800 1234"></div>
+      ${row({ title: '拨出 SIM', right: '<select class="sel"><option>卡 1 · 移动</option><option>卡 2 · 联通</option></select>' })}
+    </div>
+    <div class="label">这通电话要办成什么</div>
+    <div class="card">
+      <div class="field"><label>目标（必填）</label><input value="问周五晚上两位还有没有位子，有就订 7 点"></div>
+      <div class="field"><label>要问清的问题 · 可选</label><input placeholder="每行一个"></div>
+      <div class="field"><label>补充情况 · 可选</label><input placeholder="比如：姓王，手机尾号 1234"></div>
+      <div class="field"><label>不能答应的事 · 可选</label><input placeholder="比如：不付定金"></div>
+    </div>
+    <button class="btn ghost" onclick="toast('正在听你说…说完自动填进上面')">${ICON.mic.replace('<svg', '<svg width="16" height="16" style="vertical-align:-3px;margin-right:6px"')}用说的交代任务</button>
+    <button class="btn primary" onclick="go('phoneLive')">核对并拨打</button>
+    <div style="display:flex;justify-content:center;margin-top:8px"><button class="mini" style="background:none">锁屏后再拨</button></div>
+    <div class="foot">「用说的交代任务」也走 听 → 想：你说，Mika 听完整理成上面这张任务单，你核对后再拨。</div>`;
+}
+
+const RECS = [
+  { n: '400 800 1234', dir: '去电', t: '今天 18:02', res: '订到了周五 19:00 两位', open: false },
+  { n: '138 0000 1234', dir: '来电', t: '今天 14:20', res: '快递放到了门卫，没要回电', open: true },
+  { n: '号码未显示', dir: '来电', t: '昨天 10:11', res: '推销贷款，已拒绝', open: false },
+];
+function phoneRec() {
+  const list = RECS.filter(r => state.recFilter === 'all' || r.open);
+  return `
+    <div class="field" style="background:var(--surface);border-radius:12px;margin-bottom:8px"><input placeholder="搜索号码、结果或原文"></div>
+    <div style="display:flex;gap:6px;margin:0 0 10px">${[['all', '全部'], ['open', '待处理']].map(([k, t]) =>
+      `<button class="mini" style="${state.recFilter === k ? '' : 'background:var(--surface);color:var(--ink2)'}" onclick="state.recFilter='${k}';render()">${t}</button>`).join('')}</div>
+    <div class="card">${list.map(r => `<div class="row tap" onclick="go('phoneRecord')"><div class="ico">${ICON.phone}</div>
+      <div class="txt"><div class="t">${r.res}</div><div class="s">${r.dir} · ${r.n} · ${r.t}</div></div>
+      ${r.open ? '<span class="pill warn">待处理</span>' : ''}${chev}</div>`).join('')}</div>`;
+}
+
+function screenPhoneRecord() {
+  return `
+    <div class="card"><div class="now"><div class="ico">${ICON.phone}</div><div class="txt"><div class="v">快递放到了门卫，没要回电</div><div class="s">来电 · 138 0000 1234 · 今天 14:20 · 1 分 12 秒</div></div></div></div>
+    <div class="label">摘要</div>
+    <div class="card" style="padding:12px 14px;font-size:14px;line-height:1.7">
+      <b>结论</b>　快递员说包裹放在小区门卫。<br><b>待办</b>　下班去门卫取件<br><b>未确认</b>　快递单号没说</div>
+    <div class="label">通话原文</div>
+    <div class="card" style="padding:12px 14px;font-size:13.5px;line-height:1.8">
+      <div style="color:var(--ink2)">对方：喂，你好，你有个快递……</div>
+      <div>Mika：你好，我是机主的助理，请问包裹可以放哪里？</div>
+      <div style="color:var(--ink2)">对方：我放门卫了啊。</div></div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn ghost" style="margin:0">标为已处理</button><button class="btn ghost" style="margin:0">回拨并交代</button></div>`;
+}
+
+function screenPhoneLive() {
+  const st = ['听', '想', '说'];
+  return `
+    <div style="text-align:center;padding:14px 0 6px">
+      <div style="font-size:20px;font-weight:650">138 0000 1234</div>
+      <div class="s" style="color:var(--ink3);font-size:12.5px">AI 正在通话 · 00:24</div>
+      <div style="display:flex;justify-content:center;gap:6px;margin-top:10px">${st.map((s, i) =>
+        `<span class="tag ${i === 0 ? 'good' : ''}" style="font-size:12px;padding:3px 10px">${s}${i === 0 ? ' · 对方在说' : ''}</span>`).join('')}</div>
+    </div>
+    <div class="card" style="padding:12px 14px;font-size:14px;line-height:1.8">
+      <div>Mika：你好，我是机主的助理，他现在不方便接听。</div>
+      <div style="color:var(--ink2)">对方：哦，我是送快递的，你家有人吗</div>
+      <div>Mika：家里暂时没人，可以放门卫吗？</div>
+      <div style="color:var(--ink3)">对方：可以可以，那我……</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px">
+      <button class="btn ghost" style="margin:0">我来接</button><button class="btn ghost" style="margin:0">按键</button>
+      <button class="btn" style="margin:0;background:var(--bad);color:#fff">挂断</button></div>
+    <div class="foot">顶上三格显示 Mika 现在在听、在想还是在说。对方静音 ${state.silence.toFixed(1)} 秒没新字，「听」才转到「想」。</div>`;
+}
+
+function screenPhoneSetup() {
+  const items = READY.map(([k, t, s, js]) => {
+    const sub = typeof s === 'function' ? s() : s;
+    return `<div class="result"><div class="mark ${isReady(k) ? 'ok' : 'no'}">${isReady(k) ? '✓' : '·'}</div>
+      <div class="txt"><div class="t">${t}</div><div class="s">${sub}</div></div>
+      ${isReady(k) ? (js ? `<button class="mini" onclick="${js}">改</button>` : '') : `<button class="mini" onclick="${js || `state.ready.${k}=true;render()`}">${k === 'audio' ? '去实测' : '去设置'}</button>`}</div>`;
+  }).join('');
+  return `
+    <p class="lead">AI 接打电话要的东西都在这一页，按顺序做完就能用。</p>
+    ${callSttBad() ? `<div class="card" style="background:var(--warn-soft);padding:12px 14px;font-size:13px;color:var(--warn)">「听」现在是手机自带识别，它只能听麦克风，听不到电话里对方的声音。电话需要一个在线识别模型。<br><button class="mini" style="margin-top:8px" onclick="go('callVoice')">给电话选一个</button></div><div style="height:10px"></div>` : ''}
+    <div class="card">${items}</div>
+    <div class="foot">「实测一通电话」改了通话音频方式后要重做；没实测时不能开自动接听。</div>`;
+}
+
+function screenCallAudio() {
+  return `
+    <p class="lead">Mika 在电话里怎么听、怎么说。手机不一样，选这台能用的方式。</p>
+    <div class="card">
+      ${[['auto', '自动', '按系统能力自动选，选不出来就用转接'], ['direct', '直连', '直接播放和录制通话声音，大多数手机可用'], ['redirect', '转接', '经扬声器和麦克风转一道，对方听不到 Mika 时试这个']].map(([k, t, s]) =>
+        `<div class="row tap" onclick="state.audioMode='${k}';state.ready.audio=false;render()"><div class="radio ${state.audioMode === k ? 'on' : ''}"></div><div class="txt"><div class="t">${t}</div><div class="s">${s}</div></div></div>`).join('')}
+    </div>
+    <button class="btn primary" onclick="state.ready.audio=true;toast('已记录：两边都听得见');back()">打完测试电话，两边都听得见</button>
+    <div class="foot">换方式会清掉实测结果，换完再测一次。</div>`;
+}
+
+function screenPhoneRules() {
+  return `
+    <div class="label">接听范围</div>
+    <div class="card">
+      ${[['all', '所有来电', '包括名单外和隐藏号码'], ['list', '只接名单里的号码', `${state.listN} 个号码`], ['strangers', '只接陌生号码', '通讯录里没有的'], ['types', '只接所选类型', '快递、外卖、推销…按系统电话显示的标签']].map(([k, t, s]) =>
+        `<div class="row tap" onclick="state.scope='${k}';render()"><div class="radio ${state.scope === k ? 'on' : ''}"></div><div class="txt"><div class="t">${t}</div><div class="s">${s}</div></div></div>`).join('')}
+    </div>
+    <div class="card" style="margin-top:10px">
+      ${row({ title: '响几秒后接', sub: state.delay + ' 秒', right: `<input class="slider" style="width:130px" type="range" min="0" max="30" value="${state.delay}" oninput="state.delay=+this.value;this.closest('.row').querySelector('.s').textContent=this.value+' 秒'">` })}
+    </div>
+    <div class="label">始终由本人接听</div>
+    <div class="card">${row({ title: `${state.bypass} 个号码`, sub: '照常响铃，AI 永远不接', right: chev })}</div>`;
+}
+
+function screenPhoneTalk() {
+  return `
+    <div class="label">开场白</div>
+    <div class="card"><div class="field"><input value="${state.greeting}" oninput="state.greeting=this.value" placeholder="留空 · 等对方先开口"></div></div>
+    <div class="foot">接起来先说这句；打出去时 Mika 按任务单自己开口。</div>
+    <div class="label">接听交代</div>
+    <div class="card">
+      ${row({ title: '快递外卖', sub: '问清放哪、要不要回电；不代授权', right: '<span class="pill ok">长期</span>' })}
+      ${row({ title: '业务询问', sub: '问清需求和联系方式，不承诺价格', right: '<span class="pill ok">长期</span>' })}
+      ${row({ icon: 'plus', title: '新增交代', right: chev })}
+    </div>
+    <div class="label">通话时长</div>
+    <div class="card">${row({ title: 'AI 最长说多久', sub: state.maxSec ? state.maxSec + ' 秒' : '不限', right: `<input class="slider" style="width:130px" type="range" min="0" max="600" step="30" value="${state.maxSec}" oninput="state.maxSec=+this.value;this.closest('.row').querySelector('.s').textContent=(+this.value?this.value+' 秒':'不限')">` })}</div>`;
+}
+
+function screenPhoneSettings() {
+  return `
+    <div class="label">声音</div>
+    <div class="card">
+      ${row({ icon: 'mic', title: '电话用的听和说', sub: state.callFollow ? `跟随语音设置 · ${state.engine === 'standard' ? '标准' : '实时'}` : `电话单独设置 · ${state.callEngine === 'standard' ? '标准' : '实时'}`, right: (callSttBad() ? '<span class="pill warn">要换</span>' : '') + chev, tap: "go('callVoice')" })}
+    </div>
+    <div class="label">这台手机</div>
+    <div class="card">
+      ${row({ icon: 'device', title: '准备清单', sub: missing() ? `还差 ${missing()} 步` : '全部完成', right: chev, tap: "go('phoneSetup')" })}
+      ${row({ icon: 'speaker', title: '通话音频', sub: ({ auto: '自动', direct: '直连', redirect: '转接' })[state.audioMode] + (state.ready.audio ? ' · 已实测' : ' · 未实测'), right: chev, tap: "go('callAudio')" })}
+      ${row({ icon: 'phone', title: '默认拨号 SIM', sub: '每次问', right: chev })}
+    </div>
+    <div class="label">记录</div>
+    <div class="card">
+      ${row({ title: '通话后生成摘要和待办', sub: '把文字记录发给聊天模型总结', right: sw(state.summary, 'state.summary=!state.summary') })}
+      ${row({ title: '清空全部记录', right: chev })}
+    </div>
+    <div class="card" style="margin-top:16px">${row({ title: '<span style="color:var(--bad)">停用 AI 电话</span>', sub: '来电和拨号全部交回系统电话' })}</div>`;
+}
+
+function screenCallVoice() {
+  const f = state.callFollow;
+  const opts = (kind, noDevice) => VENDORS.filter(v => usable(v) && v[kind].length && !(noDevice && v.builtin)).map(v =>
+    `<optgroup label="${v.name}">${v[kind].map(m => `<option>${m.name}</option>`).join('')}</optgroup>`).join('');
+  return `
+    <p class="lead">打电话时用的识别、合成和通话方式。</p>
+    <div class="card">
+      <div class="row tap" onclick="state.callFollow=true;render()"><div class="radio ${f ? 'on' : ''}"></div>
+        <div class="txt"><div class="t">跟随语音设置</div><div class="s">听：${selName('stt')}<br>说：${selName('tts')}</div>
+        ${callSttBad() ? '<div class="tags"><span class="tag" style="background:var(--warn-soft);color:var(--warn)">手机自带识别听不到电话，跟随时要换</span></div>' : ''}</div></div>
+      <div class="row tap" onclick="state.callFollow=false;render()"><div class="radio ${f ? '' : 'on'}"></div>
+        <div class="txt"><div class="t">电话单独设置</div><div class="s">比如电话用 8k 电话识别模型、更稳重的音色</div></div></div>
+    </div>
+    ${f ? '' : `
+    <div class="label">电话专用</div>
+    <div class="card">
+      ${row({ title: '通话方式', right: `<select class="sel" onchange="state.callEngine=this.value;render()"><option value="standard" ${state.callEngine === 'standard' ? 'selected' : ''}>标准</option><option value="realtime" ${state.callEngine === 'realtime' ? 'selected' : ''}>实时（高级）</option></select>` })}
+      ${state.callEngine === 'standard'
+        ? row({ title: '听', right: `<select class="sel">${opts('stt', true)}</select>` }) + row({ title: '说', right: `<select class="sel">${opts('tts')}</select>` }) + row({ title: '音色', right: '<select class="sel"><option>沉稳男声</option><option>温柔女声</option></select>' })
+        : row({ title: '实时模型', right: `<select class="sel">${opts('rt')}</select>` })}
+    </div>
+    <div class="foot">下拉框按服务商分组。电话的「听」不列手机自带识别。</div>`}`;
+}
+
+const RENDER = { home: screenHome, stt: screenStt, tts: screenTts, talk: screenTalk, rt: screenRt, services: screenServices,
+  vendor: screenVendor, add: screenAdd, form: screenForm, formDone: screenFormDone, phone: screenPhone, phoneLive: screenPhoneLive, phoneSetup: screenPhoneSetup, phoneSettings: screenPhoneSettings,
+  callVoice: screenCallVoice, callAudio: screenCallAudio, phoneRules: screenPhoneRules, phoneTalk: screenPhoneTalk, phoneRecord: screenPhoneRecord };
+
+const NOTES = {
+  home: `<div class="note"><h3>① 总入口</h3><ul>
+    <li>语音组三行：<b>听、说、通话方式</b>。听和说的副标题都写成「服务商 · 模型」，例如「阿里云百炼 · Fun-ASR 实时」。</li>
+    <li>「语音服务」是服务商列表，Key 在这里按服务商填。</li></ul></div>
+    <div class="note"><h3>两层关系</h3><table>
+    <tr><th>层</th><th>是什么</th><th>在哪设</th></tr>
+    <tr><td>服务商</td><td>一个账号、一把 Key</td><td>语音服务</td></tr>
+    <tr><td>模型</td><td>这家下面的具体识别 / 合成 / 实时模型</td><td>听、说、实时 页里选</td></tr></table>
+    <p>和大模型一样：先接入服务商，再从它下面挑模型。</p></div>`,
+  stt: `<div class="note"><h3>② 听：选模型</h3><ul>
+    <li>顶上「正在用」把<b>服务商</b>和<b>模型</b>分两行写清楚。</li>
+    <li>下面按服务商分组：<b>组头是服务商</b>（带图标和 Key 来源），<b>组里一行一个模型</b>，圆点选的是模型。</li>
+    <li>只列已接入服务商的识别模型；没有识别模型的服务商（如 MiniMax）不出现。</li></ul></div>`,
+  tts: `<div class="note"><h3>③ 说：选模型</h3><ul>
+    <li>同样分组。音色、语速放在「正在用」下面，跟着当前模型变。</li>
+    <li>「按句合成」的模型按逗号句号分段合成。</li></ul></div>`,
+  talk: `<div class="note"><h3>④ 通话方式</h3><ul>
+    <li>标准（默认）：听 → 想 → 说。「想」选轻模型 / 主模型，没配轻模型就用主模型。</li>
+    <li>静音 N 秒没新字算说完，默认 1.5 秒；对方开口就停下（粗做）。</li>
+    <li>实时（高级）：选了才出现实时模型那一行。</li></ul></div>`,
+  rt: `<div class="note"><h3>⑤ 实时模型</h3><ul>
+    <li>和听、说同一个模式：按服务商分组列实时模型。</li>
+    <li>还没接入、但有实时模型的服务商列在下面，点一下去填 Key。</li></ul></div>`,
+  services: `<div class="note"><h3>⑥ 服务商列表</h3><ul>
+    <li>这页只有服务商。每家的「听 2 / 说 1 / 实时 1」是它下面各有几个模型，灰色是没有。</li>
+    <li>点已接入的一家 → ⑦ 看它下面所有模型。</li></ul></div>`,
+  vendor: `<div class="note"><h3>⑦ 一家服务商</h3><ul>
+    <li>上面是 Key，下面按「听的模型 / 说的模型 / 实时模型」列出这家所有模型。</li>
+    <li>也可以直接在这里「设为听 / 设为说」。</li>
+    <li>可以在 ⑥ 里点不同服务商看看。</li></ul></div>`,
+  add: `<div class="note"><h3>⑧ 内置服务商</h3><ul>
+    <li>先内置 13 家，之后继续加。每家的接口、模型列表、音色写代码时对照官方文档核实。</li>
+    <li>「OpenAI 兼容」「自建识别」放在高级里兜底。</li></ul></div>`,
+  form: `<div class="note"><h3>⑨ 填 Key</h3><ul>
+    <li>只填这家要的字段，<b>不用选模型</b>：接入后这家所有模型都会出现在听、说、实时的列表里。</li></ul></div>`,
+  formDone: `<div class="note"><h3>⑩ 接入结果</h3><ul>
+    <li>告诉你这家带来了哪些模型。想马上用，点「用来听 / 用来说」。</li></ul></div>`,
+  phone: `<div class="note"><h3>⑪ 电话首页：接电话 / 打电话 / 记录</h3><ul>
+    <li>三个标签换成用户的三件事：<b>接电话、打电话、看记录</b>。设置收到右上角 ⚙，不再占一个标签。</li>
+    <li>顶上一张<b>就绪卡</b>：就绪时显示待命状态；没就绪时写「还差 N 步」，点进 ⑬ 准备清单一次做完。原来的启用开关、设备与权限、后台待命散在三处，现在都收进这张卡。</li>
+    <li><b>接电话</b>：自动接听开关和暂停 → 接谁（范围、本人接听）→ 接起来怎么说（开场白、接听交代）。</li>
+    <li><b>打电话</b>：号码 + 任务单，「用说的交代任务」也走 听 → 想。</li>
+    <li><b>记录</b>：从设置里搬出来变成一个标签，支持搜索和「待处理」筛选。</li></ul></div>
+    <div class="note"><h3>和现在比</h3><table>
+    <tr><th></th><th>现在</th><th>改后</th></tr>
+    <tr><td>标签</td><td>接听 / 拨打 / 设置（记录藏在设置里）</td><td>接电话 / 打电话 / 记录，设置在 ⚙</td></tr>
+    <tr><td>能不能用</td><td>启用开关 + 设备与权限 + 后台待命 + 音频，分散</td><td>一张就绪卡 + 一页准备清单</td></tr>
+    <tr><td>声音</td><td>只能实时语音，要单独配火山</td><td>默认跟随语音设置的听和说</td></tr>
+    <tr><td>开场白、时长</td><td>设置里「通话配置」弹窗</td><td>开场白放进接电话；时长放进「接起来怎么说」</td></tr></table></div>`,
+  phoneLive: `<div class="note"><h3>⑫ 通话中</h3><ul>
+    <li>顶上「听 / 想 / 说」三格亮哪格，就是 Mika 现在在干什么，等的时候不会以为卡住了。</li>
+    <li>按钮还是「我来接 / 按键 / 挂断」。</li></ul></div>`,
+  phoneSetup: `<div class="note"><h3>⑬ 准备清单</h3><ul>
+    <li>听和说、电话权限和通知、音频助手、实测一通电话、后台待命，一页按顺序列完，每项旁边就是去做的按钮。</li>
+    <li><b>新的坑</b>：手机自带识别只能听麦克风，<b>听不到电话里对方的声音</b>。「听」是手机自带时这里会提示给电话换一个在线识别模型。</li>
+    <li>点「去设置」能模拟完成，看就绪卡怎么变。</li></ul></div>`,
+  phoneSettings: `<div class="note"><h3>⑭ 电话设置（⚙）</h3><ul>
+    <li>只放不常动的：电话用的听和说、准备清单、通话音频、默认 SIM、摘要开关、清空记录、停用。</li>
+    <li>不再有「启用 AI 电话」大开关：做完准备清单就是启用；不想用了在最下面停用。</li></ul></div>`,
+  callVoice: `<div class="note"><h3>⑮ 电话用的听和说</h3><ul>
+    <li>默认跟随语音设置。选「电话单独设置」后，下拉框按服务商分组选模型。</li>
+    <li>电话的「听」不列手机自带识别。</li></ul></div>`,
+  callAudio: `<div class="note"><h3>⑯ 通话音频</h3><ul>
+    <li>多一个「自动」：按系统公开能力检测，检测不到用转接。</li>
+    <li>实测按钮直接写成结论句「打完测试电话，两边都听得见」，点了就算实测通过。</li></ul></div>`,
+  phoneRules: `<div class="note"><h3>⑰ 接谁的电话</h3><ul>
+    <li>范围四选一、响几秒后接、始终由本人接听，都在一页。</li></ul></div>`,
+  phoneTalk: `<div class="note"><h3>⑱ 接起来怎么说</h3><ul>
+    <li>开场白、接听交代、最长时长放一起，都是「AI 在电话里怎么表现」。</li></ul></div>`,
+  phoneRecord: `<div class="note"><h3>⑲ 记录详情</h3><ul>
+    <li>摘要（结论 / 待办 / 未确认）在上，原文在下。</li>
+    <li>「回拨并交代」把这通电话带进打电话的任务单。</li></ul></div>`,
+};
+
+function render() {
+  const s = SCREENS[current];
+  const body = RENDER[current]();
+  document.getElementById('screen').innerHTML = `
+    <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+    <div class="bar">${current === 'home' ? '<span style="width:8px"></span>' : '<button class="back" onclick="back()" aria-label="返回">‹</button>'}<h2 style="flex:1">${s.title}</h2>${s.gear ? `<button class="back" onclick="go('phoneSettings')" aria-label="设置" style="font-size:18px">⚙</button>` : ''}</div>
+    <div class="body">${body}</div>
+    <div class="toast"></div>`;
+  document.getElementById('notes').innerHTML = NOTES[current];
+  document.getElementById('tabs').innerHTML = Object.entries(SCREENS).map(([id, v]) =>
+    `<button class="tab ${id === current ? 'on' : ''}" onclick="navStack.length=0;go('${id}',false)">${v.tab}</button>`).join('');
+}
+render();
+</script>
+</body>
+</html>

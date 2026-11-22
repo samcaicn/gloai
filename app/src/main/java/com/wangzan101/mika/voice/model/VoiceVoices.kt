@@ -9,6 +9,13 @@ object VoiceVoices {
         TtsProtocol.AndroidSystem -> emptyList()
         TtsProtocol.OpenAiSpeech -> listOf("alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer", "verse", "marin", "cedar")
         TtsProtocol.GeminiTts -> listOf("Kore", "Puck", "Charon", "Zephyr", "Fenrir", "Leda", "Orus", "Aoede")
+        else -> emptyList()
+    }
+
+    /** The voices [model] offers: its own list when the vendor registry gave one, else the protocol's. */
+    fun tts(model: VoiceModel): List<String> {
+        val binding = model.tts ?: return emptyList()
+        return binding.voices.ifEmpty { tts(binding.protocol) }
     }
 
     fun realtime(protocol: RealtimeProtocol): List<String> = when (protocol) {
@@ -33,5 +40,5 @@ object VoiceVoices {
         return match.groupValues[2].replaceFirstChar { it.uppercase() }
     }
 
-    private val VOLC_ID = Regex("""zh_(female|male)_([a-z]+)_jupiter_bigtts""")
+    private val VOLC_ID = Regex("""zh_(female|male)_([a-z]+)_(?:jupiter|uranus|moon|mars)_bigtts""")
 }

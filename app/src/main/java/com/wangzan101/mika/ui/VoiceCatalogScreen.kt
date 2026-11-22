@@ -711,7 +711,7 @@ private fun SheetField(
 // ---------- protocol display labels ----------
 
 @Composable
-private fun sttProtocolLabel(protocol: SttProtocol): String = stringResource(
+private fun sttProtocolLabel(protocol: SttProtocol): String = vendorProtocolName(protocol.name) ?: stringResource(
     when (protocol) {
         SttProtocol.AndroidSystem -> R.string.voice_catalog_protocol_stt_android_system
         SttProtocol.AudioTranscriptions -> R.string.voice_catalog_protocol_stt_audio_transcriptions
@@ -720,17 +720,32 @@ private fun sttProtocolLabel(protocol: SttProtocol): String = stringResource(
         SttProtocol.DoubaoStreaming -> R.string.voice_catalog_protocol_stt_doubao_streaming
         SttProtocol.FunAsrStreaming -> R.string.voice_catalog_protocol_stt_funasr_streaming
         SttProtocol.BailianStreaming -> R.string.voice_catalog_protocol_stt_bailian_streaming
+        else -> R.string.voice_catalog_protocol_stt_audio_transcriptions
     },
 )
 
 @Composable
-private fun ttsProtocolLabel(protocol: TtsProtocol): String = stringResource(
+private fun ttsProtocolLabel(protocol: TtsProtocol): String = vendorProtocolName(protocol.name) ?: stringResource(
     when (protocol) {
         TtsProtocol.AndroidSystem -> R.string.voice_catalog_protocol_tts_android_system
         TtsProtocol.OpenAiSpeech -> R.string.voice_catalog_protocol_tts_openai_speech
         TtsProtocol.GeminiTts -> R.string.voice_catalog_protocol_tts_gemini_tts
+        else -> R.string.voice_catalog_protocol_tts_openai_speech
     },
 )
+
+/** Vendor-specific protocols are labelled by the vendor's own (untranslated) product name. */
+private fun vendorProtocolName(name: String): String? = when (name) {
+    "ElevenLabsUpload", "ElevenLabsSpeech" -> "ElevenLabs"
+    "DeepgramUpload", "DeepgramSpeak" -> "Deepgram"
+    "AzureShortAudio", "AzureSpeech" -> "Azure Speech"
+    "TencentSentence", "TencentVoice" -> "Tencent Cloud"
+    "XfyunDictation", "XfyunSynthesis" -> "iFlytek"
+    "VolcSpeech" -> "Volcano Engine TTS"
+    "BailianQwenTts" -> "Qwen TTS"
+    "MiniMaxT2a" -> "MiniMax T2A"
+    else -> null
+}
 
 @Composable
 private fun realtimeProtocolLabel(protocol: RealtimeProtocol): String = stringResource(
