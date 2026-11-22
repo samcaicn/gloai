@@ -8,12 +8,17 @@ import com.wangzan101.mika.calls.OpenAiCallProtocol
 import com.wangzan101.mika.calls.ProfileRealtimeProvider
 import com.wangzan101.mika.calls.VolcRealtimeConfig
 import com.wangzan101.mika.calls.VolcRealtimeCredentials
+import com.wangzan101.mika.calls.VolcRealtimeEvent
 import com.wangzan101.mika.calls.VolcRealtimeProtocol
 import com.wangzan101.mika.voice.model.RealtimeBinding
 import com.wangzan101.mika.voice.model.RealtimeProtocol
 import com.wangzan101.mika.voice.model.ResolvedVoiceModel
 import com.wangzan101.mika.voice.model.VoiceCapability
 import com.wangzan101.mika.voice.model.VoiceModelError
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 
 interface RealtimeAdapter {
     val protocol: RealtimeProtocol
@@ -34,6 +39,18 @@ class OpenAiRealtimeAdapter(
     override val protocol = RealtimeProtocol.OpenAiRealtime
     override fun create(model: ResolvedVoiceModel): CallRealtimeProvider =
         ConfiguredRealtimeProvider(model, model.realtimeBinding(protocol), delegate)
+}
+
+private class CategorizedRealtimeSession(
+    private val delegate: CallRealtimeSession,
+) : CallRealtimeSession by delegate {
+    override val events: Flow<VolcRealtimeEvent> = delegate.events.map { event ->
+        if (event is VolcRealtimeEvent.Failed) throw VoiceModelError.from(event.error)
+        event
+    }.catch { error ->
+        if (error is CancellationException) throw error
+        throw VoiceModelError.from(error)
+    }
 }
 
 private class ConfiguredRealtimeProvider(
@@ -68,13 +85,22 @@ private class ConfiguredRealtimeProvider(
     }
 
     init {
+        if (binding.protocol == RealtimeProtocol.OpenAiRealtime && profile.endpoint != OpenAiCallProtocol.ENDPOINT) {
+            throw VoiceModelError.IncompleteConfig("OpenAI Realtime endpoint must be ${OpenAiCallProtocol.ENDPOINT}")
+        }
         if (!credentials.valid || (binding.protocol == RealtimeProtocol.OpenAiRealtime && resolved.account.credentials.apiKey.isBlank())) {
             throw VoiceModelError.MissingCredentials()
         }
     }
 
     override fun validate(profile: CallVoiceProfile, systemPrompt: String, enablePhoneDtmf: Boolean) {
-        delegate.validate(this.profile, systemPrompt, enablePhoneDtmf)
+        try {
+            delegate.validate(this.profile, systemPrompt, enablePhoneDtmf)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            throw VoiceModelError.from(error)
+        }
     }
 
     override suspend fun connect(
@@ -82,7 +108,13 @@ private class ConfiguredRealtimeProvider(
         credentials: VolcRealtimeCredentials,
         systemPrompt: String,
         enablePhoneDtmf: Boolean,
-    ): CallRealtimeSession = delegate.connect(this.profile, this.credentials, systemPrompt, enablePhoneDtmf)
+    ): CallRealtimeSession = try {
+        CategorizedRealtimeSession(delegate.connect(this.profile, this.credentials, systemPrompt, enablePhoneDtmf))
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Throwable) {
+        throw VoiceModelError.from(error)
+    }
 }
 
 private fun ResolvedVoiceModel.realtimeBinding(protocol: RealtimeProtocol): RealtimeBinding {

@@ -19,6 +19,7 @@ import com.wangzan101.mika.voice.LiveSpeech
 import com.wangzan101.mika.voice.PcmRecorder
 import com.wangzan101.mika.voice.ProviderSpeech
 import com.wangzan101.mika.voice.SpeechEngineSpec
+import com.wangzan101.mika.voice.SpeechEvent
 import com.wangzan101.mika.voice.SpeechFailure
 import com.wangzan101.mika.voice.SpeechServiceTarget
 import com.wangzan101.mika.voice.SpeechSession
@@ -34,6 +35,10 @@ import com.wangzan101.mika.voice.model.SttBinding
 import com.wangzan101.mika.voice.model.SttProtocol
 import com.wangzan101.mika.voice.model.VoiceCapability
 import com.wangzan101.mika.voice.model.VoiceModelError
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 
 data class SttHooks(
     val onNoResponse: () -> Unit = {},
@@ -51,6 +56,33 @@ interface SttAdapter {
     val protocol: SttProtocol
     fun spec(model: ResolvedVoiceModel): SpeechEngineSpec
     fun start(context: Context, model: ResolvedVoiceModel, language: String?, hooks: SttHooks = SttHooks()): SpeechSession
+}
+
+private class CategorizedSpeechSession(
+    private val delegate: SpeechSession,
+) : SpeechSession {
+    override val events: Flow<SpeechEvent> = delegate.events.map { event ->
+        if (event is SpeechEvent.Failed && event.why is SpeechFailure.Provider) {
+            SpeechEvent.Failed(SpeechFailure.Provider(VoiceModelError.from(event.why.error)))
+        } else {
+            event
+        }
+    }.catch { error ->
+        if (error is CancellationException) throw error
+        throw VoiceModelError.from(error)
+    }
+    override val live: Boolean get() = delegate.live
+    override val unlimited: Boolean get() = delegate.unlimited
+    override fun release() = delegate.release()
+    override fun cancel() = delegate.cancel()
+}
+
+private fun categorizedSession(factory: () -> SpeechSession): SpeechSession = try {
+    CategorizedSpeechSession(factory())
+} catch (error: CancellationException) {
+    throw error
+} catch (error: Throwable) {
+    throw VoiceModelError.from(error)
 }
 
 class AndroidSystemSttAdapter(
@@ -71,7 +103,7 @@ class AndroidSystemSttAdapter(
                 if (capability.available) SpeechEngineSpec.Why.SystemNoResponse else SpeechEngineSpec.Why.SystemGone,
             ))
         }
-        return sessionFactory(context, model, languageTag(context, language), hooks)
+        return categorizedSession { sessionFactory(context, model, languageTag(context, language), hooks) }
     }
 }
 
@@ -110,7 +142,7 @@ class ProviderSttAdapter(
 
     override fun start(context: Context, model: ResolvedVoiceModel, language: String?, hooks: SttHooks): SpeechSession {
         spec(model)
-        return sessionFactory(context, model, languageTag(context, language), hooks)
+        return categorizedSession { sessionFactory(context, model, languageTag(context, language), hooks) }
     }
 
     companion object {
@@ -135,7 +167,7 @@ class DoubaoSttAdapter(
     override fun start(context: Context, model: ResolvedVoiceModel, language: String?, hooks: SttHooks): SpeechSession {
         spec(model)
         model.doubaoCredentials()
-        return sessionFactory(context, model, languageTag(context, language), hooks)
+        return categorizedSession { sessionFactory(context, model, languageTag(context, language), hooks) }
     }
 }
 
@@ -153,7 +185,7 @@ class FunAsrSttAdapter(
 
     override fun start(context: Context, model: ResolvedVoiceModel, language: String?, hooks: SttHooks): SpeechSession {
         spec(model)
-        return sessionFactory(context, model, languageTag(context, language), hooks)
+        return categorizedSession { sessionFactory(context, model, languageTag(context, language), hooks) }
     }
 }
 
@@ -173,7 +205,7 @@ class BailianSttAdapter(
     override fun start(context: Context, model: ResolvedVoiceModel, language: String?, hooks: SttHooks): SpeechSession {
         spec(model)
         if (model.account.credentials.apiKey.isBlank()) throw VoiceModelError.MissingCredentials()
-        return sessionFactory(context, model, languageTag(context, language), hooks)
+        return categorizedSession { sessionFactory(context, model, languageTag(context, language), hooks) }
     }
 }
 

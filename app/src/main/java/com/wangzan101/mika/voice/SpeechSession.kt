@@ -1,6 +1,5 @@
 package com.wangzan101.mika.voice
 
-import com.wangzan101.mika.core.model.ModelError
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
@@ -42,7 +41,7 @@ sealed interface SpeechFailure {
      * 界面据此说明,并带用户去那个应用的设置页。
      */
     data class ServiceNoPermission(val service: SpeechServiceTarget) : SpeechFailure
-    data class Provider(val error: ModelError) : SpeechFailure
+    data class Provider(val error: Exception) : SpeechFailure
     data class Unavailable(val why: SpeechEngineSpec.Why) : SpeechFailure
 }
 

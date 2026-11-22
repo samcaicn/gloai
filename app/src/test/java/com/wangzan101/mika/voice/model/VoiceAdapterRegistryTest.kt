@@ -10,11 +10,12 @@ import com.wangzan101.mika.calls.OpenAiCallProtocol
 import com.wangzan101.mika.calls.VolcRealtimeConfig
 import com.wangzan101.mika.calls.VolcRealtimeCredentials
 import com.wangzan101.mika.calls.VolcRealtimeEvent
+import com.wangzan101.mika.calls.VolcRealtimeException
 import com.wangzan101.mika.calls.VolcRealtimeProtocol
-import com.wangzan101.mika.core.model.GeminiTtsModel
 import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.model.ModelHttp
-import com.wangzan101.mika.core.model.OpenAiSpeechModel
+import com.wangzan101.mika.core.model.StreamingTtsModel
+import com.wangzan101.mika.core.model.TtsAudioPart
 import com.wangzan101.mika.core.model.TtsCapabilities
 import com.wangzan101.mika.core.model.TtsRequest
 import com.wangzan101.mika.settings.Provider
@@ -22,6 +23,7 @@ import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.voice.BailianRegion
 import com.wangzan101.mika.voice.SpeechEngineSpec
 import com.wangzan101.mika.voice.SpeechEvent
+import com.wangzan101.mika.voice.SpeechFailure
 import com.wangzan101.mika.voice.SystemCapability
 import com.wangzan101.mika.voice.SpeechSession
 import com.wangzan101.mika.voice.TranscribeMethod
@@ -39,6 +41,8 @@ import com.wangzan101.mika.voice.model.adapters.VolcDuplexRealtimeAdapter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
@@ -56,15 +60,17 @@ import java.net.UnknownHostException
 import java.util.Base64
 
 class VoiceAdapterRegistryTest {
-    private class FakeSpeechSession : SpeechSession {
-        override val events: Flow<SpeechEvent> = emptyFlow()
+    private class FakeSpeechSession(
+        override val events: Flow<SpeechEvent> = emptyFlow(),
+    ) : SpeechSession {
         override val live: Boolean = false
         override fun release() {}
         override fun cancel() {}
     }
 
-    private class FakeRealtimeSession : CallRealtimeSession {
-        override val events: Flow<VolcRealtimeEvent> = emptyFlow()
+    private class FakeRealtimeSession(
+        override val events: Flow<VolcRealtimeEvent> = emptyFlow(),
+    ) : CallRealtimeSession {
         override fun sendPcm16(bytes: ByteArray, byteCount: Int): Boolean = true
         override fun sendGreeting(text: String): Boolean = true
         override fun setMuted(muted: Boolean): Boolean = true
@@ -76,8 +82,12 @@ class VoiceAdapterRegistryTest {
         var profile: CallVoiceProfile? = null
         var credentials: VolcRealtimeCredentials? = null
         var prompt: String? = null
+        var validateError: Throwable? = null
+        var connectError: Throwable? = null
+        var session: CallRealtimeSession = FakeRealtimeSession()
 
         override fun validate(profile: CallVoiceProfile, systemPrompt: String, enablePhoneDtmf: Boolean) {
+            validateError?.let { throw it }
             this.profile = profile
             this.prompt = systemPrompt
         }
@@ -88,10 +98,11 @@ class VoiceAdapterRegistryTest {
             systemPrompt: String,
             enablePhoneDtmf: Boolean,
         ): CallRealtimeSession {
+            connectError?.let { throw it }
             this.profile = profile
             this.credentials = credentials
             this.prompt = systemPrompt
-            return FakeRealtimeSession()
+            return session
         }
     }
 
@@ -242,9 +253,44 @@ class VoiceAdapterRegistryTest {
             }
 
             val hooks = SttHooks(systemCapability = SystemCapability(available = true, onDevice = false))
-            assertSame(session, injected.start(context, model, "zh-CN", hooks))
+            assertEquals(session.live, injected.start(context, model, "zh-CN", hooks).live)
             assertEquals("zh-CN", receivedTag)
         }
+    }
+
+    @Test fun `STT asynchronous provider failures expose their voice error category`() = runBlocking {
+        val source = ModelError.Auth()
+        val delegate = FakeSpeechSession(flowOf(SpeechEvent.Failed(SpeechFailure.Provider(source))))
+        val adapter = ProviderSttAdapter(SttProtocol.AudioTranscriptions) { _, _, _, _ -> delegate }
+
+        val event = adapter.start(
+            context,
+            resolved(sttModel(SttProtocol.AudioTranscriptions)),
+            "en-US",
+            SttHooks(),
+        ).events.single() as SpeechEvent.Failed
+        val error: Any = (event.why as SpeechFailure.Provider).error
+
+        assertTrue(error is VoiceModelError)
+        assertEquals(VoiceErrorCategory.AUTH_FAILED, (error as VoiceModelError).category)
+        assertSame(source, error.cause)
+    }
+
+    @Test fun `STT session creation failures are categorized without changing cancellation`() {
+        val source = ModelError.Auth()
+        val failing = ProviderSttAdapter(SttProtocol.AudioTranscriptions) { _, _, _, _ -> throw source }
+        val error = assertThrows(VoiceModelError::class.java) {
+            failing.start(context, resolved(sttModel(SttProtocol.AudioTranscriptions)), "en-US", SttHooks())
+        }
+        assertEquals(VoiceErrorCategory.AUTH_FAILED, error.category)
+        assertSame(source, error.cause)
+
+        val cancellation = CancellationException("stop")
+        val cancelled = ProviderSttAdapter(SttProtocol.AudioTranscriptions) { _, _, _, _ -> throw cancellation }
+        val actual = assertThrows(CancellationException::class.java) {
+            cancelled.start(context, resolved(sttModel(SttProtocol.AudioTranscriptions)), "en-US", SttHooks())
+        }
+        assertSame(cancellation, actual)
     }
 
     @Test fun `streaming STT specs retain endpoint region and resource configuration`() {
@@ -297,10 +343,12 @@ class VoiceAdapterRegistryTest {
             val model = resolved(VoiceModel("s", "voice-1", "Voice", tts = TtsBinding(TtsProtocol.OpenAiSpeech)), account)
 
             val tts = OpenAiSpeechTtsAdapter(http = OkHttpClient()).create(context, model, TtsCapabilities(formats = setOf("wav")))
-            assertTrue(tts is OpenAiSpeechModel)
-            val response = tts.synthesize(TtsRequest("hello", voice = "tester", format = "wav"))
+            assertTrue(tts is StreamingTtsModel)
+            val part = (tts as StreamingTtsModel)
+                .streamAudio(TtsRequest("hello", voice = "tester", format = "wav"))
+                .single() as TtsAudioPart.Complete
 
-            assertEquals("audio/wav", response.mime)
+            assertEquals("audio/wav", part.response.mime)
             val request = server.takeRequest()
             assertEquals("/v1/audio/speech", request.path)
             assertEquals("Bearer provider-key", request.getHeader("Authorization"))
@@ -328,7 +376,7 @@ class VoiceAdapterRegistryTest {
             val model = resolved(VoiceModel("s", "gemini-voice", "Gemini", tts = TtsBinding(TtsProtocol.GeminiTts)), account)
 
             val tts = GeminiTtsAdapter(http = OkHttpClient()).create(context, model, TtsCapabilities(formats = setOf("wav")))
-            assertTrue(tts is GeminiTtsModel)
+            assertEquals("gemini-voice", tts.name)
             tts.synthesize(TtsRequest("hello", voice = "Kore", format = "wav"))
 
             val request = server.takeRequest()
@@ -341,6 +389,76 @@ class VoiceAdapterRegistryTest {
         } finally {
             server.shutdown()
         }
+    }
+
+    @Test fun `openAI TTS HTTP failures surface categorized adapter errors`() {
+        val server = MockWebServer().apply { start() }
+        try {
+            server.enqueue(MockResponse().setResponseCode(401).setBody("bad key"))
+            val account = existingAccount.copy(provider = provider.copy(baseUrl = server.url("/v1").toString().trimEnd('/')))
+            val model = resolved(VoiceModel("s", "voice-1", "Voice", tts = TtsBinding(TtsProtocol.OpenAiSpeech)), account)
+            val tts = OpenAiSpeechTtsAdapter(http = OkHttpClient()).create(context, model, TtsCapabilities(formats = setOf("wav")))
+
+            val error = assertThrows(VoiceModelError::class.java) {
+                runBlocking { tts.synthesize(TtsRequest("hello", voice = "tester", format = "wav")) }
+            }
+            assertEquals(VoiceErrorCategory.AUTH_FAILED, error.category)
+            assertTrue(error.cause is ModelError.Auth)
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test fun `openAI streaming TTS HTTP failures surface categorized adapter errors`() {
+        val server = MockWebServer().apply { start() }
+        try {
+            server.enqueue(MockResponse().setResponseCode(401).setBody("bad key"))
+            val account = existingAccount.copy(provider = provider.copy(baseUrl = server.url("/v1").toString().trimEnd('/')))
+            val model = resolved(VoiceModel("s", "voice-1", "Voice", tts = TtsBinding(TtsProtocol.OpenAiSpeech)), account)
+            val tts = OpenAiSpeechTtsAdapter(http = OkHttpClient()).create(
+                context,
+                model,
+                TtsCapabilities(formats = setOf("pcm")),
+            ) as StreamingTtsModel
+
+            val error = assertThrows(VoiceModelError::class.java) {
+                runBlocking { tts.streamAudio(TtsRequest("hello", voice = "tester", format = "pcm")).single() }
+            }
+            assertEquals(VoiceErrorCategory.AUTH_FAILED, error.category)
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test fun `gemini TTS HTTP failures surface categorized adapter errors`() {
+        val server = MockWebServer().apply { start() }
+        try {
+            server.enqueue(MockResponse().setResponseCode(401).setBody("bad key"))
+            val geminiProvider = provider.copy(kind = ProviderConfig.Kind.Gemini, baseUrl = server.url("").toString().trimEnd('/'))
+            val account = existingAccount.copy(provider = geminiProvider)
+            val model = resolved(VoiceModel("s", "gemini-voice", "Gemini", tts = TtsBinding(TtsProtocol.GeminiTts)), account)
+            val tts = GeminiTtsAdapter(http = OkHttpClient()).create(context, model, TtsCapabilities(formats = setOf("wav")))
+
+            val error = assertThrows(VoiceModelError::class.java) {
+                runBlocking { tts.synthesize(TtsRequest("hello", voice = "Kore", format = "wav")) }
+            }
+            assertEquals(VoiceErrorCategory.AUTH_FAILED, error.category)
+            assertTrue(error.cause is ModelError.Auth)
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test fun `TTS cancellation remains the original cancellation`() {
+        val cancellation = CancellationException("stop")
+        val http = OkHttpClient.Builder().addInterceptor { throw cancellation }.build()
+        val model = resolved(VoiceModel("s", "voice-1", "Voice", tts = TtsBinding(TtsProtocol.OpenAiSpeech)))
+        val tts = OpenAiSpeechTtsAdapter(http = http).create(context, model, TtsCapabilities(formats = setOf("wav")))
+
+        val actual = assertThrows(CancellationException::class.java) {
+            runBlocking { tts.synthesize(TtsRequest("hello", voice = "tester", format = "wav")) }
+        }
+        assertEquals("stop", actual.message)
     }
 
     @Test fun `realtime adapters map exact profile endpoint model speaker and credentials`() = runBlocking {
@@ -379,6 +497,88 @@ class VoiceAdapterRegistryTest {
             assertEquals("owned-key", delegate.credentials?.apiKey)
             assertEquals("system prompt", delegate.prompt)
         }
+    }
+
+    @Test fun `openAI realtime rejects unsupported endpoints during adapter creation`() {
+        val binding = RealtimeBinding(RealtimeProtocol.OpenAiRealtime, endpoint = "wss://chat.example/v1/realtime")
+        val model = resolved(VoiceModel("rt", "realtime-1", "Realtime", realtime = binding), ownedAccount)
+
+        val error = assertThrows(VoiceModelError::class.java) {
+            OpenAiRealtimeAdapter(RecordingRealtimeDelegate()).create(model)
+        }
+        assertEquals(VoiceErrorCategory.INCOMPLETE_CONFIG, error.category)
+        assertTrue(error.detail.contains(OpenAiCallProtocol.ENDPOINT))
+    }
+
+    @Test fun `openAI realtime never derives its socket endpoint from an existing chat provider`() {
+        val delegate = RecordingRealtimeDelegate()
+        val model = resolved(
+            VoiceModel("rt", "realtime-1", "Realtime", realtime = RealtimeBinding(RealtimeProtocol.OpenAiRealtime)),
+            existingAccount,
+        )
+
+        OpenAiRealtimeAdapter(delegate).create(model).validate(CallVoiceProfile(), "system")
+
+        assertEquals(OpenAiCallProtocol.ENDPOINT, delegate.profile?.endpoint)
+        assertEquals("system", delegate.prompt)
+    }
+
+    @Test fun `realtime validation and connection failures expose voice error categories`() = runBlocking {
+        val model = resolved(
+            VoiceModel("rt", "realtime-1", "Realtime", realtime = RealtimeBinding(RealtimeProtocol.VolcDuplex)),
+            ownedAccount,
+        )
+        val validationSource = UnknownHostException("missing host")
+        val validationDelegate = RecordingRealtimeDelegate().apply { validateError = validationSource }
+        val validation = VolcDuplexRealtimeAdapter(validationDelegate).create(model)
+
+        val validationError = assertThrows(VoiceModelError::class.java) {
+            validation.validate(CallVoiceProfile(), "system")
+        }
+        assertEquals(VoiceErrorCategory.NETWORK, validationError.category)
+        assertSame(validationSource, validationError.cause)
+
+        val connectionSource = VolcRealtimeException(VolcRealtimeException.Kind.AUTH, 401)
+        val connectionDelegate = RecordingRealtimeDelegate().apply { connectError = connectionSource }
+        val connection = VolcDuplexRealtimeAdapter(connectionDelegate).create(model)
+        val connectionError = assertThrows(VoiceModelError::class.java) {
+            runBlocking { connection.connect(CallVoiceProfile(), VolcRealtimeCredentials(), "system") }
+        }
+        assertEquals(VoiceErrorCategory.AUTH_FAILED, connectionError.category)
+        assertSame(connectionSource, connectionError.cause)
+    }
+
+    @Test fun `realtime asynchronous session failures expose voice error categories`() = runBlocking {
+        val source = VolcRealtimeException(VolcRealtimeException.Kind.RATE_LIMITED, 429)
+        val delegate = RecordingRealtimeDelegate().apply {
+            session = FakeRealtimeSession(flowOf(VolcRealtimeEvent.Failed(source)))
+        }
+        val model = resolved(
+            VoiceModel("rt", "realtime-1", "Realtime", realtime = RealtimeBinding(RealtimeProtocol.VolcDuplex)),
+            ownedAccount,
+        )
+        val session = VolcDuplexRealtimeAdapter(delegate).create(model)
+            .connect(CallVoiceProfile(), VolcRealtimeCredentials(), "system")
+
+        val error = assertThrows(VoiceModelError::class.java) {
+            runBlocking { session.events.single() }
+        }
+        assertEquals(VoiceErrorCategory.RATE_LIMITED, error.category)
+        assertSame(source, error.cause)
+    }
+
+    @Test fun `realtime connection cancellation remains cancellation`() = runBlocking {        val cancellation = CancellationException("stop")
+        val delegate = RecordingRealtimeDelegate().apply { connectError = cancellation }
+        val model = resolved(
+            VoiceModel("rt", "realtime-1", "Realtime", realtime = RealtimeBinding(RealtimeProtocol.VolcDuplex)),
+            ownedAccount,
+        )
+        val realtime = VolcDuplexRealtimeAdapter(delegate).create(model)
+
+        val actual = assertThrows(CancellationException::class.java) {
+            runBlocking { realtime.connect(CallVoiceProfile(), VolcRealtimeCredentials(), "system") }
+        }
+        assertSame(cancellation, actual)
     }
 
     @Test fun `HTTP 401 maps to authentication failure`() {
