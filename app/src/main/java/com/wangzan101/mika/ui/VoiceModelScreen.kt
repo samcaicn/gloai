@@ -253,7 +253,7 @@ private fun MigratedVoiceModelContent(
 
         selectedModel?.let { model ->
             GroupCard {
-                val voices = model.tts?.protocol?.let(VoiceVoices::tts).orEmpty()
+                val voices = VoiceVoices.tts(model)
                 if (voices.isNotEmpty()) {
                     ListRow(null, tr(R.string.voice_voice), first = true, onClick = { voicesOpen = true },
                         modifier = Modifier.testTag("tts-voice")) {

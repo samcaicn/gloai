@@ -7,6 +7,7 @@ import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.model.TtsCapabilities
 import com.wangzan101.mika.core.model.TtsRequest
 import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.VoiceSettings
 import com.wangzan101.mika.voice.Pcm16
 import com.wangzan101.mika.voice.model.CallEngine
 import com.wangzan101.mika.voice.model.SttSelection
@@ -50,8 +51,10 @@ class CascadeEngine(private val context: Context, private val environment: Voice
         CallUse.Phone -> selections.callTts ?: selections.tts
     }
 
+    /** The phone's own voice when calls have their own speak model, else the voice chosen for reading aloud. */
     private fun voice(use: CallUse): String? =
         selections.callTtsVoice.takeIf { use == CallUse.Phone && selections.callTts != null && it.isNotBlank() }
+            ?: VoiceSettings.get(context).state.value.voice.takeIf { it.isNotBlank() && !(use == CallUse.Phone && selections.callTts != null) }
 
     private fun thinkModel(): ChatModel? {
         val store = ProviderStore.get(context)
@@ -90,13 +93,14 @@ class CascadeEngine(private val context: Context, private val environment: Voice
         val think = thinkModel() ?: throw VoiceModelError.IncompleteConfig("No chat model")
         val tts = environment.tts.createTts(context, speakRef, TtsCapabilities())
         val voice = voice(use)
+        val speed = VoiceSettings.get(context).state.value.speed.takeIf { it > 0f && it != 1f }
         val brain = LlmBrain(think, LlmBrain.SPOKEN_STYLE + "\n\n" + instructions, tools)
         val s = selections
         return CascadeVoiceSession(
             brain = brain,
             listen = { feed -> environment.stt.start(context, listen, language, SttHooks(recorder = feed)) },
             speak = { text ->
-                val response = tts.synthesize(TtsRequest(text, voice = voice, format = "wav"))
+                val response = tts.synthesize(TtsRequest(text, voice = voice, speed = speed, format = "wav"))
                 val wav = Pcm16.parseWav(response.bytes)
                     ?: throw VoiceModelError.Protocol(VoiceErrorCategory.UNSUPPORTED, "Speech is not WAV audio")
                 CascadeVoiceSession.PcmAudioOut(Pcm16.toBytes(wav.samples), wav.sampleRate)
