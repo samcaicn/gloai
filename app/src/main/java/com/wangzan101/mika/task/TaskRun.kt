@@ -168,6 +168,23 @@ internal fun restorePipSound(takeover: Takeover?, restorePhone: () -> Unit) {
 internal fun mutePipSound(takeover: Takeover?, mutePhone: () -> Unit) {
     if (takeover?.muteBack() != true) mutePhone()
 }
+
+/** Resolve file-transcription exposure when phone tools are assembled; a stale voice selection only removes this tool. */
+internal fun taskTranscribePort(
+    origin: RunOrigin,
+    stt: com.wangzan101.mika.voice.model.SttSelectionController,
+    legacyPort: () -> com.wangzan101.mika.core.cap.transcribe.TranscribePort?,
+    migratedPort: () -> com.wangzan101.mika.core.cap.transcribe.TranscribePort,
+): com.wangzan101.mika.core.cap.transcribe.TranscribePort? {
+    if (origin != RunOrigin.Ui) return null
+    if (!stt.migrated) return legacyPort()
+    return try {
+        if (stt.batchModel() == null) null else migratedPort()
+    } catch (_: com.wangzan101.mika.voice.model.VoiceModelError) {
+        null
+    }
+}
+
 private val deepSeekPrices by lazy { DeepSeekPriceCache(ProviderStore.modelHttp) }
 
 /**
@@ -504,21 +521,26 @@ class TaskRun(
 
     private val audioSettings by lazy { com.wangzan101.mika.settings.VoiceSettings.get(service) }
 
-    /** 本任务的转写端口:只有当前批量 STT 能接文件,且这是手机上开始的任务时才建。 */
-    private val transcribePort by lazy {
-        if (provenance.origin != RunOrigin.Ui) return@lazy null
-        val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(service)
-        if (voiceModels.stt.migrated) {
-            if (voiceModels.stt.batchModel() == null) null
-            else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, null, voiceModels.stt) { workspaceKey }
-        } else {
-            val choice = com.wangzan101.mika.voice.SpeechSettings.get(service).choice.value as? com.wangzan101.mika.voice.SpeechChoice.Provider
-                ?: return@lazy null
-            val provider = ProviderStore.get(service).provider(choice.providerId) ?: return@lazy null
-            if (ModelOptions.isTtsOnly(provider, choice.model)) null
-            else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice, voiceModels.stt) { workspaceKey }
+    /** 本任务的转写端口:装配手机工具时按当前批量 STT 决定,配置失效只让转写工具不可用。 */
+    private val transcribePort: com.wangzan101.mika.core.cap.transcribe.TranscribePort?
+        get() {
+            if (provenance.origin != RunOrigin.Ui) return null
+            val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(service)
+            return taskTranscribePort(
+                provenance.origin,
+                voiceModels.stt,
+                legacyPort = legacy@{
+                    val choice = com.wangzan101.mika.voice.SpeechSettings.get(service).choice.value as? com.wangzan101.mika.voice.SpeechChoice.Provider
+                        ?: return@legacy null
+                    val provider = ProviderStore.get(service).provider(choice.providerId) ?: return@legacy null
+                    if (ModelOptions.isTtsOnly(provider, choice.model)) null
+                    else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice, voiceModels.stt) { workspaceKey }
+                },
+                migratedPort = {
+                    com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, null, voiceModels.stt) { workspaceKey }
+                },
+            )
         }
-    }
 
     /**
      * 本任务的音频端口:用户配置并打开了声音模型、且这是手机上开始的任务时才建。
