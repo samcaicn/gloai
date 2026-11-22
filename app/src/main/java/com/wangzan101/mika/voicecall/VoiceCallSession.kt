@@ -222,14 +222,21 @@ class VoiceCallSession(
         throw VoiceCallFailure(VoiceCallError.MicSilent)
     }
 
-    /** 开麦校验:首块必须在限时内到达、非全零、且未被系统静音。 */
+    /**
+     * 开麦校验:限时内要收到一块有声音的音频,且未被系统静音。
+     * 刚切进通话模式时不少音频硬件会先给几块全零(预热),所以全零块跳过、只在整个窗口都没声音时才判失败。
+     */
     private suspend fun checkMic() {
-        val first = withTimeoutOrNull(micCheckTimeoutMs) { audio.captureChunks.receiveCatching().getOrNull() }
-            ?: throw VoiceCallFailure(VoiceCallError.MicSilent)
-        if (audio.micSilenced.value || first.all { it == 0.toShort() }) {
-            throw VoiceCallFailure(VoiceCallError.MicSilent)
-        }
-        _micLevel.value = levelOf(first)
+        val heard = withTimeoutOrNull(micCheckTimeoutMs) {
+            var chunk: ShortArray
+            do {
+                chunk = audio.captureChunks.receiveCatching().getOrNull()
+                    ?: throw VoiceCallFailure(VoiceCallError.MicSilent)
+                if (audio.micSilenced.value) throw VoiceCallFailure(VoiceCallError.MicSilent)
+            } while (chunk.all { it == 0.toShort() })
+            chunk
+        } ?: throw VoiceCallFailure(VoiceCallError.MicSilent)
+        _micLevel.value = levelOf(heard)
     }
 
     /** 提示音直接写播放轨,不进播放队列、不计电平。 */

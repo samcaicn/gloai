@@ -248,11 +248,31 @@ class VoiceCallSessionTest {
         assertEquals(VoiceCallState.Failed(VoiceCallError.MicSilent, 1), h.session.state.value)
     }
 
-    @Test fun `zero energy first chunk fails mic silent`() = runTest {
+    @Test fun `zero chunks while the mic warms up are not a silent mic`() = runTest {
+        lateinit var h: Harness
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt })
+        runCurrent()
+        // 刚切通话模式时有的音频硬件先吐几块全零,这是预热,不是麦克风坏了
+        repeat(3) { h.audio.offerChunk(ShortArray(320)) }
+        runCurrent()
+        assertTrue(h.session.state.value is VoiceCallState.MicCheck)
+        h.audio.offerChunk()
+        runCurrent()
+        assertTrue(h.session.state.value !is VoiceCallState.Failed)
+    }
+
+    @Test fun `only zero chunks for three seconds fails mic silent`() = runTest {
         lateinit var h: Harness
         h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt })
         runCurrent()
         h.audio.offerChunk(ShortArray(320))
+        runCurrent()
+        assertTrue(h.session.state.value is VoiceCallState.MicCheck)
+        advanceTimeBy(1_500L)
+        h.audio.offerChunk(ShortArray(320))
+        runCurrent()
+        assertTrue(h.session.state.value is VoiceCallState.MicCheck)
+        advanceTimeBy(1_501L)
         runCurrent()
         assertEquals(VoiceCallState.Failed(VoiceCallError.MicSilent, 1), h.session.state.value)
     }
