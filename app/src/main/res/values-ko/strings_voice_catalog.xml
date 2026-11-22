@@ -7,6 +7,9 @@
     <string name="voice_catalog_add">모델 추가</string>
     <string name="voice_catalog_empty">아직 음성 모델이 없습니다. 「모델 추가」를 눌러 시작하세요.</string>
     <string name="voice_catalog_read_failed">음성 모델 카탈로그를 읽을 수 없습니다</string>
+    <string name="voice_catalog_repair">재설정 및 다시 마이그레이션</string>
+    <string name="voice_catalog_repair_title">음성 모델 카탈로그를 재설정할까요?</string>
+    <string name="voice_catalog_repair_body">저장된 음성 모델 카탈로그를 읽을 수 없습니다. 이 작업은 이를 지우고 이전 음성 설정에서 다시 빌드합니다.</string>
     <string name="voice_catalog_migration_failed">이전 음성 설정 마이그레이션에 실패했습니다. 이전 동작을 유지합니다</string>
     <string name="voice_catalog_account">계정 출처</string>
     <string name="voice_catalog_account_existing">기존 제공업체 계정(주소와 키 재사용)</string>
@@ -49,6 +52,8 @@
     <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR 스트리밍</string>
     <string name="voice_catalog_protocol_stt_bailian_streaming">Bailian 스트리밍</string>
     <string name="voice_catalog_protocol_tts_android_system">Android 시스템</string>
+    <string name="voice_catalog_system_stt_name">Android 시스템 음성 인식</string>
+    <string name="voice_catalog_system_tts_name">Android 시스템 음성 합성</string>
     <string name="voice_catalog_protocol_tts_openai_speech">OpenAI 음성</string>
     <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
     <string name="voice_catalog_protocol_realtime_volc_duplex">Volc 듀플렉스</string>

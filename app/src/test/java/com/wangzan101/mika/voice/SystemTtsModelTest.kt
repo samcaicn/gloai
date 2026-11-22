@@ -220,7 +220,7 @@ class SystemTtsModelTest {
     }
 
     @Test
-    fun `cancellation stops and shuts the engine down`() = runTest {
+    fun `cancellation stops and shuts the engine down and deletes the temp wav`() = runTest {
         val engine = FakeEngine().apply { neverComplete = true }
         val tts = model(engine)
         val job = launch { tts.synthesize(TtsRequest("hello")) }
@@ -231,6 +231,7 @@ class SystemTtsModelTest {
 
         assertTrue(engine.stopped)
         assertTrue(engine.shutdown)
+        assertFalse(engine.synthesizedFile?.exists() ?: true)
     }
 
     @Test

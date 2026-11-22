@@ -237,7 +237,7 @@ private fun MigratedVoiceModelContent(
                     models.forEachIndexed { index, model ->
                         val ref = VoiceModelRef(model.serviceId, model.id, VoiceCapability.TTS)
                         RadioRow(
-                            model.displayName,
+                            voiceModelDisplayName(model),
                             selected = selection == ref,
                             onClick = {
                                 tts.select(ref)

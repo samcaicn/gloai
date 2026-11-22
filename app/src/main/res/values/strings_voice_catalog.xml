@@ -7,6 +7,9 @@
     <string name="voice_catalog_add">Add model</string>
     <string name="voice_catalog_empty">No speech models yet. Tap “Add model” to start.</string>
     <string name="voice_catalog_read_failed">Voice model catalog cannot be read</string>
+    <string name="voice_catalog_repair">Reset and re-migrate</string>
+    <string name="voice_catalog_repair_title">Reset the voice catalog?</string>
+    <string name="voice_catalog_repair_body">The saved voice catalog cannot be read. This clears it and rebuilds it from your previous voice settings.</string>
     <string name="voice_catalog_migration_failed">Migrating the previous voice settings failed; previous behavior is kept</string>
     <string name="voice_catalog_account">Account source</string>
     <string name="voice_catalog_account_existing">Existing provider account (reuse address and key)</string>
@@ -49,6 +52,8 @@
     <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR streaming</string>
     <string name="voice_catalog_protocol_stt_bailian_streaming">Bailian streaming</string>
     <string name="voice_catalog_protocol_tts_android_system">Android system</string>
+    <string name="voice_catalog_system_stt_name">Android system speech recognition</string>
+    <string name="voice_catalog_system_tts_name">Android system speech synthesis</string>
     <string name="voice_catalog_protocol_tts_openai_speech">OpenAI Speech</string>
     <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
     <string name="voice_catalog_protocol_realtime_volc_duplex">Volc duplex</string>

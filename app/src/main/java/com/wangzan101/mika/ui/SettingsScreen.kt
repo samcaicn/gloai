@@ -101,6 +101,8 @@ fun SettingsScreen(
     /** 查到的新版本号;有它时「关于 Mika」一行写「x 可更新」带红点。 */
     updateVersion: String? = null,
     onOpenAbout: () -> Unit = {},
+    /** 通话设置迁移后打开统一语音模型目录。 */
+    onOpenVoiceCatalog: () -> Unit = {},
     /** 外部 MCP server 设置(outbound);为空时不显示入口。 */
     mcpServers: com.wangzan101.mika.settings.McpServerStore? = null,
     /** 人格设置;为空时不显示入口。 */
@@ -283,7 +285,7 @@ fun SettingsScreen(
             onOpenShizukuGuide = { openInBrowser(context, SHIZUKU_SETUP_GUIDE_URL) },
             onRefreshShizuku = { shellManager.refreshShizukuAsync() },
         )
-        SettingsPage.Calls -> CallSettingsScreen((context.applicationContext as com.wangzan101.mika.MikaApp).calls, onBack = toHome)
+        SettingsPage.Calls -> CallSettingsScreen((context.applicationContext as com.wangzan101.mika.MikaApp).calls, onBack = toHome, onOpenVoiceCatalog = onOpenVoiceCatalog)
         SettingsPage.Notifications -> NotificationsScreen(status, onFix = ::fix, onBack = back)
         SettingsPage.DuringWork -> DuringWorkScreen(
             keepScreenOn, onKeepScreenOn = { flags.setKeepScreenOn(it); keepScreenOn = it },

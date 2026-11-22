@@ -7,6 +7,9 @@
     <string name="voice_catalog_add">Añadir modelo</string>
     <string name="voice_catalog_empty">Aún no hay modelos de voz. Pulsa «Añadir modelo» para empezar.</string>
     <string name="voice_catalog_read_failed">No se puede leer el catálogo de modelos de voz</string>
+    <string name="voice_catalog_repair">Restablecer y volver a migrar</string>
+    <string name="voice_catalog_repair_title">¿Restablecer el catálogo de modelos de voz?</string>
+    <string name="voice_catalog_repair_body">No se puede leer el catálogo de modelos de voz guardado. Esto lo borra y lo reconstruye a partir de los ajustes de voz anteriores.</string>
     <string name="voice_catalog_migration_failed">La migración de los ajustes de voz anteriores falló; se conserva el comportamiento anterior</string>
     <string name="voice_catalog_account">Origen de la cuenta</string>
     <string name="voice_catalog_account_existing">Cuenta de proveedor existente (reutilizar dirección y clave)</string>
@@ -49,6 +52,8 @@
     <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR en streaming</string>
     <string name="voice_catalog_protocol_stt_bailian_streaming">Bailian en streaming</string>
     <string name="voice_catalog_protocol_tts_android_system">Sistema de Android</string>
+    <string name="voice_catalog_system_stt_name">Reconocimiento de voz del sistema Android</string>
+    <string name="voice_catalog_system_tts_name">Síntesis de voz del sistema Android</string>
     <string name="voice_catalog_protocol_tts_openai_speech">Voz de OpenAI</string>
     <string name="voice_catalog_protocol_tts_gemini_tts">TTS de Gemini</string>
     <string name="voice_catalog_protocol_realtime_volc_duplex">Volc dúplex</string>

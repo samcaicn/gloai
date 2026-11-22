@@ -113,6 +113,9 @@ class CallRuntime(private val app: MikaApp) {
     val instructions = CallInstructionStore.create(app)
     private val access = CallTelecomAccess(app)
     private val realtimeController by lazy { VoiceModelEnvironment.get(app).realtime }
+
+    /** True once the legacy realtime profiles have been migrated into the unified voice catalog. */
+    val realtimeMigrated: Boolean get() = realtimeController.migrated
     private val telecom get() = app.getSystemService(TelecomManager::class.java)
     private val telephony get() = app.getSystemService(TelephonyManager::class.java)
     private val notifications = CallNotifications(app)

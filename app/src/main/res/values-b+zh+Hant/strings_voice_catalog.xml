@@ -7,6 +7,9 @@
     <string name="voice_catalog_add">新增模型</string>
     <string name="voice_catalog_empty">還沒有語音模型。點擊「新增模型」開始。</string>
     <string name="voice_catalog_read_failed">語音模型目錄無法讀取</string>
+    <string name="voice_catalog_repair">重設並重新遷移</string>
+    <string name="voice_catalog_repair_title">重設語音模型目錄？</string>
+    <string name="voice_catalog_repair_body">無法讀取已儲存的語音模型目錄。此操作會清除它，並根據之前的語音設定重新建立。</string>
     <string name="voice_catalog_migration_failed">遷移舊版語音設定失敗，仍保留舊版行為</string>
     <string name="voice_catalog_account">帳號來源</string>
     <string name="voice_catalog_account_existing">已有服務商帳號（複用位址與金鑰）</string>
@@ -49,6 +52,8 @@
     <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR 串流</string>
     <string name="voice_catalog_protocol_stt_bailian_streaming">百煉串流</string>
     <string name="voice_catalog_protocol_tts_android_system">Android 系統</string>
+    <string name="voice_catalog_system_stt_name">Android 系統語音辨識</string>
+    <string name="voice_catalog_system_tts_name">Android 系統語音合成</string>
     <string name="voice_catalog_protocol_tts_openai_speech">OpenAI 語音</string>
     <string name="voice_catalog_protocol_tts_gemini_tts">Gemini 語音合成</string>
     <string name="voice_catalog_protocol_realtime_volc_duplex">火山雙工</string>

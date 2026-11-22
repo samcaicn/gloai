@@ -7,6 +7,9 @@
     <string name="voice_catalog_add">Tambah model</string>
     <string name="voice_catalog_empty">Belum ada model suara. Ketuk «Tambah model» untuk memulai.</string>
     <string name="voice_catalog_read_failed">Katalog model suara tidak dapat dibaca</string>
+    <string name="voice_catalog_repair">Setel ulang dan migrasi ulang</string>
+    <string name="voice_catalog_repair_title">Setel ulang katalog model suara?</string>
+    <string name="voice_catalog_repair_body">Katalog model suara yang tersimpan tidak dapat dibaca. Tindakan ini menghapusnya dan membangunnya ulang dari pengaturan suara sebelumnya.</string>
     <string name="voice_catalog_migration_failed">Migrasi pengaturan suara sebelumnya gagal; perilaku sebelumnya dipertahankan</string>
     <string name="voice_catalog_account">Sumber akun</string>
     <string name="voice_catalog_account_existing">Akun penyedia yang ada (pakai ulang alamat dan kunci)</string>
@@ -49,6 +52,8 @@
     <string name="voice_catalog_protocol_stt_funasr_streaming">Streaming FunASR</string>
     <string name="voice_catalog_protocol_stt_bailian_streaming">Streaming Bailian</string>
     <string name="voice_catalog_protocol_tts_android_system">Sistem Android</string>
+    <string name="voice_catalog_system_stt_name">Pengenalan ucapan sistem Android</string>
+    <string name="voice_catalog_system_tts_name">Sintesis ucapan sistem Android</string>
     <string name="voice_catalog_protocol_tts_openai_speech">Suara OpenAI</string>
     <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
     <string name="voice_catalog_protocol_realtime_volc_duplex">Volc duplex</string>

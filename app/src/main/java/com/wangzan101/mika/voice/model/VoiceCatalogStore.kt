@@ -17,6 +17,8 @@ import kotlinx.serialization.json.jsonObject
 interface VoiceCatalogBackend {
     fun read(): String?
     fun write(value: String): Boolean
+    /** Removes the persisted snapshot; used only by the confirm-guarded catalog repair. */
+    fun clear() {}
 }
 
 class VoiceCatalogStore(
@@ -144,6 +146,18 @@ class VoiceCatalogStore(
     @Synchronized
     fun replaceAfterMigration(snapshot: VoiceCatalogSnapshot) {
         commit(allowPreMigrationReplacement = true) { snapshot }
+    }
+
+    /**
+     * Clears a corrupt, unreadable snapshot and returns the catalog to a clean pre-migration state.
+     * Refuses to touch a readable catalog; the repair affordance must never overwrite data silently.
+     */
+    @Synchronized
+    fun resetForRepair() {
+        val current = mutable.value
+        check(current.error != null) { "Voice catalog is readable; refusing to reset" }
+        runCatching { backend.clear() }
+        mutable.value = VoiceCatalogSnapshot(legacyMigrationComplete = false)
     }
 
     private fun commit(

@@ -48,7 +48,7 @@ import java.util.Date
 fun CallSettingsScreen(runtime: CallRuntime, onInstructions: (() -> Unit)? = null, onBack: () -> Unit,
     standalone: Boolean = false, onHelperSetup: () -> Unit = {}, onAbout: () -> Unit = {},
     initialHistoryCallId: String? = null,
-    updateAvailable: Boolean = false, focusRequest: Int = 0) {
+    updateAvailable: Boolean = false, focusRequest: Int = 0, onOpenVoiceCatalog: () -> Unit = {}) {
     var instructionsOpen by rememberSaveable { mutableStateOf(false) }
     var voiceProfilesOpen by rememberSaveable { mutableStateOf(false) }
     var handledFocusRequest by rememberSaveable { mutableIntStateOf(0) }
@@ -62,6 +62,14 @@ fun CallSettingsScreen(runtime: CallRuntime, onInstructions: (() -> Unit)? = nul
         }
     }
     when {
+        // Post-migration the legacy realtime profile screen must never silently misbehave:
+        // redirect to the unified voice catalog where realtime models are edited and tested.
+        voiceProfilesOpen && runtime.realtimeMigrated -> {
+            LaunchedEffect(Unit) {
+                voiceProfilesOpen = false
+                onOpenVoiceCatalog()
+            }
+        }
         voiceProfilesOpen -> CallVoiceProfilesScreen(runtime) { voiceProfilesOpen = false }
         instructionsOpen -> CallInstructionsScreen(runtime) { instructionsOpen = false }
         else -> workspaceState.SaveableStateProvider("call-workspace") {

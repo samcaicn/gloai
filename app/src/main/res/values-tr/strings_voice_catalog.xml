@@ -7,6 +7,9 @@
     <string name="voice_catalog_add">Model ekle</string>
     <string name="voice_catalog_empty">Henüz konuşma modeli yok. Başlamak için «Model ekle»ye dokunun.</string>
     <string name="voice_catalog_read_failed">Konuşma modeli kataloğu okunamıyor</string>
+    <string name="voice_catalog_repair">Sıfırla ve yeniden taşı</string>
+    <string name="voice_catalog_repair_title">Konuşma modeli kataloğu sıfırlansın mı?</string>
+    <string name="voice_catalog_repair_body">Kayıtlı konuşma modeli kataloğu okunamıyor. Bu işlem onu temizler ve önceki ses ayarlarınızdan yeniden oluşturur.</string>
     <string name="voice_catalog_migration_failed">Önceki ses ayarları taşınamadı; önceki davranış korunuyor</string>
     <string name="voice_catalog_account">Hesap kaynağı</string>
     <string name="voice_catalog_account_existing">Mevcut sağlayıcı hesabı (adres ve anahtarı yeniden kullan)</string>
@@ -49,6 +52,8 @@
     <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR akışı</string>
     <string name="voice_catalog_protocol_stt_bailian_streaming">Bailian akışı</string>
     <string name="voice_catalog_protocol_tts_android_system">Android sistemi</string>
+    <string name="voice_catalog_system_stt_name">Android sistemi konuşma tanıma</string>
+    <string name="voice_catalog_system_tts_name">Android sistemi konuşma sentezi</string>
     <string name="voice_catalog_protocol_tts_openai_speech">OpenAI sesi</string>
     <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
     <string name="voice_catalog_protocol_realtime_volc_duplex">Volc çift yönlü</string>

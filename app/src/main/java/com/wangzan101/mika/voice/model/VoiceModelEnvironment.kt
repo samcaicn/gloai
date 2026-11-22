@@ -10,6 +10,9 @@ import com.wangzan101.mika.settings.ProviderStore
 interface MigrationMarker {
     fun markComplete()
 
+    /** Removes the durable migration marker; used only by the confirm-guarded catalog repair. */
+    fun clear() {}
+
     object None : MigrationMarker {
         override fun markComplete() {}
     }
@@ -29,6 +32,10 @@ class VoiceModelEnvironment(
     @Volatile
     var migrationError: VoiceModelError? = null
         private set
+
+    /** Retained read-only legacy source so a corrupt, already-migrated catalog can be repaired in place. */
+    @Volatile
+    private var legacySource: LegacyVoiceSnapshotSource? = null
 
     init {
         val initial = catalog.state.value
@@ -59,12 +66,41 @@ class VoiceModelEnvironment(
 
     /** Runs the one-time legacy migration; a failed read is recorded and legacy behavior is retained. */
     fun migrateLegacy(source: LegacyVoiceSnapshotSource) {
+        legacySource = source
         val store = credentialStore ?: return
         val result = LegacyVoiceMigration(source, catalog, store).migrateIfNeeded()
         when (result) {
             is MigrationResult.Migrated -> migrationMarker.markComplete()
             is MigrationResult.Failed -> migrationError = result.error
             else -> Unit
+        }
+    }
+
+    /**
+     * Repairs a corrupt, already-migrated catalog: clears the corrupt snapshot and the durable
+     * migration marker, resets the catalog to a clean pre-migration state, then re-runs the
+     * legacy migration from the retained rollback data. Refuses to touch a readable catalog.
+     */
+    fun repairCorruptCatalog(): MigrationResult {
+        val source = legacySource
+            ?: return MigrationResult.Failed(VoiceModelError.IncompleteConfig("Legacy voice data is not available for repair"))
+        val store = credentialStore
+            ?: return MigrationResult.Failed(VoiceModelError.IncompleteConfig("Voice credential store is unavailable"))
+        return try {
+            catalog.resetForRepair()
+            migrationMarker.clear()
+            val result = LegacyVoiceMigration(source, catalog, store).migrateIfNeeded()
+            when (result) {
+                is MigrationResult.Migrated -> {
+                    migrationError = null
+                    migrationMarker.markComplete()
+                }
+                is MigrationResult.Failed -> migrationError = result.error
+                else -> Unit
+            }
+            result
+        } catch (error: Exception) {
+            MigrationResult.Failed(VoiceModelError.from(error))
         }
     }
 
@@ -87,11 +123,18 @@ class VoiceModelEnvironment(
             val backend = object : VoiceCatalogBackend {
                 override fun read(): String? = prefs.getString("snapshot", null)
                 override fun write(value: String): Boolean = prefs.edit().putString("snapshot", value).commit()
+                override fun clear() {
+                    prefs.edit().remove("snapshot").apply()
+                }
             }
             val credentials = VoiceCredentialStore.create(context)
             val marker = object : MigrationMarker {
                 override fun markComplete() {
                     prefs.edit().putBoolean("migration_complete", true).commit()
+                }
+
+                override fun clear() {
+                    prefs.edit().remove("migration_complete").apply()
                 }
             }
             return VoiceModelEnvironment(

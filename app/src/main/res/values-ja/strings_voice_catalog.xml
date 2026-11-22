@@ -7,6 +7,9 @@
     <string name="voice_catalog_add">モデルを追加</string>
     <string name="voice_catalog_empty">音声モデルはまだありません。「モデルを追加」をタップして始めます。</string>
     <string name="voice_catalog_read_failed">音声モデルのカタログを読み取れません</string>
+    <string name="voice_catalog_repair">リセットして再移行</string>
+    <string name="voice_catalog_repair_title">音声モデルのカタログをリセットしますか？</string>
+    <string name="voice_catalog_repair_body">保存された音声モデルのカタログを読み取れません。この操作でそれを消去し、以前の音声設定から再構築します。</string>
     <string name="voice_catalog_migration_failed">以前の音声設定の移行に失敗しました。以前の動作を維持します</string>
     <string name="voice_catalog_account">アカウントの出どころ</string>
     <string name="voice_catalog_account_existing">既存のプロバイダーアカウント（アドレスとキーを再利用）</string>
@@ -49,6 +52,8 @@
     <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR ストリーミング</string>
     <string name="voice_catalog_protocol_stt_bailian_streaming">Bailian ストリーミング</string>
     <string name="voice_catalog_protocol_tts_android_system">Android システム</string>
+    <string name="voice_catalog_system_stt_name">Android システム音声認識</string>
+    <string name="voice_catalog_system_tts_name">Android システム音声合成</string>
     <string name="voice_catalog_protocol_tts_openai_speech">OpenAI 音声</string>
     <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
     <string name="voice_catalog_protocol_realtime_volc_duplex">Volc 双方向</string>

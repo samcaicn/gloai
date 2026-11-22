@@ -17,6 +17,8 @@ internal class MemoryVoiceCatalogBackend(initial: String? = null) : VoiceCatalog
     var value: String? = initial
     var writes: Int = 0
         private set
+    var clears: Int = 0
+        private set
 
     override fun read(): String? = value
 
@@ -24,6 +26,11 @@ internal class MemoryVoiceCatalogBackend(initial: String? = null) : VoiceCatalog
         writes++
         this.value = value
         return true
+    }
+
+    override fun clear() {
+        clears++
+        value = null
     }
 }
 

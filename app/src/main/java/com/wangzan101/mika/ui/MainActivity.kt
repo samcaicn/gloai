@@ -683,6 +683,7 @@ private fun MikaRoot(
                 onOpenPersonas = if (personasOn) ({ nav.push(Route.Persona) }) else null,
                 autonomous = autonomous, onAutonomous = app.approvalControl::setAutonomous,
                 updateVersion = updateState.update?.version, onOpenAbout = { nav.push(Route.About) },
+                onOpenVoiceCatalog = { nav.push(Route.VoiceCatalog) },
                 mcpServers = app.mcpServers,
                 openPhoneOps = openPhoneOps, onPhoneOpsOpened = { openPhoneOps = false })
         }
@@ -817,7 +818,7 @@ private fun MikaRoot(
             app.chat.openConversation(it)
             nav.reset()
         })
-        Route.Calls -> CallSettingsScreen(app.calls, onBack = back, standalone = true, initialHistoryCallId = focusedCallHistoryId)
+        Route.Calls -> CallSettingsScreen(app.calls, onBack = back, standalone = true, initialHistoryCallId = focusedCallHistoryId, onOpenVoiceCatalog = { nav.push(Route.VoiceCatalog) })
     }
     }
         }

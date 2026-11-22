@@ -7,6 +7,9 @@
     <string name="voice_catalog_add">添加模型</string>
     <string name="voice_catalog_empty">还没有语音模型。点击「添加模型」开始。</string>
     <string name="voice_catalog_read_failed">语音模型目录无法读取</string>
+    <string name="voice_catalog_repair">重置并重新迁移</string>
+    <string name="voice_catalog_repair_title">重置语音模型目录？</string>
+    <string name="voice_catalog_repair_body">无法读取已保存的语音模型目录。此操作会清除它，并根据之前的语音设置重新建立。</string>
     <string name="voice_catalog_migration_failed">迁移旧版语音设置失败，仍保留旧版行为</string>
     <string name="voice_catalog_account">账号来源</string>
     <string name="voice_catalog_account_existing">已有服务商账号（复用地址与密钥）</string>
@@ -49,6 +52,8 @@
     <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR 流式</string>
     <string name="voice_catalog_protocol_stt_bailian_streaming">百炼流式</string>
     <string name="voice_catalog_protocol_tts_android_system">Android 系统</string>
+    <string name="voice_catalog_system_stt_name">Android 系统语音识别</string>
+    <string name="voice_catalog_system_tts_name">Android 系统语音合成</string>
     <string name="voice_catalog_protocol_tts_openai_speech">OpenAI 语音</string>
     <string name="voice_catalog_protocol_tts_gemini_tts">Gemini 语音合成</string>
     <string name="voice_catalog_protocol_realtime_volc_duplex">火山双工</string>

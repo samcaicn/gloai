@@ -2,6 +2,7 @@ package com.wangzan101.mika.ui
 
 import com.wangzan101.mika.core.model.TtsRequest
 import com.wangzan101.mika.core.model.TtsResponse
+import com.wangzan101.mika.voice.model.MigrationResult
 import com.wangzan101.mika.voice.model.SttSelectionController
 import com.wangzan101.mika.voice.model.TtsSelectionController
 import com.wangzan101.mika.voice.model.VoiceAccountManager
@@ -62,6 +63,9 @@ class VoiceCatalogViewModel(
 
     /** The migration failure, if the one-time legacy migration did not complete. */
     val migrationError: VoiceModelError? get() = environment.migrationError
+
+    /** Clears a corrupt snapshot and re-runs the legacy migration from retained rollback data. */
+    suspend fun repairCorruptCatalog(): MigrationResult = withContext(io) { environment.repairCorruptCatalog() }
 
     private val _probes = MutableStateFlow<Map<String, VoiceProbeUi>>(emptyMap())
     val probes: StateFlow<Map<String, VoiceProbeUi>> = _probes.asStateFlow()

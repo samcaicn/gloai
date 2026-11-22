@@ -55,32 +55,35 @@ class SystemTtsModel(
             val file = File(dir, "mika-tts-${System.nanoTime()}.wav")
             val utteranceId = "mika-tts-${System.nanoTime()}"
 
-            val complete = CompletableDeferred<Unit>()
-            engine.setOnUtteranceProgressListener(
-                onDone = { complete.complete(Unit) },
-                onError = {
-                    complete.completeExceptionally(
-                        VoiceModelError.Protocol(
-                            VoiceErrorCategory.SYSTEM_UNAVAILABLE, "System text-to-speech synthesis failed",
-                        ),
+            try {
+                val complete = CompletableDeferred<Unit>()
+                engine.setOnUtteranceProgressListener(
+                    onDone = { complete.complete(Unit) },
+                    onError = {
+                        complete.completeExceptionally(
+                            VoiceModelError.Protocol(
+                                VoiceErrorCategory.SYSTEM_UNAVAILABLE, "System text-to-speech synthesis failed",
+                            ),
+                        )
+                    },
+                )
+                if (engine.synthesizeToFile(request.text, file, utteranceId) != TextToSpeech.SUCCESS) {
+                    throw VoiceModelError.Protocol(
+                        VoiceErrorCategory.SYSTEM_UNAVAILABLE, "System text-to-speech synthesis failed",
                     )
-                },
-            )
-            if (engine.synthesizeToFile(request.text, file, utteranceId) != TextToSpeech.SUCCESS) {
-                throw VoiceModelError.Protocol(
-                    VoiceErrorCategory.SYSTEM_UNAVAILABLE, "System text-to-speech synthesis failed",
-                )
-            }
-            complete.await()
+                }
+                complete.await()
 
-            val bytes = runCatching { file.readBytes() }.getOrDefault(ByteArray(0))
-            file.delete()
-            if (bytes.isEmpty()) {
-                throw VoiceModelError.Protocol(
-                    VoiceErrorCategory.PROTOCOL_ERROR, "System text-to-speech produced no audio",
-                )
+                val bytes = runCatching { file.readBytes() }.getOrDefault(ByteArray(0))
+                if (bytes.isEmpty()) {
+                    throw VoiceModelError.Protocol(
+                        VoiceErrorCategory.PROTOCOL_ERROR, "System text-to-speech produced no audio",
+                    )
+                }
+                TtsResponse(bytes, "audio/wav")
+            } finally {
+                runCatching { file.delete() }
             }
-            TtsResponse(bytes, "audio/wav")
         } finally {
             runCatching { engine.stop() }
             runCatching { engine.shutdown() }

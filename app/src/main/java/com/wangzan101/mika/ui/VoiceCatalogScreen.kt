@@ -73,11 +73,27 @@ import com.wangzan101.mika.ui.components.StatusPill
 import com.wangzan101.mika.ui.components.SubPage
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import kotlinx.coroutines.launch
 
 /**
  * 设置 › 模型 › 语音模型:统一管理语音转文字、文字转语音和实时通话的模型。
  * 服务商、账号、每个能力各自的协议与接口在此声明;语音输入、朗读和通话设置页只负责选择与使用偏好。
  */
+
+/** Resource id for a built-in system model's localized name, or null for user-defined models. */
+internal fun systemModelDisplayNameRes(model: VoiceModel): Int? = when {
+    model.serviceId == SttSelectionController.SYSTEM_STT_MODEL.serviceId &&
+        model.id == SttSelectionController.SYSTEM_STT_MODEL.id -> R.string.voice_catalog_system_stt_name
+    model.serviceId == TtsSelectionController.SYSTEM_TTS_MODEL.serviceId &&
+        model.id == TtsSelectionController.SYSTEM_TTS_MODEL.id -> R.string.voice_catalog_system_tts_name
+    else -> null
+}
+
+/** Display name for a catalog model; the built-in system models render a localized resource. */
+@Composable
+internal fun voiceModelDisplayName(model: VoiceModel): String =
+    systemModelDisplayNameRes(model)?.let { stringResource(it) } ?: model.displayName
+
 @Composable
 fun VoiceCatalogScreen(voiceModels: VoiceModelEnvironment, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -117,6 +133,7 @@ internal fun VoiceCatalogContent(viewModel: VoiceCatalogViewModel, onBack: () ->
     var sheetOpen by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<VoiceModel?>(null) }
     var deleting by remember { mutableStateOf<VoiceModel?>(null) }
+    var confirmingRepair by remember { mutableStateOf(false) }
 
     SubPage(stringResource(R.string.voice_catalog_title), onBack) {
         FooterNote(stringResource(R.string.voice_catalog_sub))
@@ -130,6 +147,12 @@ internal fun VoiceCatalogContent(viewModel: VoiceCatalogViewModel, onBack: () ->
         if (snapshot.error != null) {
             Spacer(Modifier.height(12.dp))
             StatusPill(stringResource(R.string.voice_catalog_read_failed), PillTone.Warn, Modifier.testTag("voice-catalog-read-failed"))
+            Spacer(Modifier.height(12.dp))
+            MikaButton(
+                stringResource(R.string.voice_catalog_repair),
+                onClick = { confirmingRepair = true },
+                modifier = Modifier.fillMaxWidth().testTag("voice-catalog-repair"),
+            )
             return@SubPage
         }
 
@@ -188,6 +211,24 @@ internal fun VoiceCatalogContent(viewModel: VoiceCatalogViewModel, onBack: () ->
                     },
                     modifier = Modifier.testTag("voice-catalog-delete-confirm"),
                 ) { Text(stringResource(R.string.voice_catalog_delete)) }
+            },
+        )
+    }
+
+    if (confirmingRepair) {
+        MikaDialog(
+            onDismissRequest = { confirmingRepair = false },
+            title = { Text(stringResource(R.string.voice_catalog_repair_title)) },
+            text = { Text(stringResource(R.string.voice_catalog_repair_body)) },
+            dismissButton = { TextButton(onClick = { confirmingRepair = false }) { Text(stringResource(R.string.cancel)) } },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmingRepair = false
+                        scope.launch { viewModel.repairCorruptCatalog() }
+                    },
+                    modifier = Modifier.testTag("voice-catalog-repair-confirm"),
+                ) { Text(stringResource(R.string.voice_catalog_repair)) }
             },
         )
     }
@@ -260,7 +301,7 @@ private fun ModelRow(
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(model.displayName, style = MikaType.Body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                Text(voiceModelDisplayName(model), style = MikaType.Body.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
                 Text(model.id, style = MikaType.Hint, color = c.ink3)
             }
             if (!system) {

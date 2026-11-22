@@ -7,6 +7,9 @@
     <string name="voice_catalog_add">افزودن مدل</string>
     <string name="voice_catalog_empty">هنوز مدل گفتاری نیست. برای شروع روی «افزودن مدل» بزنید.</string>
     <string name="voice_catalog_read_failed">فهرست مدل‌های گفتار خوانده نمی‌شود</string>
+    <string name="voice_catalog_repair">بازنشانی و انتقال مجدد</string>
+    <string name="voice_catalog_repair_title">فهرست مدل‌های گفتار بازنشانی شود؟</string>
+    <string name="voice_catalog_repair_body">فهرست مدل‌های گفتار ذخیره‌شده خوانده نمی‌شود. این کار آن را پاک کرده و از تنظیمات گفتار قبلی بازسازی می‌کند.</string>
     <string name="voice_catalog_migration_failed">انتقال تنظیمات گفتار قبلی ناموفق بود؛ رفتار قبلی حفظ می‌شود</string>
     <string name="voice_catalog_account">منبع حساب</string>
     <string name="voice_catalog_account_existing">حساب ارائه‌دهنده موجود (استفاده دوباره از نشانی و کلید)</string>
@@ -49,6 +52,8 @@
     <string name="voice_catalog_protocol_stt_funasr_streaming">استریم FunASR</string>
     <string name="voice_catalog_protocol_stt_bailian_streaming">استریم Bailian</string>
     <string name="voice_catalog_protocol_tts_android_system">سیستم Android</string>
+    <string name="voice_catalog_system_stt_name">تشخیص گفتار سیستم Android</string>
+    <string name="voice_catalog_system_tts_name">تولید گفتار سیستم Android</string>
     <string name="voice_catalog_protocol_tts_openai_speech">گفتار OpenAI</string>
     <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
     <string name="voice_catalog_protocol_realtime_volc_duplex">Volc دوطرفه</string>

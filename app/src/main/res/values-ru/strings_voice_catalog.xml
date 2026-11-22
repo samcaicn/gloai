@@ -7,6 +7,9 @@
     <string name="voice_catalog_add">Добавить модель</string>
     <string name="voice_catalog_empty">Голосовых моделей пока нет. Нажмите «Добавить модель», чтобы начать.</string>
     <string name="voice_catalog_read_failed">Не удалось прочитать каталог голосовых моделей</string>
+    <string name="voice_catalog_repair">Сбросить и перенести заново</string>
+    <string name="voice_catalog_repair_title">Сбросить каталог голосовых моделей?</string>
+    <string name="voice_catalog_repair_body">Не удалось прочитать сохранённый каталог голосовых моделей. Это действие очистит его и пересоздаст из прежних голосовых настроек.</string>
     <string name="voice_catalog_migration_failed">Не удалось перенести прежние голосовые настройки; сохранено прежнее поведение</string>
     <string name="voice_catalog_account">Источник аккаунта</string>
     <string name="voice_catalog_account_existing">Существующий аккаунт провайдера (повторное использование адреса и ключа)</string>
@@ -49,6 +52,8 @@
     <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR стриминг</string>
     <string name="voice_catalog_protocol_stt_bailian_streaming">Bailian стриминг</string>
     <string name="voice_catalog_protocol_tts_android_system">Система Android</string>
+    <string name="voice_catalog_system_stt_name">Распознавание речи системы Android</string>
+    <string name="voice_catalog_system_tts_name">Синтез речи системы Android</string>
     <string name="voice_catalog_protocol_tts_openai_speech">Речь OpenAI</string>
     <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
     <string name="voice_catalog_protocol_realtime_volc_duplex">Volc дуплекс</string>
