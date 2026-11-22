@@ -164,6 +164,7 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.viewer.FileViewer
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.WordmarkWeight
 import com.wangzan101.mika.voice.HoldToTalk
 import com.wangzan101.mika.voice.VoicePlayback
 import com.wangzan101.mika.voice.VoiceSource
@@ -515,7 +516,7 @@ fun ChatScreen(
                         Row(Modifier.clickable(role = Role.Button, onClickLabel = stringResource(R.string.chat_usage_title)) { showUsage = true }
                             .testTag("chat-usage-title").padding(horizontal = 14.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(ChatCopy.APP_TITLE, style = MikaType.Title, color = c.ink, maxLines = 1)
+                            Text(ChatCopy.APP_TITLE, style = MikaType.Title.copy(fontWeight = WordmarkWeight), color = c.ink, maxLines = 1)
                         }
                     }
                     GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
@@ -2043,7 +2044,7 @@ private val BubbleText = MikaType.Body
 /** 回答:正文字号,行距放宽到 1.7。 */
 private val AnswerText = MikaType.Body
 private val NowText = MikaType.Value
-private val TurnNameText = MikaType.Label.copy(fontWeight = FontWeight.SemiBold)
+private val TurnNameText = MikaType.Label.copy(fontWeight = WordmarkWeight)
 private val ClockText = MikaType.Hint.copy(fontFeatureSettings = "tnum")
 private val StepText = MikaType.Caption
 private val StepCurrentText = MikaType.Caption.copy(fontWeight = FontWeight.Medium)

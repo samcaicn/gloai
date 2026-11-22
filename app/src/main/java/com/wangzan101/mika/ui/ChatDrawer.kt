@@ -144,6 +144,7 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.ui.theme.MikaRadius
 import com.wangzan101.mika.ui.theme.MikaShapes
+import com.wangzan101.mika.ui.theme.WordmarkWeight
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import java.time.DayOfWeek
@@ -475,7 +476,7 @@ fun ChatDrawer(
         ) {
             MikaLogo(36.dp, corner = 10.dp)
             Column(Modifier.weight(1f)) {
-                Text("Mika", style = MikaType.Title, color = c.ink)
+                Text("Mika", style = MikaType.Title.copy(fontWeight = WordmarkWeight), color = c.ink)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     Box(Modifier.size(6.dp).background(if (ok) c.ok else c.warnSolid, CircleShape))
                     Text(state, style = MikaType.Hint, fontWeight = FontWeight.Medium, color = c.ink3)

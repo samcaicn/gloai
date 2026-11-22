@@ -7,6 +7,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** 词标「Mika」统一用这个字重:比标题轻一档,顶栏、侧栏、回答头看起来是同一个名字。 */
+val WordmarkWeight = FontWeight.Medium
+
 /** 字号与字重。只定大小、字重、行高,颜色由用的地方给。 */
 object MikaType {
     /** 大标题:空状态、欢迎页。 */

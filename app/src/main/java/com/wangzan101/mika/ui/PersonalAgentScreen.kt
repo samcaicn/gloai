@@ -73,6 +73,7 @@ import com.wangzan101.mika.ui.theme.MikaSpace
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.WordmarkWeight
 import com.wangzan101.mika.voice.HoldToTalk
 import com.wangzan101.mika.voice.VoiceSource
 import kotlinx.coroutines.launch
@@ -353,13 +354,13 @@ internal fun PersonalProfileDialog(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             MikaLogo(36.dp, corner = 18.dp)
-                            Text("Mika", style = MikaType.Title, color = c.ink, maxLines = 1)
+                            Text("Mika", style = MikaType.Title.copy(fontWeight = WordmarkWeight), color = c.ink, maxLines = 1)
                         }
                     } else {
                         Column(Modifier.align(Alignment.TopCenter).padding(top = MikaSpace.S4),
                             horizontalAlignment = Alignment.CenterHorizontally) {
                             MikaLogo(52.dp, corner = 26.dp)
-                            Text("Mika", Modifier.padding(top = MikaSpace.S8), style = MikaType.Title, color = c.ink)
+                            Text("Mika", Modifier.padding(top = MikaSpace.S8), style = MikaType.Title.copy(fontWeight = WordmarkWeight), color = c.ink)
                         }
                     }
                     Box(Modifier.align(Alignment.TopEnd)) {
@@ -489,7 +490,7 @@ internal fun PersonalHeader(
                     ) {
                         MikaLogo(52.dp, corner = 26.dp)
                     }
-                    Text("Mika", Modifier.padding(top = 7.dp), style = MikaType.Title, color = c.ink)
+                    Text("Mika", Modifier.padding(top = 7.dp), style = MikaType.Title.copy(fontWeight = WordmarkWeight), color = c.ink)
                 }
                 if (frame != null) {
                     Image(
