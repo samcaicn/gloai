@@ -337,7 +337,7 @@ class TeachRuntime(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                failDraft(snapshot, TeachNotice.DraftFailed)
+                runCatching { failDraft(snapshot, TeachNotice.DraftFailed) }
             }
         }
     }
@@ -383,7 +383,8 @@ class TeachRuntime(
             val cur = session
             if (cur?.id != snapshot.id || cur.phase != TeachPhase.Drafting) return
             session = cur.copy(phase = TeachPhase.Reviewing, updatedAt = System.currentTimeMillis())
-            files.save(session!!)
+            // 写盘失败也要把「没能写成草稿、可以重来」的页面给出来,不能再抛回去把进程带走
+            runCatching { files.save(session!!) }
             publish(notice)
         }
     }
