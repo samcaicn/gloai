@@ -99,4 +99,22 @@
     <string name="voice_use_for_realtime">用于语音通话</string>
     <string name="voice_result_in_use">正在使用</string>
     <string name="voice_result_done">完成</string>
+    <string name="calls_who_speaks">用谁来说</string>
+    <string name="calls_what_to_say">电话里说什么</string>
+    <string name="calls_profile_summary">开场白、指示和通话时长</string>
+    <string name="calls_voice_title">通话语音</string>
+    <string name="calls_voice_follow">跟语音通话一样</string>
+    <string name="calls_voice_follow_none">还没选语音通话模型</string>
+    <string name="calls_voice_own">给接打电话单独指定</string>
+    <string name="calls_voice_own_note">接打电话用这个模型，聊天里的语音通话不受影响。</string>
+    <string name="calls_voice_shared_note">这个音色和聊天里的语音通话共用。</string>
+    <string name="calls_voice_follow_summary">跟语音通话一样 · %1$s</string>
+    <string name="calls_audio_title">手机通话音频</string>
+    <string name="calls_audio_lead">打电话时 Mika 怎么听、怎么说。各手机不一样，选在这台手机上能用的方式。</string>
+    <string name="calls_audio_direct_note">Mika 直接播放和录制通话音频，大多数手机可用。</string>
+    <string name="calls_audio_redirect_note">通过扬声器和麦克风转接通话音频。对方听不到 Mika 时试试这个。</string>
+    <string name="calls_audio_check">打一通测试电话，确认双方都能听到后勾选。</string>
+    <string name="calls_audio_footer">换了方式会清掉确认，切换后需要重新确认。</string>
+    <string name="calls_audio_checked">已确认</string>
+    <string name="calls_audio_unchecked">未确认</string>
 </resources>

@@ -24,11 +24,8 @@
     <string name="calls_voice_credentials_keep">Deja el campo vacío para conservar las credenciales. Las nuevas credenciales sustituirán las anteriores y requerirán otra prueba.</string>
     <string name="calls_back_settings">Volver a ajustes</string>
     <string name="calls_enabled_summary">Puedes responder y llamar con IA; la respuesta automática tiene su propio interruptor.</string>
-    <string name="calls_settings_voice_group">Voz y modelos</string>
     <string name="calls_settings_device_group">Dispositivo y ejecución</string>
     <string name="calls_settings_data_group">Datos</string>
     <string name="calls_history_entry_summary">Resúmenes, pendientes y transcripciones</string>
-    <string name="calls_advanced_summary">Canal de audio y diagnóstico</string>
-    <string name="calls_advanced_note">Cambiar el canal de audio restablece la verificación bidireccional. Haz otra llamada real antes de activar la respuesta automática.</string>
     <string name="calls_voice_setup">Configurar y probar el servicio de voz</string>
 </resources>

@@ -24,11 +24,8 @@
     <string name="calls_voice_credentials_keep">Leave blank to keep the saved credentials; entering new credentials replaces them and requires another connection test.</string>
     <string name="calls_back_settings">Back to settings</string>
     <string name="calls_enabled_summary">AI answer and dial are enabled; automatic answer has its own switch.</string>
-    <string name="calls_settings_voice_group">Voice and models</string>
     <string name="calls_settings_device_group">Device and runtime</string>
     <string name="calls_settings_data_group">Data</string>
     <string name="calls_history_entry_summary">Summaries, follow-ups and original transcripts</string>
-    <string name="calls_advanced_summary">Audio route and diagnostics</string>
-    <string name="calls_advanced_note">Changing the audio route resets two-way audio verification. Run another real test call before enabling automatic answer.</string>
     <string name="calls_voice_setup">Configure and test voice service</string>
 </resources>

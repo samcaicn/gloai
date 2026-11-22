@@ -24,11 +24,8 @@
     <string name="calls_enable">Enable AI calling</string>
     <string name="calls_disable">Disable and restore normal calling</string>
     <string name="calls_provider">Volcengine Ark Doubao realtime voice interaction API</string>
-    <string name="calls_credentials">Volcengine Ark Doubao realtime voice interaction API credentials</string>
-    <string name="calls_key_saved">Credentials saved securely; service access still needs a real test</string>
     <string name="calls_key_missing">Not configured</string>
     <string name="calls_profile">Call configuration</string>
-    <string name="calls_model_label">Model %1$s · call audio route</string>
     <string name="calls_incoming">Incoming calls</string>
     <string name="calls_auto_answer">Answer incoming calls automatically</string>
     <string name="calls_all_incoming">Include all incoming numbers</string>
@@ -61,7 +58,6 @@
     <string name="calls_tool_state">Call state</string>
     <string name="calls_tool_dial">Place call</string>
     <string name="calls_tool_hangup">Hang up call</string>
-    <string name="calls_advanced">Advanced settings</string>
     <string name="calls_allowlist_hint">Enter one number per line, or separate numbers with commas.</string>
     <string name="calls_allowlist_invalid">Use valid phone numbers (up to %1$d).</string>
     <string name="calls_audio_direct">Direct phone audio</string>

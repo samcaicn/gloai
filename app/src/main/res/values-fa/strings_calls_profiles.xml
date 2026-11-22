@@ -24,11 +24,8 @@
     <string name="calls_voice_credentials_keep">برای حفظ اطلاعات اعتبار ذخیره‌شده، این بخش را خالی بگذارید. اطلاعات جدید جایگزین قبلی می‌شود و آزمایش دوباره لازم است.</string>
     <string name="calls_back_settings">بازگشت به تنظیمات</string>
     <string name="calls_enabled_summary">پاسخ و تماس با هوش مصنوعی فعال است؛ پاسخ خودکار کلید مستقل دارد.</string>
-    <string name="calls_settings_voice_group">صدا و مدل‌ها</string>
     <string name="calls_settings_device_group">دستگاه و اجرا</string>
     <string name="calls_settings_data_group">داده‌ها</string>
     <string name="calls_history_entry_summary">خلاصه‌ها، پیگیری‌ها و متن اصلی</string>
-    <string name="calls_advanced_summary">کانال صوتی و تشخیص</string>
-    <string name="calls_advanced_note">تغییر کانال صوتی، تأیید صدای دوطرفه را بازنشانی می‌کند. پیش از فعال‌کردن پاسخ خودکار، دوباره یک تماس آزمایشی واقعی انجام دهید.</string>
     <string name="calls_voice_setup">پیکربندی و آزمایش سرویس صدا</string>
 </resources>

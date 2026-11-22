@@ -24,11 +24,8 @@
     <string name="calls_voice_credentials_keep">Kayıtlı kimlik bilgilerini korumak için boş bırakın; yeni kimlik bilgileri girmek onları değiştirir ve başka bir bağlantı testi gerektirir.</string>
     <string name="calls_back_settings">Ayarlara dön</string>
     <string name="calls_enabled_summary">Yapay zeka yanıtı ve arama etkin; otomatik yanıtın kendi anahtarı var.</string>
-    <string name="calls_settings_voice_group">Ses ve modeller</string>
     <string name="calls_settings_device_group">Cihaz ve çalışma zamanı</string>
     <string name="calls_settings_data_group">Veriler</string>
     <string name="calls_history_entry_summary">Özetler, takipler ve orijinal deşifreler</string>
-    <string name="calls_advanced_summary">Ses yolu ve tanılamalar</string>
-    <string name="calls_advanced_note">Ses yolunu değiştirmek iki yönlü ses doğrulamasını sıfırlar. Otomatik yanıtı etkinleştirmeden önce başka bir gerçek test araması yapın.</string>
     <string name="calls_voice_setup">Ses hizmetini yapılandırın ve test edin</string>
 </resources>

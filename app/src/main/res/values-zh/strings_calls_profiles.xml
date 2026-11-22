@@ -24,11 +24,8 @@
     <string name="calls_voice_credentials_keep">留空则保留已存凭据；填写新凭据会替换原值，并需要重新测试连接。</string>
     <string name="calls_back_settings">返回设置</string>
     <string name="calls_enabled_summary">可使用 AI 接听和拨打；自动接听有独立开关。</string>
-    <string name="calls_settings_voice_group">语音与模型</string>
     <string name="calls_settings_device_group">设备与运行</string>
     <string name="calls_settings_data_group">数据</string>
     <string name="calls_history_entry_summary">摘要、待办与原始文字</string>
-    <string name="calls_advanced_summary">音频通道与诊断</string>
-    <string name="calls_advanced_note">切换音频通道会重置双向音频验证。重新完成真实测试通话后，再开启自动接听。</string>
     <string name="calls_voice_setup">配置并测试语音服务</string>
 </resources>

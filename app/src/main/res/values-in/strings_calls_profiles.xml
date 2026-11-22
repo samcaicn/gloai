@@ -24,11 +24,8 @@
     <string name="calls_voice_credentials_keep">Kosongkan untuk mempertahankan kredensial tersimpan. Kredensial baru akan menggantikan yang lama dan perlu diuji ulang.</string>
     <string name="calls_back_settings">Kembali ke pengaturan</string>
     <string name="calls_enabled_summary">AI dapat menjawab dan menelepon; jawab otomatis memiliki sakelar terpisah.</string>
-    <string name="calls_settings_voice_group">Suara dan model</string>
     <string name="calls_settings_device_group">Perangkat dan operasi</string>
     <string name="calls_settings_data_group">Data</string>
     <string name="calls_history_entry_summary">Ringkasan, tindak lanjut, dan transkrip asli</string>
-    <string name="calls_advanced_summary">Saluran audio dan diagnostik</string>
-    <string name="calls_advanced_note">Mengganti saluran audio akan mengatur ulang verifikasi audio dua arah. Lakukan panggilan uji lagi sebelum mengaktifkan jawab otomatis.</string>
     <string name="calls_voice_setup">Konfigurasi dan uji layanan suara</string>
 </resources>

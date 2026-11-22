@@ -24,11 +24,8 @@
     <string name="calls_enable">AI 전화 켜기</string>
     <string name="calls_disable">끄고 일반 통화로 복원</string>
     <string name="calls_provider">Volcengine 실시간 음성 3.0</string>
-    <string name="calls_credentials">실시간 음성 인증 정보</string>
-    <string name="calls_key_saved">인증 정보를 안전하게 저장했습니다. 실제 통화로 서비스를 이용할 수 있는지 확인하세요</string>
     <string name="calls_key_missing">설정되지 않음</string>
     <string name="calls_profile">인사말과 통화 목적</string>
-    <string name="calls_model_label">모델 %1$s · 통화 오디오 경로</string>
     <string name="calls_incoming">수신 전화</string>
     <string name="calls_auto_answer">수신 전화 자동으로 받기</string>
     <string name="calls_all_incoming">모든 수신 전화 받기</string>
@@ -61,7 +58,6 @@
     <string name="calls_tool_state">통화 상태</string>
     <string name="calls_tool_dial">전화 걸기</string>
     <string name="calls_tool_hangup">전화 끊기</string>
-    <string name="calls_advanced">고급 설정</string>
     <string name="calls_allowlist_hint">한 줄에 하나씩 입력하거나 쉼표로 구분하세요.</string>
     <string name="calls_allowlist_invalid">유효한 전화번호를 최대 %1$d개 입력하세요.</string>
     <string name="calls_audio_direct">전화 오디오 직접 연결</string>

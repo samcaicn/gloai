@@ -24,11 +24,8 @@
     <string name="calls_voice_credentials_keep">空欄のままにすると保存済みの認証情報を保持します。新しい認証情報を入力すると置き換わり、再テストが必要です。</string>
     <string name="calls_back_settings">設定に戻る</string>
     <string name="calls_enabled_summary">AIによる応答と発信を使用できます。自動応答には別のスイッチがあります。</string>
-    <string name="calls_settings_voice_group">音声とモデル</string>
     <string name="calls_settings_device_group">端末と動作</string>
     <string name="calls_settings_data_group">データ</string>
     <string name="calls_history_entry_summary">要約、フォローアップ、原文</string>
-    <string name="calls_advanced_summary">音声チャンネルと診断</string>
-    <string name="calls_advanced_note">音声チャンネルを変更すると双方向音声の検証がリセットされます。自動応答を有効にする前に、再度実際のテスト通話を行ってください。</string>
     <string name="calls_voice_setup">音声サービスを設定してテスト</string>
 </resources>

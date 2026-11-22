@@ -24,11 +24,8 @@
     <string name="calls_voice_credentials_keep">留空則保留已存憑證；填寫新憑證會取代原值，並需要重新測試連線。</string>
     <string name="calls_back_settings">返回設定</string>
     <string name="calls_enabled_summary">可使用 AI 接聽和撥打；自動接聽有獨立開關。</string>
-    <string name="calls_settings_voice_group">語音與模型</string>
     <string name="calls_settings_device_group">裝置與執行</string>
     <string name="calls_settings_data_group">資料</string>
     <string name="calls_history_entry_summary">摘要、待辦與原始文字</string>
-    <string name="calls_advanced_summary">音訊通道與診斷</string>
-    <string name="calls_advanced_note">切換音訊通道會重設雙向音訊驗證。重新完成實際測試通話後，再開啟自動接聽。</string>
     <string name="calls_voice_setup">設定並測試語音服務</string>
 </resources>

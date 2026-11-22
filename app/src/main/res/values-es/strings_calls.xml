@@ -24,11 +24,8 @@
     <string name="calls_enable">Activar las llamadas con IA</string>
     <string name="calls_disable">Desactivar y restaurar las llamadas normales</string>
     <string name="calls_provider">Voz en tiempo real de Volcengine 3.0</string>
-    <string name="calls_credentials">Credenciales de voz en tiempo real</string>
-    <string name="calls_key_saved">Las credenciales se guardaron de forma segura; falta probar el acceso al servicio en una llamada real</string>
     <string name="calls_key_missing">Sin configurar</string>
     <string name="calls_profile">Saludo y propósito de la llamada</string>
-    <string name="calls_model_label">Modelo %1$s · ruta de audio de la llamada</string>
     <string name="calls_incoming">Llamadas entrantes</string>
     <string name="calls_auto_answer">Contestar automáticamente las llamadas entrantes</string>
     <string name="calls_all_incoming">Incluir todos los números entrantes</string>
@@ -61,7 +58,6 @@
     <string name="calls_tool_state">Estado de la llamada</string>
     <string name="calls_tool_dial">Realizar llamada</string>
     <string name="calls_tool_hangup">Colgar la llamada</string>
-    <string name="calls_advanced">Ajustes avanzados</string>
     <string name="calls_allowlist_hint">Escriba un número por línea o sepárelos con comas.</string>
     <string name="calls_allowlist_invalid">Use números válidos (hasta %1$d).</string>
     <string name="calls_audio_direct">Audio telefónico directo</string>

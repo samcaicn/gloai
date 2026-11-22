@@ -24,11 +24,8 @@
     <string name="calls_enable">تفعيل المكالمات بالذكاء الاصطناعي</string>
     <string name="calls_disable">التعطيل واستعادة المكالمات العادية</string>
     <string name="calls_provider">خدمة الصوت الفوري 3.0 من Volcengine</string>
-    <string name="calls_credentials">بيانات اعتماد خدمة الصوت الفوري</string>
-    <string name="calls_key_saved">حُفظت بيانات الاعتماد بأمان؛ يلزم اختبار فعلي للتأكد من إمكانية استخدام الخدمة</string>
     <string name="calls_key_missing">لم يتم الإعداد</string>
     <string name="calls_profile">التحية وهدف المكالمة</string>
-    <string name="calls_model_label">النموذج %1$s · مسار صوت المكالمة</string>
     <string name="calls_incoming">المكالمات الواردة</string>
     <string name="calls_auto_answer">الرد تلقائيًا على المكالمات الواردة</string>
     <string name="calls_all_incoming">تضمين جميع الأرقام الواردة</string>
@@ -61,7 +58,6 @@
     <string name="calls_tool_state">حالة المكالمة</string>
     <string name="calls_tool_dial">إجراء مكالمة</string>
     <string name="calls_tool_hangup">إنهاء المكالمة</string>
-    <string name="calls_advanced">الإعدادات المتقدمة</string>
     <string name="calls_allowlist_hint">أدخل رقمًا واحدًا في كل سطر أو افصل الأرقام بفواصل.</string>
     <string name="calls_allowlist_invalid">أدخل أرقام هاتف صالحة (حتى %1$d).</string>
     <string name="calls_audio_direct">صوت الهاتف المباشر</string>

@@ -24,11 +24,8 @@
     <string name="calls_enable">启用 AI 电话</string>
     <string name="calls_disable">停用并恢复正常电话</string>
     <string name="calls_provider">火山方舟 Doubao 实时语音交互 API</string>
-    <string name="calls_credentials">火山方舟 Doubao 实时语音交互 API 凭据</string>
-    <string name="calls_key_saved">凭据已加密保存，服务权限仍需实际验证</string>
     <string name="calls_key_missing">尚未配置</string>
     <string name="calls_profile">通话配置</string>
-    <string name="calls_model_label">模型 %1$s · 通话音频通道</string>
     <string name="calls_incoming">来电</string>
     <string name="calls_auto_answer">自动接听来电</string>
     <string name="calls_all_incoming">接听所有来电</string>
@@ -61,7 +58,6 @@
     <string name="calls_tool_state">通话状态</string>
     <string name="calls_tool_dial">拨打电话</string>
     <string name="calls_tool_hangup">挂断电话</string>
-    <string name="calls_advanced">高级设置</string>
     <string name="calls_allowlist_hint">每行填写一个号码，也可用逗号分隔。</string>
     <string name="calls_allowlist_invalid">请填写有效号码，最多 %1$d 个。</string>
     <string name="calls_audio_direct">直连电话音频</string>

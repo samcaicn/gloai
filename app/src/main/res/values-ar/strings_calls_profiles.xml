@@ -24,11 +24,8 @@
     <string name="calls_voice_credentials_keep">اترك الحقل فارغًا للاحتفاظ ببيانات الاعتماد المحفوظة. ستؤدي البيانات الجديدة إلى استبدال القديمة وإعادة الاختبار.</string>
     <string name="calls_back_settings">العودة إلى الإعدادات</string>
     <string name="calls_enabled_summary">يمكن للذكاء الاصطناعي الرد وإجراء المكالمات؛ وللرد التلقائي مفتاح مستقل.</string>
-    <string name="calls_settings_voice_group">الصوت والنماذج</string>
     <string name="calls_settings_device_group">الجهاز والتشغيل</string>
     <string name="calls_settings_data_group">البيانات</string>
     <string name="calls_history_entry_summary">الملخصات والمتابعات والنصوص الأصلية</string>
-    <string name="calls_advanced_summary">قناة الصوت والتشخيص</string>
-    <string name="calls_advanced_note">يؤدي تغيير قناة الصوت إلى إعادة تعيين التحقق من الصوت في الاتجاهين. أجرِ مكالمة اختبار حقيقية أخرى قبل تفعيل الرد التلقائي.</string>
     <string name="calls_voice_setup">إعداد خدمة الصوت واختبارها</string>
 </resources>

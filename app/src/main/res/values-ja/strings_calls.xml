@@ -24,11 +24,8 @@
     <string name="calls_enable">AI 電話を有効にする</string>
     <string name="calls_disable">無効にして通常の通話に戻す</string>
     <string name="calls_provider">Volcengine リアルタイム音声 3.0</string>
-    <string name="calls_credentials">リアルタイム音声の認証情報</string>
-    <string name="calls_key_saved">認証情報を安全に保存しました。サービスを利用できるかは実際の通話で確認してください</string>
     <string name="calls_key_missing">未設定</string>
     <string name="calls_profile">あいさつと通話の目的</string>
-    <string name="calls_model_label">モデル %1$s · 通話音声の経路</string>
     <string name="calls_incoming">着信</string>
     <string name="calls_auto_answer">着信に自動応答</string>
     <string name="calls_all_incoming">すべての着信に応答</string>
@@ -61,7 +58,6 @@
     <string name="calls_tool_state">通話の状態</string>
     <string name="calls_tool_dial">電話をかける</string>
     <string name="calls_tool_hangup">電話を切る</string>
-    <string name="calls_advanced">詳細設定</string>
     <string name="calls_allowlist_hint">1行に1件入力するか、カンマで区切ってください。</string>
     <string name="calls_allowlist_invalid">有効な電話番号を %1$d 件以内で入力してください。</string>
     <string name="calls_audio_direct">通話音声を直接使用</string>

@@ -24,11 +24,8 @@
     <string name="calls_enable">فعال کردن تماس هوش مصنوعی</string>
     <string name="calls_disable">غیرفعال کردن و بازگرداندن تماس عادی</string>
     <string name="calls_provider">صدای بلادرنگ Volcengine 3.0</string>
-    <string name="calls_credentials">اعتبارنامه‌های صدای بلادرنگ</string>
-    <string name="calls_key_saved">اعتبارنامه‌ها به‌صورت امن ذخیره شدند؛ دسترسی به سرویس همچنان به آزمایش واقعی نیاز دارد</string>
     <string name="calls_key_missing">پیکربندی نشده</string>
     <string name="calls_profile">پیام خوش‌آمد و هدف تماس</string>
-    <string name="calls_model_label">مدل %1$s · مسیر صدای تماس</string>
     <string name="calls_incoming">تماس‌های ورودی</string>
     <string name="calls_auto_answer">پاسخ خودکار به تماس‌های ورودی</string>
     <string name="calls_all_incoming">شامل همه شماره‌های ورودی</string>
@@ -61,7 +58,6 @@
     <string name="calls_tool_state">وضعیت تماس</string>
     <string name="calls_tool_dial">برقراری تماس</string>
     <string name="calls_tool_hangup">قطع کردن تماس</string>
-    <string name="calls_advanced">تنظیمات پیشرفته</string>
     <string name="calls_allowlist_hint">در هر خط یک شماره وارد کنید، یا شماره‌ها را با ویرگول جدا کنید.</string>
     <string name="calls_allowlist_invalid">از شماره تلفن‌های معتبر استفاده کنید (حداکثر %1$d).</string>
     <string name="calls_audio_direct">صدای مستقیم تلفن</string>

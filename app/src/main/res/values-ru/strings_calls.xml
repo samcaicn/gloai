@@ -24,11 +24,8 @@
     <string name="calls_enable">Включить звонки с ИИ</string>
     <string name="calls_disable">Отключить и вернуться к обычным звонкам</string>
     <string name="calls_provider">Голос Volcengine 3.0 в реальном времени</string>
-    <string name="calls_credentials">Данные доступа к голосовому сервису</string>
-    <string name="calls_key_saved">Данные доступа сохранены безопасно. Доступ к сервису ещё нужно проверить пробным звонком</string>
     <string name="calls_key_missing">Не настроено</string>
     <string name="calls_profile">Приветствие и цель вызова</string>
-    <string name="calls_model_label">Модель %1$s · маршрут звука звонка</string>
     <string name="calls_incoming">Входящие звонки</string>
     <string name="calls_auto_answer">Автоматически отвечать на входящие</string>
     <string name="calls_all_incoming">Включать все входящие номера</string>
@@ -61,7 +58,6 @@
     <string name="calls_tool_state">Состояние звонка</string>
     <string name="calls_tool_dial">Позвонить</string>
     <string name="calls_tool_hangup">Завершить звонок</string>
-    <string name="calls_advanced">Расширенные настройки</string>
     <string name="calls_allowlist_hint">Укажите по одному номеру на строку или разделите их запятыми.</string>
     <string name="calls_allowlist_invalid">Укажите действительные номера (до %1$d).</string>
     <string name="calls_audio_direct">Прямое аудио вызова</string>

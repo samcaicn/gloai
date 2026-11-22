@@ -24,11 +24,8 @@
     <string name="calls_voice_credentials_keep">비워 두면 저장된 자격 증명이 유지됩니다. 새 자격 증명을 입력하면 기존 값이 대체되며 다시 테스트해야 합니다.</string>
     <string name="calls_back_settings">설정으로 돌아가기</string>
     <string name="calls_enabled_summary">AI 수신 및 발신을 사용할 수 있으며 자동 응답에는 별도 스위치가 있습니다.</string>
-    <string name="calls_settings_voice_group">음성 및 모델</string>
     <string name="calls_settings_device_group">기기 및 실행</string>
     <string name="calls_settings_data_group">데이터</string>
     <string name="calls_history_entry_summary">요약, 후속 작업 및 원본 텍스트</string>
-    <string name="calls_advanced_summary">오디오 채널 및 진단</string>
-    <string name="calls_advanced_note">오디오 채널을 변경하면 양방향 오디오 검증이 초기화됩니다. 자동 응답을 켜기 전에 실제 테스트 통화를 다시 완료하세요.</string>
     <string name="calls_voice_setup">음성 서비스 구성 및 테스트</string>
 </resources>

@@ -99,4 +99,22 @@
     <string name="voice_use_for_realtime">Use for voice calls</string>
     <string name="voice_result_in_use">In use</string>
     <string name="voice_result_done">Done</string>
+    <string name="calls_who_speaks">Who speaks</string>
+    <string name="calls_what_to_say">What to say on the phone</string>
+    <string name="calls_profile_summary">Greeting, instructions and call length</string>
+    <string name="calls_voice_title">Call voice</string>
+    <string name="calls_voice_follow">Same as voice calls</string>
+    <string name="calls_voice_follow_none">No voice call model chosen yet</string>
+    <string name="calls_voice_own">Choose one just for phone calls</string>
+    <string name="calls_voice_own_note">Phone calls use this model; voice calls in chat keep theirs.</string>
+    <string name="calls_voice_shared_note">This voice is shared with voice calls in chat.</string>
+    <string name="calls_voice_follow_summary">Same as voice calls · %1$s</string>
+    <string name="calls_audio_title">Phone call audio</string>
+    <string name="calls_audio_lead">How Mika hears and speaks during a phone call. Phones differ, so pick the route that works on this one.</string>
+    <string name="calls_audio_direct_note">Mika plays and records the call audio directly. Works on most phones.</string>
+    <string name="calls_audio_redirect_note">Routes call audio through the speaker and microphone. Try this if the other side cannot hear Mika.</string>
+    <string name="calls_audio_check">Make a test call, then confirm both sides heard each other.</string>
+    <string name="calls_audio_footer">Changing the route clears the confirmation; check again after switching.</string>
+    <string name="calls_audio_checked">Checked</string>
+    <string name="calls_audio_unchecked">Not checked</string>
 </resources>

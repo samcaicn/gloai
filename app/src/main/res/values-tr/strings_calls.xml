@@ -24,11 +24,8 @@
     <string name="calls_enable">Yapay zeka aramayı etkinleştir</string>
     <string name="calls_disable">Devre dışı bırak ve normal aramaya dön</string>
     <string name="calls_provider">Volcengine Ark Doubao gerçek zamanlı ses etkileşim API\'si</string>
-    <string name="calls_credentials">Volcengine Ark Doubao gerçek zamanlı ses etkileşim API\'si kimlik bilgileri</string>
-    <string name="calls_key_saved">Kimlik bilgileri güvenli biçimde kaydedildi; hizmet erişimi yine de gerçek bir test gerektirir</string>
     <string name="calls_key_missing">Yapılandırılmadı</string>
     <string name="calls_profile">Arama yapılandırması</string>
-    <string name="calls_model_label">Model %1$s · arama ses yolu</string>
     <string name="calls_incoming">Gelen aramalar</string>
     <string name="calls_auto_answer">Gelen aramaları otomatik yanıtla</string>
     <string name="calls_all_incoming">Tüm gelen numaraları dahil et</string>
@@ -61,7 +58,6 @@
     <string name="calls_tool_state">Arama durumu</string>
     <string name="calls_tool_dial">Arama yap</string>
     <string name="calls_tool_hangup">Aramayı kapat</string>
-    <string name="calls_advanced">Gelişmiş ayarlar</string>
     <string name="calls_allowlist_hint">Her satıra bir numara girin veya numaraları virgülle ayırın.</string>
     <string name="calls_allowlist_invalid">Geçerli telefon numaraları kullanın (en fazla %1$d).</string>
     <string name="calls_audio_direct">Doğrudan telefon sesi</string>

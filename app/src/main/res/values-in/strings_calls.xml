@@ -24,11 +24,8 @@
     <string name="calls_enable">Aktifkan panggilan AI</string>
     <string name="calls_disable">Nonaktifkan dan pulihkan panggilan biasa</string>
     <string name="calls_provider">Suara real-time Volcengine 3.0</string>
-    <string name="calls_credentials">Kredensial suara real-time</string>
-    <string name="calls_key_saved">Kredensial disimpan dengan aman; akses layanan masih perlu diuji dengan panggilan sungguhan</string>
     <string name="calls_key_missing">Belum dikonfigurasi</string>
     <string name="calls_profile">Salam dan tujuan panggilan</string>
-    <string name="calls_model_label">Model %1$s · rute audio panggilan</string>
     <string name="calls_incoming">Panggilan masuk</string>
     <string name="calls_auto_answer">Jawab panggilan masuk secara otomatis</string>
     <string name="calls_all_incoming">Sertakan semua nomor panggilan masuk</string>
@@ -61,7 +58,6 @@
     <string name="calls_tool_state">Status panggilan</string>
     <string name="calls_tool_dial">Lakukan panggilan</string>
     <string name="calls_tool_hangup">Akhiri panggilan</string>
-    <string name="calls_advanced">Pengaturan lanjutan</string>
     <string name="calls_allowlist_hint">Masukkan satu nomor per baris atau pisahkan dengan koma.</string>
     <string name="calls_allowlist_invalid">Masukkan nomor telepon yang valid (maksimal %1$d).</string>
     <string name="calls_audio_direct">Audio telepon langsung</string>
