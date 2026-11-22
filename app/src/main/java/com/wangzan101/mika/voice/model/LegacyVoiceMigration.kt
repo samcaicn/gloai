@@ -168,6 +168,8 @@ class LegacyVoiceMigration(
                         when (choice.protocol) {
                             com.wangzan101.mika.settings.TtsProtocol.OpenAiSpeech -> TtsProtocol.OpenAiSpeech
                             com.wangzan101.mika.settings.TtsProtocol.GeminiTts -> TtsProtocol.GeminiTts
+                            com.wangzan101.mika.settings.TtsProtocol.AndroidSystem ->
+                                throw VoiceModelError.IncompleteConfig("Legacy TTS choice cannot be the built-in system engine")
                         },
                     ),
                 ),

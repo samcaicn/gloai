@@ -313,6 +313,42 @@ class LegacyVoiceMigrationTest {
     }
 
     @Test
+    fun `a fresh install with no legacy TTS choice defaults to the built-in system engine`() {
+        val fixture = Fixture(LegacyVoiceSnapshot())
+
+        assertEquals(MigrationResult.Migrated, fixture.migration.migrateIfNeeded())
+        val snapshot = fixture.catalog.state.value
+        assertEquals(TtsSelectionController.SYSTEM_TTS_REF, snapshot.selections.tts)
+        assertEquals(
+            TtsSelectionController.SYSTEM_TTS_MODEL,
+            snapshot.models.single { it.id == "system-tts" },
+        )
+        assertNull(fixture.source.snapshot.tts.choice)
+    }
+
+    @Test
+    fun `an existing legacy cloud TTS choice is preserved through migration`() {
+        val legacyState = VoiceSettingsState(
+            choice = VoiceChoice(
+                providerId = "p-tts",
+                model = "voice-model",
+                protocol = com.wangzan101.mika.settings.TtsProtocol.OpenAiSpeech,
+                voice = "Kore",
+                speed = 1.75f,
+            ),
+        )
+        val fixture = Fixture(LegacyVoiceSnapshot(tts = legacyState))
+
+        assertEquals(MigrationResult.Migrated, fixture.migration.migrateIfNeeded())
+        val snapshot = fixture.catalog.state.value
+        val ref = VoiceModelRef("provider:p-tts", "voice-model", VoiceCapability.TTS)
+        assertEquals(ref, snapshot.selections.tts)
+        assertEquals(TtsBinding(TtsProtocol.OpenAiSpeech), fixture.catalog.requireModel(ref).tts)
+        assertEquals("Kore", fixture.source.snapshot.tts.choice?.voice)
+        assertEquals(1.75f, fixture.source.snapshot.tts.choice?.speed)
+    }
+
+    @Test
     fun `failure after credential write keeps legacy active and retry is idempotent`() {
         val legacySelection = SpeechChoice.Doubao(DoubaoProtocol.CONCURRENT)
         val speechPrefs = MemoryPrefs()

@@ -3,6 +3,7 @@ package com.wangzan101.mika.ui
 import com.wangzan101.mika.core.model.TtsRequest
 import com.wangzan101.mika.core.model.TtsResponse
 import com.wangzan101.mika.voice.model.SttSelectionController
+import com.wangzan101.mika.voice.model.TtsSelectionController
 import com.wangzan101.mika.voice.model.VoiceAccountManager
 import com.wangzan101.mika.voice.model.VoiceCapability
 import com.wangzan101.mika.voice.model.VoiceCatalogSnapshot
@@ -82,6 +83,7 @@ class VoiceCatalogViewModel(
 
     fun deleteModel(ref: VoiceModelRef) {
         if (ref == SttSelectionController.SYSTEM_STT_REF) return
+        if (ref == TtsSelectionController.SYSTEM_TTS_REF) return
         catalog.deleteModel(ref)
     }
 

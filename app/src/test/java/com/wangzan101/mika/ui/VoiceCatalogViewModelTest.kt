@@ -10,6 +10,7 @@ import com.wangzan101.mika.voice.model.MemoryVoiceCatalogBackend
 import com.wangzan101.mika.voice.model.SttBinding
 import com.wangzan101.mika.voice.model.SttProtocol
 import com.wangzan101.mika.voice.model.SttSelectionController
+import com.wangzan101.mika.voice.model.TtsSelectionController
 import com.wangzan101.mika.voice.model.VoiceAccount
 import com.wangzan101.mika.voice.model.VoiceAccountManager
 import com.wangzan101.mika.voice.model.VoiceCapability
@@ -185,6 +186,9 @@ class VoiceCatalogViewModelTest {
 
         viewModel.deleteModel(SttSelectionController.SYSTEM_STT_REF)
         assertTrue(env.catalog.state.value.models.any { it.id == "system-stt" })
+
+        viewModel.deleteModel(TtsSelectionController.SYSTEM_TTS_REF)
+        assertTrue(env.catalog.state.value.models.any { it.id == "system-tts" })
 
         viewModel.deleteService(SttSelectionController.SYSTEM_STT_SERVICE.id)
         assertTrue(env.catalog.state.value.services.any { it.id == "android-system" })

@@ -47,6 +47,7 @@ import com.wangzan101.mika.voice.model.SttProtocol
 import com.wangzan101.mika.voice.model.SttSelectionController
 import com.wangzan101.mika.voice.model.TtsBinding
 import com.wangzan101.mika.voice.model.TtsProtocol
+import com.wangzan101.mika.voice.model.TtsSelectionController
 import com.wangzan101.mika.voice.model.VoiceAccount
 import com.wangzan101.mika.voice.model.VoiceAccountManager
 import com.wangzan101.mika.voice.model.VoiceCapability
@@ -229,7 +230,7 @@ private fun ServiceGroup(
             ModelRow(
                 model = model,
                 first = index == 0,
-                system = system && model.id == SttSelectionController.SYSTEM_STT_MODEL.id,
+                system = system && (model.id == SttSelectionController.SYSTEM_STT_MODEL.id || model.id == TtsSelectionController.SYSTEM_TTS_MODEL.id),
                 snapshot = snapshot,
                 onEdit = { onEdit(model) },
                 onDelete = { onDelete(model) },

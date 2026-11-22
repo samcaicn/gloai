@@ -1,5 +1,6 @@
 package com.wangzan101.mika.media
 
+import android.content.Context
 import android.content.ContextWrapper
 import com.wangzan101.mika.core.model.TtsRequest
 import com.wangzan101.mika.settings.FeatureFlagsCapsuleTest.MemoryPrefs
@@ -10,6 +11,7 @@ import com.wangzan101.mika.voice.model.FakeVoiceProviderAccountSource
 import com.wangzan101.mika.voice.model.MemoryVoiceCatalogBackend
 import com.wangzan101.mika.voice.model.TtsBinding
 import com.wangzan101.mika.voice.model.TtsProtocol
+import com.wangzan101.mika.voice.model.TtsSelectionController
 import com.wangzan101.mika.voice.model.VoiceAccount
 import com.wangzan101.mika.voice.model.VoiceCapability
 import com.wangzan101.mika.voice.model.VoiceCatalogStore
@@ -24,6 +26,11 @@ import org.junit.Test
 
 class ReadAloudUnifiedTest {
     private val context = ContextWrapper(null)
+
+    /** [ContextWrapper.applicationContext] delegates to a null base in JVM tests; override it so the system-TTS adapter can build. */
+    private class FakeAppContext : ContextWrapper(null) {
+        override fun getApplicationContext(): Context = this
+    }
 
     private fun controller(): com.wangzan101.mika.voice.model.TtsSelectionController {
         val provider = Provider("p1", "Provider", ProviderConfig.Kind.OpenAiCompat, "https://provider.example/v1")
@@ -78,5 +85,23 @@ class ReadAloudUnifiedTest {
         settings.setEnabled(true)
         tts.select(null)
         readAloudMigrated("hello", settings, context, tts, play = { _, _, _ -> error("must not play") })
+    }
+
+    @Test fun `built-in system TTS reaches read-aloud without any provider`() = runTest {
+        val provider = Provider("p1", "Provider", ProviderConfig.Kind.OpenAiCompat, "https://provider.example/v1")
+        val catalog = VoiceCatalogStore(MemoryVoiceCatalogBackend(), migrated = true)
+        val environment = voiceTestEnvironment(catalog, FakeVoiceProviderAccountSource(provider))
+        environment.tts.select(TtsSelectionController.SYSTEM_TTS_REF)
+        val settings = VoiceSettings(MemoryPrefs())
+
+        val requests = mutableListOf<TtsRequest>()
+        var modelName: String? = null
+        readAloudMigrated("hello", settings, FakeAppContext(), environment.tts, play = { model, reqs, _ ->
+            modelName = model.name
+            requests += reqs
+        })
+
+        assertEquals("system-tts", modelName)
+        assertEquals(listOf(TtsRequest("hello", null, 1f, "wav")), requests)
     }
 }

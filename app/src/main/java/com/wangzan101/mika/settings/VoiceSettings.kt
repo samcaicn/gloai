@@ -23,7 +23,10 @@ enum class TtsProtocol(val wire: String) {
     OpenAiSpeech("openai-speech"),
 
     /** Gemini TTS:generateContent + responseModalities AUDIO。 */
-    GeminiTts("gemini-tts");
+    GeminiTts("gemini-tts"),
+
+    /** 内置 Android 系统语音合成;只用于目录能力提示,旧版选择从不落成它。 */
+    AndroidSystem("android-system");
 
     companion object {
         fun of(wire: String?): TtsProtocol? = entries.firstOrNull { it.wire == wire }
@@ -146,6 +149,11 @@ class VoiceSettings(private val prefs: SharedPreferences) {
             formats = setOf("wav", "mp3", "opus", "aac", "flac", "pcm"),
         )
         TtsProtocol.GeminiTts -> TtsCapabilities(
+            voices = null,
+            maxChars = _state.value.maxCharsPerSpeak,
+            formats = setOf("wav"),
+        )
+        TtsProtocol.AndroidSystem -> TtsCapabilities(
             voices = null,
             maxChars = _state.value.maxCharsPerSpeak,
             formats = setOf("wav"),

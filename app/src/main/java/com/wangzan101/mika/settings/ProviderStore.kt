@@ -1302,6 +1302,7 @@ class ProviderStore(
         return when (choice.protocol) {
             TtsProtocol.OpenAiSpeech -> OpenAiSpeechModel(p.baseUrl, key, model, capabilities, client, header)
             TtsProtocol.GeminiTts -> GeminiTtsModel(p.baseUrl, key.orEmpty(), model, capabilities, client, header)
+            TtsProtocol.AndroidSystem -> null
         }
     }
 
