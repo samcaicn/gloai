@@ -60,7 +60,7 @@ class OpenAiCallProtocolTest {
                 val connection = async(Dispatchers.IO) {
                     VolcRealtimeClient(http, OpenAiCallProtocol.ENDPOINT).connect(
                         VolcRealtimeCredentials(apiKey = "test-only"),
-                        VolcRealtimeConfig("hello", "marin", "gpt-realtime", true, CallVoiceProtocol.OPENAI_REALTIME))
+                        VolcRealtimeConfig("hello", "marin", "gpt-realtime", true, protocol = CallVoiceProtocol.OPENAI_REALTIME))
                 }
                 val peer = socket.await()
                 val update = messages.receive()

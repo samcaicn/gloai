@@ -47,9 +47,9 @@
     <string name="models_new_key_hint">Cole a nova chave</string>
     <string name="save">Salvar</string>
     <string name="models_models">Modelos</string>
-    <string name="models_models_note">Toque em um modelo para usá-lo como modelo principal, de visão ou leve.</string>
-    <string name="models_no_list_note">Este provedor não tem lista de modelos. Para usar um modelo dele, digite em “Funções” o nome que consta na documentação.</string>
-    <string name="models_untested_note">Este provedor foi salvo sem teste, então não se sabe se funciona. Escolha um modelo para testá-lo ou toque em Atualizar para listar os modelos dele.</string>
+    <string name="models_models_note">Toque em um modelo para escolher sua função.</string>
+    <string name="models_no_list_note">Este provedor não retorna uma lista de modelos. No campo acima, insira um ID de modelo que conste na documentação do provedor.</string>
+    <string name="models_untested_note">Este provedor foi salvo sem teste. Toque em Atualizar para obter a lista de modelos.</string>
     <string name="models_not_listed">Os modelos deste provedor ainda não foram listados.</string>
     <string name="refresh">Atualizar</string>
     <string name="models_in_use">Em uso</string>
@@ -64,6 +64,16 @@
     <string name="role_main">Modelo principal</string>
     <string name="role_vision">Modelo de visão</string>
     <string name="role_light">Modelo leve</string>
+    <string name="model_legacy_role_overlap">Suas configurações anteriores usam este modelo para chat e para leitura em voz alta. Toque em um uso de chat acima para mantê-lo e remover a marca de só voz, ou ative «Só voz» abaixo para manter só a voz e limpar os usos de chat.</string>
+    <string name="role_tts">Só TTS</string>
+    <string name="model_tts_switch">Só voz (TTS)</string>
+    <string name="model_tts_switch_off">Depois de marcado, fica disponível em «Modelo de voz» e deixa de ser usado no chat</string>
+    <string name="model_tts_switch_in_voice">Em uso como modelo de voz</string>
+    <string name="model_tts_switch_marked">Marcado; escolha-o em «Modelo de voz»</string>
+    <string name="model_tts_confirm_title">Usar só para voz?</string>
+    <string name="model_tts_confirm_body">Ao ativar, %1$s deixa de ser usado no chat e estes usos serão limpos: %2$s.</string>
+    <string name="model_tts_confirm_ok">Usar só para voz</string>
+    <string name="model_role_tts_conflict">«%1$s» também está marcado como só voz. Toque nele em «Provedores» e escolha se o mantém para o chat ou só para voz.</string>
     <string name="role_main_what">Pensa e age</string>
     <string name="role_vision_what">Olha as capturas de tela</string>
     <string name="role_light_what">Tarefas pequenas, como verificações e anotações</string>
@@ -133,8 +143,11 @@
     <string name="chatgpt_page_back">Voltar ao Mika</string>
     <string name="chatgpt_no_browser">Nenhum navegador encontrado para fazer o login.</string>
     <string name="models_unverified">Não testado; as tarefas podem falhar</string>
-    <string name="models_unverified_note">Este provedor não tem lista de modelos, e %1$s (em uso) não passou em um teste, então as tarefas podem falhar. Toque em “Testar de novo” para fazer uma chamada de teste com ele.</string>
+    <string name="models_unverified_note">Os modelos em uso (%1$s) ainda não passaram no teste. Para verificar um deles, toque no botão de teste correspondente.</string>
     <string name="models_retest">Testar de novo</string>
+    <string name="models_retest_model">Testar %1$s</string>
+    <string name="models_retest_confirm_title">Testar o modelo?</string>
+    <string name="models_retest_confirm_body">O Mika enviará uma solicitação de teste de chamada de ferramenta ao modelo %1$s no provedor %2$s.</string>
 
     <string name="account_signin_copied">Copiado</string>
     <string name="account_signin_notif_title">Entrando na sua conta</string>
@@ -211,13 +224,15 @@
     <string name="main_fallback_clear">No fallback</string>
     <string name="main_fallback_failed">Could not set the fallback model</string>
     <string name="main_fallback_is_main">This is the current main model, so it cannot also be its fallback</string>
-    <string name="role_voice">Voice model</string>
+    <string name="role_voice">Modelo de voz</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
-    <string name="voice_provider">Service</string>
-    <string name="voice_no_providers">Add a model service first (speech uses the same service and key).</string>
-    <string name="voice_model_name">Model</string>
+    <string name="voice_provider">Provedor</string>
+    <string name="voice_no_providers">Primeiro, adicione um provedor em «Modelo».</string>
+    <string name="voice_no_tts_models">Em «Modelo → Provedores», toque em um modelo e ative «Só voz (TTS)».</string>
+    <string name="voice_choice_cleared">«%1$s» não está mais marcado como só voz, então o modelo de voz foi removido. Se precisar, escolha outro em «Modelo de voz».</string>
+    <string name="voice_model_name">Modelo</string>
     <string name="voice_protocol">API</string>
     <string name="voice_protocol_openai">OpenAI Speech</string>
     <string name="voice_protocol_gemini">Gemini TTS</string>
@@ -311,4 +326,5 @@
     <string name="models_group_delete_body">Os papéis que o usam voltarão para não definido, nenhum ou o modelo principal.</string>
     <string name="models_group_used_by">Usado como %1$s</string>
     <string name="models_group_member_context">Contexto</string>
+    <string name="model_not_chat_capable">A Mika não pode usar este modelo para conversar. Você ainda pode marcá-lo como somente voz abaixo.</string>
 </resources>

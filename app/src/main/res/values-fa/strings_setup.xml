@@ -24,6 +24,7 @@
     <string name="model_provider_name_hint">اختیاری؛ در صورت خالی بودن از نام میزبان استفاده می‌شود</string>
     <string name="model_key_hint">کلید ارائه‌دهنده را جای‌گذاری کنید</string>
     <string name="model_key_optional">برای سرویس‌های محلی اختیاری است</string>
+    <string name="model_key_pool_hint">کلید API را اینجا بچسبانید\n(چند کلید را با ویرگول یا خط جدید جدا کنید تا به‌طور خودکار به نوبت استفاده شوند)</string>
     <string name="model_key_clear">پاک کردن</string>
     <string name="model_key_invisible_removed">نویسه‌های نامرئی داخل کلید حذف شد.</string>
     <string name="model_key_illegal_chars">کلید نویسه‌هایی دارد که نمی‌توان استفاده کرد. فقط خود کلید را جای‌گذاری کنید.</string>
@@ -31,6 +32,7 @@
     <string name="model_test_save">آزمون و ذخیره</string>
     <string name="model_testing">در حال آزمون…</string>
     <string name="model_test_note">میکا فهرست مدل‌های این ارائه‌دهنده را می‌گیرد و از یکی از آن‌ها می‌خواهد ابزار آزمایشی را فراخوانی کند؛ اگر هر دو موفق باشند، آن را ذخیره می‌کند.</string>
+    <string name="model_test_catalog_note">Mika فهرست مدل‌های ارائه‌دهنده را دریافت و ذخیره می‌کند. اگر هنوز مدل اصلی ندارید، از مدل پیشنهادی می‌خواهد یک بار یک ابزار آزمایشی را فراخوانی کند و فقط در صورت موفقیت آن را مدل اصلی می‌کند.</string>
     <string name="next">بعدی</string>
     <string name="model_failed">اتصال ناموفق بود: %1$s</string>
     <string name="cap_vision">بینایی</string>
@@ -52,15 +54,17 @@
     <string name="preset_custom">سفارشی</string>
     <string name="model_manual_name">نام مدل</string>
     <string name="model_no_list_custom">دریافت فهرست مدل‌ها از این نشانی ممکن نشد. ممکن است ارائه‌دهنده فهرستی نداشته باشد یا نشانی یا نوع رابط نادرست باشد. نام مدل را وارد کنید و دوباره «آزمون و ذخیره» را بزنید؛ یک درخواست آزمایشی آن را بررسی می‌کند.</string>
+    <string name="model_no_catalog_note">ارائه‌دهنده هیچ مدلی برنگرداند. شناسهٔ مدل را وارد کنید، «ذخیره بدون آزمون» را بزنید و نقش آن را در جزئیات ارائه‌دهنده مشخص کنید.</string>
     <string name="model_no_list_preset">این ارائه‌دهنده فهرست مدل‌ها را ارائه نکرد. نام مدل را وارد کنید و دوباره «آزمون و ذخیره» را بزنید؛ فقط در صورت موفقیت درخواست آزمایشی ذخیره می‌شود.</string>
     <string name="model_manual_on">وارد کردن نام مدل به‌صورت دستی</string>
     <string name="model_manual_off">نام مدل را وارد نکن</string>
     <string name="model_manual_note">وقتی نام مدل وارد شود، «آزمون و ذخیره» فقط همان مدل را امتحان می‌کند؛ حتی اگر ارائه‌دهنده فهرست مدل نداشته باشد، مدل در فهرست نباشد یا دریافت فهرست ناموفق شود. فقط در صورت موفقیت آزمون ذخیره می‌شود.</string>
+    <string name="model_manual_catalog_note">شناسهٔ مدل را از مستندات ارائه‌دهنده وارد کنید. پس از ذخیره، نقش آن را در جزئیات ارائه‌دهنده مشخص کنید.</string>
     <string name="model_save_untested">ذخیره بدون آزمون</string>
     <string name="model_save_untested_title">بدون آزمون ذخیره شود؟</string>
     <string name="model_save_untested_body">میکا این ارائه‌دهنده را با نشانی و کلید واردشده، بدون دریافت فهرست مدل‌ها یا اجرای درخواست آزمایشی ذخیره می‌کند. میکا به مدلی نیاز دارد که بتواند ابزارها را فراخوانی کند؛ مدل آزمایش‌نشده ممکن است متصل نشود یا ابزارها را فراخوانی نکند. می‌توانید بعداً آن را از صفحهٔ ارائه‌دهنده آزمایش کنید.</string>
     <string name="model_save_untested_confirm">با این حال ذخیره کن</string>
-    <string name="model_saved_untested">%1$s بدون آزمون ذخیره شد و آزمایش‌نشده علامت خورد؛ برای بررسی، مدلی انتخاب کنید یا از صفحهٔ ارائه‌دهنده دوباره آن را آزمایش کنید.</string>
+    <string name="model_saved_untested">%1$s بدون آزمون ذخیره شد. می‌توانید فهرست مدل‌ها را در صفحهٔ ارائه‌دهنده تازه‌سازی کنید.</string>
     <string name="cap_typed">دستی واردشده</string>
     <string name="model_example_gemini">مثلاً gemini-flash-latest</string>
     <string name="model_example_anthropic">مثلاً claude-sonnet-4-5</string>
@@ -78,6 +82,8 @@
     <string name="model_reason_not_found">ارائه‌دهنده چنین مدلی ندارد</string>
     <string name="model_reason_no_tools">ابزارها را فراخوانی نمی‌کند و میکا به مدلی با قابلیت فراخوانی ابزار نیاز دارد</string>
     <string name="model_reason_wrong_protocol">از طریق نوع رابط انتخاب‌شده ارائه نمی‌شود، بنابراین درخواست به آن نمی‌رسد</string>
+    <string name="model_tts_only_not_supported">این مدل به‌عنوان «فقط خواندن» علامت خورده است. برای استفاده در گفتگو، در «ارائه‌دهندگان» روی آن بزنید و «فقط برای خواندن» را خاموش کنید.</string>
+    <string name="model_saved_no_main">ارائه‌دهنده ذخیره شد، اما هنوز مدل اصلی ندارید: %1$s</string>
     <string name="model_reason_server">سرور خطا برگرداند (%1$s)</string>
     <string name="model_probe_none_usable">ارائه‌دهنده متصل است، اما «%1$s» آزمون را نگذرانده است: %2$s. مدلی را که در حساب شما فعال است از فهرست انتخاب کنید.</string>
     <string name="model_probe_none_usable_protocol">ارائه‌دهنده متصل است، اما «%1$s» آزمون را نگذرانده است: %2$s. مدلی انتخاب کنید که از این نوع رابط قابل دسترسی باشد، یا نوع رابط را تغییر دهید.</string>

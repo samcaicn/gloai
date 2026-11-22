@@ -24,6 +24,7 @@
     <string name="model_provider_name_hint">Opcional, o padrão é o host</string>
     <string name="model_key_hint">Cole a chave do seu provedor</string>
     <string name="model_key_optional">Opcional para serviços locais</string>
+    <string name="model_key_pool_hint">Cole sua chave de API aqui\n(Separe várias chaves com vírgulas ou quebras de linha para alterná-las automaticamente)</string>
     <string name="model_key_clear">Limpar</string>
     <string name="model_key_invisible_removed">Removemos os caracteres invisíveis da chave.</string>
     <string name="model_key_illegal_chars">A chave tem caracteres que não podem ser usados. Cole só a chave.</string>
@@ -31,6 +32,7 @@
     <string name="model_test_save">Testar e salvar</string>
     <string name="model_testing">Testando…</string>
     <string name="model_test_note">O Mika lista os modelos deste provedor e depois pede a um deles que chame uma ferramenta de teste; se as duas coisas funcionarem, ele é salvo.</string>
+    <string name="model_test_catalog_note">O Mika busca e salva a lista de modelos do provedor. Se ainda não houver modelo principal, pede ao modelo recomendado que chame uma ferramenta de teste uma vez e só o define como principal se funcionar.</string>
     <string name="next">Próximo</string>
     <string name="model_failed">Falha na conexão: %1$s</string>
     <string name="cap_vision">Visão</string>
@@ -52,15 +54,17 @@
     <string name="preset_custom">Personalizado</string>
     <string name="model_manual_name">Nome do modelo</string>
     <string name="model_no_list_custom">Não foi possível listar modelos neste endereço. O provedor pode não oferecer uma lista de modelos, ou o endereço ou o tipo de interface pode estar errado. Digite o nome de um modelo e toque em “Testar e salvar” de novo; uma chamada de teste vai esclarecer.</string>
+    <string name="model_no_catalog_note">O provedor não retornou uma lista de modelos. Digite o ID do modelo, selecione “Salvar sem testar” e defina a função nos detalhes do provedor.</string>
     <string name="model_no_list_preset">Este provedor não listou nenhum modelo. Digite o nome de um modelo e toque em “Testar e salvar” de novo; ele só é salvo se uma chamada de teste com ele funcionar.</string>
     <string name="model_manual_on">Digitar o nome do modelo</string>
     <string name="model_manual_off">Não digitar o nome do modelo</string>
     <string name="model_manual_note">Com um nome de modelo preenchido, “Testar e salvar” testa só esse modelo: funciona mesmo que o provedor não tenha lista de modelos, a lista não o inclua ou a listagem falhe. Ele só é salvo se a chamada de teste funcionar.</string>
+    <string name="model_manual_catalog_note">Digite o ID do modelo indicado na documentação do provedor. Depois de salvar, escolha a função nos detalhes do provedor.</string>
     <string name="model_save_untested">Salvar sem testar</string>
     <string name="model_save_untested_title">Salvar sem testar?</string>
     <string name="model_save_untested_body">O Mika vai salvar este provedor com o endereço e a chave que você digitou, sem listar modelos nem fazer uma chamada de teste. O Mika precisa de um modelo que chame ferramentas para resolver as coisas, e um modelo não testado pode não conectar ou não chamar ferramentas. Você pode testá-lo depois na página do provedor.</string>
     <string name="model_save_untested_confirm">Salvar mesmo assim</string>
-    <string name="model_saved_untested">%1$s foi salvo sem teste. Ele está marcado como não testado; escolha um modelo para verificá-lo ou teste de novo na página do provedor.</string>
+    <string name="model_saved_untested">%1$s foi salvo sem teste. Você pode atualizar a lista de modelos na página do provedor.</string>
     <string name="cap_typed">Digitado</string>
     <string name="model_example_gemini">ex.: gemini-flash-latest</string>
     <string name="model_example_anthropic">ex.: claude-sonnet-4-5</string>
@@ -78,6 +82,8 @@
     <string name="model_reason_not_found">o provedor não tem esse modelo</string>
     <string name="model_reason_no_tools">ele não chama ferramentas, e o Mika precisa de um modelo que chame ferramentas</string>
     <string name="model_reason_wrong_protocol">ele não é oferecido pelo tipo de interface escolhido, então a solicitação nunca chega a ele</string>
+    <string name="model_tts_only_not_supported">Este modelo está marcado como só voz. Para usá-lo no chat, toque nele em «Provedores» e desative «Só voz».</string>
+    <string name="model_saved_no_main">O provedor foi salvo, mas não há modelo principal: %1$s</string>
     <string name="model_reason_server">o servidor retornou um erro (%1$s)</string>
     <string name="model_probe_none_usable">O provedor está conectado, mas “%1$s” não passou no teste: %2$s. Escolha na lista um modelo que a sua conta tenha ativado.</string>
     <string name="model_probe_none_usable_protocol">O provedor está conectado, mas “%1$s” não passou no teste: %2$s. Escolha um modelo que este tipo de interface alcance, ou troque o tipo de interface.</string>

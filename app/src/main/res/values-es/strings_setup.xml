@@ -24,6 +24,7 @@
     <string name="model_provider_name_hint">Opcional, por defecto el host</string>
     <string name="model_key_hint">Pega la clave de tu proveedor</string>
     <string name="model_key_optional">Opcional en servicios locales</string>
+    <string name="model_key_pool_hint">Pega aquí tu clave de API\n(Separa varias claves con comas o saltos de línea para rotarlas automáticamente)</string>
     <string name="model_key_clear">Borrar</string>
     <string name="model_key_invisible_removed">Se quitaron los caracteres invisibles de la clave.</string>
     <string name="model_key_illegal_chars">La clave tiene caracteres que no se pueden usar. Pega solo la clave.</string>
@@ -31,6 +32,7 @@
     <string name="model_test_save">Probar y guardar</string>
     <string name="model_testing">Probando…</string>
     <string name="model_test_note">Mika lista los modelos de este proveedor y luego le pide a uno que llame a una herramienta de prueba; si ambas cosas funcionan, se guarda.</string>
+    <string name="model_test_catalog_note">Mika obtiene y guarda la lista de modelos del proveedor. Si aún no hay modelo principal, pide al modelo recomendado que llame una vez a una herramienta de prueba y solo lo usa como principal si funciona.</string>
     <string name="next">Siguiente</string>
     <string name="model_failed">Falló la conexión: %1$s</string>
     <string name="cap_vision">Visión</string>
@@ -52,15 +54,17 @@
     <string name="preset_custom">Personalizado</string>
     <string name="model_manual_name">Nombre del modelo</string>
     <string name="model_no_list_custom">No se pudo listar ningún modelo en esta dirección. Puede que el proveedor no ofrezca lista de modelos, o que la dirección o el tipo de interfaz sean incorrectos. Introduce un nombre de modelo y vuelve a tocar “Probar y guardar”; una llamada de prueba lo aclarará.</string>
+    <string name="model_no_catalog_note">El proveedor no devolvió ningún modelo. Introduce un identificador, elige «No probar, guardar de todos modos» y asigna una función en los detalles del proveedor.</string>
     <string name="model_no_list_preset">Este proveedor no listó ningún modelo. Introduce un nombre de modelo y vuelve a tocar “Probar y guardar”; solo se guarda si una llamada de prueba con él funciona.</string>
     <string name="model_manual_on">Introducir un nombre de modelo yo mismo</string>
     <string name="model_manual_off">No introducir un nombre de modelo</string>
     <string name="model_manual_note">Con un nombre de modelo escrito, “Probar y guardar” prueba solo ese modelo: funciona aunque el proveedor no tenga lista de modelos, la lista no lo incluya o falle al listar. Solo se guarda si la llamada de prueba funciona.</string>
+    <string name="model_manual_catalog_note">Introduce el identificador del modelo que figura en la documentación del proveedor. Después de guardar, elige su función en los detalles del proveedor.</string>
     <string name="model_save_untested">No probar, guardar de todos modos</string>
     <string name="model_save_untested_title">¿Guardar sin probar?</string>
     <string name="model_save_untested_body">Mika guardará este proveedor con la dirección y la clave que introdujiste, sin listar modelos ni hacer una llamada de prueba. Mika necesita un modelo que pueda llamar a herramientas para hacer las cosas, y uno sin probar puede no conectar o no llamar a herramientas. Puedes probarlo más tarde desde la página del proveedor.</string>
     <string name="model_save_untested_confirm">Guardar de todos modos</string>
-    <string name="model_saved_untested">%1$s se guardó sin probar. Está marcado como no probado; elige un modelo para comprobarlo o pruébalo de nuevo desde la página del proveedor.</string>
+    <string name="model_saved_untested">%1$s se guardó sin probar. Puedes actualizar la lista de modelos desde la página del proveedor.</string>
     <string name="cap_typed">Escrito a mano</string>
     <string name="model_example_gemini">p. ej. gemini-flash-latest</string>
     <string name="model_example_anthropic">p. ej. claude-sonnet-4-5</string>
@@ -78,6 +82,8 @@
     <string name="model_reason_not_found">el proveedor no tiene ese modelo</string>
     <string name="model_reason_no_tools">no llama a herramientas, y Mika necesita un modelo que pueda llamar a herramientas</string>
     <string name="model_reason_wrong_protocol">no se ofrece con el tipo de interfaz que elegiste, así que la solicitud nunca llega hasta él</string>
+    <string name="model_tts_only_not_supported">Este modelo está marcado como solo voz. Para usarlo en el chat, tócalo en «Proveedores» y desactiva «Solo voz».</string>
+    <string name="model_saved_no_main">Se guardó el proveedor, pero no hay modelo principal: %1$s</string>
     <string name="model_reason_server">el servidor devolvió un error (%1$s)</string>
     <string name="model_probe_none_usable">El proveedor está conectado, pero “%1$s” no pasó la prueba: %2$s. Elige de la lista un modelo que tu cuenta tenga activado.</string>
     <string name="model_probe_none_usable_protocol">El proveedor está conectado, pero “%1$s” no pasó la prueba: %2$s. Elige un modelo al que llegue este tipo de interfaz, o cambia el tipo de interfaz.</string>

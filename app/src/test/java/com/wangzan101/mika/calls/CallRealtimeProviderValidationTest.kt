@@ -19,9 +19,13 @@ class CallRealtimeProviderValidationTest {
 
     @Test fun invalidSpeakerAndModelFailWithoutOpeningAConnection() {
         val provider = ProfileRealtimeProvider()
-        for (profile in listOf(CallVoiceProfile(speaker = ""), CallVoiceProfile(model = "bad model"))) {
+        for (profile in listOf(
+            CallVoiceProfile(speaker = ""),
+            CallVoiceProfile(model = "bad model"),
+        )) {
             assertTrue(runCatching { provider.validate(profile, "hello") }.exceptionOrNull() is IllegalArgumentException)
         }
         provider.validate(CallVoiceProfile(), "hello")
+        provider.validate(CallVoiceProfile(model = "fishaudio/drama-3-int4"), "hello")
     }
 }

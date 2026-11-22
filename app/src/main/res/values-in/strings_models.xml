@@ -45,9 +45,9 @@
     <string name="models_new_key_hint">Tempel kunci yang baru</string>
     <string name="save">Simpan</string>
     <string name="models_models">Model</string>
-    <string name="models_models_note">Ketuk sebuah model untuk memakainya sebagai model utama, visual, atau ringan.</string>
-    <string name="models_no_list_note">Penyedia ini tidak punya daftar model. Untuk memakai salah satu modelnya, masukkan nama dari dokumentasinya di bawah “Peran”.</string>
-    <string name="models_untested_note">Penyedia ini disimpan tanpa pengujian, jadi belum diketahui apakah berfungsi. Pilih sebuah model untuk mengujinya, atau ketuk Segarkan untuk memuat daftar modelnya.</string>
+    <string name="models_models_note">Ketuk model untuk memilih perannya.</string>
+    <string name="models_no_list_note">Penyedia ini tidak memberikan daftar model. Masukkan ID model dari dokumentasi penyedia pada kolom di atas.</string>
+    <string name="models_untested_note">Penyedia ini disimpan tanpa pengujian. Ketuk Segarkan untuk memuat daftar modelnya.</string>
     <string name="models_not_listed">Model penyedia ini belum dimuat.</string>
     <string name="refresh">Segarkan</string>
     <string name="models_in_use">Sedang dipakai</string>
@@ -62,6 +62,16 @@
     <string name="role_main">Model utama</string>
     <string name="role_vision">Model visual</string>
     <string name="role_light">Model ringan</string>
+    <string name="model_legacy_role_overlap">Pengaturan lama memakai model ini untuk obrolan sekaligus suara. Ketuk peran obrolan di atas untuk mempertahankan peran itu dan melepas tanda khusus suara, atau aktifkan «Khusus suara» di bawah untuk hanya mempertahankan suara dan mengosongkan peran obrolannya.</string>
+    <string name="role_tts">Khusus TTS</string>
+    <string name="model_tts_switch">Khusus suara (TTS)</string>
+    <string name="model_tts_switch_off">Setelah ditandai, bisa dipilih di «Model suara» dan tidak lagi dipakai untuk obrolan</string>
+    <string name="model_tts_switch_in_voice">Sedang dipakai sebagai model suara</string>
+    <string name="model_tts_switch_marked">Sudah ditandai; bisa dipilih di «Model suara»</string>
+    <string name="model_tts_confirm_title">Pakai khusus untuk suara?</string>
+    <string name="model_tts_confirm_body">Jika diaktifkan, %1$s tidak lagi dipakai untuk obrolan dan peran berikut akan dikosongkan: %2$s.</string>
+    <string name="model_tts_confirm_ok">Khusus suara</string>
+    <string name="model_role_tts_conflict">«%1$s» juga ditandai khusus suara. Ketuk model ini di «Penyedia», lalu pilih tetap untuk obrolan atau khusus suara.</string>
     <string name="role_main_what">Berpikir dan bertindak</string>
     <string name="role_vision_what">Melihat tangkapan layar</string>
     <string name="role_light_what">Tugas kecil seperti pemeriksaan dan catatan</string>
@@ -123,8 +133,11 @@
     <string name="chatgpt_page_back">Kembali ke Mika</string>
     <string name="chatgpt_no_browser">Tidak ada browser untuk masuk.</string>
     <string name="models_unverified">Belum diuji; tugas mungkin gagal</string>
-    <string name="models_unverified_note">Penyedia ini tidak punya daftar model, dan %1$s (sedang dipakai) belum lulus pengujian, jadi tugas mungkin gagal. Ketuk “Uji lagi” untuk melakukan satu panggilan uji dengannya.</string>
+    <string name="models_unverified_note">Model yang sedang dipakai (%1$s) belum lulus pengujian. Untuk memeriksa satu model, ketuk tombol ujinya.</string>
     <string name="models_retest">Uji lagi</string>
+    <string name="models_retest_model">Uji %1$s</string>
+    <string name="models_retest_confirm_title">Uji model?</string>
+    <string name="models_retest_confirm_body">Mika akan mengirim satu permintaan uji pemanggilan alat ke model %1$s pada penyedia %2$s.</string>
 
     <string name="account_signin_copied">Disalin</string>
     <string name="account_signin_notif_title">Masuk ke akun Anda</string>
@@ -201,12 +214,14 @@
     <string name="main_fallback_clear">No fallback</string>
     <string name="main_fallback_failed">Could not set the fallback model</string>
     <string name="main_fallback_is_main">This is the current main model, so it cannot also be its fallback</string>
-    <string name="role_voice">Voice model</string>
+    <string name="role_voice">Model suara</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
-    <string name="voice_provider">Service</string>
-    <string name="voice_no_providers">Add a model service first (speech uses the same service and key).</string>
+    <string name="voice_provider">Penyedia</string>
+    <string name="voice_no_providers">Tambahkan penyedia di menu «Model» terlebih dahulu.</string>
+    <string name="voice_no_tts_models">Di «Model → Penyedia», ketuk sebuah model lalu aktifkan «Khusus suara (TTS)».</string>
+    <string name="voice_choice_cleared">Tanda khusus suara pada «%1$s» dilepas, jadi model suara ikut dikosongkan. Jika perlu, pilih lagi di «Model suara».</string>
     <string name="voice_model_name">Model</string>
     <string name="voice_protocol">API</string>
     <string name="voice_protocol_openai">OpenAI Speech</string>
@@ -301,4 +316,5 @@
     <string name="models_group_delete_body">Peran yang memakainya akan kembali ke belum dipilih, tidak ada, atau model utama.</string>
     <string name="models_group_used_by">Digunakan sebagai %1$s</string>
     <string name="models_group_member_context">Konteks</string>
+    <string name="model_not_chat_capable">Mika tidak bisa memakai model ini untuk obrolan. Anda tetap bisa menandainya khusus suara di bawah.</string>
 </resources>

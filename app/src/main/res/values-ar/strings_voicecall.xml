@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">يتطلب الأمر تدخلك — افتح صفحة المهمة</string>
+    <string name="voicecall_task_paused">المهمة متوقفة مؤقتًا</string>
+    <string name="voicecall_task_running">جارٍ العمل</string>
+    <string name="voicecall_task_done">اكتمل</string>
+    <string name="voicecall_task_failed">لم تنجح</string>
+    <string name="voicecall_task_cancelled">أُلغي</string>
+    <string name="voicecall_notification_channel">مكالمة صوتية</string>
+    <string name="voicecall_notification_ongoing">مكالمة صوتية جارية</string>
+    <string name="voicecall_hangup">إنهاء المكالمة</string>
+    <string name="voicecall_menu">دردشة صوتية</string>
+    <string name="voicecall_greeting">مرحبًا، أنا أستمع — تفضل.</string>
+    <string name="voicecall_collapse">تصغير</string>
+    <string name="voicecall_status_connecting">جارٍ الاتصال…</string>
+    <string name="voicecall_status_mic_check">جارٍ فحص الميكروفون…</string>
+    <string name="voicecall_status_active">متصل</string>
+    <string name="voicecall_ended_hangup">انتهت المكالمة</string>
+    <string name="voicecall_ended_notification">أُنهيت من الإشعار</string>
+    <string name="voicecall_ended_incoming">ورد اتصال هاتفي — انتهت المكالمة</string>
+    <string name="voicecall_ended_limit">انتهت الدقائق العشر — انتهت المكالمة</string>
+    <string name="voicecall_ended_background">عد إلى Mika للمتابعة</string>
+    <string name="voicecall_error_auth">بيانات الاعتماد الصوتية مرفوضة — راجع الإعدادات</string>
+    <string name="voicecall_error_timeout">انتهت مهلة الاتصال — حاول مجددًا</string>
+    <string name="voicecall_error_disconnected">انقطع الاتصال</string>
+    <string name="voicecall_error_rate_limited">طلبات كثيرة جدًا — حاول بعد قليل</string>
+    <string name="voicecall_error_provider">حدث خطأ في خدمة الصوت</string>
+    <string name="voicecall_error_mic_silent">لا يصل صوت من الميكروفون</string>
+    <string name="voicecall_error_audio_focus">تطبيق آخر يستخدم قناة الصوت</string>
+    <string name="voicecall_error_playback">فشل التشغيل</string>
+    <string name="voicecall_error_busy">هناك مكالمة هاتفية جارية — حاول بعد انتهائها</string>
+    <string name="voicecall_retry">إعادة المحاولة</string>
+    <string name="voicecall_input_hint">اكتب، أو تحدث مباشرة</string>
+    <string name="voicecall_speaker">مكبر الصوت</string>
+    <string name="voicecall_mic_needed_title">الدردشة الصوتية تحتاج إلى الميكروفون</string>
+    <string name="voicecall_mic_needed_body">سماعك — والسماح لك بالمقاطعة — يتطلب التسجيل. تبدأ المكالمة بعد السماح فقط.</string>
+    <string name="voicecall_mic_denied_body">رُفض الإذن سابقًا، لذا لن يسأل الهاتف مجددًا. فعّل الميكروفون في صفحة أذونات Mika من إعدادات النظام.</string>
+    <string name="voicecall_mic_allow">السماح بالميكروفون</string>
+    <string name="voicecall_setup_title">جهّز الصوت الفوري أولًا</string>
+    <string name="voicecall_setup_body">الدردشة الصوتية تعمل عبر خدمة الصوت الفوري (نفس إعداد مكالمات الذكاء الاصطناعي). أضف بيانات الاعتماد للبدء.</string>
+    <string name="voicecall_go_setup">الذهاب إلى الإعداد</string>
+    <string name="voicecall_protocol_title">المكالمة الصوتية تحتاج إعدادًا متوافقًا</string>
+    <string name="voicecall_protocol_body">المكالمة الصوتية تعمل فقط مع إعداد صوت فوري ثنائي الاتجاه. الإعداد المحدد يستخدم بروتوكولًا آخر — أضف إعدادًا متوافقًا للبدء.</string>
+</resources>

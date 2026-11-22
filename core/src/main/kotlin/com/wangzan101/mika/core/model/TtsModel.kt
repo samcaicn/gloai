@@ -88,6 +88,30 @@ internal fun audioMimeOrBad(bytes: ByteArray, declared: String?): String {
         ?: throw TtsError.BadAudio("response is not a known audio format")
 }
 
+/** 完整收到 RIFF/WAVE 后，将流式响应的未知长度写回，以便 Android 按文件播放。 */
+internal fun finalizeStreamingWavHeader(bytes: ByteArray) {
+    if (bytes.size < 12 || ascii(bytes, 0, 4) != "RIFF" || ascii(bytes, 8, 4) != "WAVE") return
+    fun sizeAt(offset: Int): Long =
+        (0..3).fold(0L) { size, i -> size or ((bytes[offset + i].toLong() and 0xff) shl (8 * i)) }
+    fun putSize(offset: Int, size: Int) {
+        for (i in 0..3) bytes[offset + i] = (size ushr (8 * i)).toByte()
+    }
+
+    var offset = 12
+    while (offset <= bytes.size - 8) {
+        val length = sizeAt(offset + 4)
+        val start = offset + 8
+        if (ascii(bytes, offset, 4) == "data") {
+            if (length == 0xffff_ffffL) putSize(offset + 4, bytes.size - start)
+            if (sizeAt(4) == 0xffff_ffffL) putSize(4, bytes.size - 8)
+            return
+        }
+        val next = start + length + (length and 1L)
+        if (next > bytes.size) return
+        offset = next.toInt()
+    }
+}
+
 /** 原始 16 位单声道 PCM 包成 WAV；Gemini TTS 常见这种返回。 */
 internal fun wrapPcm16Wav(pcm: ByteArray, sampleRate: Int, channels: Int = 1): ByteArray {
     val bits = 16

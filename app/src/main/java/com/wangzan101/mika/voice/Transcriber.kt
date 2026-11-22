@@ -4,6 +4,7 @@ import com.wangzan101.mika.core.model.ListedModel
 import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.model.ModelHttp
 import com.wangzan101.mika.core.model.headerOrReject
+import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.Provider
 import com.wangzan101.mika.settings.ProviderConfig
 import kotlinx.serialization.json.Json
@@ -24,7 +25,7 @@ import java.util.Base64
 
 /**
  * 用服务商的模型把一段录音转成文字,接口形态见 [TranscribeMethod]。
- * 报错和对话模型走同一套映射([ModelHttp]),界面可以直接复用现有的说法;只按协议发请求,不按模型名特判。
+ * 报错和对话模型走同一套映射([ModelHttp]),界面可以直接复用现有的说法。
  * [headers] 是每个请求都带的头(客户端标识等,见 ClientHeaders),Key 的头由这里按接口类型加。
  */
 class Transcriber(
@@ -41,6 +42,7 @@ class Transcriber(
         p: Provider, key: String?, model: String, method: TranscribeMethod, wav: ByteArray, language: String?,
         mime: String = "audio/wav", filename: String = "audio.wav",
     ): String {
+        require(!ModelOptions.isTtsOnly(p, model)) { "This model is only available for text-to-speech." }
         val base = p.baseUrl.trim().trimEnd('/')
         val gemini = p.kind == ProviderConfig.Kind.Gemini
         val format = formatOf(mime)

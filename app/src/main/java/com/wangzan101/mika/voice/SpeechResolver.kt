@@ -1,5 +1,6 @@
 package com.wangzan101.mika.voice
 
+import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.Provider
 
 /**
@@ -23,7 +24,7 @@ sealed interface SpeechEngineSpec {
      * [SystemNoResponse]:手机自带识别系统说有,但请求发过去一直没有回应(已记下,用户重新选它时清掉)。
      * [SystemFailed]:手机自带识别未能启动,可以重试;不据此认定服务不存在或麦克风被占用。
      */
-    enum class Why { Off, NoSystemNoModel, SystemGone, SystemNoResponse, SystemFailed, ProviderGone, DoubaoNotConfigured, BailianNotConfigured }
+    enum class Why { Off, NoSystemNoModel, SystemGone, SystemNoResponse, SystemFailed, ProviderGone, TtsOnly, DoubaoNotConfigured, BailianNotConfigured }
 }
 
 /** 把用户的选择、手机能力和现有服务商对起来,得出这次用哪个引擎。纯函数,不碰系统。 */
@@ -48,8 +49,11 @@ object SpeechResolver {
         }
         is SpeechChoice.Provider -> {
             val p = providers.firstOrNull { it.id == choice.providerId }
-            if (p == null) SpeechEngineSpec.Unavailable(SpeechEngineSpec.Why.ProviderGone)
-            else SpeechEngineSpec.Provider(p, choice.model, choice.method)
+            when {
+                p == null -> SpeechEngineSpec.Unavailable(SpeechEngineSpec.Why.ProviderGone)
+                ModelOptions.isTtsOnly(p, choice.model) -> SpeechEngineSpec.Unavailable(SpeechEngineSpec.Why.TtsOnly)
+                else -> SpeechEngineSpec.Provider(p, choice.model, choice.method)
+            }
         }
     }
 }

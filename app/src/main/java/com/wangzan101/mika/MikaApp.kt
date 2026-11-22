@@ -85,6 +85,9 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
     com.wangzan101.mika.settings.VoiceSettings.Owner {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    /** 比页面长寿的作用域:页面销毁后仍要跑完的收尾(如通话转写写回)放这里。 */
+    val appScope: CoroutineScope get() = scope
+
     /** 手机能力的服务:内置助手、共用的 shell 连接、配对、「去设置」提示。 */
     override val phone: PhoneServices by lazy { PhoneServices(this) }
 
@@ -200,7 +203,12 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
     override val providers: ProviderStore by lazy {
         ProviderStore.create(this, usage, "Mika/${BuildConfig.VERSION_NAME}", usage::providerTokensToday,
             proactiveUsage = usage::proactiveTokensToday, proactiveLimit = { FeatureFlags.get(this).proactiveDailyTokenBudget() },
-            proactiveCalls = usage::proactiveCallsToday)
+            proactiveCalls = usage::proactiveCallsToday).also { store ->
+            voiceSettings.reconcileTtsChoice(store)
+            scope.launch(Dispatchers.Main.immediate) {
+                store.providers.collect { voiceSettings.reconcileTtsChoice(store) }
+            }
+        }
     }
 
     /** 语音转文字的选择:整个进程一份,设置页改了输入框立刻看得到(两份实例互相看不到对方的 set)。 */

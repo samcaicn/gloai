@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">Precisa de você — abra a página da tarefa</string>
+    <string name="voicecall_task_paused">Tarefa pausada</string>
+    <string name="voicecall_task_running">Processando</string>
+    <string name="voicecall_task_done">Concluída</string>
+    <string name="voicecall_task_failed">Não foi possível concluir</string>
+    <string name="voicecall_task_cancelled">Cancelada</string>
+    <string name="voicecall_notification_channel">Chamada de voz</string>
+    <string name="voicecall_notification_ongoing">Chamada de voz em andamento</string>
+    <string name="voicecall_hangup">Desligar</string>
+    <string name="voicecall_menu">Conversa por voz</string>
+    <string name="voicecall_greeting">Olá, estou ouvindo — pode falar.</string>
+    <string name="voicecall_collapse">Recolher</string>
+    <string name="voicecall_status_connecting">Conectando…</string>
+    <string name="voicecall_status_mic_check">Verificando o microfone…</string>
+    <string name="voicecall_status_active">Conectado</string>
+    <string name="voicecall_ended_hangup">Chamada encerrada</string>
+    <string name="voicecall_ended_notification">Encerrada pela notificação</string>
+    <string name="voicecall_ended_incoming">Uma ligação telefônica chegou — chamada encerrada</string>
+    <string name="voicecall_ended_limit">10 minutos esgotados — chamada encerrada</string>
+    <string name="voicecall_ended_background">Volte ao Mika para continuar</string>
+    <string name="voicecall_error_auth">As credenciais de voz foram rejeitadas — verifique a configuração</string>
+    <string name="voicecall_error_timeout">Tempo de conexão esgotado — tente novamente</string>
+    <string name="voicecall_error_disconnected">A conexão caiu</string>
+    <string name="voicecall_error_rate_limited">Muitas solicitações — tente novamente em breve</string>
+    <string name="voicecall_error_provider">O serviço de voz encontrou um erro</string>
+    <string name="voicecall_error_mic_silent">Nenhum som do microfone</string>
+    <string name="voicecall_error_audio_focus">Outro app está usando o canal de áudio</string>
+    <string name="voicecall_error_playback">A reprodução falhou</string>
+    <string name="voicecall_error_busy">Há uma ligação em andamento — tente após ela terminar</string>
+    <string name="voicecall_retry">Tentar novamente</string>
+    <string name="voicecall_input_hint">Digite, ou apenas fale</string>
+    <string name="voicecall_speaker">Viva-voz</string>
+    <string name="voicecall_mic_needed_title">A conversa por voz precisa do microfone</string>
+    <string name="voicecall_mic_needed_body">Ouvir você — e deixar você interromper — exige gravação. A chamada só começa depois da sua permissão.</string>
+    <string name="voicecall_mic_denied_body">Foi negado antes, então o telefone não perguntará de novo. Ative o microfone na página de permissões do Mika nas configurações do sistema.</string>
+    <string name="voicecall_mic_allow">Permitir microfone</string>
+    <string name="voicecall_setup_title">Configure a voz em tempo real primeiro</string>
+    <string name="voicecall_setup_body">A conversa por voz usa o serviço de voz em tempo real (a mesma configuração das ligações de IA). Adicione as credenciais para começar.</string>
+    <string name="voicecall_go_setup">Configurar</string>
+    <string name="voicecall_protocol_title">A chamada de voz precisa de uma configuração compatível</string>
+    <string name="voicecall_protocol_body">A chamada de voz só funciona com uma configuração de voz em tempo real bidirecional. A selecionada usa outro protocolo — adicione uma compatível para começar.</string>
+</resources>

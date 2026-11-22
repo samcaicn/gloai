@@ -50,9 +50,9 @@
     <string name="models_new_key_hint">الصق المفتاح الجديد</string>
     <string name="save">حفظ</string>
     <string name="models_models">النماذج</string>
-    <string name="models_models_note">انقر على نموذج لاستخدامه كنموذج رئيسي أو للرؤية أو خفيف.</string>
-    <string name="models_no_list_note">لا توجد قائمة نماذج لهذا المزوّد. لاستخدام أحد نماذجه، أدخل الاسم الوارد في وثائقه ضمن «الأدوار».</string>
-    <string name="models_untested_note">حُفظ هذا المزوّد دون اختباره، لذا لا يُعرف إن كان يعمل. اختر نموذجًا لاختباره، أو انقر على «تحديث» لسرد نماذجه.</string>
+    <string name="models_models_note">انقر على نموذج لاختيار دوره.</string>
+    <string name="models_no_list_note">لا يعرض هذا المزوّد قائمة النماذج. أدخل معرّف النموذج من وثائق المزوّد في الحقل أعلاه.</string>
+    <string name="models_untested_note">حُفظ هذا المزوّد دون اختبار. انقر على «تحديث» لجلب قائمة نماذجه.</string>
     <string name="models_not_listed">لم تُسرد نماذج هذا المزوّد بعد.</string>
     <string name="refresh">تحديث</string>
     <string name="models_in_use">قيد الاستخدام</string>
@@ -67,6 +67,16 @@
     <string name="role_main">النموذج الرئيسي</string>
     <string name="role_vision">نموذج الرؤية</string>
     <string name="role_light">النموذج الخفيف</string>
+    <string name="model_legacy_role_overlap">تستخدم إعداداتك السابقة هذا النموذج للمحادثة والنطق معًا. اضغط دورًا للمحادثة في الأعلى لإبقائه وإزالة تحديد «للنطق فقط»، أو فعّل «للنطق فقط» في الأسفل لإبقاء النطق ومسح أدوار المحادثة.</string>
+    <string name="role_tts">للنطق فقط</string>
+    <string name="model_tts_switch">للنطق فقط (TTS)</string>
+    <string name="model_tts_switch_off">بعد التحديد يصبح متاحًا في «نموذج الصوت» ولا يُستخدم للمحادثة بعد ذلك</string>
+    <string name="model_tts_switch_in_voice">مستخدم حاليًا كنموذج الصوت</string>
+    <string name="model_tts_switch_marked">محدّد؛ يمكنك اختياره في «نموذج الصوت»</string>
+    <string name="model_tts_confirm_title">استخدامه للنطق فقط؟</string>
+    <string name="model_tts_confirm_body">عند التفعيل لن يُستخدم %1$s للمحادثة، وستُمسح هذه الأدوار: %2$s.</string>
+    <string name="model_tts_confirm_ok">للنطق فقط</string>
+    <string name="model_role_tts_conflict">النموذج «%1$s» محدّد أيضًا للنطق فقط. اضغطه من «المزوّدون» واختر إبقاءه للمحادثة أو للنطق فقط.</string>
     <string name="role_main_what">التفكير والتنفيذ</string>
     <string name="role_vision_what">يفحص لقطات الشاشة</string>
     <string name="role_light_what">المهام الصغيرة مثل الفحوصات والملاحظات</string>
@@ -149,8 +159,11 @@
     <string name="chatgpt_page_back">العودة إلى Mika</string>
     <string name="chatgpt_no_browser">لم يُعثر على متصفح لتسجيل الدخول.</string>
     <string name="models_unverified">لم يُختبر؛ قد تفشل المهام</string>
-    <string name="models_unverified_note">لا توجد قائمة نماذج لهذا المزوّد، ولم يجتز %1$s (قيد الاستخدام) الاختبار، لذا قد تفشل المهام. انقر على «إعادة الاختبار» لإجراء استدعاء اختباري واحد به.</string>
+    <string name="models_unverified_note">لم تجتز النماذج قيد الاستخدام (%1$s) الاختبار بعد. للتحقق من أحدها، انقر على زر اختباره.</string>
     <string name="models_retest">إعادة الاختبار</string>
+    <string name="models_retest_model">اختبار %1$s</string>
+    <string name="models_retest_confirm_title">هل تريد اختبار النموذج؟</string>
+    <string name="models_retest_confirm_body">سيرسل Mika طلبًا تجريبيًا واحدًا لاستدعاء أداة إلى النموذج %1$s لدى المزوّد %2$s.</string>
 
     <string name="account_signin_copied">نُسخ</string>
     <string name="account_signin_notif_title">جارٍ تسجيل الدخول إلى حسابك</string>
@@ -228,13 +241,15 @@
     <string name="main_fallback_clear">No fallback</string>
     <string name="main_fallback_failed">Could not set the fallback model</string>
     <string name="main_fallback_is_main">This is the current main model, so it cannot also be its fallback</string>
-    <string name="role_voice">Voice model</string>
+    <string name="role_voice">نموذج الصوت</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
-    <string name="voice_provider">Service</string>
-    <string name="voice_no_providers">Add a model service first (speech uses the same service and key).</string>
-    <string name="voice_model_name">Model</string>
+    <string name="voice_provider">المزوّد</string>
+    <string name="voice_no_providers">أضف مزوّدًا من إعدادات «النموذج» أولًا.</string>
+    <string name="voice_no_tts_models">من «المزوّدون» في إعدادات «النموذج»، اضغط نموذجًا ثم فعّل «للنطق فقط (TTS)».</string>
+    <string name="voice_choice_cleared">أُزيل تحديد «للنطق فقط» عن «%1$s»، لذا أُلغي اختيار نموذج الصوت. اختر نموذجًا آخر من «نموذج الصوت» عند الحاجة.</string>
+    <string name="voice_model_name">النموذج</string>
     <string name="voice_protocol">API</string>
     <string name="voice_protocol_openai">OpenAI Speech</string>
     <string name="voice_protocol_gemini">Gemini TTS</string>
@@ -328,4 +343,5 @@
     <string name="models_group_delete_body">ستعود الأدوار التي تستخدمها إلى غير محدد أو بلا أو النموذج الرئيسي.</string>
     <string name="models_group_used_by">يُستخدم كـ %1$s</string>
     <string name="models_group_member_context">السياق</string>
+    <string name="model_not_chat_capable">لا يمكن لمايكا استخدام هذا النموذج للدردشة. ما زال بإمكانك تعليمه «للصوت فقط» أدناه.</string>
 </resources>

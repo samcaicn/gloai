@@ -45,9 +45,9 @@
     <string name="models_new_key_hint">Yeni anahtarı yapıştırın</string>
     <string name="save">Kaydet</string>
     <string name="models_models">Modeller</string>
-    <string name="models_models_note">Bir modeli ana, görüntü veya hafif model olarak kullanmak için dokunun.</string>
-    <string name="models_no_list_note">Bu sağlayıcının model listesi yok. Modellerinden birini kullanmak için, \“Roller\” altında dokümanlarındaki adı girin.</string>
-    <string name="models_untested_note">Bu sağlayıcı test edilmeden kaydedildi, bu yüzden çalışıp çalışmadığı bilinmiyor. Test etmek için bir model seçin veya modellerini listelemek için Yenile\'ye dokunun.</string>
+    <string name="models_models_note">Rolünü seçmek için bir modele dokunun.</string>
+    <string name="models_no_list_note">Bu sağlayıcı model listesi döndürmüyor. Yukarıdaki alana sağlayıcının belgelerindeki model kimliğini girin.</string>
+    <string name="models_untested_note">Bu sağlayıcı test edilmeden kaydedildi. Model listesini almak için Yenile düğmesine dokunun.</string>
     <string name="models_not_listed">Bu sağlayıcının modelleri henüz listelenmedi.</string>
     <string name="refresh">Yenile</string>
     <string name="models_in_use">Kullanımda</string>
@@ -62,6 +62,16 @@
     <string name="role_main">Ana model</string>
     <string name="role_vision">Görüntü modeli</string>
     <string name="role_light">Hafif model</string>
+    <string name="model_legacy_role_overlap">Önceki ayarlarınız bu modeli hem sohbet hem seslendirme için kullanıyor. Yukarıdaki bir sohbet kullanımına dokunursanız o kullanım kalır ve yalnızca seslendirme işareti kalkar; aşağıdaki “Yalnızca seslendirme” seçeneğini açarsanız yalnızca seslendirme kalır ve sohbet kullanımları temizlenir.</string>
+    <string name="role_tts">Yalnızca TTS</string>
+    <string name="model_tts_switch">Yalnızca seslendirme (TTS)</string>
+    <string name="model_tts_switch_off">İşaretlenince “Ses modeli” bölümünde seçilebilir ve sohbette artık kullanılmaz</string>
+    <string name="model_tts_switch_in_voice">Ses modeli olarak kullanılıyor</string>
+    <string name="model_tts_switch_marked">İşaretlendi; “Ses modeli” bölümünde seçebilirsiniz</string>
+    <string name="model_tts_confirm_title">Yalnızca seslendirme için kullanılsın mı?</string>
+    <string name="model_tts_confirm_body">Açarsanız %1$s artık sohbette kullanılmaz ve şu kullanımlar temizlenir: %2$s.</string>
+    <string name="model_tts_confirm_ok">Yalnızca seslendirme</string>
+    <string name="model_role_tts_conflict">“%1$s” yalnızca seslendirme olarak da işaretli. “Sağlayıcılar” bölümünde bu modele dokunup sohbet için mi yoksa yalnızca seslendirme için mi kalacağını seçin.</string>
     <string name="role_main_what">Düşünme ve yapma</string>
     <string name="role_vision_what">Ekran görüntülerine bakar</string>
     <string name="role_light_what">Kontroller ve notlar gibi küçük işler</string>
@@ -130,8 +140,11 @@
     <string name="chatgpt_page_back">Mika\'ya dön</string>
     <string name="chatgpt_no_browser">Oturum açmak için tarayıcı bulunamadı.</string>
     <string name="models_unverified">Test edilmedi; görevler başarısız olabilir</string>
-    <string name="models_unverified_note">Bu sağlayıcının model listesi yok ve %1$s (kullanımda) bir testi geçmedi, bu yüzden görevler başarısız olabilir. Onunla bir test çağrısı yapmak için \“Tekrar test et\”e dokunun.</string>
+    <string name="models_unverified_note">Kullanımdaki modeller (%1$s) henüz testi geçmedi. Bir modeli kontrol etmek için o modelin test düğmesine dokunun.</string>
     <string name="models_retest">Tekrar test et</string>
+    <string name="models_retest_model">%1$s modelini test et</string>
+    <string name="models_retest_confirm_title">Model test edilsin mi?</string>
+    <string name="models_retest_confirm_body">Mika, %2$s sağlayıcısındaki %1$s modeline bir araç çağırma testi isteği gönderecek.</string>
 
     <string name="account_signin_copied">Kopyalandı</string>
     <string name="account_signin_notif_title">Hesabınızda oturum açılıyor</string>
@@ -207,8 +220,10 @@
     <string name="role_voice_what">Mika\'nın konuşmasını ve yanıtları sesli okumasını sağlar</string>
     <string name="voice_enable">Mika\'nın konuşmasına izin ver</string>
     <string name="voice_enable_note">Otomatik okuma açık değilse, konuşma yalnızca Sesli oku\'ya dokunduğunuzda yapılır</string>
-    <string name="voice_provider">Hizmet</string>
-    <string name="voice_no_providers">Önce bir model hizmeti ekleyin (konuşma aynı hizmeti ve anahtarı kullanır).</string>
+    <string name="voice_provider">Sağlayıcı</string>
+    <string name="voice_no_providers">Önce “Model” bölümünden bir sağlayıcı ekleyin.</string>
+    <string name="voice_no_tts_models">“Model → Sağlayıcılar” bölümünde bir modele dokunun ve “Yalnızca seslendirme (TTS)” seçeneğini açın.</string>
+    <string name="voice_choice_cleared">“%1$s” artık yalnızca seslendirme olarak işaretli değil, bu yüzden ses modeli kaldırıldı. Gerekirse “Ses modeli” bölümünden başka birini seçin.</string>
     <string name="voice_model_name">Model</string>
     <string name="voice_protocol">API</string>
     <string name="voice_protocol_openai">OpenAI Speech</string>
@@ -300,4 +315,5 @@
     <string name="models_group_used_by">Used as %1$s</string>
     <string name="models_group_vision_needs_eyes">A vision group needs at least one model that can see images.</string>
     <string name="models_groups">Model groups</string>
+    <string name="model_not_chat_capable">Mika bu modeli sohbet için kullanamaz. Aşağıda yine de yalnızca ses olarak işaretleyebilirsiniz.</string>
 </resources>

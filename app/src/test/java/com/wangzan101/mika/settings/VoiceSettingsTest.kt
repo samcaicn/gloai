@@ -9,9 +9,61 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 class VoiceSettingsTest {
+    @get:Rule val tmp = TemporaryFolder()
+
+    @Test fun existingVoiceIsMarkedOnlyOnceAndKeepsItsSettings() {
+        val store = ProviderStore(tmp.root, AesGcmKeyCipher { error("No credentials in this fixture") })
+        val p = store.connect("Speech", ProviderConfig.Kind.OpenAiCompat, "https://tts.test/v1", null, emptyList())
+        val prefs = MemoryPrefs()
+        val choice = VoiceChoice(p.id, "private-tts", TtsProtocol.OpenAiSpeech, "kaguya", speed = 1.25f)
+        val settings = VoiceSettings(prefs)
+        settings.setChoice(choice)
+
+        settings.reconcileTtsChoice(store)
+        assertEquals(setOf("private-tts"), store.provider(p.id)?.ttsModels)
+        assertEquals(choice, settings.state.value.choice)
+
+        store.setTtsModel(p.id, "private-tts", false)
+        val restarted = VoiceSettings(prefs)
+        restarted.reconcileTtsChoice(store)
+        assertTrue(store.provider(p.id)!!.ttsModels.isEmpty())
+        assertNull(restarted.state.value.choice)
+        assertNull(VoiceSettings(prefs).state.value.choice)
+    }
+
+    @Test fun blankLegacyModelIsNotMarkedAndTheChoiceIsCleared() {
+        val store = ProviderStore(tmp.root, AesGcmKeyCipher { error("No credentials in this fixture") })
+        val p = store.connect("Speech", ProviderConfig.Kind.OpenAiCompat, "https://tts.test/v1", null, emptyList())
+        val prefs = MemoryPrefs()
+        val settings = VoiceSettings(prefs)
+        settings.setChoice(VoiceChoice(p.id, " ", TtsProtocol.OpenAiSpeech, "kaguya"))
+
+        settings.reconcileTtsChoice(store)
+        assertTrue(store.provider(p.id)!!.ttsModels.isEmpty())
+        assertTrue(store.provider(p.id)!!.typedModels.isEmpty())
+        assertNull(settings.state.value.choice)
+        assertTrue(prefs.getBoolean("voice_tts_role_migrated", false))
+    }
+
+    @Test fun importingVoiceKeepsAnExistingMainModelWithATtsLikeName() {
+        val store = ProviderStore(tmp.root, AesGcmKeyCipher { error("No credentials in this fixture") })
+        val p = store.connect("Relay", ProviderConfig.Kind.OpenAiCompat, "https://relay.test/v1", null, emptyList())
+        val model = "xxx-tts-proxy"
+        assertTrue(store.use(com.wangzan101.mika.core.model.ModelRole.Main, p.id, model, ModelOptions.baseOf(p)))
+        val settings = VoiceSettings(MemoryPrefs())
+        val original = VoiceChoice(p.id, model, TtsProtocol.OpenAiSpeech, "alloy")
+        settings.setChoice(original)
+        settings.reconcileTtsChoice(store)
+        assertEquals(original, settings.state.value.choice)
+        assertTrue(model in store.provider(p.id)!!.ttsModels)
+        assertEquals(model, store.configFor(com.wangzan101.mika.core.model.ModelRole.Main)?.model)
+    }
+
     @Test fun settingsPageAndChatShareLiveConfiguration() {
         val prefs = MemoryPrefs()
         val context = object : ContextWrapper(null), VoiceSettings.Owner {
@@ -81,6 +133,20 @@ class VoiceSettingsTest {
         val prefs = MemoryPrefs()
         prefs.edit().putString("voice_settings", """{"providerId":"p","model":"m","protocol":"unknown"}""").commit()
         assertNull(VoiceSettings(prefs).state.value.choice)
+    }
+
+    @Test fun speedFromUiAndLegacyPreferencesStaysInRange() {
+        val prefs = MemoryPrefs()
+        val settings = VoiceSettings(prefs)
+        val choice = VoiceChoice("provider", "tts", TtsProtocol.OpenAiSpeech, "alloy")
+        for ((input, expected) in listOf(0f to .25f, 100f to 4f, Float.NaN to 1f)) {
+            settings.setChoice(choice.copy(speed = input))
+            assertEquals(expected, settings.state.value.choice?.speed)
+            assertEquals(expected, VoiceSettings(prefs).state.value.choice?.speed)
+        }
+        prefs.edit().putString("voice_settings",
+            """{"providerId":"provider","model":"tts","protocol":"openai-speech","speed":100}""").commit()
+        assertEquals(4f, VoiceSettings(prefs).state.value.choice?.speed)
     }
 
     @Test fun maxCharsAndSpeedAreClamped() {

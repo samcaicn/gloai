@@ -3,6 +3,7 @@ package com.wangzan101.mika.voice
 import com.wangzan101.mika.R
 import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.i18n.tr
+import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.Provider
 
 /**
@@ -17,9 +18,16 @@ object SpeechOptions {
     data class Group(val provider: Provider, val models: List<String>)
 
     /** 能做转写的服务商各一组;列表里只留像语音模型的。 */
-    fun groups(providers: List<Provider>): List<Group> = providers.filter(Transcriber::supports).map { p ->
-        Group(p, p.models.orEmpty().filter(Transcriber::looksLikeSpeech).map { it.id })
-    }
+    fun groups(providers: List<Provider>, choice: SpeechChoice = SpeechChoice.Auto): List<Group> =
+        providers.filter(Transcriber::supports).mapNotNull { provider ->
+            val picked = (choice as? SpeechChoice.Provider)?.takeIf { it.providerId == provider.id }?.model
+            val savedCustomModel = picked != null && !ModelOptions.isTtsOnly(provider, picked)
+            if (!savedCustomModel && !ModelOptions.mayHaveNonTtsModels(provider)) return@mapNotNull null
+            val models = provider.models.orEmpty()
+                .filter { Transcriber.looksLikeSpeech(it) && !ModelOptions.isTtsOnly(provider, it.id) }
+                .map { it.id }
+            Group(provider, models)
+        }
 
     /** 卡片右边两行:[title] 是选了什么,[sub] 是补充(可能没有),[subOk] 为真时补充用「可用」的绿色。 */
     data class Summary(val title: String, val sub: String?, val subOk: Boolean)
@@ -50,7 +58,7 @@ object SpeechOptions {
             }
             is SpeechChoice.Provider -> {
                 val p = providers.firstOrNull { it.id == choice.providerId } ?: return unset
-                Summary(choice.model, p.name, false)
+                if (ModelOptions.isTtsOnly(p, choice.model)) unset else Summary(choice.model, p.name, false)
             }
         }
     }

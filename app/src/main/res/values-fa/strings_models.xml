@@ -46,9 +46,9 @@
     <string name="models_new_key_hint">کلید جدید را جای‌گذاری کنید</string>
     <string name="save">ذخیره</string>
     <string name="models_models">مدل‌ها</string>
-    <string name="models_models_note">برای استفاده از یک مدل به‌عنوان مدل اصلی، بینایی یا سبک، روی آن بزنید.</string>
-    <string name="models_no_list_note">این ارائه‌دهنده فهرست مدل ندارد. برای استفاده از یکی از مدل‌های آن، نام موجود در مستندات را در بخش «نقش‌ها» وارد کنید.</string>
-    <string name="models_untested_note">این ارائه‌دهنده بدون آزمون ذخیره شده است، بنابراین عملکرد آن مشخص نیست. مدلی را برای آزمون انتخاب کنید یا برای دریافت فهرست مدل‌ها «تازه‌سازی» را بزنید.</string>
+    <string name="models_models_note">برای انتخاب نقش یک مدل، روی آن بزنید.</string>
+    <string name="models_no_list_note">این ارائه‌دهنده فهرست مدل‌ها را برنمی‌گرداند. شناسهٔ مدل را از مستندات ارائه‌دهنده در کادر بالا وارد کنید.</string>
+    <string name="models_untested_note">این ارائه‌دهنده بدون آزمون ذخیره شده است. برای دریافت فهرست مدل‌های آن، «تازه‌سازی» را بزنید.</string>
     <string name="models_not_listed">فهرست مدل‌های این ارائه‌دهنده هنوز دریافت نشده است.</string>
     <string name="refresh">تازه‌سازی</string>
     <string name="models_in_use">در حال استفاده</string>
@@ -63,6 +63,16 @@
     <string name="role_main">مدل اصلی</string>
     <string name="role_vision">مدل بینایی</string>
     <string name="role_light">مدل سبک</string>
+    <string name="model_legacy_role_overlap">تنظیمات قبلی شما این مدل را هم برای گفتگو و هم برای خواندن استفاده می‌کند. با زدن یکی از نقش‌های گفتگو در بالا، آن نقش می‌ماند و علامت «فقط خواندن» برداشته می‌شود؛ با روشن کردن «فقط برای خواندن» در پایین، فقط خواندن می‌ماند و نقش‌های گفتگو پاک می‌شوند.</string>
+    <string name="role_tts">فقط خواندن</string>
+    <string name="model_tts_switch">فقط برای خواندن (TTS)</string>
+    <string name="model_tts_switch_off">پس از علامت‌گذاری، در «مدل صوتی» قابل انتخاب است و دیگر برای گفتگو استفاده نمی‌شود</string>
+    <string name="model_tts_switch_in_voice">در حال استفاده به‌عنوان مدل صوتی</string>
+    <string name="model_tts_switch_marked">علامت خورده؛ می‌توانید آن را در «مدل صوتی» انتخاب کنید</string>
+    <string name="model_tts_confirm_title">فقط برای خواندن استفاده شود؟</string>
+    <string name="model_tts_confirm_body">با روشن کردن، %1$s دیگر برای گفتگو استفاده نمی‌شود و این نقش‌ها پاک می‌شوند: %2$s.</string>
+    <string name="model_tts_confirm_ok">فقط برای خواندن</string>
+    <string name="model_role_tts_conflict">«%1$s» به‌عنوان «فقط خواندن» هم علامت خورده است. در «ارائه‌دهندگان» روی آن بزنید و انتخاب کنید برای گفتگو بماند یا فقط برای خواندن.</string>
     <string name="role_main_what">فکر کردن و انجام کار</string>
     <string name="role_vision_what">بررسی عکس‌های صفحه</string>
     <string name="role_light_what">کارهای کوچک مانند بررسی و یادداشت</string>
@@ -129,8 +139,11 @@
     <string name="chatgpt_page_back">بازگشت به میکا</string>
     <string name="chatgpt_no_browser">مرورگری برای ورود پیدا نشد.</string>
     <string name="models_unverified">آزمایش نشده است؛ ممکن است کارها ناموفق باشند</string>
-    <string name="models_unverified_note">این ارائه‌دهنده فهرست مدل ندارد و %1$s که در حال استفاده است آزمون را نگذرانده است، بنابراین ممکن است کارها ناموفق باشند. برای اجرای یک درخواست آزمایشی روی «آزمون دوباره» بزنید.</string>
+    <string name="models_unverified_note">مدل‌های در حال استفاده (%1$s) هنوز آزمون را نگذرانده‌اند. برای بررسی هر مدل، دکمهٔ آزمون آن را بزنید.</string>
     <string name="models_retest">آزمون دوباره</string>
+    <string name="models_retest_model">آزمون %1$s</string>
+    <string name="models_retest_confirm_title">مدل آزمایش شود؟</string>
+    <string name="models_retest_confirm_body">میکا یک درخواست آزمایشی فراخوانی ابزار به مدل %1$s در ارائه‌دهندهٔ %2$s می‌فرستد.</string>
 
     <string name="account_signin_copied">کپی شد</string>
     <string name="account_signin_notif_title">در حال ورود به حساب</string>
@@ -208,13 +221,15 @@
     <string name="main_fallback_clear">No fallback</string>
     <string name="main_fallback_failed">Could not set the fallback model</string>
     <string name="main_fallback_is_main">This is the current main model, so it cannot also be its fallback</string>
-    <string name="role_voice">Voice model</string>
+    <string name="role_voice">مدل صوتی</string>
     <string name="role_voice_what">Lets Mika speak and read answers aloud</string>
     <string name="voice_enable">Allow Mika to speak</string>
     <string name="voice_enable_note">Speech is only made when you tap Read aloud, unless auto-read is on</string>
-    <string name="voice_provider">Service</string>
-    <string name="voice_no_providers">Add a model service first (speech uses the same service and key).</string>
-    <string name="voice_model_name">Model</string>
+    <string name="voice_provider">ارائه‌دهنده</string>
+    <string name="voice_no_providers">ابتدا در بخش «مدل» یک ارائه‌دهنده اضافه کنید.</string>
+    <string name="voice_no_tts_models">در «مدل ← ارائه‌دهندگان» روی یک مدل بزنید و «فقط برای خواندن (TTS)» را روشن کنید.</string>
+    <string name="voice_choice_cleared">علامت «فقط خواندن» از «%1$s» برداشته شد، بنابراین مدل صوتی هم لغو شد. در صورت نیاز، از «مدل صوتی» دوباره انتخاب کنید.</string>
+    <string name="voice_model_name">مدل</string>
     <string name="voice_protocol">API</string>
     <string name="voice_protocol_openai">OpenAI Speech</string>
     <string name="voice_protocol_gemini">Gemini TTS</string>
@@ -305,4 +320,5 @@
     <string name="models_group_delete_body">نقش‌هایی که از آن استفاده می‌کنند به «انتخاب‌نشده»، «هیچ‌کدام» یا مدل اصلی برمی‌گردند.</string>
     <string name="models_group_used_by">در نقش %1$s استفاده می‌شود</string>
     <string name="models_group_member_context">زمینه</string>
+    <string name="model_not_chat_capable">میکا نمی‌تواند از این مدل برای گفتگو استفاده کند. هنوز می‌توانید آن را در پایین فقط-صدا علامت بزنید.</string>
 </resources>

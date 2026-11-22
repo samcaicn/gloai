@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">需要你在任务页处理，去任务页看看</string>
+    <string name="voicecall_task_paused">任务暂时停住了</string>
+    <string name="voicecall_task_running">正在处理</string>
+    <string name="voicecall_task_done">已完成</string>
+    <string name="voicecall_task_failed">没办成</string>
+    <string name="voicecall_task_cancelled">已取消</string>
+    <string name="voicecall_notification_channel">语音通话</string>
+    <string name="voicecall_notification_ongoing">语音通话进行中</string>
+    <string name="voicecall_hangup">挂断</string>
+    <string name="voicecall_menu">语音聊天</string>
+    <string name="voicecall_greeting">你好，我在听，说吧。</string>
+    <string name="voicecall_collapse">收起</string>
+    <string name="voicecall_status_connecting">正在连接…</string>
+    <string name="voicecall_status_mic_check">正在检查麦克风…</string>
+    <string name="voicecall_status_active">已连接</string>
+    <string name="voicecall_ended_hangup">通话已结束</string>
+    <string name="voicecall_ended_notification">已从通知挂断</string>
+    <string name="voicecall_ended_incoming">有电话进来，通话结束</string>
+    <string name="voicecall_ended_limit">聊满 10 分钟，通话结束</string>
+    <string name="voicecall_ended_background">请回到前台再继续</string>
+    <string name="voicecall_error_auth">实时语音凭据没过，去配置里检查</string>
+    <string name="voicecall_error_timeout">连接超时，再试一次</string>
+    <string name="voicecall_error_disconnected">连接断开了</string>
+    <string name="voicecall_error_rate_limited">请求太密，稍后再试</string>
+    <string name="voicecall_error_provider">实时语音服务出错了</string>
+    <string name="voicecall_error_mic_silent">麦克风收不到声音</string>
+    <string name="voicecall_error_audio_focus">声音通道正被别的应用占用</string>
+    <string name="voicecall_error_playback">播放出错了</string>
+    <string name="voicecall_error_busy">正在打电话，结束后再试</string>
+    <string name="voicecall_retry">重试</string>
+    <string name="voicecall_input_hint">打字，或直接说话</string>
+    <string name="voicecall_speaker">免提</string>
+    <string name="voicecall_mic_needed_title">语音通话要用麦克风</string>
+    <string name="voicecall_mic_needed_body">听到你说话、你随时打断，都要录音。允许之后通话才开始。</string>
+    <string name="voicecall_mic_denied_body">之前没有允许，手机不会再问了：到系统设置里 Mika 的权限页，打开「麦克风」就能用。</string>
+    <string name="voicecall_mic_allow">允许麦克风</string>
+    <string name="voicecall_setup_title">先配置实时语音</string>
+    <string name="voicecall_setup_body">语音通话走实时语音服务（和 AI 电话同一份配置），配上凭据就能用。</string>
+    <string name="voicecall_go_setup">去配置</string>
+    <string name="voicecall_protocol_title">语音通话需要兼容的配置</string>
+    <string name="voicecall_protocol_body">语音通话只用双向实时语音协议；当前配置用的是另一种协议。新增一套兼容配置即可开始。</string>
+</resources>

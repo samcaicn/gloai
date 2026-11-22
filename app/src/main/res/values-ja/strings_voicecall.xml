@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">対応が必要です — タスクページを開いてください</string>
+    <string name="voicecall_task_paused">一時停止中</string>
+    <string name="voicecall_task_running">処理中</string>
+    <string name="voicecall_task_done">完了</string>
+    <string name="voicecall_task_failed">完了できませんでした</string>
+    <string name="voicecall_task_cancelled">キャンセルしました</string>
+    <string name="voicecall_notification_channel">音声通話</string>
+    <string name="voicecall_notification_ongoing">音声通話中</string>
+    <string name="voicecall_hangup">通話を終了</string>
+    <string name="voicecall_menu">音声チャット</string>
+    <string name="voicecall_greeting">こんにちは、聞いています。どうぞ。</string>
+    <string name="voicecall_collapse">折りたたむ</string>
+    <string name="voicecall_status_connecting">接続中…</string>
+    <string name="voicecall_status_mic_check">マイクを確認中…</string>
+    <string name="voicecall_status_active">接続済み</string>
+    <string name="voicecall_ended_hangup">通話が終了しました</string>
+    <string name="voicecall_ended_notification">通知から終了しました</string>
+    <string name="voicecall_ended_incoming">電話がかかってきたため通話を終了しました</string>
+    <string name="voicecall_ended_limit">10 分に達したため通話を終了しました</string>
+    <string name="voicecall_ended_background">Mika に戻って続けてください</string>
+    <string name="voicecall_error_auth">音声認証情報が拒否されました。設定を確認してください</string>
+    <string name="voicecall_error_timeout">接続がタイムアウトしました。もう一度お試しください</string>
+    <string name="voicecall_error_disconnected">接続が切れました</string>
+    <string name="voicecall_error_rate_limited">リクエストが多すぎます。しばらくしてからお試しください</string>
+    <string name="voicecall_error_provider">音声サービスでエラーが発生しました</string>
+    <string name="voicecall_error_mic_silent">マイクから音が拾えません</string>
+    <string name="voicecall_error_audio_focus">他のアプリがオーディオチャンネルを使用中です</string>
+    <string name="voicecall_error_playback">再生に失敗しました</string>
+    <string name="voicecall_error_busy">電話中です。終わってからお試しください</string>
+    <string name="voicecall_retry">再試行</string>
+    <string name="voicecall_input_hint">入力するか、そのまま話してください</string>
+    <string name="voicecall_speaker">スピーカー</string>
+    <string name="voicecall_mic_needed_title">音声チャットにはマイクが必要です</string>
+    <string name="voicecall_mic_needed_body">あなたの声を聞き取り、いつでも割り込めるようにするには録音が必要です。許可してから通話が始まります。</string>
+    <string name="voicecall_mic_denied_body">以前に拒否されたため、スマホはもう尋ねません。システム設定の Mika の権限ページで「マイク」をオンにしてください。</string>
+    <string name="voicecall_mic_allow">マイクを許可</string>
+    <string name="voicecall_setup_title">まずリアルタイム音声を設定してください</string>
+    <string name="voicecall_setup_body">音声チャットはリアルタイム音声サービスを使います（AI 電話と同じ設定です）。認証情報を追加すれば始められます。</string>
+    <string name="voicecall_go_setup">設定へ</string>
+    <string name="voicecall_protocol_title">音声通話には対応する設定が必要です</string>
+    <string name="voicecall_protocol_body">音声通話は双方向リアルタイム音声の設定でのみ動きます。現在の設定は別のプロトコルです。対応する設定を追加すると開始できます。</string>
+</resources>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">需要你在任務頁處理，去任務頁看看</string>
+    <string name="voicecall_task_paused">任務暫時停住了</string>
+    <string name="voicecall_task_running">正在處理</string>
+    <string name="voicecall_task_done">已完成</string>
+    <string name="voicecall_task_failed">沒辦成</string>
+    <string name="voicecall_task_cancelled">已取消</string>
+    <string name="voicecall_notification_channel">語音通話</string>
+    <string name="voicecall_notification_ongoing">語音通話進行中</string>
+    <string name="voicecall_hangup">掛斷</string>
+    <string name="voicecall_menu">語音聊天</string>
+    <string name="voicecall_greeting">你好，我在聽，說吧。</string>
+    <string name="voicecall_collapse">收起</string>
+    <string name="voicecall_status_connecting">正在連線…</string>
+    <string name="voicecall_status_mic_check">正在檢查麥克風…</string>
+    <string name="voicecall_status_active">已連線</string>
+    <string name="voicecall_ended_hangup">通話已結束</string>
+    <string name="voicecall_ended_notification">已從通知掛斷</string>
+    <string name="voicecall_ended_incoming">有電話進來，通話結束</string>
+    <string name="voicecall_ended_limit">聊滿 10 分鐘，通話結束</string>
+    <string name="voicecall_ended_background">請回到前景再繼續</string>
+    <string name="voicecall_error_auth">即時語音憑據未通過，去設定裡檢查</string>
+    <string name="voicecall_error_timeout">連線逾時，再試一次</string>
+    <string name="voicecall_error_disconnected">連線中斷了</string>
+    <string name="voicecall_error_rate_limited">請求太密，稍後再試</string>
+    <string name="voicecall_error_provider">即時語音服務出錯了</string>
+    <string name="voicecall_error_mic_silent">麥克風收不到聲音</string>
+    <string name="voicecall_error_audio_focus">聲音通道正被其他應用程式占用</string>
+    <string name="voicecall_error_playback">播放出錯了</string>
+    <string name="voicecall_error_busy">正在通話，結束後再試</string>
+    <string name="voicecall_retry">重試</string>
+    <string name="voicecall_input_hint">打字，或直接說話</string>
+    <string name="voicecall_speaker">免持</string>
+    <string name="voicecall_mic_needed_title">語音通話要用麥克風</string>
+    <string name="voicecall_mic_needed_body">聽到你說話、你隨時打斷，都要錄音。允許之後通話才開始。</string>
+    <string name="voicecall_mic_denied_body">之前沒有允許，手機不會再問了：到系統設定裡 Mika 的權限頁，打開「麥克風」就能用。</string>
+    <string name="voicecall_mic_allow">允許麥克風</string>
+    <string name="voicecall_setup_title">先設定即時語音</string>
+    <string name="voicecall_setup_body">語音通話走即時語音服務（和 AI 電話同一份設定），配上憑據就能用。</string>
+    <string name="voicecall_go_setup">去設定</string>
+    <string name="voicecall_protocol_title">語音通話需要相容的設定</string>
+    <string name="voicecall_protocol_body">語音通話只用雙向即時語音協定；目前設定用的是另一種協定。新增一組相容設定即可開始。</string>
+</resources>

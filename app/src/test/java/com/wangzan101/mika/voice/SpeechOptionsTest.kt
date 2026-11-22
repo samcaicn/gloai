@@ -37,6 +37,24 @@ class SpeechOptionsTest {
         assertTrue(g.models.isEmpty())
     }
 
+    @Test fun userMarkedSynthesisModelsAreFilteredWithoutLosingCustomTranscription() {
+        val mixed = openAi.copy(
+            models = openAi.models.orEmpty() + ListedModel("speech-local") + ListedModel("speech-tts"),
+            ttsModels = setOf("speech-local"),
+        )
+        val ttsOnly = openAi.copy(id = "speech-out", models = listOf(ListedModel("speech-local")), ttsModels = setOf("speech-local"))
+        val groups = SpeechOptions.groups(listOf(mixed, ttsOnly))
+        assertEquals(listOf("p1"), groups.map { it.provider.id })
+        assertEquals(listOf("whisper-1", "speech-tts"), groups.single().models)
+
+        val unavailable = SpeechChoice.Provider(ttsOnly.id, "speech-local", TranscribeMethod.AudioTranscriptions)
+        assertEquals("未设置", SpeechOptions.summary(unavailable, SystemCapability(false, false), listOf(ttsOnly)).title)
+        assertTrue(SpeechOptions.groups(listOf(ttsOnly), unavailable).isEmpty())
+
+        val customAsr = unavailable.copy(model = "custom-asr")
+        assertEquals(ttsOnly, SpeechOptions.groups(listOf(ttsOnly), customAsr).single().provider)
+    }
+
     @Test fun autoWithSystemShowsPhoneAndOffline() {
         val s = SpeechOptions.summary(SpeechChoice.Auto, SystemCapability(available = true, onDevice = true), listOf(openAi))
         assertEquals("手机自带", s.title)

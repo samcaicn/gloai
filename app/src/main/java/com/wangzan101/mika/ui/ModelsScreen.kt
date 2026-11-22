@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -39,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,6 +72,7 @@ import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.RoleChoice
 import com.wangzan101.mika.settings.RoleChoices
+import com.wangzan101.mika.settings.VoiceChoice
 import com.wangzan101.mika.ui.components.BarIconButton
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize
@@ -192,7 +196,7 @@ internal fun ProviderRow(p: Provider, line: String, first: Boolean, warning: Str
 class RolePickerActions(
     /** (服务商 id, 模型名) */
     val pick: (String, String) -> Unit = { _, _ -> },
-    /** 不提供列表的服务商手填的模型名(服务商 id, 模型名):先试调用,通了才选。 */
+    /** 手填的模型名(服务商 id, 模型名):先试调用,通了才选。 */
     val pickManual: (String, String) -> Unit = { _, _ -> },
     /** 看图、轻量的固定选项(用主模型、不用)。 */
     val choose: (RoleChoice) -> Unit = {},
@@ -211,8 +215,9 @@ internal fun fixedChoices(role: ModelRole): List<RoleChoice> = when (role) {
 }
 
 /**
- * 选用途:看图、轻量顶上是固定选项;下面按服务商分组列出所有已连接服务商的全部模型(用记住的列表),
- * 标签只作参考,不按能力过滤或置灰;每家下面都能手动填模型名(列表里没有、或这家不提供列表),手填的标「手填」。点一下就生效并返回。
+ * 选择对话用途，按服务商分组展示可选模型。看图、轻量还提供固定选项。
+ * 选主模型时先试调用(见 [ModelSetupViewModel.pick]),进度和原因显示在那一家下面。
+ * 旧设置留下的冲突(当前选的模型也标成仅朗读,见 [ModelSetupUi.ttsConflict]):照样显示成已选,并说明去哪里解决。
  */
 @Composable
 fun RolePickerContent(ui: ModelSetupUi, role: ModelRole, actions: RolePickerActions, onBack: () -> Unit,
@@ -222,15 +227,20 @@ fun RolePickerContent(ui: ModelSetupUi, role: ModelRole, actions: RolePickerActi
     clearAction: (() -> Unit)? = null, clearSelected: Boolean = false,
 ) {
     val c = MikaTheme.colors
-    var filter by rememberSaveable { mutableStateOf("") }
-    val groups = ui.providers.map { it to ui.options(it) }
-    val total = groups.sumOf { it.second.size }
-    val q = filter.trim()
+    val conflict = if (pickedOverride == null) ui.ttsConflict(role) else null
+    val providers = ui.providers.filter { !ui.isTtsOnlyProvider(it) || it.id == conflict?.providerId }
+    val groups = providers.map { p ->
+        val options = ui.options(p)
+        val current = conflict?.takeIf { it.providerId == p.id }
+            ?.let { cfg -> ui.sortedOptions(p).firstOrNull { it.id == cfg.model } }
+        p to (listOfNotNull(current) + options)
+    }
     Page(titleOverride ?: ModelsCopy.roleName(role), onBack) {
         val hint = hintOverride ?: ModelsCopy.roleHint(role)
         if (hint.isNotEmpty()) {
             Text(hint, Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
         }
+        conflict?.let { FooterNote(ModelsCopy.ttsConflict(it.model), Modifier.testTag("picker-tts-conflict"), color = c.warn) }
         if (ui.groups.isNotEmpty()) {
             GroupLabel(ModelsCopy.GROUPS)
             GroupCard {
@@ -264,42 +274,20 @@ fun RolePickerContent(ui: ModelSetupUi, role: ModelRole, actions: RolePickerActi
                 RadioRow(ModelsCopy.FALLBACK_CLEAR, selected = clearSelected, onClick = clearAction, first = true)
             }
         }
-        if (total > FILTER_FROM) {
-            GroupLabel(ModelsCopy.PICK_FROM, Modifier.padding(top = 8.dp))
-            Box(Modifier.padding(bottom = 4.dp)) {
-                SearchField(filter, { filter = it }, ModelsCopy.FILTER_HINT, Modifier.testTag("model-filter"))
-            }
-        }
-        var anyShown = false
-        groups.forEach { (p, options) ->
-            val shown = options.filter { (q.isEmpty() || it.id.contains(q, ignoreCase = true)) && exclude?.invoke(p.id, it.id) != true }
-            // 这家列不出模型:手填是唯一的选法
-            val noList = p.models?.isEmpty() == true
-            if (q.isNotEmpty() && shown.isEmpty()) return@forEach
-            anyShown = true
-            val state = ui.listing[p.id]
-            GroupLabel(ModelsCopy.providerName(p))
-            GroupCard {
-                shown.take(PICK_AT_MOST).forEachIndexed { i, o ->
-                    RadioRow(
-                        o.id, selected = pickedOverride?.invoke(p.id, o.id) ?: ui.picked(role, p.id, o.id), onClick = { actions.pick(p.id, o.id) }, first = i == 0,
-                        titleStyle = ModelIdStyle, below = { Tags(o, forVision = role == ModelRole.Vision) },
-                    )
-                }
-                ManualModel(p, ui.manualPick[p.id], first = shown.isEmpty()) { actions.pickManual(p.id, it) }
-            }
-            val manualState = ui.manualPick[p.id]
-            when {
-                manualState is ListState.Failed -> FooterNote(manualState.message, Modifier.testTag("manual-model-failed"), color = c.bad)
-                // 选列表里的模型也可能先试调用(见 ModelSetupUi.probeBeforePick);手填的那一行自己显示进度
-                !noList && manualState == ListState.Running -> FooterNote(ModelSetupCopy.TESTING, Modifier.testTag("pick-probe-running"))
-                state == ListState.Running -> FooterNote(ModelsCopy.LISTING)
-                state is ListState.Failed -> FooterNote(ModelSetupCopy.failed(state.message), color = c.bad)
-                shown.size > PICK_AT_MOST -> FooterNote(ModelsCopy.more(shown.size - PICK_AT_MOST))
-            }
-        }
-        if (q.isNotEmpty() && !anyShown) FooterNote(ModelsCopy.NO_MATCH)
-        if (ui.providers.isEmpty()) FooterNote(ModelsCopy.ROLE_EMPTY)
+        val isConflict = { providerId: String, model: String -> conflict?.providerId == providerId && conflict.model == model }
+        ModelPickerRows(
+            groups = groups,
+            // 冲突的那个已经是当前选择:点它只是返回,解决冲突要到服务商的「用作」里
+            pick = { providerId, model -> if (isConflict(providerId, model)) onBack() else actions.pick(providerId, model) },
+            isSelected = { providerId, model -> pickedOverride?.invoke(providerId, model) ?: ui.picked(role, providerId, model) },
+            isTts = isConflict,
+            forVision = role == ModelRole.Vision,
+            exclude = exclude,
+            pickManual = actions.pickManual,
+            manualState = ui.manualPick,
+            listing = ui.listing,
+        )
+        if (providers.isEmpty()) FooterNote(ModelsCopy.ROLE_EMPTY)
         GroupCard(Modifier.padding(top = 8.dp)) {
             ListRow(MikaIcons.Plus, ModelsCopy.ADD_PROVIDER, first = true, titleColor = c.accent, tone = TileTone.Accent, onClick = actions.addProvider)
         }
@@ -307,7 +295,63 @@ fun RolePickerContent(ui: ModelSetupUi, role: ModelRole, actions: RolePickerActi
     }
 }
 
-/** 手填模型名(列表里没有、或服务不提供列表):照服务商文档填;点「使用」先试调用一次([state] 是进度),通了才选上并记为手填。 */
+/** 按服务商分组的单选列表，供模型用途页和声音模型共用。 */
+@Composable
+internal fun ModelPickerRows(
+    groups: List<Pair<Provider, List<ModelOption>>>,
+    pick: (String, String) -> Unit,
+    isSelected: (String, String) -> Boolean,
+    /** 这一行是不是标为仅朗读的模型(只显示「仅朗读」标签)。 */
+    isTts: (String, String) -> Boolean = { _, _ -> false },
+    forVision: Boolean = false,
+    exclude: ((String, String) -> Boolean)? = null,
+    pickManual: ((String, String) -> Unit)? = null,
+    manualState: Map<String, ListState> = emptyMap(),
+    listing: Map<String, ListState> = emptyMap(),
+) {
+    val c = MikaTheme.colors
+    var filter by rememberSaveable { mutableStateOf("") }
+    val q = filter.trim()
+    if (groups.sumOf { it.second.size } > FILTER_FROM) {
+        GroupLabel(ModelsCopy.PICK_FROM, Modifier.padding(top = 8.dp))
+        Box(Modifier.padding(bottom = 4.dp)) {
+            SearchField(filter, { filter = it }, ModelsCopy.FILTER_HINT, Modifier.testTag("model-filter"))
+        }
+    }
+    var anyShown = false
+    groups.forEach { (provider, options) ->
+        val shown = options.filter { (q.isEmpty() || it.id.contains(q, ignoreCase = true)) && exclude?.invoke(provider.id, it.id) != true }
+        if (shown.isEmpty() && (q.isNotEmpty() || pickManual == null)) return@forEach
+        anyShown = true
+        GroupLabel(ModelsCopy.providerName(provider))
+        val manual = manualState[provider.id]
+        GroupCard {
+            shown.take(PICK_AT_MOST).forEachIndexed { i, option ->
+                RadioRow(
+                    option.id, selected = isSelected(provider.id, option.id),
+                    onClick = { pick(provider.id, option.id) }, first = i == 0,
+                    enabled = manual != ListState.Running, titleStyle = ModelIdStyle,
+                    below = { Tags(option, forVision = forVision, tts = isTts(provider.id, option.id)) },
+                )
+            }
+            if (pickManual != null) {
+                ManualModel(provider, manual, first = shown.isEmpty()) { pickManual(provider.id, it) }
+            }
+        }
+        val state = listing[provider.id]
+        when {
+            manual is ListState.Failed -> FooterNote(manual.message, Modifier.testTag("manual-model-failed"), color = c.bad)
+            // 选主模型先试调用;手填那一行自己显示进度
+            manual == ListState.Running && shown.isNotEmpty() -> FooterNote(ModelSetupCopy.TESTING, Modifier.testTag("pick-probe-running"))
+            state == ListState.Running -> FooterNote(ModelsCopy.LISTING)
+            state is ListState.Failed -> FooterNote(ModelSetupCopy.failed(state.message), color = c.bad)
+            shown.size > PICK_AT_MOST -> FooterNote(ModelsCopy.more(shown.size - PICK_AT_MOST))
+        }
+    }
+    if (q.isNotEmpty() && !anyShown) FooterNote(ModelsCopy.NO_MATCH)
+}
+
+/** 手填列表里找不到的模型名，由调用方处理提交;[state] 是进度(设主模型时先试调用)。 */
 @Composable
 internal fun ManualModel(p: Provider, state: ListState?, first: Boolean, onUse: (String) -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
@@ -336,14 +380,21 @@ class ProviderDetailActions(
     val addKey: (String) -> Unit = {},
     val removeKey: (String) -> Unit = {},
     val remove: () -> Unit = {},
-    /** 把这家的一个模型用作某个用途(「用作」面板里点的)。 */
-    val use: (ModelRole, String) -> Unit = { _, _ -> },
+    /**
+     * 把这家的一个模型用作某个用途(「用作」面板里点的),存好后调最后一个参数。主模型先试调用,
+     * 进度和原因在 [ModelSetupUi.manualPick]。
+     */
+    val use: (ModelRole, String, () -> Unit) -> Unit = { _, _, _ -> },
+    /** 清掉上次保存或试调用的结果(「用作」面板打开时)。 */
+    val clearPick: () -> Unit = {},
     /** 用户说这家的一个模型能不能看图(「用作」面板里的开关)。 */
     val setVision: (String, Boolean) -> Unit = { _, _ -> },
     val setServiceTier: (String, OpenAiServiceTier?) -> Boolean = { _, _ -> false },
+    /** 标记这家的一个模型仅用于朗读，让它出现在声音模型选择页;会清掉它的对话用途。 */
+    val setTts: (String, Boolean) -> Boolean = { _, _ -> false },
     val showAll: () -> Unit = {},
-    /** 在用、没核实过的手填模型再试调用一次(见 [ModelSetupUi.unverified])。 */
-    val retest: () -> Unit = {},
+    /** 测试用户确认的模型。 */
+    val retestModel: (String) -> Unit = {},
     /** 用账号登录的服务商(ChatGPT、xAI、OpenRouter):再登录、退出登录、打开对方的用量或账号页。 */
     val signIn: () -> Unit = {},
     val signOut: () -> Unit = {},
@@ -365,10 +416,11 @@ fun ProviderDetailContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetail
     var addingKey by remember { mutableStateOf(false) }
     var showKeys by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var confirmRetest by remember(p.id) { mutableStateOf<String?>(null) }
     var editingBudget by remember { mutableStateOf(false) }
     var customBudget by remember { mutableStateOf("") }
     var budgetSaveFailed by remember { mutableStateOf(false) }
-    var using by remember { mutableStateOf<ModelOption?>(null) }
+    var using by remember { mutableStateOf<String?>(null) }
     val state = ui.listing[p.id]
     val list = ui.sortedOptions(p)
     Page(ModelsCopy.providerName(p), onBack) {
@@ -479,15 +531,17 @@ fun ProviderDetailContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetail
             GroupLabel(ModelsCopy.MODELS, Modifier.weight(1f))
             BarIconButton(MikaIcons.Refresh, ModelsCopy.REFRESH, actions.refresh, enabled = state != ListState.Running)
         }
-        if (list.isNotEmpty()) {
-            GroupCard {
-                list.take(MODEL_PREVIEW).forEachIndexed { i, o -> ModelRow(o, ui.rolesOf(p.id, o.id), first = i == 0) { using = o } }
-                if (list.size > MODEL_PREVIEW) {
-                    ListRow(null, ModelsCopy.viewAll(list.size), titleColor = c.accent, onClick = actions.showAll) { RowChevron() }
-                }
+        GroupCard {
+            list.take(MODEL_PREVIEW).forEachIndexed { i, o ->
+                ModelRow(o, ui.rolesOf(p.id, o.id), tts = o.id in p.ttsModels, first = i == 0) { using = o.id }
             }
-            FooterNote(ModelsCopy.MODELS_NOTE)
+            if (list.size > MODEL_PREVIEW) {
+                ListRow(null, ModelsCopy.viewAll(list.size), titleColor = c.accent, onClick = actions.showAll) { RowChevron() }
+            }
+            ManualModel(p, state = null, first = list.isEmpty()) { using = it }
         }
+        if (list.isNotEmpty()) FooterNote(ModelsCopy.MODELS_NOTE)
+        ui.voiceNotice?.let { FooterNote(it, Modifier.testTag("voice-cleared-note"), color = c.warn) }
         // 跳过测试直接存下的:说清它还没测过,别说成「这家不提供模型列表」——那个说法对它不成立
         val untested = ui.untested(p)
         val unverified = ui.unverified(p)
@@ -496,12 +550,12 @@ fun ProviderDetailContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetail
         } else if (unverified.isNotEmpty()) {
             FooterNote(ModelsCopy.unverifiedNote(unverified), Modifier.testTag("provider-unverified"), color = c.warn)
         }
-        // 有模型在用时可以就地重测一次;没有的在用的,先刷新列表或去选一个
-        if (unverified.isNotEmpty()) {
-            val retest = ui.retest[p.id]
+        ui.usedChatModels(p).forEach { model ->
+            val retest = ui.retest[p.id to model]
             MikaButton(
-                if (retest == ListState.Running) ModelSetupCopy.TESTING else ModelsCopy.RETEST, actions.retest,
-                Modifier.fillMaxWidth().padding(bottom = 8.dp).testTag("provider-retest"),
+                if (retest == ListState.Running) ModelSetupCopy.TESTING else tr(R.string.models_retest_model, model),
+                { confirmRetest = model },
+                Modifier.fillMaxWidth().padding(bottom = 8.dp).testTag("provider-retest-${model}"),
                 kind = ButtonKind.Secondary, size = ButtonSize.Medium, enabled = retest != ListState.Running,
             )
             (retest as? ListState.Failed)?.let { FooterNote(it.message, Modifier.testTag("provider-retest-failed"), color = c.bad) }
@@ -517,6 +571,21 @@ fun ProviderDetailContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetail
         }
     }
 
+    confirmRetest?.let { model ->
+        MikaDialog(
+            onDismissRequest = { confirmRetest = null },
+            title = { Text(tr(R.string.models_retest_confirm_title)) },
+            text = { Text(tr(R.string.models_retest_confirm_body, model, ModelsCopy.providerName(p))) },
+            confirmButton = {
+                TextButton(
+                    { confirmRetest = null; actions.retestModel(model) },
+                    modifier = Modifier.testTag("provider-confirm-retest"),
+                ) { Text(ModelsCopy.RETEST) }
+            },
+            dismissButton = { TextButton({ confirmRetest = null }) { Text(ModelSetupCopy.CANCEL) } },
+        )
+    }
+
     if (editingBudget) TokenBudgetDialog(
         title = stringResource(R.string.models_daily_token_budget),
         description = stringResource(R.string.models_daily_token_budget_sub),
@@ -529,7 +598,7 @@ fun ProviderDetailContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetail
         onDismiss = { editingBudget = false },
         saveError = if (budgetSaveFailed) stringResource(R.string.models_daily_token_budget_save_failed) else null,
     )
-    using?.let { UseAsSheet(ui, p, it.id, actions, onDismiss = { using = null }) }
+    using?.let { model -> UseAsSheet(ui, p, model, actions, onDismiss = { using = null }) }
     if (changingKey) {
         var key by remember { mutableStateOf("") }
         var notice by remember { mutableStateOf(ApiKeyText.Notice.None) }
@@ -766,7 +835,12 @@ private fun AccountConnection(ui: ModelSetupUi, p: Provider, state: ListState?, 
         // 主模型已经在这家就不放这一行
         val isMain = ui.configFor(ModelRole.Main)?.providerId == p.id
         if (signedIn && !isMain && ui.options(p).isNotEmpty()) {
-            ListRow(null, ModelsCopy.SET_MAIN, ModelsCopy.SET_MAIN_NOTE, first = true, onClick = actions.useAsMain) { RowChevron() }
+            // 设主模型先试调用一次(见 ModelSetupViewModel.useAsMain)
+            val pick = ui.manualPick[p.id]
+            ListRow(
+                null, ModelsCopy.SET_MAIN, if (pick == ListState.Running) ModelSetupCopy.TESTING else ModelsCopy.SET_MAIN_NOTE,
+                first = true, onClick = { if (pick != ListState.Running) actions.useAsMain() },
+            ) { RowChevron() }
         }
         ListRow(null, ModelsCopy.accountManage(kind), titleColor = c.accent, first = !(signedIn && !isMain && ui.options(p).isNotEmpty()), onClick = actions.manageUsage) { RowChevron() }
         if (signedIn) {
@@ -776,6 +850,7 @@ private fun AccountConnection(ui: ModelSetupUi, p: Provider, state: ListState?, 
         }
     }
     FooterNote(ModelsCopy.accountNote(kind, signedIn))
+    (ui.manualPick[p.id] as? ListState.Failed)?.let { FooterNote(it.message, Modifier.testTag("set-main-failed"), color = c.bad) }
     if (signedIn && kind == SignInKind.Xai) FooterNote(ModelsCopy.XAI_403_NOTE, Modifier.testTag("account-403-note"), color = c.warn)
     failure?.let { FooterNote(it, color = c.bad) }
 }
@@ -788,7 +863,7 @@ private fun AccountConnection(ui: ModelSetupUi, p: Provider, state: ListState?, 
 fun AllModelsContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetailActions, onBack: () -> Unit) {
     val c = MikaTheme.colors
     var filter by rememberSaveable { mutableStateOf("") }
-    var using by remember { mutableStateOf<ModelOption?>(null) }
+    var using by remember { mutableStateOf<String?>(null) }
     val state = ui.listing[p.id]
     val all = ui.sortedOptions(p)
     val q = filter.trim()
@@ -809,7 +884,7 @@ fun AllModelsContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetailActio
             LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp)) {
                 itemsIndexed(shown, key = { _, o -> o.id }) { i, o ->
                     Box(Modifier.fillMaxWidth().clip(rowShape(i, shown.size)).background(c.surface)) {
-                        ModelRow(o, ui.rolesOf(p.id, o.id), first = i == 0) { using = o }
+                        ModelRow(o, ui.rolesOf(p.id, o.id), tts = o.id in p.ttsModels, first = i == 0) { using = o.id }
                     }
                 }
                 item {
@@ -817,11 +892,12 @@ fun AllModelsContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetailActio
                         if (q.isNotEmpty() && shown.isEmpty()) ModelsCopy.NO_MATCH else ModelsCopy.allModelsNote(all.size),
                         Modifier.padding(top = 10.dp),
                     )
+                    GroupCard { ManualModel(p, state = null, first = true) { using = it } }
                 }
             }
         }
     }
-    using?.let { UseAsSheet(ui, p, it.id, actions, onDismiss = { using = null }) }
+    using?.let { model -> UseAsSheet(ui, p, model, actions, onDismiss = { using = null }) }
 }
 
 /** 一张卡拆成懒加载的行时,每行的圆角:首行上圆、末行下圆。 */
@@ -833,7 +909,7 @@ private fun rowShape(i: Int, n: Int): RoundedCornerShape {
 
 /** 模型一行:模型名(等宽)和标签,右边标着它在给哪些用途干活。 */
 @Composable
-private fun ModelRow(o: ModelOption, roles: List<ModelRole>, first: Boolean, onClick: () -> Unit) {
+private fun ModelRow(o: ModelOption, roles: List<ModelRole>, tts: Boolean, first: Boolean, onClick: () -> Unit) {
     Column {
         if (!first) Hairline(start = 16.dp)
         Row(
@@ -842,7 +918,7 @@ private fun ModelRow(o: ModelOption, roles: List<ModelRole>, first: Boolean, onC
         ) {
             Column(Modifier.weight(1f)) {
                 Text(o.id, style = ModelIdStyle, color = MikaTheme.colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Box(Modifier.padding(top = 4.dp)) { Tags(o, accent = false) }
+                Box(Modifier.padding(top = 4.dp)) { Tags(o, accent = false, tts = tts) }
             }
             roles.forEach { StatusPill(ModelsCopy.roleName(it), PillTone.Accent) }
             RowChevron()
@@ -851,26 +927,54 @@ private fun ModelRow(o: ModelOption, roles: List<ModelRole>, first: Boolean, onC
 }
 
 /**
- * 点一个模型后从底部升起:「<服务商> · 用作」主模型 / 看图模型 / 轻量模型,点了马上生效;
- * 下面是「能看图」开关:列表没写的模型由用户说了算,列表写了的也能改。
+ * 点一个模型后从底部打开「用作」面板(手填的模型也行)。上面是对话用途,点了就用:主模型先试调用一次
+ * (试通过过的不再试,见 [ModelSetupViewModel.useFromProvider]),进度和原因显示在下面,没通过不改。
+ * 下面单独一组是「仅用于朗读」开关:打开后只在声音模型里可选;它正被对话用途或备援用着时,先确认会清掉哪些。
+ * 旧设置把它同时用于对话和朗读(冲突)时,开关显示为关,说明里写清两种选法各做什么。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UseAsSheet(ui: ModelSetupUi, p: Provider, model: String, actions: ProviderDetailActions, onDismiss: () -> Unit) {
     val c = MikaTheme.colors
+    val option = ui.options(p).firstOrNull { it.id == model }
+    val chatCapable = option != null
+    val tts = model in p.ttsModels
+    val usedBy = ModelsCopy.rolesUsing(ui, p.id, model)
+    val legacyOverlap = tts && usedBy.isNotEmpty()
+    val speechOnly = tts && !legacyOverlap
+    val pick = ui.manualPick[p.id]
+    val running = pick == ListState.Running
+    var saveFailed by remember(p.id, model) { mutableStateOf(false) }
+    var confirmTts by remember(p.id, model) { mutableStateOf(false) }
+    // 上次在别处保存、试调用的结果不带进来
+    LaunchedEffect(p.id, model) { actions.clearPick() }
+    fun setTts(on: Boolean) {
+        if (actions.setTts(model, on)) onDismiss() else saveFailed = true
+    }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = c.surface, shape = MikaShapes.SheetTop) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = 8.dp).testTag("use-as")) {
             Text(model, Modifier.padding(horizontal = 16.dp), style = ModelIdStyle, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(ModelsCopy.useAsSubtitle(ModelsCopy.providerName(p)), Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 6.dp), style = MikaType.Caption, color = c.ink3)
-            ModelRole.entries.forEachIndexed { i, role ->
-                val on = ui.picked(role, p.id, model)
-                RadioRow(
-                    ModelsCopy.roleName(role), selected = on, first = i == 0,
-                    subtitle = if (on) ModelsCopy.IN_USE else ModelsCopy.roleWhat(role),
-                    onClick = { actions.use(role, model); onDismiss() },
-                )
+            if (legacyOverlap) FooterNote(tr(R.string.model_legacy_role_overlap), Modifier.testTag("use-as-overlap"), color = c.warn)
+            if (chatCapable) {
+                ModelRole.entries.forEachIndexed { i, role ->
+                    val on = ui.picked(role, p.id, model)
+                    RadioRow(
+                        ModelsCopy.roleName(role), selected = on, first = i == 0, enabled = !running,
+                        subtitle = if (on) ModelsCopy.IN_USE else ModelsCopy.roleWhat(role),
+                        modifier = Modifier.testTag("model-use-${role.name.lowercase()}"),
+                        onClick = { saveFailed = false; actions.use(role, model, onDismiss) },
+                    )
+                }
+            } else {
+                // 目录里写明只有别的接口的模型:对话用途不列(设了也办不了事),只留「仅用于朗读」
+                FooterNote(tr(R.string.model_not_chat_capable), Modifier.testTag("use-as-not-chat-capable"))
             }
-            ui.options(p).firstOrNull { it.id == model }?.let { o ->
+            when {
+                running -> FooterNote(ModelSetupCopy.TESTING, Modifier.testTag("use-as-testing"))
+                pick is ListState.Failed -> FooterNote(pick.message, Modifier.testTag("use-as-failed"), color = c.bad)
+            }
+            option?.let { o ->
                 val usedForVision = ModelRole.Vision in ui.rolesOf(p.id, model)
                 val sees = ModelOptions.seesImages(o.capabilities.vision, o.visionByUser, usedForVision)
                 ListRow(null, ModelsCopy.SEES_IMAGES, ModelsCopy.seesNote(o, usedForVision)) {
@@ -880,9 +984,38 @@ private fun UseAsSheet(ui: ModelSetupUi, p: Provider, model: String, actions: Pr
             if (p.supportsServiceTier(model)) {
                 ModelSpeedControl(p.serviceTiers[model]) { actions.setServiceTier(model, it) }
             }
+            // 仅用于朗读:和对话用途分开的一组
+            Spacer(Modifier.height(12.dp))
+            ListRow(
+                null, tr(R.string.model_tts_switch),
+                when {
+                    speechOnly && ui.voiceUses(p.id, model) -> tr(R.string.model_tts_switch_in_voice)
+                    speechOnly -> tr(R.string.model_tts_switch_marked)
+                    else -> tr(R.string.model_tts_switch_off)
+                },
+                first = true, modifier = Modifier.testTag("model-use-tts-row"),
+            ) {
+                MikaSwitch(
+                    speechOnly,
+                    { on -> saveFailed = false; if (on && usedBy.isNotEmpty()) confirmTts = true else setTts(on) },
+                    Modifier.testTag("model-use-tts"), enabled = !running,
+                )
+            }
+            if (saveFailed) FooterNote(tr(R.string.model_context_save_failed), color = c.bad)
             ListRow(null, ModelSetupCopy.CANCEL, titleColor = c.ink2, onClick = onDismiss)
         }
     }
+    if (confirmTts) MikaDialog(
+        onDismissRequest = { confirmTts = false },
+        title = { Text(tr(R.string.model_tts_confirm_title)) },
+        text = { Text(tr(R.string.model_tts_confirm_body, model, usedBy.joinToString(tr(R.string.list_sep)))) },
+        confirmButton = {
+            TextButton({ confirmTts = false; setTts(true) }, modifier = Modifier.testTag("model-tts-confirm")) {
+                Text(tr(R.string.model_tts_confirm_ok))
+            }
+        },
+        dismissButton = { TextButton({ confirmTts = false }, modifier = Modifier.testTag("model-tts-cancel")) { Text(ModelSetupCopy.CANCEL) } },
+    )
 }
 
 @Composable
@@ -1210,6 +1343,25 @@ object ModelsCopy {
 
     fun fallbackLabel(slot: Int) = fallbackLabel(ModelRole.Main, slot)
 
+    /**
+     * 正用着这家 [model] 的用途、备援和模型组(用「用主模型」跟过来的也算),给标为仅朗读前的确认框列出会清掉哪些。
+     */
+    fun rolesUsing(ui: ModelSetupUi, providerId: String, model: String): List<String> {
+        val ids = ui.configs.filter { it.providerId == providerId && it.model == model }.mapTo(hashSetOf()) { it.id }
+        if (ids.isEmpty()) return emptyList()
+        return buildList {
+            ModelRole.entries.forEach { role -> if (ui.roles.resolve(role) in ids) add(roleName(role)) }
+            ModelRole.entries.forEach { role ->
+                ui.roles.fallbacks(role).forEachIndexed { i, id -> if (id in ids) add("${roleName(role)} ${tr(R.string.main_fallback_name, i + 1)}") }
+            }
+            // 标为仅朗读时也会从模型组里拿掉
+            ui.groups.filter { g -> g.members.any { it.configId in ids } }.forEach { add("$GROUPS · ${it.name}") }
+        }
+    }
+
+    /** 用途选的模型也标成了仅朗读(旧设置的冲突):说明去哪里解决。 */
+    fun ttsConflict(model: String): String = tr(R.string.model_role_tts_conflict, model)
+
     fun fallbackLine(ui: ModelSetupUi, role: ModelRole, slot: Int): RoleLine {
         val cfg = ui.roles.fallbacks(role).getOrNull(slot)?.let { id -> ui.configs.firstOrNull { it.id == id } }
         return if (cfg != null) RoleLine(cfg.model, ui.providerOf(cfg)?.let(::providerName) ?: cfg.name, isModel = true)
@@ -1218,13 +1370,18 @@ object ModelsCopy {
 
     fun fallbackLine(ui: ModelSetupUi, slot: Int): RoleLine = fallbackLine(ui, ModelRole.Main, slot)
 
-    /** 第五个用途「声音模型」:朗读/主动说话,和语音转写一样不在 [ModelRole] 里。 */
-    val VOICE_LABEL: String get() = "${tr(R.string.role_voice)} · ${tr(R.string.role_voice_what)}"
+    /** 声音模型卡片显示实际选中的合成模型和服务商。 */
     val VOICE_ICON: ImageVector get() = MikaIcons.Sound
 
-    fun voiceLine(): RoleLine = RoleLine(tr(R.string.role_voice), tr(R.string.role_voice_what), unset = true)
+    fun voiceLine(providers: List<Provider>, choice: VoiceChoice?): RoleLine {
+        if (choice != null) {
+            val provider = providers.firstOrNull { it.id == choice.providerId && choice.model in it.ttsModels }
+            if (provider != null) return RoleLine(choice.model, providerName(provider), isModel = true)
+        }
+        return RoleLine(UNSET, tr(R.string.role_voice_what), unset = true)
+    }
 
-    /** 第六个用途「图片模型」:同样不在 [ModelRole] 里。入口卡片只说明用途,详细状态在设置页里。 */
+    /** 图片模型的入口说明和图标。 */
     val IMAGE_LABEL: String get() = "${tr(R.string.role_image)} · ${tr(R.string.role_image_what)}"
     val IMAGE_ICON: ImageVector get() = MikaIcons.Photo
 

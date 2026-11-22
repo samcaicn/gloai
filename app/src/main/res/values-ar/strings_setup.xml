@@ -24,6 +24,7 @@
     <string name="model_provider_name_hint">Optional, defaults to the host</string>
     <string name="model_key_hint">Paste the key from your provider</string>
     <string name="model_key_optional">Optional for local services</string>
+    <string name="model_key_pool_hint">الصق مفتاح API هنا\n(افصل بين المفاتيح المتعددة بفواصل أو أسطر جديدة لتبديلها تلقائيًا)</string>
     <string name="model_key_clear">مسح</string>
     <string name="model_key_invisible_removed">أُزيلت المحارف غير المرئية من المفتاح.</string>
     <string name="model_key_illegal_chars">يحتوي المفتاح على محارف لا يمكن استخدامها. الصق المفتاح نفسه فقط.</string>
@@ -31,6 +32,7 @@
     <string name="model_test_save">Test and save</string>
     <string name="model_testing">Testing…</string>
     <string name="model_test_note">Mika lists this provider’s models, then asks one of them to call a test tool; if both work, it’s saved.</string>
+    <string name="model_test_catalog_note">يجلب Mika قائمة نماذج المزوّد ويحفظها. إن لم يكن هناك نموذج رئيسي بعد، يطلب من النموذج المقترح استدعاء أداة اختبار مرة واحدة، ولا يجعله رئيسيًا إلا إذا نجح ذلك.</string>
     <string name="next">Next</string>
     <string name="model_failed">Connection failed: %1$s</string>
     <string name="cap_vision">Vision</string>
@@ -52,15 +54,17 @@
     <string name="preset_custom">Custom</string>
     <string name="model_manual_name">Model name</string>
     <string name="model_no_list_custom">No models could be listed at this address. The provider may not offer a model list, or the address or interface type may be wrong. Enter a model name and tap “Test and save” again; one test call will tell.</string>
+    <string name="model_no_catalog_note">لم يُرجع المزوّد أي نماذج. أدخل معرّف نموذج واختر الحفظ دون اختبار، ثم حدّد دوره في تفاصيل المزوّد.</string>
     <string name="model_no_list_preset">This provider didn’t list any models. Enter a model name and tap “Test and save” again; it’s saved only if a test call with it works.</string>
     <string name="model_manual_on">Enter a model name yourself</string>
     <string name="model_manual_off">Don’t enter a model name</string>
     <string name="model_manual_note">With a model name filled in, “Test and save” tries only that model: it works even if this provider has no model list, the list lacks it, or listing fails. It’s saved only if the test call works.</string>
+    <string name="model_manual_catalog_note">أدخل معرّف النموذج من وثائق المزوّد. بعد الحفظ، يمكنك تحديد دوره في تفاصيل المزوّد.</string>
     <string name="model_save_untested">Don’t test, save anyway</string>
     <string name="model_save_untested_title">Save without testing?</string>
     <string name="model_save_untested_body">Mika will save this provider with the address and key you entered, without listing models or making a test call. Mika needs a model that can call tools to get things done, and an untested one may not connect or may not call tools. You can test it later from the provider’s page.</string>
     <string name="model_save_untested_confirm">Save anyway</string>
-    <string name="model_saved_untested">%1$s was saved without a test. It’s marked as not tested; pick a model to check it, or test it again from the provider’s page.</string>
+    <string name="model_saved_untested">حُفظ %1$s دون اختبار. يمكنك تحديث قائمة النماذج من صفحة المزوّد.</string>
     <string name="cap_typed">Typed in</string>
     <string name="model_example_gemini">e.g. gemini-flash-latest</string>
     <string name="model_example_anthropic">e.g. claude-sonnet-4-5</string>
@@ -78,6 +82,8 @@
     <string name="model_reason_not_found">the provider has no such model</string>
     <string name="model_reason_no_tools">it doesn’t call tools, and Mika needs a model that can call tools</string>
     <string name="model_reason_wrong_protocol">it isn’t served over the interface type you picked, so the request never reaches it</string>
+    <string name="model_tts_only_not_supported">هذا النموذج محدّد للنطق فقط. لاستخدامه في المحادثة، اضغطه من «المزوّدون» وأوقف «للنطق فقط».</string>
+    <string name="model_saved_no_main">حُفظ المزوّد، لكن لم يُعيَّن نموذج رئيسي: %1$s</string>
     <string name="model_reason_server">the server returned an error (%1$s)</string>
     <string name="model_probe_none_usable">The provider is connected, but “%1$s” didn’t pass the test: %2$s. Pick a model from the list that your account has activated.</string>
     <string name="model_probe_none_usable_protocol">المزوّد متصل، لكن النموذج «%1$s» لم يجتز الاختبار: %2$s. اختر نموذجًا يمكن لهذا النوع من الواجهات الوصول إليه، أو غيّر نوع الواجهة.</string>

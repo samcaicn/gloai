@@ -123,6 +123,14 @@ class CallVoiceProfileStoreTest {
             store.save(CallVoiceProfile(id = "blank-voice", name = "Blank voice", speaker = "")).speaker)
     }
 
+    @Test fun realtimeProfileUsesUserSuppliedModelAndSpeakerIds() {
+        val store = store(Backend())
+        val saved = store.save(CallVoiceProfile(name = "Realtime", model = "fishaudio/drama-3-int4", speaker = "custom_tts_voice"))
+        assertEquals("fishaudio/drama-3-int4", saved.model)
+        assertEquals("custom_tts_voice", saved.speaker)
+        assertEquals(saved, store.get(saved.id))
+    }
+
     @Test fun unreadableStoreFallsBackWithoutOverwritingEncryptedData() {
         val backend = Backend("not-json")
         val store = store(backend)

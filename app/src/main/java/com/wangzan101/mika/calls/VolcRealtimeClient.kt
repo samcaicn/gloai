@@ -104,7 +104,7 @@ class VolcRealtimeClient internal constructor(
     private val client = http.newBuilder().followRedirects(false).followSslRedirects(false)
         .retryOnConnectionFailure(false).build()
 
-    /** Returns after session.create and, when enabled, the phone tools update are acknowledged. */
+    /** Returns after session.create and, when enabled, the tools update are acknowledged. */
     suspend fun connect(
         credentials: VolcRealtimeCredentials,
         config: VolcRealtimeConfig = VolcRealtimeConfig(),
@@ -257,7 +257,7 @@ class VolcRealtimeSession internal constructor(
 
     /** Once per call ID. A provider batch is returned together after all its tools finish. */
     @Synchronized override fun sendToolResult(callId: String, result: JsonObject): Boolean {
-        if (phase != Phase.ACTIVE || !config.enablePhoneDtmf ||
+        if (phase != Phase.ACTIVE || !(config.enablePhoneDtmf || config.agentTools) ||
             result.toString().length > VolcRealtimeProtocol.MAX_TOOL_RESULT_CHARS) return false
         val call = toolCalls[callId] ?: return false
         if (call.result != null || call.sent) return false
@@ -309,9 +309,9 @@ class VolcRealtimeSession internal constructor(
                 if (openAi) {
                     phase = Phase.CONFIGURING_TOOLS
                     send(OpenAiCallProtocol.configure(config))
-                } else if (config.enablePhoneDtmf) {
+                } else if (config.enablePhoneDtmf || config.agentTools) {
                     phase = Phase.CONFIGURING_TOOLS
-                    send(VolcRealtimeProtocol.enablePhoneTools(nextId()))
+                    send(VolcRealtimeProtocol.enableTools(nextId(), config))
                 } else {
                     phase = Phase.ACTIVE
                     ready.complete(Unit)
@@ -385,8 +385,8 @@ class VolcRealtimeSession internal constructor(
                     userText = item!!.text
                 }
                 val text = item?.text ?: userText
-                // Seeduplex's official Web demo replaces the owner question for each ASR
-                // delta (setQuestion), while appending assistant text (appendAnswer). ASR
+                // The protocol replaces the owner question for each ASR delta
+                // (setQuestion) while appending assistant text (appendAnswer). ASR
                 // events are full, revisable snapshots despite the event's "delta" name.
                 // Never infer this by text overlap: genuine repeated words must survive.
                 text.setLength(0)
@@ -517,7 +517,7 @@ class VolcRealtimeSession internal constructor(
     }
 
     private fun receiveFunctionCalls(frame: JsonObject, responseId: String?) {
-        if (!config.enablePhoneDtmf) { invalidFrame(); return }
+        if (!config.enablePhoneDtmf && !config.agentTools) { invalidFrame(); return }
         val items = frame["items"] as? JsonArray
         if (items == null || items.size !in 1..VolcRealtimeProtocol.MAX_FUNCTION_BATCH) {
             invalidFrame(); return
@@ -544,14 +544,17 @@ class VolcRealtimeSession internal constructor(
         for ((id, item) in newCalls) {
             val name = item.string("name")
             val rawArguments = item.string("arguments")
-            val arguments = if (rawArguments != null && rawArguments.length <= VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS) {
+            val arguments = if (rawArguments != null &&
+                rawArguments.length <= VolcRealtimeProtocol.maxArgumentCharsFor(name)) {
                 try { Json.parseToJsonElement(rawArguments) as? JsonObject } catch (_: IllegalArgumentException) { null }
             } else null
             val error = when {
                 stale -> "stale_response"
-                name != VolcRealtimeProtocol.DTMF_FUNCTION -> "unsupported_tool"
-                arguments == null || !VolcRealtimeProtocol.validDtmfArguments(arguments) -> "invalid_arguments"
-                else -> null
+                name == VolcRealtimeProtocol.DTMF_FUNCTION && config.enablePhoneDtmf ->
+                    if (arguments == null || !VolcRealtimeProtocol.validDtmfArguments(arguments)) "invalid_arguments" else null
+                name == VolcRealtimeProtocol.MIKA_REQUEST_FUNCTION && config.agentTools ->
+                    if (arguments == null || !VolcRealtimeProtocol.validAgentArguments(arguments)) "invalid_arguments" else null
+                else -> "unsupported_tool"
             }
             if (error != null) {
                 toolCalls.getValue(id).result = buildJsonObject { put("ok", false); put("error", error) }
@@ -605,7 +608,7 @@ class VolcRealtimeSession internal constructor(
         userTurnActive = false
     }
 
-    // Same field priority as the official Seeduplex Web demo's extractEventText.
+    // Field priority when extracting ASR text: first non-empty field in ASR_TEXT_FIELDS wins.
     private fun asrText(frame: JsonObject): String? = ASR_TEXT_FIELDS.firstNotNullOfOrNull { key ->
         frame.string(key)?.takeIf { it.isNotEmpty() }
     }

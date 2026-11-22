@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">확인이 필요합니다 — 작업 페이지를 열어 주세요</string>
+    <string name="voicecall_task_paused">일시 중지됨</string>
+    <string name="voicecall_task_running">처리 중</string>
+    <string name="voicecall_task_done">완료</string>
+    <string name="voicecall_task_failed">완료하지 못했습니다</string>
+    <string name="voicecall_task_cancelled">취소됨</string>
+    <string name="voicecall_notification_channel">음성 통화</string>
+    <string name="voicecall_notification_ongoing">음성 통화 중</string>
+    <string name="voicecall_hangup">통화 종료</string>
+    <string name="voicecall_menu">음성 채팅</string>
+    <string name="voicecall_greeting">안녕하세요, 듣고 있어요. 말씀하세요.</string>
+    <string name="voicecall_collapse">접기</string>
+    <string name="voicecall_status_connecting">연결 중…</string>
+    <string name="voicecall_status_mic_check">마이크 확인 중…</string>
+    <string name="voicecall_status_active">연결됨</string>
+    <string name="voicecall_ended_hangup">통화가 종료되었습니다</string>
+    <string name="voicecall_ended_notification">알림에서 종료되었습니다</string>
+    <string name="voicecall_ended_incoming">전화가 걸려와 통화가 종료되었습니다</string>
+    <string name="voicecall_ended_limit">10분이 되어 통화가 종료되었습니다</string>
+    <string name="voicecall_ended_background">Mika로 돌아와 계속해 주세요</string>
+    <string name="voicecall_error_auth">음성 인증 정보가 거부되었습니다. 설정을 확인해 주세요</string>
+    <string name="voicecall_error_timeout">연결 시간이 초과되었습니다. 다시 시도해 주세요</string>
+    <string name="voicecall_error_disconnected">연결이 끊어졌습니다</string>
+    <string name="voicecall_error_rate_limited">요청이 너무 많습니다. 잠시 후 다시 시도해 주세요</string>
+    <string name="voicecall_error_provider">음성 서비스에 오류가 발생했습니다</string>
+    <string name="voicecall_error_mic_silent">마이크에서 소리가 들어오지 않습니다</string>
+    <string name="voicecall_error_audio_focus">다른 앱이 오디오 채널을 사용 중입니다</string>
+    <string name="voicecall_error_playback">재생에 실패했습니다</string>
+    <string name="voicecall_error_busy">전화 통화 중입니다. 끝난 후 다시 시도해 주세요</string>
+    <string name="voicecall_retry">다시 시도</string>
+    <string name="voicecall_input_hint">입력하거나 그냥 말하세요</string>
+    <string name="voicecall_speaker">스피커</string>
+    <string name="voicecall_mic_needed_title">음성 채팅에는 마이크가 필요합니다</string>
+    <string name="voicecall_mic_needed_body">목소리를 듣고 언제든 끼어들 수 있게 하려면 녹음이 필요합니다. 허용한 후에 통화가 시작됩니다.</string>
+    <string name="voicecall_mic_denied_body">이전에 거부되어 휴대폰이 다시 묻지 않습니다. 시스템 설정의 Mika 권한 페이지에서 \'마이크\'를 켜 주세요.</string>
+    <string name="voicecall_mic_allow">마이크 허용</string>
+    <string name="voicecall_setup_title">먼저 실시간 음성을 설정해 주세요</string>
+    <string name="voicecall_setup_body">음성 채팅은 실시간 음성 서비스를 사용합니다(AI 전화와 같은 설정입니다). 인증 정보를 추가하면 시작할 수 있습니다.</string>
+    <string name="voicecall_go_setup">설정하기</string>
+    <string name="voicecall_protocol_title">음성 통화에는 호환되는 설정이 필요해요</string>
+    <string name="voicecall_protocol_body">음성 통화는 양방향 실시간 음성 설정에서만 동작해요. 지금 선택된 설정은 다른 프로토콜이에요. 호환되는 설정을 추가하면 시작할 수 있어요.</string>
+</resources>

@@ -30,6 +30,9 @@ enum class TtsProtocol(val wire: String) {
     }
 }
 
+internal fun normalizeVoiceSpeed(value: Float): Float =
+    if (value.isFinite()) value.coerceIn(0.25f, 4f) else 1f
+
 /** 用户选的声音、模型和接口；Key 仍由 [ProviderStore] 按服务商保存。 */
 data class VoiceChoice(
     val providerId: String,
@@ -70,11 +73,27 @@ class VoiceSettings(private val prefs: SharedPreferences) {
     private val _state = MutableStateFlow(read())
     val state: StateFlow<VoiceSettingsState> = _state.asStateFlow()
 
+    /** 旧版在声音页直接填写模型。首次升级时保留这个选择及其音色和协议。 */
+    internal fun reconcileTtsChoice(store: ProviderStore) {
+        val choice = state.value.choice
+        if (!prefs.getBoolean(KEY_TTS_ROLE_MIGRATED, false)) {
+            if (choice != null && store.provider(choice.providerId) != null) {
+                val model = choice.model.trim()
+                if (!store.importLegacyTtsChoice(choice.providerId, model)) return
+                if (model != choice.model) setChoice(choice.copy(model = model))
+            }
+            prefs.edit().putBoolean(KEY_TTS_ROLE_MIGRATED, true).apply()
+        }
+        if (choice != null && store.provider(choice.providerId)?.ttsModels?.contains(choice.model.trim()) != true) {
+            setChoice(null)
+        }
+    }
+
     fun setEnabled(on: Boolean) = update { copy(enabled = on) }
 
     fun setChoice(choice: VoiceChoice?) = update {
         copy(choice = choice?.copy(
-            speed = choice.speed.coerceIn(0.25f, 4.0f),
+            speed = normalizeVoiceSpeed(choice.speed),
             streaming = choice.streaming && choice.protocol == TtsProtocol.OpenAiSpeech,
         ))
     }
@@ -145,7 +164,7 @@ class VoiceSettings(private val prefs: SharedPreferences) {
             model = model,
             protocol = protocol,
             voice = (obj["voice"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
-            speed = ((obj["speed"] as? JsonPrimitive)?.contentOrNull?.toFloatOrNull() ?: 1.0f).coerceIn(0.25f, 4.0f),
+            speed = normalizeVoiceSpeed((obj["speed"] as? JsonPrimitive)?.contentOrNull?.toFloatOrNull() ?: 1f),
             streaming = protocol == TtsProtocol.OpenAiSpeech && bool("streaming", false),
         )
         return VoiceSettingsState(
@@ -162,6 +181,7 @@ class VoiceSettings(private val prefs: SharedPreferences) {
 
     companion object {
         private const val KEY = "voice_settings"
+        private const val KEY_TTS_ROLE_MIGRATED = "voice_tts_role_migrated"
 
         fun get(context: Context): VoiceSettings =
             (context.applicationContext as? Owner)?.voiceSettings

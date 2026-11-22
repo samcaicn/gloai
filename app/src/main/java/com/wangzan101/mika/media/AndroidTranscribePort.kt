@@ -10,6 +10,7 @@ import com.wangzan101.mika.core.cap.transcribe.Transcript
 import com.wangzan101.mika.core.model.ClientHeaders
 import com.wangzan101.mika.core.model.ModelSession
 import com.wangzan101.mika.core.workspace.SandboxPaths
+import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.voice.SpeechChoice
 import com.wangzan101.mika.voice.Transcriber
@@ -42,6 +43,7 @@ class AndroidTranscribePort(
         }
         val store = ProviderStore.get(context)
         val provider = store.provider(choice.providerId) ?: throw TranscribeError.Unsupported("the configured speech provider was removed")
+        if (ModelOptions.isTtsOnly(provider, choice.model)) throw TranscribeError.Unsupported("the selected model is only available for text-to-speech")
         if (!Transcriber.supports(provider)) throw TranscribeError.Unsupported("this provider cannot transcribe files; choose a provider speech model in Settings › Speech to text")
         val transcriber = Transcriber(ProviderStore.modelHttp, ClientHeaders.of("Mika", provider.sessionHeader, ModelSession.fresh()))
         val text = transcriber.transcribe(

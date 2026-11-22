@@ -38,15 +38,19 @@ import kotlinx.coroutines.withContext
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.ui.platform.LocalContext
 import com.wangzan101.mika.cap.web.WebHandover
 import com.wangzan101.mika.cap.web.WebSites
@@ -80,12 +84,17 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.animationsOff
 import com.wangzan101.mika.ui.theme.appearanceDark
 import com.wangzan101.mika.ui.theme.systemBarsFor
+import com.wangzan101.mika.ui.voicecall.VoiceCallDeps
+import com.wangzan101.mika.ui.voicecall.VoiceCallHost
+import com.wangzan101.mika.voicecall.VoiceCallService
+import com.wangzan101.mika.voicecall.VoiceCallTaskLauncher
 
 class MainActivity : ComponentActivity() {
     private lateinit var monitor: SystemStatusMonitor
     private var requestedConversation by mutableStateOf<String?>(null)
     private var requestedCalls by mutableStateOf(false)
     private var requestedCallHistoryId by mutableStateOf<String?>(null)
+    private var voiceCallSignal by mutableIntStateOf(0)
     private var openTeach by mutableStateOf(false)
     private var requestedSharedDraft by mutableStateOf<SharedDraftRequest?>(null)
     private var shareJob: Job? = null
@@ -113,6 +122,7 @@ class MainActivity : ComponentActivity() {
         requestedConversation = intent.getStringExtra(EXTRA_OPEN_CONVERSATION)
         requestedCalls = intent.getBooleanExtra(EXTRA_OPEN_CALLS, false)
         requestedCallHistoryId = intent.getStringExtra(EXTRA_CALL_HISTORY_ID)
+        takeVoiceCall(intent)
         takeTeach(intent)
         shareInCurrent = savedInstanceState?.getBoolean(STATE_SHARE_IN_CURRENT, false) ?: false
         shareHandled = savedInstanceState?.getBoolean(STATE_SHARE_HANDLED, false) ?: false
@@ -132,6 +142,7 @@ class MainActivity : ComponentActivity() {
                     MikaRoot(
                         store, monitor, ::perform, requestedConversation, { requestedConversation = null },
                         requestedCalls, requestedCallHistoryId, { requestedCalls = false; requestedCallHistoryId = null },
+                        voiceCallSignal,
                         requestedSharedDraft,
                         onSharedDraftOpened = { accepted, draft ->
                             requestedSharedDraft = null
@@ -162,6 +173,7 @@ class MainActivity : ComponentActivity() {
         if (requestedConversation != null || intent.getBooleanExtra(EXTRA_OPEN_TEACH, false)) {
             app.chat.cancelPendingSharedDraft()
         }
+        takeVoiceCall(intent)
         takeTeach(intent)
         requestedSharedDraft?.let { app.sharedDrafts.discard(it.draft.image) }
         requestedSharedDraft = null
@@ -342,12 +354,20 @@ class MainActivity : ComponentActivity() {
         intent.removeExtra(EXTRA_OPEN_TEACH)
     }
 
+    /** 胶囊菜单「语音聊天」直开:信号 +1 交给界面层;读一次就摘掉,旋转不重复触发。 */
+    private fun takeVoiceCall(intent: Intent) {
+        if (!intent.getBooleanExtra(EXTRA_OPEN_VOICE_CALL, false)) return
+        voiceCallSignal++
+        intent.removeExtra(EXTRA_OPEN_VOICE_CALL)
+    }
+
     companion object {
         const val EXTRA_OPEN_CONVERSATION = "open_conversation"
         const val EXTRA_OPEN_CALLS = "open_calls"
         const val EXTRA_CALL_HISTORY_ID = "call_history_id"
         const val EXTRA_OPEN_TEACH = "open_teach"
         const val EXTRA_TEACH_GOAL = "teach_goal"
+        const val EXTRA_OPEN_VOICE_CALL = "open_voice_call"
         private const val STATE_SHARE_IN_CURRENT = "share_in_current"
         private const val STATE_SHARE_HANDLED = "share_handled"
         private const val TAG = "MikaMain"
@@ -385,6 +405,7 @@ private fun MikaRoot(
     requestedCalls: Boolean,
     requestedCallHistoryId: String?,
     onCallsOpened: () -> Unit,
+    voiceCallSignal: Int,
     sharedDraft: SharedDraftRequest?,
     onSharedDraftOpened: (Boolean, SharedDraft) -> Unit,
     openTeach: Boolean,
@@ -426,6 +447,32 @@ private fun MikaRoot(
     val check = Prerequisites.check(status, hasMain)
     val app = context.applicationContext as MikaApp
     val personasOn = FeatureFlags.get(context).persona()
+    // 通话入口:输入栏常驻听筒按钮;信号一涨就亮出通话页(直开 extra 或按钮都行)
+    var localVoiceCall by remember { mutableIntStateOf(0) }
+    val voiceCallScope = rememberCoroutineScope()
+    val voiceCallResumed = remember { MutableStateFlow(true) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { voiceCallResumed.value = true }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { voiceCallResumed.value = false }
+    val voiceCallDeps = remember(app) {
+        VoiceCallDeps(
+            context = context,
+            scope = voiceCallScope,
+            appScope = app.appScope,
+            profile = { app.calls.activeVoiceProfile() },
+            credentials = { app.calls.voiceProfiles.credentials(it) },
+            foregroundResumed = voiceCallResumed,
+            launcher = VoiceCallTaskLauncher { goal ->
+                ConversationStore.shared(context).newConversation().also { id ->
+                    TaskService.start(context, goal, id)
+                }
+            },
+            runState = { app.taskState.run(it)?.state },
+            cancelTask = { id -> app.taskState.run(id)?.key?.let { TaskService.cancel(context, it) } },
+            conversationId = { app.chat.ui.value.conversationId },
+            appendTurn = { id, turn -> ConversationStore.shared(context).append(id, turn) },
+            attachService = { VoiceCallService.attach(context, it) },
+        )
+    }
     // 查到的新版本:侧栏、设置首页、关于页的红点都看它
     val updateState by app.updates.state.collectAsState()
     val autoUpdate by app.automaticUpdates.enabled.collectAsState()
@@ -601,6 +648,8 @@ private fun MikaRoot(
                                 app.teach.prefill(hint)
                                 nav.push(Route.Teach)
                             },
+                            // 入口常驻:没配凭据/协议不兼容时进的是门禁页(说明 + 去配置),不静默消失
+                            onVoiceCall = { localVoiceCall++ },
                         )
                     }
                     var installUpdate by remember { mutableStateOf<ReleaseInfo?>(null) }
@@ -804,6 +853,9 @@ private fun MikaRoot(
             )
         } else page({})
     }
+
+    // 通话页盖在整棵导航上:全屏 Dialog,收起后宿主还在,服务保活的通话随时能亮回来
+    VoiceCallHost(voiceCallDeps, voiceCallSignal + localVoiceCall, onGoConfigure = { nav.push(Route.Calls) })
 
     var showLanguagePrompt by rememberSaveable { mutableStateOf(!AppLanguage.hasPrompted(context)) }
     if (showLanguagePrompt && onboarding == null) {

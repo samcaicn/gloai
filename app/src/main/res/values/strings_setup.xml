@@ -24,6 +24,7 @@
     <string name="model_provider_name_hint">Optional, defaults to the host</string>
     <string name="model_key_hint">Paste the key from your provider</string>
     <string name="model_key_optional">Optional for local services</string>
+    <string name="model_key_pool_hint">Paste your API key here\n(Separate multiple keys with commas or new lines to rotate them automatically)</string>
     <string name="model_key_clear">Clear</string>
     <string name="model_key_invisible_removed">Removed invisible characters from the key.</string>
     <string name="model_key_illegal_chars">This key has characters that cannot be used. Paste only the key itself.</string>
@@ -31,6 +32,7 @@
     <string name="model_test_save">Test and save</string>
     <string name="model_testing">Testing…</string>
     <string name="model_test_note">Mika lists this provider’s models, then asks one of them to call a test tool; if both work, it’s saved.</string>
+    <string name="model_test_catalog_note">Mika fetches and saves this provider’s model list. If there’s no main model yet, it also asks the recommended model to call a test tool once and makes it the main model only if that works.</string>
     <string name="next">Next</string>
     <string name="model_failed">Connection failed: %1$s</string>
     <string name="cap_vision">Vision</string>
@@ -52,15 +54,17 @@
     <string name="preset_custom">Custom</string>
     <string name="model_manual_name">Model name</string>
     <string name="model_no_list_custom">No models could be listed at this address. The provider may not offer a model list, or the address or interface type may be wrong. Enter a model name and tap “Test and save” again; one test call will tell.</string>
+    <string name="model_no_catalog_note">This provider returned no models. Enter a model ID, choose “Don’t test, save anyway”, then set its role in the provider details.</string>
     <string name="model_no_list_preset">This provider didn’t list any models. Enter a model name and tap “Test and save” again; it’s saved only if a test call with it works.</string>
     <string name="model_manual_on">Enter a model name yourself</string>
     <string name="model_manual_off">Don’t enter a model name</string>
     <string name="model_manual_note">With a model name filled in, “Test and save” tries only that model: it works even if this provider has no model list, the list lacks it, or listing fails. It’s saved only if the test call works.</string>
+    <string name="model_manual_catalog_note">Enter the model ID from the provider’s documentation. After saving, choose its role in the provider details.</string>
     <string name="model_save_untested">Don’t test, save anyway</string>
     <string name="model_save_untested_title">Save without testing?</string>
     <string name="model_save_untested_body">Mika will save this provider with the address and key you entered, without listing models or making a test call. Mika needs a model that can call tools to get things done, and an untested one may not connect or may not call tools. You can test it later from the provider’s page.</string>
     <string name="model_save_untested_confirm">Save anyway</string>
-    <string name="model_saved_untested">%1$s was saved without a test. It’s marked as not tested; pick a model to check it, or test it again from the provider’s page.</string>
+    <string name="model_saved_untested">%1$s was saved without testing. You can refresh the model list from the provider’s page.</string>
     <string name="cap_typed">Typed in</string>
     <string name="model_example_gemini">e.g. gemini-flash-latest</string>
     <string name="model_example_anthropic">e.g. claude-sonnet-4-5</string>
@@ -78,6 +82,8 @@
     <string name="model_reason_not_found">the provider has no such model</string>
     <string name="model_reason_no_tools">it doesn’t call tools, and Mika needs a model that can call tools</string>
     <string name="model_reason_wrong_protocol">it isn’t served over the interface type you picked, so the request never reaches it</string>
+    <string name="model_tts_only_not_supported">This model is marked speech only. To use it for chat, tap it under Providers and turn off “Speech only”.</string>
+    <string name="model_saved_no_main">The provider was saved, but no main model is set: %1$s</string>
     <string name="model_reason_server">the server returned an error (%1$s)</string>
     <string name="model_probe_none_usable">The provider is connected, but “%1$s” didn’t pass the test: %2$s. Pick a model from the list that your account has activated.</string>
     <string name="model_probe_none_usable_protocol">The provider is connected, but “%1$s” didn’t pass the test: %2$s. Pick a model this interface type can reach, or switch the interface type.</string>

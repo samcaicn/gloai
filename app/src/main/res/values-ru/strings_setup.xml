@@ -24,6 +24,7 @@
     <string name="model_provider_name_hint">Необязательно, по умолчанию берётся хост</string>
     <string name="model_key_hint">Вставьте ключ от провайдера</string>
     <string name="model_key_optional">Для локальных сервисов не обязателен</string>
+    <string name="model_key_pool_hint">Вставьте сюда ключ API\n(Несколько ключей разделяйте запятыми или переносами строк — они будут чередоваться автоматически)</string>
     <string name="model_key_clear">Очистить</string>
     <string name="model_key_invisible_removed">Из ключа убраны невидимые символы.</string>
     <string name="model_key_illegal_chars">В ключе есть символы, которые нельзя использовать. Вставьте только сам ключ.</string>
@@ -31,6 +32,7 @@
     <string name="model_test_save">Проверить и сохранить</string>
     <string name="model_testing">Проверка…</string>
     <string name="model_test_note">Mika получает список моделей провайдера, затем просит одну из них вызвать тестовый инструмент; если всё работает, провайдер сохраняется.</string>
+    <string name="model_test_catalog_note">Mika получает и сохраняет список моделей провайдера. Если основной модели ещё нет, рекомендуемая модель один раз вызывает тестовый инструмент и становится основной, только если это удалось.</string>
     <string name="next">Далее</string>
     <string name="model_failed">Не удалось подключиться: %1$s</string>
     <string name="cap_vision">Зрение</string>
@@ -52,15 +54,17 @@
     <string name="preset_custom">Свой</string>
     <string name="model_manual_name">Название модели</string>
     <string name="model_no_list_custom">По этому адресу не удалось получить список моделей. Возможно, провайдер не предоставляет список, либо адрес или тип интерфейса указаны неверно. Введите название модели и снова нажмите «Проверить и сохранить»; один пробный вызов всё покажет.</string>
+    <string name="model_no_catalog_note">Провайдер не вернул список моделей. Введите идентификатор модели, нажмите «Сохранить без проверки» и назначьте роль на странице провайдера.</string>
     <string name="model_no_list_preset">Этот провайдер не вернул ни одной модели. Введите название модели и снова нажмите «Проверить и сохранить»; провайдер сохранится, только если пробный вызов с ней пройдёт.</string>
     <string name="model_manual_on">Ввести название модели самостоятельно</string>
     <string name="model_manual_off">Не вводить название модели</string>
     <string name="model_manual_note">Если название модели указано, «Проверить и сохранить» пробует только её: это работает, даже если у провайдера нет списка моделей, в списке её нет или получить список не удаётся. Провайдер сохраняется, только если пробный вызов прошёл.</string>
+    <string name="model_manual_catalog_note">Введите идентификатор модели из документации провайдера. После сохранения назначьте модели роль на странице провайдера.</string>
     <string name="model_save_untested">Сохранить без проверки</string>
     <string name="model_save_untested_title">Сохранить без проверки?</string>
     <string name="model_save_untested_body">Mika сохранит этого провайдера с введёнными адресом и ключом, не запрашивая список моделей и не делая пробный вызов. Чтобы выполнять задачи, Mika нужна модель, умеющая вызывать инструменты, а непроверенная может не подключиться или не вызывать инструменты. Позже её можно проверить на странице провайдера.</string>
     <string name="model_save_untested_confirm">Всё равно сохранить</string>
-    <string name="model_saved_untested">%1$s сохранён без проверки. Он помечен как непроверенный; выберите модель, чтобы проверить его, или проверьте заново на странице провайдера.</string>
+    <string name="model_saved_untested">%1$s сохранён без проверки. Список моделей можно обновить на странице провайдера.</string>
     <string name="cap_typed">Введено вручную</string>
     <string name="model_example_gemini">например, gemini-flash-latest</string>
     <string name="model_example_anthropic">например, claude-sonnet-4-5</string>
@@ -78,6 +82,8 @@
     <string name="model_reason_not_found">у провайдера нет такой модели</string>
     <string name="model_reason_no_tools">она не вызывает инструменты, а Mika нужна модель, умеющая вызывать инструменты</string>
     <string name="model_reason_wrong_protocol">она недоступна через выбранный вами тип интерфейса, поэтому запрос до неё не доходит</string>
+    <string name="model_tts_only_not_supported">Эта модель отмечена как модель только для озвучки. Чтобы использовать её в чате, нажмите на неё в разделе «Провайдеры» и выключите «Только озвучка».</string>
+    <string name="model_saved_no_main">Провайдер сохранён, но основная модель не выбрана: %1$s</string>
     <string name="model_reason_server">сервер вернул ошибку (%1$s)</string>
     <string name="model_probe_none_usable">Провайдер подключён, но «%1$s» не прошла проверку: %2$s. Выберите из списка модель, активированную в вашем аккаунте.</string>
     <string name="model_probe_none_usable_protocol">Провайдер подключён, но «%1$s» не прошла проверку: %2$s. Выберите модель, доступную через этот тип интерфейса, или смените тип интерфейса.</string>

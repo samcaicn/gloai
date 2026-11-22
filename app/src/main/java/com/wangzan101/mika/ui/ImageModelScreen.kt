@@ -20,6 +20,7 @@ import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.settings.ImageChoice
 import com.wangzan101.mika.settings.ImageModelSettings
 import com.wangzan101.mika.settings.ImageProtocol
+import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.ui.components.FooterNote
@@ -49,6 +50,14 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
     val c = MikaTheme.colors
     var model by remember { mutableStateOf(state.choice?.model.orEmpty()) }
     var test by remember { mutableStateOf<String?>(null) }
+    val provider = providers.firstOrNull { it.id == state.choice?.providerId }
+    val ttsModel = provider != null && ModelOptions.isTtsOnly(provider, model)
+    val eligibleProviders = providers.filter { candidate ->
+        val currentModel = state.choice?.takeIf { it.providerId == candidate.id }?.model.orEmpty()
+        ModelOptions.mayHaveNonTtsModels(candidate) ||
+            currentModel.isNotBlank() && !ModelOptions.isTtsOnly(candidate, currentModel)
+    }
+    val choice = state.choice?.takeIf { selected -> eligibleProviders.any { it.id == selected.providerId } }
 
     Page(tr(R.string.role_image), onBack) {
         Text(tr(R.string.image_hint), Modifier.padding(top = 4.dp, bottom = 12.dp), fontSize = 14.5.sp, lineHeight = 22.sp, color = c.ink2)
@@ -60,16 +69,17 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
         }
 
         GroupLabel(tr(R.string.image_provider), Modifier.padding(top = 12.dp))
-        if (providers.isEmpty()) {
+        if (eligibleProviders.isEmpty()) {
             FooterNote(tr(R.string.image_no_providers))
         } else {
             GroupCard {
-                providers.forEachIndexed { i, p ->
+                eligibleProviders.forEachIndexed { i, p ->
                     RadioRow(
-                        ModelsCopy.providerName(p), selected = state.choice?.providerId == p.id, first = i == 0,
+                        ModelsCopy.providerName(p), selected = choice?.providerId == p.id, first = i == 0,
                         subtitle = p.baseUrl,
                         onClick = {
                             val protocol = if (p.kind == ProviderConfig.Kind.Gemini) ImageProtocol.GeminiImage else ImageProtocol.OpenAiImages
+                            if (ModelOptions.isTtsOnly(p, model)) model = ""
                             settings.setChoice(ImageChoice(p.id, model, protocol))
                             test = null
                         },
@@ -78,11 +88,15 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
             }
         }
 
-        state.choice?.let { choice ->
+        choice?.let { choice ->
             GroupCard {
                 InputRow(
                     tr(R.string.image_model_name), model,
-                    onChange = { model = it; settings.setChoice(choice.copy(model = it)); test = null },
+                    onChange = {
+                        model = it
+                        settings.setChoice(choice.copy(model = it))
+                        test = null
+                    },
                     placeholder = "gpt-image-1 / gemini-3-pro-image-preview", first = true,
                 )
             }
@@ -104,6 +118,7 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
                 )
             }
         }
+        if (ttsModel) FooterNote(tr(R.string.model_tts_only_not_supported), color = c.bad)
 
         GroupLabel(tr(R.string.image_limits), Modifier.padding(top = 12.dp))
         GroupCard {
@@ -129,7 +144,7 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
         MikaButton(
             tr(R.string.image_test),
             onClick = {
-                val choice = state.choice ?: return@MikaButton
+                val choice = choice ?: return@MikaButton
                 val caps = settings.capabilities() ?: return@MikaButton
                 val port = store.imageModel(choice, caps) ?: return@MikaButton
                 scope.launch {
@@ -142,7 +157,7 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
                     }
                 }
             },
-            enabled = state.choice != null && model.isNotBlank(),
+            enabled = choice != null && model.isNotBlank() && !ttsModel,
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         )
         test?.let { FooterNote(it, Modifier.padding(top = 8.dp)) }

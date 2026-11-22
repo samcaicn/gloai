@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">Perlu tindakanmu — buka halaman tugas</string>
+    <string name="voicecall_task_paused">Tugas dijeda</string>
+    <string name="voicecall_task_running">Sedang diproses</string>
+    <string name="voicecall_task_done">Selesai</string>
+    <string name="voicecall_task_failed">Tidak berhasil</string>
+    <string name="voicecall_task_cancelled">Dibatalkan</string>
+    <string name="voicecall_notification_channel">Panggilan suara</string>
+    <string name="voicecall_notification_ongoing">Panggilan suara sedang berlangsung</string>
+    <string name="voicecall_hangup">Tutup panggilan</string>
+    <string name="voicecall_menu">Obrolan suara</string>
+    <string name="voicecall_greeting">Halo, aku mendengarkan — silakan.</string>
+    <string name="voicecall_collapse">Kecilkan</string>
+    <string name="voicecall_status_connecting">Menyambungkan…</string>
+    <string name="voicecall_status_mic_check">Memeriksa mikrofon…</string>
+    <string name="voicecall_status_active">Tersambung</string>
+    <string name="voicecall_ended_hangup">Panggilan berakhir</string>
+    <string name="voicecall_ended_notification">Diakhiri dari notifikasi</string>
+    <string name="voicecall_ended_incoming">Ada panggilan telepon masuk — panggilan berakhir</string>
+    <string name="voicecall_ended_limit">10 menit telah habis — panggilan berakhir</string>
+    <string name="voicecall_ended_background">Kembali ke Mika untuk melanjutkan</string>
+    <string name="voicecall_error_auth">Kredensial suara ditolak — periksa pengaturan</string>
+    <string name="voicecall_error_timeout">Koneksi kedaluwarsa — coba lagi</string>
+    <string name="voicecall_error_disconnected">Koneksi terputus</string>
+    <string name="voicecall_error_rate_limited">Terlalu banyak permintaan — coba lagi nanti</string>
+    <string name="voicecall_error_provider">Layanan suara mengalami kesalahan</string>
+    <string name="voicecall_error_mic_silent">Tidak ada suara dari mikrofon</string>
+    <string name="voicecall_error_audio_focus">Aplikasi lain sedang memakai saluran audio</string>
+    <string name="voicecall_error_playback">Pemutaran gagal</string>
+    <string name="voicecall_error_busy">Sedang ada panggilan telepon — coba lagi setelah selesai</string>
+    <string name="voicecall_retry">Coba lagi</string>
+    <string name="voicecall_input_hint">Ketik, atau langsung bicara</string>
+    <string name="voicecall_speaker">Speaker</string>
+    <string name="voicecall_mic_needed_title">Obrolan suara memerlukan mikrofon</string>
+    <string name="voicecall_mic_needed_body">Mendengarmu — dan membiarkanmu menyela — butuh merekam. Panggilan baru dimulai setelah kamu mengizinkan.</string>
+    <string name="voicecall_mic_denied_body">Sebelumnya ditolak, jadi ponsel tidak akan bertanya lagi. Aktifkan mikrofon di halaman izin Mika di pengaturan sistem.</string>
+    <string name="voicecall_mic_allow">Izinkan mikrofon</string>
+    <string name="voicecall_setup_title">Siapkan suara waktu-nyata dulu</string>
+    <string name="voicecall_setup_body">Obrolan suara memakai layanan suara waktu-nyata (pengaturan yang sama dengan panggilan AI). Tambahkan kredensial untuk mulai.</string>
+    <string name="voicecall_go_setup">Buka pengaturan</string>
+    <string name="voicecall_protocol_title">Panggilan suara butuh pengaturan yang kompatibel</string>
+    <string name="voicecall_protocol_body">Panggilan suara hanya berjalan pada pengaturan suara real-time dua arah. Yang dipilih memakai protokol lain — tambahkan yang kompatibel untuk mulai.</string>
+</resources>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voicecall_see_task_page">Нужны ваши действия — откройте страницу задачи</string>
+    <string name="voicecall_task_paused">Задача на паузе</string>
+    <string name="voicecall_task_running">Выполняется</string>
+    <string name="voicecall_task_done">Готово</string>
+    <string name="voicecall_task_failed">Не удалось выполнить</string>
+    <string name="voicecall_task_cancelled">Отменено</string>
+    <string name="voicecall_notification_channel">Голосовой вызов</string>
+    <string name="voicecall_notification_ongoing">Идёт голосовой вызов</string>
+    <string name="voicecall_hangup">Завершить вызов</string>
+    <string name="voicecall_menu">Голосовой чат</string>
+    <string name="voicecall_greeting">Привет, я слушаю — говорите.</string>
+    <string name="voicecall_collapse">Свернуть</string>
+    <string name="voicecall_status_connecting">Подключение…</string>
+    <string name="voicecall_status_mic_check">Проверка микрофона…</string>
+    <string name="voicecall_status_active">Подключено</string>
+    <string name="voicecall_ended_hangup">Вызов завершён</string>
+    <string name="voicecall_ended_notification">Завершён из уведомления</string>
+    <string name="voicecall_ended_incoming">Поступил телефонный звонок — вызов завершён</string>
+    <string name="voicecall_ended_limit">10 минут истекли — вызов завершён</string>
+    <string name="voicecall_ended_background">Вернитесь в Mika, чтобы продолжить</string>
+    <string name="voicecall_error_auth">Учётные данные голосового сервиса отклонены — проверьте настройки</string>
+    <string name="voicecall_error_timeout">Время подключения истекло — попробуйте ещё раз</string>
+    <string name="voicecall_error_disconnected">Соединение прервано</string>
+    <string name="voicecall_error_rate_limited">Слишком много запросов — попробуйте позже</string>
+    <string name="voicecall_error_provider">Ошибка голосового сервиса</string>
+    <string name="voicecall_error_mic_silent">Микрофон не передаёт звук</string>
+    <string name="voicecall_error_audio_focus">Аудиоканал занят другим приложением</string>
+    <string name="voicecall_error_playback">Ошибка воспроизведения</string>
+    <string name="voicecall_error_busy">Идёт телефонный звонок — попробуйте после его завершения</string>
+    <string name="voicecall_retry">Повторить</string>
+    <string name="voicecall_input_hint">Печатайте или просто говорите</string>
+    <string name="voicecall_speaker">Громкая связь</string>
+    <string name="voicecall_mic_needed_title">Голосовому чату нужен микрофон</string>
+    <string name="voicecall_mic_needed_body">Чтобы слышать вас — и позволить перебивать — нужна запись. Вызов начнётся только после разрешения.</string>
+    <string name="voicecall_mic_denied_body">Разрешение было отклонено, поэтому телефон больше не спросит. Включите микрофон на странице разрешений Mika в настройках системы.</string>
+    <string name="voicecall_mic_allow">Разрешить микрофон</string>
+    <string name="voicecall_setup_title">Сначала настройте голосовой сервис</string>
+    <string name="voicecall_setup_body">Голосовой чат работает через сервис реального времени (та же настройка, что и у ИИ-звонков). Добавьте учётные данные, чтобы начать.</string>
+    <string name="voicecall_go_setup">Настроить</string>
+    <string name="voicecall_protocol_title">Для голосового звонка нужна совместимая настройка</string>
+    <string name="voicecall_protocol_body">Голосовой звонок работает только с двусторонней настройкой голоса в реальном времени. Выбранная использует другой протокол — добавьте совместимую, чтобы начать.</string>
+</resources>
