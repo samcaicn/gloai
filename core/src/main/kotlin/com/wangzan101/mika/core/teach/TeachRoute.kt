@@ -40,6 +40,8 @@ data class TeachRoute(
                     viaLauncher = true
                     return@forEach
                 }
+                // 窗口本身不是操作:它可能是负一屏、输入法、系统弹层,不能因此把那个包当成这次要用的 App。
+                if (step.kind == TeachKind.Window) return@forEach
                 if (pkg == null) {
                     out += RouteStep(null, teachLine(step), step.kind)
                     return@forEach

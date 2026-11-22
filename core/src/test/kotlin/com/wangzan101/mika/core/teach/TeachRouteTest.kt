@@ -96,6 +96,21 @@ class TeachRouteTest {
         assertTrue(route.folded.isEmpty())
     }
 
+    @Test fun windowOnlyPackagesDoNotBecomeTheEntryApp() {
+        val steps = listOf(
+            step(0, launcher, TeachKind.Window, title = "桌面"),
+            step(1, launcher, TeachKind.Click, node = "小红书"),
+            step(2, "com.hihonor.hiboard", TeachKind.Window, title = "负一屏"),
+            step(3, "com.xingin.xhs", TeachKind.Window, title = "首页"),
+            step(4, "com.xingin.xhs", TeachKind.Click, node = "搜索"),
+        )
+        val route = fold(steps)
+        assertEquals(listOf("com.xingin.xhs"), route.apps.map { it.packageName })
+        assertEquals(2, route.steps.size)
+        assertTrue(route.steps[0].text.startsWith("启动"))
+        assertTrue(route.steps[1].text.contains("点了「搜索」"))
+    }
+
     @Test fun marksTheDefaultBrowserForThePrompt() {
         val steps = listOf(step(0, "com.browser", TeachKind.Click, node = "搜索"))
         val route = fold(steps, browsers = setOf("com.browser"))
