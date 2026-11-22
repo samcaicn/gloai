@@ -16,6 +16,7 @@ import com.wangzan101.mika.core.teach.TeachObservation
 import com.wangzan101.mika.core.teach.TeachPending
 import com.wangzan101.mika.core.teach.TeachPhase
 import com.wangzan101.mika.core.teach.TeachPublish
+import com.wangzan101.mika.core.teach.TeachRecovery
 import com.wangzan101.mika.core.teach.TeachRoute
 import com.wangzan101.mika.core.teach.TeachSession
 import com.wangzan101.mika.core.teach.TeachSkill
@@ -80,28 +81,18 @@ class TeachRuntime(
 
     fun recover() {
         val loaded = files.load() ?: return
-        val phase = when (loaded.phase) {
-            TeachPhase.Recording, TeachPhase.Paused -> TeachPhase.Interrupted
-            else -> loaded.phase
-        }
+        val next = TeachRecovery.afterLoad(loaded)
         val snapshot = synchronized(lock) {
-            session = loaded.copy(phase = phase)
-            if (phase != loaded.phase) files.save(session!!)
-            session!!
+            session = next
+            if (next != loaded) files.save(next)
+            next
         }
-        when (phase) {
+        when (next.phase) {
             TeachPhase.Drafting -> {
                 publish(null)
                 scope.launch { summarize(snapshot) }
             }
-            TeachPhase.Reviewing -> scope.launch {
-                if (snapshot.draftId == null) {
-                    publish(null)
-                    summarize(snapshot)
-                } else {
-                    restoreDraft(snapshot)
-                }
-            }
+            TeachPhase.Reviewing -> scope.launch { restoreDraft(snapshot) }
             else -> publish(null)
         }
     }
