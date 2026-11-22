@@ -1,8 +1,15 @@
 package com.wangzan101.mika.task
 
+import com.wangzan101.mika.core.action.ActionExecutor
+import com.wangzan101.mika.core.action.ActionRecorder
+import com.wangzan101.mika.core.action.Origin
+import com.wangzan101.mika.core.action.execution
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.cap.transcribe.TranscribePort
 import com.wangzan101.mika.core.cap.transcribe.Transcript
+import com.wangzan101.mika.core.guard.OperationGuards
+import com.wangzan101.mika.core.model.Part
+import com.wangzan101.mika.core.record.RunSink
 import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.core.tool.ToolDispatcher
 import com.wangzan101.mika.core.uistate.ActionResult
@@ -26,6 +33,8 @@ import com.wangzan101.mika.voice.model.VoiceProviderAccountSource
 import com.wangzan101.mika.voice.model.VoiceService
 import com.wangzan101.mika.voice.model.voiceTestEnvironment
 import com.wangzan101.mika.voice.model.voiceTestProvider
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -34,6 +43,16 @@ import org.junit.Test
 class TaskRunTranscribeTest {
     private object UnusedTranscribePort : TranscribePort {
         override suspend fun transcribe(path: String, language: String?) = Transcript("unused")
+    }
+
+    private class RecordingTranscribePort : TranscribePort {
+        var calls = 0
+            private set
+
+        override suspend fun transcribe(path: String, language: String?): Transcript {
+            calls++
+            return Transcript("transcribed", language)
+        }
     }
 
     private class EmptyScreen : ScreenPort {
@@ -97,38 +116,72 @@ class TaskRunTranscribeTest {
         return environment.stt
     }
 
-    private fun phoneTools(stt: SttSelectionController): ToolDispatcher = toolDispatcher(
+    private fun phoneTools(
+        stt: SttSelectionController,
+        port: TranscribePort = UnusedTranscribePort,
+    ): ToolDispatcher = toolDispatcher(
         EmptyScreen(),
-        transcribe = taskTranscribePort(
-            RunOrigin.Ui,
-            stt,
-            legacyPort = { null },
-            migratedPort = { UnusedTranscribePort },
-        ),
+        transcribeProvider = {
+            taskTranscribePort(
+                RunOrigin.Ui,
+                stt,
+                legacyPort = { null },
+                migratedPort = { port },
+            )
+        },
     )
 
     private fun ToolDispatcher.offersTranscription() = definitions().any { it.name == "audio_transcribe" }
 
-    @Test fun `phone runtime transcription availability follows every selection transition`() {
+    @Test fun `assembled phone runtime refreshes transcription definitions and execution`() = runTest {
         val fixture = fixture()
         val stt = controller(fixture)
-
+        val port = RecordingTranscribePort()
         stt.select(SpeechChoice.Auto)
-        assertFalse(phoneTools(stt).offersTranscription())
+        val tools = phoneTools(stt, port)
+        val executor = ActionExecutor(
+            tools,
+            OperationGuards(),
+            null,
+            gate = {},
+            recorder = ActionRecorder(RunSink.NONE),
+            autonomous = true,
+        )
+        var step = 0
+        suspend fun transcribe() = executor.run(
+            Part.ToolCall("transcribe-${++step}", "audio_transcribe", """{"path":"/workspace/audio.wav"}"""),
+            Origin.Model(step),
+        ).execution().content
+
+        assertFalse(tools.offersTranscription())
         stt.select(fixture.batchRef)
-        assertTrue(phoneTools(stt).offersTranscription())
+        assertTrue(tools.offersTranscription())
+        assertEquals("transcribed", transcribe()["text"]?.jsonPrimitive?.content)
+        assertEquals(1, port.calls)
+
         stt.select(SpeechChoice.System)
-        assertFalse(phoneTools(stt).offersTranscription())
+        assertFalse(tools.offersTranscription())
+        assertEquals("unknown_tool", transcribe()["error"]?.jsonPrimitive?.content)
+        assertEquals(1, port.calls)
+
         stt.select(fixture.batchRef)
-        assertTrue(phoneTools(stt).offersTranscription())
+        assertTrue(tools.offersTranscription())
+        assertEquals("transcribed", transcribe()["text"]?.jsonPrimitive?.content)
+        assertEquals(2, port.calls)
+
         stt.select(fixture.streamingRef)
-        assertFalse(phoneTools(stt).offersTranscription())
+        assertFalse(tools.offersTranscription())
         stt.select(fixture.batchRef)
-        assertTrue(phoneTools(stt).offersTranscription())
+        assertTrue(tools.offersTranscription())
         stt.select(SpeechChoice.Off)
-        assertFalse(phoneTools(stt).offersTranscription())
+        assertFalse(tools.offersTranscription())
+        assertEquals("unknown_tool", transcribe()["error"]?.jsonPrimitive?.content)
+        assertEquals(2, port.calls)
+
         stt.select(fixture.batchRef)
-        assertTrue(phoneTools(stt).offersTranscription())
+        assertTrue(tools.offersTranscription())
+        assertEquals("transcribed", transcribe()["text"]?.jsonPrimitive?.content)
+        assertEquals(3, port.calls)
     }
 
     @Test fun `legacy migration gate keeps the original port decision`() {

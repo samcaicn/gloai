@@ -52,6 +52,8 @@ class ToolDispatcher internal constructor(
     retired: Map<String, String> = emptyMap(),
     /** 整个换了名字的旧名 → 现在的名字(见 [LegacyNames])。 */
     moved: Map<String, List<String>> = emptyMap(),
+    /** 外部选择可改变可用性的能力;只这些工具在目录和执行前重新检查。 */
+    dynamicCapabilities: Set<String> = emptySet(),
 ) {
     private val evidenceLog = EvidenceLog()
     private val shots = Shots()
@@ -75,7 +77,7 @@ class ToolDispatcher internal constructor(
         else -> null
     }
 
-    private val registry = ToolRegistry(ctx, tools, ::groupOf)
+    private val registry = ToolRegistry(ctx, tools, ::groupOf, dynamicCapabilities)
 
     /** 本任务已展开的能力组(按展开的先后)。 */
     private val opened = linkedSetOf<String>()

@@ -521,7 +521,17 @@ class TaskRun(
 
     private val audioSettings by lazy { com.wangzan101.mika.settings.VoiceSettings.get(service) }
 
-    /** 本任务的转写端口:装配手机工具时按当前批量 STT 决定,配置失效只让转写工具不可用。 */
+    /** 未迁移的任务保持原有的一次性端口决定;只有迁移后的目录选择需要动态刷新。 */
+    private val legacyTranscribePort by lazy {
+        val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(service)
+        val choice = com.wangzan101.mika.voice.SpeechSettings.get(service).choice.value as? com.wangzan101.mika.voice.SpeechChoice.Provider
+            ?: return@lazy null
+        val provider = ProviderStore.get(service).provider(choice.providerId) ?: return@lazy null
+        if (ModelOptions.isTtsOnly(provider, choice.model)) null
+        else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice, voiceModels.stt) { workspaceKey }
+    }
+
+    /** 迁移后的转写端口:目录与执行都按当前批量 STT 决定,配置失效只让转写工具不可用。 */
     private val transcribePort: com.wangzan101.mika.core.cap.transcribe.TranscribePort?
         get() {
             if (provenance.origin != RunOrigin.Ui) return null
@@ -529,13 +539,7 @@ class TaskRun(
             return taskTranscribePort(
                 provenance.origin,
                 voiceModels.stt,
-                legacyPort = legacy@{
-                    val choice = com.wangzan101.mika.voice.SpeechSettings.get(service).choice.value as? com.wangzan101.mika.voice.SpeechChoice.Provider
-                        ?: return@legacy null
-                    val provider = ProviderStore.get(service).provider(choice.providerId) ?: return@legacy null
-                    if (ModelOptions.isTtsOnly(provider, choice.model)) null
-                    else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice, voiceModels.stt) { workspaceKey }
-                },
+                legacyPort = { legacyTranscribePort },
                 migratedPort = {
                     com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, null, voiceModels.stt) { workspaceKey }
                 },
@@ -1201,7 +1205,7 @@ class TaskRun(
                 imageSaveEnabled = imageSettings.state.value.saveEnabled,
                 imageAskBeforeSave = imageSettings.state.value.askBeforeSave,
                 imageMaxPerTask = imageSettings.state.value.maxPerTask,
-                transcribe = transcribePort,
+                transcribeProvider = ::transcribePort,
                 audioSaveEnabled = audioSettings.state.value.saveEnabled,
                 audioAskBeforeSave = audioSettings.state.value.askBeforeSave,
                 audioSpeakTool = audioSettings.state.value.speakTool,

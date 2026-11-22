@@ -65,6 +65,9 @@ internal interface Capability : PromptSections {
     /** 这一组工具用到才展开(见 [com.wangzan101.mika.core.tool.ToolGroups]):开局只有入口工具;不收的一直全在。 */
     val folds: Boolean get() = false
 
+    /** 端口可用性会随外部选择变化时,目录与执行每次都重新检查;普通能力仍冻结开局目录。 */
+    val dynamicAvailability: Boolean get() = false
+
     /** 按这次的话([task])开局就展开这一组(一定用得上时);默认不展开。 */
     fun preload(task: String): Boolean = false
 
