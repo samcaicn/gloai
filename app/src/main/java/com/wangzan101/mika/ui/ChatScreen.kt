@@ -1986,7 +1986,7 @@ internal fun Composer(
                                     .testTag("composer-call"),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(MikaIcons.Phone, callLabel, Modifier.size(MikaSize.Icon), tint = c.ink)
+                                Icon(MikaIcons.Handset, callLabel, Modifier.size(MikaSize.Icon), tint = c.ink)
                             }
                         }
                         // 话筒常驻:按住才听,点一下提示按住(引擎不可用则直接弹说明页);键盘出来以后长按输入框留给系统选字
