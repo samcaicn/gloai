@@ -632,6 +632,19 @@ private fun ProtocolBlock(
     }
 }
 
+/*
+ * 表单只露出协议和接口地址。编辑时协议没换,就在原绑定上只改地址,表单之外的参数
+ * (计费方案、地域、工作空间、识别语言、音色)原样保留;换了协议,旧协议的参数不再适用,从头建。
+ */
+internal fun editedSttBinding(saved: SttBinding?, protocol: SttProtocol, endpoint: String): SttBinding =
+    if (saved?.protocol == protocol) saved.copy(endpoint = endpoint) else SttBinding(protocol, endpoint = endpoint)
+
+internal fun editedTtsBinding(saved: TtsBinding?, protocol: TtsProtocol, endpoint: String): TtsBinding =
+    if (saved?.protocol == protocol) saved.copy(endpoint = endpoint) else TtsBinding(protocol, endpoint = endpoint)
+
+internal fun editedRealtimeBinding(saved: RealtimeBinding?, protocol: RealtimeProtocol, endpoint: String): RealtimeBinding =
+    if (saved?.protocol == protocol) saved.copy(endpoint = endpoint) else RealtimeBinding(protocol, endpoint = endpoint)
+
 private fun save(
     form: CatalogForm,
     editing: VoiceModel?,
@@ -671,9 +684,11 @@ private fun save(
         serviceId = service.id,
         id = if (editing == null) form.modelId.trim() else editing.id,
         displayName = form.displayName.trim().ifBlank { if (editing == null) form.modelId.trim() else editing.displayName },
-        stt = if (form.sttOn) SttBinding(form.sttProtocol, endpoint = form.sttEndpoint.trim()) else null,
-        tts = if (form.ttsOn) TtsBinding(form.ttsProtocol, endpoint = form.ttsEndpoint.trim()) else null,
-        realtime = if (form.realtimeOn) RealtimeBinding(form.realtimeProtocol, endpoint = form.realtimeEndpoint.trim()) else null,
+        stt = if (form.sttOn) editedSttBinding(editing?.stt, form.sttProtocol, form.sttEndpoint.trim()) else null,
+        tts = if (form.ttsOn) editedTtsBinding(editing?.tts, form.ttsProtocol, form.ttsEndpoint.trim()) else null,
+        realtime = if (form.realtimeOn) {
+            editedRealtimeBinding(editing?.realtime, form.realtimeProtocol, form.realtimeEndpoint.trim())
+        } else null,
     )
     if (model.displayName.isBlank() || model.id.isBlank()) {
         form.error = true

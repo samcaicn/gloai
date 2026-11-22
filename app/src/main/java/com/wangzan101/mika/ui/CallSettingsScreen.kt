@@ -62,14 +62,10 @@ fun CallSettingsScreen(runtime: CallRuntime, onInstructions: (() -> Unit)? = nul
         }
     }
     when {
-        // Post-migration the legacy realtime profile screen must never silently misbehave:
-        // redirect to the unified voice catalog where realtime models are edited and tested.
-        voiceProfilesOpen && runtime.realtimeMigrated -> {
-            LaunchedEffect(Unit) {
-                voiceProfilesOpen = false
-                onOpenVoiceCatalog()
-            }
-        }
+        // 迁移后旧的配置页不再用:在这里从语音目录里选通话用的实时模型,新增/编辑去目录
+        voiceProfilesOpen && runtime.realtimeMigrated -> RealtimeModelPickerScreen(
+            runtime, onBack = { voiceProfilesOpen = false }, onOpenVoiceCatalog = onOpenVoiceCatalog,
+        )
         voiceProfilesOpen -> CallVoiceProfilesScreen(runtime) { voiceProfilesOpen = false }
         instructionsOpen -> CallInstructionsScreen(runtime) { instructionsOpen = false }
         else -> workspaceState.SaveableStateProvider("call-workspace") {

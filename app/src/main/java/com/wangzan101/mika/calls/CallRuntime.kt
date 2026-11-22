@@ -30,9 +30,11 @@ import com.wangzan101.mika.R
 import com.wangzan101.mika.calls.instructions.CallInstructionStore
 import com.wangzan101.mika.shell.IMikaShell
 import com.wangzan101.mika.voice.model.RealtimeSelectionController
+import com.wangzan101.mika.voice.model.VoiceCatalogSnapshot
 import com.wangzan101.mika.voice.model.VoiceErrorCategory
 import com.wangzan101.mika.voice.model.VoiceModelEnvironment
 import com.wangzan101.mika.voice.model.VoiceModelError
+import com.wangzan101.mika.voice.model.VoiceModelRef
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +46,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -501,11 +504,11 @@ class CallRuntime(private val app: MikaApp) {
                     CallVoiceProfile(id = ref.modelId, name = ref.modelId, credentialsConfigured = false, connectionTested = false)
                 }
             }
-            return CallVoiceProfile(id = config.activeVoiceProfileId, name = "默认实时语音", credentialsConfigured = false, connectionTested = false)
+            return CallVoiceProfile(id = config.activeVoiceProfileId, name = app.getString(R.string.calls_voice_default_name), credentialsConfigured = false, connectionTested = false)
         }
         return voiceProfiles.get(config.activeVoiceProfileId) ?: CallVoiceProfile(
             id = config.activeVoiceProfileId,
-            name = "默认实时语音",
+            name = app.getString(R.string.calls_voice_default_name),
             speaker = config.speaker,
             credentialsConfigured = config.credentialsConfigured,
             connectionTested = config.credentialsConfigured,
@@ -578,6 +581,29 @@ class CallRuntime(private val app: MikaApp) {
         ))
         publish()
         ok("已选择${profile.name}，自动接听需要重新开启")
+    }
+
+    /** 迁移后语音目录的快照:通话设置页从中列出能做实时通话的模型、标出当前选中的那个。 */
+    internal val realtimeCatalog: StateFlow<VoiceCatalogSnapshot> get() = realtimeController.catalog.state
+
+    /**
+     * 迁移后选择通话用的实时语音模型:目录里任何声明了实时能力的模型都能选。
+     * 换模型后自动接听关掉,要用户在新模型上重新确认(和旧版切换配置一致);凭据与验证镜像由目录同步。
+     */
+    suspend fun selectRealtimeModel(ref: VoiceModelRef): CallActionResult = onMain {
+        if (work != null || lockedDial != null) return@onMain fail("请先结束当前通话或锁屏拨出安排")
+        if (!realtimeController.migrated) return@onMain fail("实时语音配置尚未迁移")
+        val model = runCatching { realtimeController.model(ref) }.getOrNull()
+            ?: return@onMain fail("实时语音模型不存在")
+        realtimeController.select(ref)
+        val config = settings.state.value
+        settings.save(config.copy(
+            credentialsConfigured = realtimeController.credentialsConfigured(ref),
+            audioVerified = realtimeController.isAudioVerified(ref, config.audioMode),
+            autoAnswer = false,
+        ))
+        publish()
+        ok("已选择${model.displayName}，自动接听需要重新开启")
     }
 
     suspend fun saveVoiceProfile(profile: CallVoiceProfile, credentials: VolcRealtimeCredentials? = null): CallActionResult = onMain {
