@@ -683,18 +683,19 @@ private fun MikaRoot(
                 onOpenPersonas = if (personasOn) ({ nav.push(Route.Persona) }) else null,
                 autonomous = autonomous, onAutonomous = app.approvalControl::setAutonomous,
                 updateVersion = updateState.update?.version, onOpenAbout = { nav.push(Route.About) },
-                onOpenVoiceCatalog = { nav.push(Route.VoiceCatalog) },
+                onOpenVoiceCatalog = { nav.push(Route.VoiceServices) },
                 mcpServers = app.mcpServers,
                 openPhoneOps = openPhoneOps, onPhoneOpsOpened = { openPhoneOps = false })
         }
-        Route.Models -> ModelsScreen(store, onBack = back, onOpenSpeech = { nav.push(Route.SpeechModel) }, onOpenVoice = { nav.push(Route.VoiceModel) }, onOpenImage = { nav.push(Route.ImageModel) }, onOpenUsage = { nav.push(Route.Usage) }, onOpenVoiceCatalog = { nav.push(Route.VoiceCatalog) }, onOpenRealtimeVoice = { nav.push(Route.RealtimeVoice) })
-        Route.VoiceModel -> VoiceModelScreen(store, onBack = back, onOpenServices = { nav.push(Route.VoiceCatalog) })
-        Route.RealtimeVoice -> RealtimeVoiceScreen(store, onBack = back, onOpenCalls = { nav.push(Route.Calls) }, onOpenServices = { nav.push(Route.VoiceCatalog) })
+        Route.Models -> ModelsScreen(store, onBack = back, onOpenSpeech = { nav.push(Route.SpeechModel) }, onOpenVoice = { nav.push(Route.VoiceModel) }, onOpenImage = { nav.push(Route.ImageModel) }, onOpenUsage = { nav.push(Route.Usage) }, onOpenVoiceCatalog = { nav.push(Route.VoiceServices) }, onOpenRealtimeVoice = { nav.push(Route.RealtimeVoice) })
+        Route.VoiceModel -> VoiceModelScreen(store, onBack = back, onOpenServices = { nav.push(Route.VoiceServices) })
+        Route.RealtimeVoice -> RealtimeVoiceScreen(store, onBack = back, onOpenCalls = { nav.push(Route.Calls) }, onOpenServices = { nav.push(Route.VoiceServices) })
+        Route.VoiceServices -> VoiceServicesScreen(store, onBack = back, onOpenCustom = { nav.push(Route.VoiceCatalog) })
         Route.VoiceCatalog -> VoiceCatalogScreen(com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(context), onBack = back)
         Route.ImageModel -> ImageModelScreen(store, onBack = back)
         Route.Persona -> if (personasOn) PersonaScreen(app.personas, onBack = back) else LaunchedEffect(Unit) { nav.back() }
         Route.Usage -> UsageScreen(app.usage, store, onBack = back)
-        Route.SpeechModel -> SpeechModelScreen(store, onBack = back, onOpenServices = { nav.push(Route.VoiceCatalog) })
+        Route.SpeechModel -> SpeechModelScreen(store, onBack = back, onOpenServices = { nav.push(Route.VoiceServices) })
         Route.About -> AboutScreen(
             versionName = BuildConfig.VERSION_NAME, build = BuildConfig.GIT_HASH, beta = BuildConfig.BETA,
             update = updateState,
@@ -819,7 +820,7 @@ private fun MikaRoot(
             app.chat.openConversation(it)
             nav.reset()
         })
-        Route.Calls -> CallSettingsScreen(app.calls, onBack = back, standalone = true, initialHistoryCallId = focusedCallHistoryId, onOpenVoiceCatalog = { nav.push(Route.VoiceCatalog) })
+        Route.Calls -> CallSettingsScreen(app.calls, onBack = back, standalone = true, initialHistoryCallId = focusedCallHistoryId, onOpenVoiceCatalog = { nav.push(Route.VoiceServices) })
     }
     }
         }
