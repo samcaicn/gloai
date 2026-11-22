@@ -30,6 +30,8 @@ class VoiceModelEnvironment(
 
     val stt: SttSelectionController by lazy { SttSelectionController(this) }
 
+    val tts: TtsSelectionController by lazy { TtsSelectionController(this) }
+
     companion object {
         @Volatile
         private var shared: VoiceModelEnvironment? = null

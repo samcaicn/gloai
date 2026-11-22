@@ -425,12 +425,23 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
     internal suspend fun speak(
         text: String,
         synthesize: suspend (String) -> Unit = { words ->
-            com.wangzan101.mika.media.readAloud(
-                words,
-                voiceSettings,
-                model = { choice, caps -> ProviderStore.get(this).ttsModel(choice, caps) },
-                play = { model, requests, streaming -> voicePlayer.playRequests(model, requests, streaming) },
-            )
+            val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(this)
+            if (voiceModels.tts.migrated) {
+                com.wangzan101.mika.media.readAloudMigrated(
+                    words,
+                    voiceSettings,
+                    this,
+                    voiceModels.tts,
+                    play = { model, requests, streaming -> voicePlayer.playRequests(model, requests, streaming) },
+                )
+            } else {
+                com.wangzan101.mika.media.readAloud(
+                    words,
+                    voiceSettings,
+                    model = { choice, caps -> ProviderStore.get(this).ttsModel(choice, caps) },
+                    play = { model, requests, streaming -> voicePlayer.playRequests(model, requests, streaming) },
+                )
+            }
         },
     ) = synthesize(text)
 

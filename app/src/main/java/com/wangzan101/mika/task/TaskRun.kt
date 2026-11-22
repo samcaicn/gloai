@@ -65,6 +65,7 @@ import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.memory.MemoryRuntime
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.ModelOptions
+import com.wangzan101.mika.voice.model.settingsProtocol
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.record.RunEvent
 import com.wangzan101.mika.core.replay.RouteMatcher
@@ -585,17 +586,50 @@ class TaskRun(
 
     private val audioPort by lazy {
         val state = audioSettings.state.value
-        val choice = state.choice
-        if (!state.enabled || choice == null || provenance.origin != RunOrigin.Ui) null
-        else audioSettings.capabilities()?.let { caps ->
+        if (!state.enabled || provenance.origin != RunOrigin.Ui) null
+        else {
+            val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(service)
+            if (voiceModels.tts.migrated) migratedAudioPort(voiceModels, state) else legacyAudioPort(state)
+        }
+    }
+
+    private fun legacyAudioPort(state: com.wangzan101.mika.settings.VoiceSettingsState): com.wangzan101.mika.media.AndroidAudioPort? {
+        val choice = state.choice ?: return null
+        return audioSettings.capabilities()?.let { caps ->
             com.wangzan101.mika.settings.ProviderStore.get(service).ttsModel(choice, caps)?.let { model ->
-                com.wangzan101.mika.media.AndroidAudioPort(service, conversationId, model, caps, onSaved = ::addSavedAudio,
-                    onGenerated = ::addAudio, defaultVoice = choice.voice.ifBlank { null }, defaultSpeed = choice.speed,
-                    onSpeak = { response -> (service.application as com.wangzan101.mika.MikaApp).voicePlayer.play(response.bytes, response.mime) },
-                    resolveWorkspace = { workspaceKey })
+                buildAudioPort(model, caps, choice.voice, choice.speed)
             }
         }
     }
+
+    private fun migratedAudioPort(
+        voiceModels: com.wangzan101.mika.voice.model.VoiceModelEnvironment,
+        state: com.wangzan101.mika.settings.VoiceSettingsState,
+    ): com.wangzan101.mika.media.AndroidAudioPort? {
+        val ref = voiceModels.tts.current() ?: return null
+        return try {
+            val protocol = voiceModels.tts.requireModel(ref).model.tts?.protocol
+                ?.let { it.settingsProtocol() } ?: return null
+            val caps = audioSettings.capabilities(protocol)
+            val model = voiceModels.tts.createTts(service, ref, caps)
+            buildAudioPort(model, caps, state.voice, state.speed)
+        } catch (_: com.wangzan101.mika.voice.model.VoiceModelError) {
+            null
+        }
+    }
+
+    private fun buildAudioPort(
+        model: com.wangzan101.mika.core.model.TtsModel,
+        caps: com.wangzan101.mika.core.model.TtsCapabilities,
+        defaultVoice: String,
+        defaultSpeed: Float,
+    ): com.wangzan101.mika.media.AndroidAudioPort =
+        com.wangzan101.mika.media.AndroidAudioPort(
+            service, conversationId, model, caps, onSaved = ::addSavedAudio,
+            onGenerated = ::addAudio, defaultVoice = defaultVoice.ifBlank { null }, defaultSpeed = defaultSpeed,
+            onSpeak = { response -> (service.application as com.wangzan101.mika.MikaApp).voicePlayer.play(response.bytes, response.mime) },
+            resolveWorkspace = { workspaceKey },
+        )
 
     /** 沙箱导出了一个文件(share_file 或 `mika share`)。 */
     fun addShared(f: SharedFile) = runState.addShared(f)
