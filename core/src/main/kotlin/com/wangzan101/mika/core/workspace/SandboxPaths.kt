@@ -7,6 +7,8 @@ import java.nio.file.Files
 object SandboxPaths {
     const val WORKSPACE = "/workspace"
     const val SKILLS = "/opt/mika/skills"
+    /** 各工作区共享、沙箱可写的 MCP 包缓存(只经绑定挂载由命令写,不进 normalize/isWritable 的桥分享)。 */
+    const val MCP_CACHE = "/opt/mika/mcp-cache"
 
     /** 单个文件名:不含路径分隔符、控制字符、格式字符(改写方向、零宽等,能让显示的名字和实际的对不上)与行/段分隔符。 */
     fun plainName(n: String): Boolean =

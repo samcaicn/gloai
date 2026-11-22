@@ -71,8 +71,8 @@ class McpPackageManagerTest {
             runs += argv
             block?.await()
             return when (argv.firstOrNull()) {
-                "test" -> CommandResult(if ("$workspace|${argv.last()}" in markers) 0 else 1, false, false, 1, "", 0, network)
-                "touch" -> { markers += "$workspace|${argv.last()}"; CommandResult(0, false, false, 1, "", 0, network) }
+                "test" -> CommandResult(if (argv.last() in markers) 0 else 1, false, false, 1, "", 0, network)
+                "touch" -> { markers += argv.last(); CommandResult(0, false, false, 1, "", 0, network) }
                 "mkdir", "rm" -> CommandResult(0, false, false, 1, "", 0, network)
                 else -> CommandResult(installExit, false, false, 10, installOutput, 0, network)
             }
@@ -120,7 +120,7 @@ class McpPackageManagerTest {
         assertTrue(port.runs.none { it.firstOrNull() == "touch" } || port.markers.isEmpty())
     }
 
-    @Test fun installIsPerWorkspaceCachedAndFailureIsRetryable() = runBlocking {
+    @Test fun installIsSharedCachedAndFailureIsRetryable() = runBlocking {
         val port = FakePort()
         val consent = McpPackageConsent()
         consent.accept(npm)
@@ -128,16 +128,16 @@ class McpPackageManagerTest {
 
         // 首次安装:跑 npm install + touch 标记,返回 .bin 目录前缀。
         val prefix = manager.prepare("w1", npm, confirmed = true)
-        assertEquals(listOf("/workspace/.mcp-cache/npm-_scope_server-filesystem-1.2.3/node_modules/.bin"), prefix)
+        assertEquals(listOf("/opt/mika/mcp-cache/npm-_scope_server-filesystem-1.2.3/node_modules/.bin"), prefix)
         assertEquals(1, port.runs.count { it.firstOrNull() == "npm" })
 
-        // 同工作区已缓存:不再安装。
+        // 已缓存:不再安装(同一工作区)。
         manager.prepare("w1", npm, confirmed = false)
         assertEquals(1, port.runs.count { it.firstOrNull() == "npm" })
 
-        // 另一工作区独立缓存:再安装一次。
-        manager.prepare("w2", npm, confirmed = true)
-        assertEquals(2, port.runs.count { it.firstOrNull() == "npm" })
+        // 共享缓存:另一工作区复用同一份,不重装。
+        manager.prepare("w2", npm, confirmed = false)
+        assertEquals(1, port.runs.count { it.firstOrNull() == "npm" })
 
         // 失败不留标记,可重试。
         val p2 = FakePort()
@@ -185,14 +185,14 @@ class McpPackageManagerTest {
         val manager = McpPackageManager(port)
 
         val npmPrefix = manager.prepare("w", npm, confirmed = true)
-        assertEquals(listOf("/workspace/.mcp-cache/npm-_scope_server-filesystem-1.2.3/node_modules/.bin"), npmPrefix)
+        assertEquals(listOf("/opt/mika/mcp-cache/npm-_scope_server-filesystem-1.2.3/node_modules/.bin"), npmPrefix)
         val npmInstall = port.runs.first { it.firstOrNull() == "npm" }
         assertEquals("npm", npmInstall[0])
         assertTrue("@scope/server-filesystem@1.2.3" in npmInstall)
         for (f in listOf("--ignore-scripts", "--no-audit", "--no-fund", "--no-save")) assertTrue(f, f in npmInstall)
 
         val pypiPrefix = manager.prepare("w", pypi, confirmed = true)
-        assertEquals(listOf("/workspace/.mcp-cache/pypi-mcp-server-fetch-0.9.0/bin"), pypiPrefix)
+        assertEquals(listOf("/opt/mika/mcp-cache/pypi-mcp-server-fetch-0.9.0/bin"), pypiPrefix)
         val pypiInstall = port.runs.first { it.firstOrNull() == "python3" }
         assertTrue("mcp-server-fetch==0.9.0" in pypiInstall)
         assertTrue("--only-binary=:all:" in pypiInstall)
@@ -263,6 +263,6 @@ class McpPackageManagerTest {
         // 确认后:安装并启动,argv 拼成「缓存 .bin 目录 / 可执行名」。
         s.acceptPackage(preset.packageSpec!!)
         assertTrue(s.test(config).isSuccess)
-        assertEquals(listOf("/workspace/.mcp-cache/npm-server-filesystem-1.0.0/node_modules/.bin/mcp-server-filesystem"), launchedArgv)
+        assertEquals(listOf("/opt/mika/mcp-cache/npm-server-filesystem-1.0.0/node_modules/.bin/mcp-server-filesystem"), launchedArgv)
     }
 }

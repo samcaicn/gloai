@@ -14,8 +14,8 @@ import com.wangzan101.mika.core.workspace.SandboxPaths
  */
 interface McpPackageProvisioner {
     /**
-     * 确保 [spec] 已装进 [workspace] 的缓存,返回 argv 前缀(单元素:可执行文件目录,如
-     * `/workspace/.mcp-cache/npm-<名>-<版本>/node_modules/.bin`)。未缓存且 [confirmed] 为 false 时抛
+     * 确保 [spec] 已装进共享包缓存的 [workspace] 视图,返回 argv 前缀(单元素:可执行文件目录,如
+     * `/opt/mika/mcp-cache/npm-<名>-<版本>/node_modules/.bin`)。未缓存且 [confirmed] 为 false 时抛
      * `mcp_package_consent`;下载/安装失败抛可重试的 `mcp_package_install_failed`。
      */
     suspend fun prepare(workspace: String, spec: McpPackageSpec, confirmed: Boolean): List<String>
@@ -78,7 +78,7 @@ class McpPackageManager(
 
     private fun cacheDir(spec: McpPackageSpec): String {
         val safe = spec.name.map { if (it.isLetterOrDigit() || it == '.' || it == '-' || it == '_') it else '_' }.joinToString("")
-        return "${SandboxPaths.WORKSPACE}/.mcp-cache/${spec.ecosystem}-$safe-${spec.version}"
+        return "${SandboxPaths.MCP_CACHE}/${spec.ecosystem}-$safe-${spec.version}"
     }
 
     private companion object {

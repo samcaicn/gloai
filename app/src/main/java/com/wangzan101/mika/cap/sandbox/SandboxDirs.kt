@@ -30,6 +30,8 @@ class SandboxDirs internal constructor(
     val work: File get() = File(root, "work")
     val skills: File get() = File(root, "skills")
     val procStandIns: File get() = File(root, "proc")
+    /** 各工作区共享、沙箱可写的 MCP 包缓存(装好的 npm/pypi 包,非用户数据)。 */
+    val mcpCache: File get() = File(root, "mcp-cache")
 
     /** 一个工作区对应一个目录:项目为 `p-<ID>`,对话为 `c-<ID>` 或 `h-<哈希>`(与 `p-` 永不撞名)。 */
     fun workspace(key: WorkspaceKey): File = File(work, dirName(key))
@@ -63,7 +65,7 @@ class SandboxDirs internal constructor(
      * 而标准错误并进了命令输出,模型会看到。技能目录还没同步时就是空目录。
      */
     fun ensureBindSources(workspace: File) {
-        for (d in listOf(workspace, skills, tmp)) d.mkdirs()
+        for (d in listOf(workspace, skills, tmp, mcpCache)) d.mkdirs()
     }
 
     private fun dirName(key: WorkspaceKey): String = when (key) {

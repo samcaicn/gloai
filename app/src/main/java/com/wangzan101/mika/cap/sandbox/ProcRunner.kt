@@ -55,6 +55,7 @@ object ProcRunner {
             listOf(
                 "-b", "${workspace.path}:${SandboxPaths.WORKSPACE}",
                 "-b", "${dirs.skills.path}:${SandboxPaths.SKILLS}",
+                "-b", "${dirs.mcpCache.path}:${SandboxPaths.MCP_CACHE}",
                 "-w", if (cwd.isEmpty()) SandboxPaths.WORKSPACE else "${SandboxPaths.WORKSPACE}/$cwd",
             ),
         )

@@ -30,6 +30,7 @@ class ProcRunnerArgsTest {
         assertTrue(argv.hasPair("-b", "/data/m/files/sandbox/proc/stat:/proc/stat"))
         assertTrue(argv.hasPair("-b", "/data/m/files/sandbox/work/c-conv1:/workspace"))
         assertTrue(argv.hasPair("-b", "/data/m/files/sandbox/skills:/opt/mika/skills"))
+        assertTrue(argv.hasPair("-b", "/data/m/files/sandbox/mcp-cache:/opt/mika/mcp-cache"))
         assertTrue(argv.hasPair("-w", "/workspace/sub/dir"))
         assertEquals(listOf("/bin/sh", "-lc", "echo hi"), argv.takeLast(3))
         assertTrue(argv.indexOf("-w") < argv.size - 3)
