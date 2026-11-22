@@ -115,6 +115,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
@@ -2041,8 +2042,8 @@ private val ComposerInset = 12.dp
 private val FileTileShape = MikaShapes.Tile
 private val EmptyLead = MikaType.Value
 private val BubbleText = MikaType.Body
-/** 回答:正文字号,行距放宽到 1.7。 */
-private val AnswerText = MikaType.Body
+/** 回答:正文字号,两端对齐(中文整段行尾整齐,最后一行除外)。 */
+private val AnswerText = MikaType.Body.copy(textAlign = TextAlign.Justify)
 private val NowText = MikaType.Value
 private val TurnNameText = MikaType.Label.copy(fontWeight = WordmarkWeight)
 private val ClockText = MikaType.Hint.copy(fontFeatureSettings = "tnum")
