@@ -117,4 +117,5 @@
     <string name="calls_audio_footer">換了方式會清掉確認，切換後需要重新確認。</string>
     <string name="calls_audio_checked">已確認</string>
     <string name="calls_audio_unchecked">未確認</string>
+    <string name="voice_stt_footer">手機內建的辨識免費；線上的選項來自語音服務，選之前可以先說一句試試。</string>
 </resources>

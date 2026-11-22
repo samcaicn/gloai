@@ -117,4 +117,5 @@
     <string name="calls_audio_footer">Mudar o caminho apaga a confirmação; verifique de novo depois.</string>
     <string name="calls_audio_checked">Verificado</string>
     <string name="calls_audio_unchecked">Não verificado</string>
+    <string name="voice_stt_footer">O reconhecimento do próprio telefone é grátis. As opções online vêm dos seus serviços de voz; diga uma frase para testar antes de escolher.</string>
 </resources>

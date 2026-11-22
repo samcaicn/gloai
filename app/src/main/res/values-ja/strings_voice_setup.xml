@@ -117,4 +117,5 @@
     <string name="calls_audio_footer">方式を変えると確認は解除されます。切り替えたら再度確認してください。</string>
     <string name="calls_audio_checked">確認済み</string>
     <string name="calls_audio_unchecked">未確認</string>
+    <string name="voice_stt_footer">端末内蔵の認識は無料です。オンラインの選択肢は音声サービスから来ます。選ぶ前に一言話して試せます。</string>
 </resources>

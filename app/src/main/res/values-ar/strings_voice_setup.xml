@@ -117,4 +117,5 @@
     <string name="calls_audio_footer">تغيير الطريقة يمسح التأكيد؛ تحقّق مرة أخرى بعد التبديل.</string>
     <string name="calls_audio_checked">تم التحقق</string>
     <string name="calls_audio_unchecked">لم يُتحقق</string>
+    <string name="voice_stt_footer">التعرّف المدمج في الهاتف مجاني. تأتي الخيارات عبر الإنترنت من خدمات الصوت لديك؛ قل جملة لتجربة أحدها قبل اختياره.</string>
 </resources>

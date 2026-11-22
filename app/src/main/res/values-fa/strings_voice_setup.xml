@@ -117,4 +117,5 @@
     <string name="calls_audio_footer">تغییر روش تأیید را پاک می‌کند؛ پس از تغییر دوباره بررسی کنید.</string>
     <string name="calls_audio_checked">بررسی شد</string>
     <string name="calls_audio_unchecked">بررسی نشده</string>
+    <string name="voice_stt_footer">تشخیص داخلی گوشی رایگان است. گزینه‌های آنلاین از سرویس‌های صوتی شما می‌آیند؛ پیش از انتخاب، یک جمله بگویید تا امتحانش کنید.</string>
 </resources>

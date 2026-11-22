@@ -117,4 +117,5 @@
     <string name="calls_audio_footer">Yolu değiştirmek onayı siler; değiştirdikten sonra yeniden kontrol edin.</string>
     <string name="calls_audio_checked">Kontrol edildi</string>
     <string name="calls_audio_unchecked">Kontrol edilmedi</string>
+    <string name="voice_stt_footer">Telefonun kendi tanıması ücretsizdir. Çevrim içi seçenekler ses hizmetlerinizden gelir; seçmeden önce bir cümle söyleyerek deneyin.</string>
 </resources>

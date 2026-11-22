@@ -117,4 +117,5 @@
     <string name="calls_audio_footer">Changing the route clears the confirmation; check again after switching.</string>
     <string name="calls_audio_checked">Checked</string>
     <string name="calls_audio_unchecked">Not checked</string>
+    <string name="voice_stt_footer">The phone\'s own recognition is free. Online options come from your voice services; say a sentence to try one before you choose it.</string>
 </resources>

@@ -217,7 +217,7 @@ private fun MigratedSpeechModelContent(
     val systemSelected = system.usable &&
         (selection == SttSelection.Model(SttSelectionController.SYSTEM_STT_REF) || selection == SttSelection.Auto)
     val c = MikaTheme.colors
-    Page(tr(R.string.role_speech), onBack) {
+    Page(tr(R.string.voice_hub_stt), onBack) {
         Text(
             tr(R.string.speech_hint), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2,
         )
@@ -256,7 +256,7 @@ private fun MigratedSpeechModelContent(
             )
         }
         onOpenServices?.let { VoiceMoreServices(it) }
-        FooterNote(tr(R.string.speech_footer), Modifier.padding(top = 8.dp))
+        FooterNote(tr(R.string.voice_stt_footer), Modifier.padding(top = 8.dp))
     }
 }
 

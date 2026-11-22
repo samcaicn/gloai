@@ -117,4 +117,5 @@
     <string name="calls_audio_footer">Mengganti jalur menghapus konfirmasi; periksa lagi setelah beralih.</string>
     <string name="calls_audio_checked">Sudah diperiksa</string>
     <string name="calls_audio_unchecked">Belum diperiksa</string>
+    <string name="voice_stt_footer">Pengenalan bawaan ponsel gratis. Opsi online berasal dari layanan suara Anda; ucapkan satu kalimat untuk mencoba sebelum memilih.</string>
 </resources>

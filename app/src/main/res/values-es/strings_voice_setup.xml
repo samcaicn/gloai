@@ -117,4 +117,5 @@
     <string name="calls_audio_footer">Cambiar la vía borra la confirmación; vuelve a comprobar tras el cambio.</string>
     <string name="calls_audio_checked">Comprobado</string>
     <string name="calls_audio_unchecked">Sin comprobar</string>
+    <string name="voice_stt_footer">El reconocimiento del propio teléfono es gratis. Las opciones en línea vienen de tus servicios de voz; di una frase para probar una antes de elegirla.</string>
 </resources>
