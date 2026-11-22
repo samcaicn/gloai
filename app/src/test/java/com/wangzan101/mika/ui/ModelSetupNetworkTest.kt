@@ -101,13 +101,12 @@ class ModelSetupNetworkTest {
 
     /**
      * 已经有主模型时保存服务商只发一次 GET;之后每次换主模型只对那一个模型发一次请求,没通过原来的主模型不变;
-     * 核实过的、标 TTS、取消标记都不发请求。
+     * 核实过的模型不再发请求。
      */
     @Test fun savingWithAMainSendsOnlyTheCatalogRequestAndEachMainChoiceProbesOnce() {
         server.enqueue(modelList("gpt-x", "gpt-y", "tts-z"))
         server.enqueue(toolCall())
         server.enqueue(rejected())
-        server.enqueue(toolCall())
         val (store, vm) = setUp(ProviderConfig.Kind.OpenAiResponses)
         val other = store.connect("Other", ProviderConfig.Kind.OpenAiCompat, "https://other.test/v1", "k", emptyList())
         assertTrue(store.use(ModelRole.Main, other.id, "old-main", ProviderPresets.custom.capabilities))
@@ -124,23 +123,11 @@ class ModelSetupNetworkTest {
         assertTrue(vm.state.value.manualPick[saved.id] is ListState.Failed)
         assertEquals("没通过不换", "gpt-y", store.configFor(ModelRole.Main)?.model)
 
-        assertTrue(vm.setTtsModel(saved.id, "tts-z", true))
-        assertTrue(vm.setTtsModel(saved.id, "gpt-y", true))
-        assertNull(store.configFor(ModelRole.Main))
-        runBlocking {
-            vm.useFromProvider(ModelRole.Main, saved.id, "gpt-y")
-            withTimeout(15_000) { vm.state.first { it.roles.main != null } }
-        }
-        assertEquals("gpt-y", store.configFor(ModelRole.Main)?.model)
-        assertEquals(setOf("tts-z"), store.provider(saved.id)?.ttsModels)
-
         val requests = List(server.requestCount) { server.takeRequest() }
-        // 从 TTS 改回主模型要再试一次:回复过不等于会调用工具
-        assertEquals(listOf("GET /models", "POST /responses", "POST /responses", "POST /responses"), requests.map { "${it.method} ${it.path}" })
+        assertEquals(listOf("GET /models", "POST /responses", "POST /responses"), requests.map { "${it.method} ${it.path}" })
         assertTrue(requests.all { it.getHeader("Authorization") == "Bearer sk" })
         assertTrue(requests[1].body.readUtf8().contains("\"model\":\"gpt-y\""))
         assertTrue(requests[2].body.readUtf8().contains("\"model\":\"gpt-x\""))
-        assertTrue(requests[3].body.readUtf8().contains("\"model\":\"gpt-y\""))
     }
 
     /** 手填的轻量模型对那一个模型发一次试调用;没通过,原来的轻量不动。 */

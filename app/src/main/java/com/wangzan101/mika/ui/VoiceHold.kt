@@ -250,7 +250,6 @@ internal object VoiceCopy {
         SpeechEngineSpec.Why.SystemNoResponse -> tr(R.string.voice_unavailable_system_silent)
         SpeechEngineSpec.Why.SystemFailed -> tr(R.string.voice_unavailable_system_failed)
         SpeechEngineSpec.Why.ProviderGone -> tr(R.string.voice_unavailable_provider_gone)
-        SpeechEngineSpec.Why.TtsOnly -> tr(R.string.model_tts_only_not_supported)
         SpeechEngineSpec.Why.Off -> tr(R.string.voice_unavailable_off)
     }
 

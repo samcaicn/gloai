@@ -391,8 +391,7 @@ sealed interface ProbeResult {
  *
  * 用户管三层:连了哪些服务商、每个用途([RoleChoices])用哪个模型或模型组、模型组里有哪些模型。
  * 模型配置([ProviderConfig])是内部的一层:选模型或用进组时当场建,没有用途、也没有组再用它就删掉
- * (见 [prune];Key 按服务商存,删配置不动 Key)。
- * 对话用途和组成员只接受非 TTS 模型(见 [ModelOptions.canUseForChat]);选具体模型时把对应的能力标记记为 true(见 [choose])。
+ * (见 [prune];Key 按服务商存,删配置不动 Key)。选具体模型时把对应的能力标记记为 true(见 [choose])。
  *
  * 旧版本的文件:只有模型配置、Key 按配置 id 存的,读入时按 [ProviderConnection.keyOf] 归成服务商,
  * Key 取那组里任一条的,原来按配置 id 存的 Key 清掉(见 [migrate]);用途只记了显式指定的,
@@ -476,8 +475,7 @@ class ProviderStore(
 
     fun provider(id: String): Provider? = _providers.value.firstOrNull { it.id == id }
 
-    private fun ProviderConfig.canUseForChat(): Boolean =
-        provider(providerId)?.let { ModelOptions.canUseForChat(it, model) } == true
+    private fun ProviderConfig.canUseForChat(): Boolean = model.isNotBlank()
 
     /**
      * 新增或替换同 id 的模型配置(新增的要再交给 [choose],否则下次读入时没人用会被删掉)。
@@ -655,15 +653,13 @@ class ProviderStore(
     }
 
     /**
-     * 保存用户选定的模型用途。服务商详情允许同时撤销 TTS 标记，其他入口仍按现有标记过滤。
+     * 保存用户选定的模型用途。
      */
     @Synchronized
-    fun use(role: ModelRole, providerId: String, model: String, caps: Capabilities, reassignTts: Boolean = false): Boolean {
+    fun use(role: ModelRole, providerId: String, model: String, caps: Capabilities): Boolean {
         val p = provider(providerId) ?: return false
         val name = model.trim()
-        if (name.isEmpty() || (!reassignTts && name in p.ttsModels)) return false
-        val provider = if (reassignTts) p.withTtsMark(name, false) else p
-        val providers = _providers.value.map { if (it.id == p.id) provider else it }
+        if (name.isEmpty()) return false
         val existing = _configs.value.firstOrNull { it.providerId == p.id && it.model == name }
         val config = existing ?: ProviderConfig(newId(), p.kind, p.baseUrl, name, caps, p.name, p.id)
         val selected = if (role == ModelRole.Main) config.copy(capabilities = config.capabilities.copy(toolCalls = true)) else config
@@ -674,13 +670,13 @@ class ProviderStore(
         }
         // 没有用途、也不在任何组里的配置删掉(和 [prune] 一样)
         val used = roles.referenced + _groups.value.flatMap { g -> g.members.map { it.configId } }
-        return saveRoleSelection(providers, configs.filter { it.id in used }, roles)
+        return saveRoleSelection(_providers.value, configs.filter { it.id in used }, roles)
     }
 
     /**
      * 定一个用途:用户选什么就是什么,不看能力标记。选具体模型当主模型时把工具调用标记记为 true(运行时据此发工具定义);
      * 看图标记不改存着的,在 [configFor] 里按当下的选择推出来,换走了就跟着回去。之后没人用的配置删掉。
-     * 配置不存在、标为 TTS 或这个用途不接受这种选择(见 [RoleChoices.with])时返回 false。
+     * 配置不存在、模型名为空或这个用途不接受这种选择(见 [RoleChoices.with])时返回 false。
      */
     @Synchronized
     fun choose(role: ModelRole, choice: RoleChoice): Boolean {
@@ -709,7 +705,7 @@ class ProviderStore(
     fun ensureConfigId(providerId: String, model: String, caps: Capabilities): String? {
         val p = provider(providerId) ?: return null
         val name = model.trim()
-        if (!ModelOptions.canUseForChat(p, name)) return null
+        if (name.isEmpty()) return null
         val existing = _configs.value.firstOrNull { it.providerId == p.id && it.model == name }
         if (existing != null) {
             if (!existing.capabilities.toolCalls) {
@@ -797,7 +793,7 @@ class ProviderStore(
     @Synchronized
     fun saveGroup(group: ModelGroup): Boolean {
         if (group.members.any { m -> _configs.value.none { it.id == m.configId } }) return false
-        // 新加进来的成员不能是标为 TTS 的模型;旧设置里已经在组里的留着,由用户在服务商详情里解决
+        // 新加进来的成员要有可用的模型配置;旧设置里已经在组里的留着,由用户在服务商详情里解决
         val before = group(group.id)?.members?.mapTo(hashSetOf()) { it.configId }.orEmpty()
         if (group.members.any { m -> m.configId !in before && configById(m.configId)?.canUseForChat() != true }) return false
         // 只看显式绑定的角色;Vision/Light 的「用主模型」不算自己在用这个组,不能拿它来拦保存
@@ -821,11 +817,11 @@ class ProviderStore(
         writeConfig()
     }
 
-    /** 建组/加成员时用:有这个服务商的这个模型的配置就复用,没有就按 [caps] 建一条(不选用途)。标为 TTS 的模型为 null。 */
+    /** 建组/加成员时用:有这个服务商的这个模型的配置就复用,没有就按 [caps] 建一条(不选用途)。 */
     @Synchronized
     fun ensureConfig(providerId: String, model: String, caps: Capabilities): String? {
         val p = provider(providerId) ?: return null
-        if (!ModelOptions.canUseForChat(p, model)) return null
+        if (model.isBlank()) return null
         _configs.value.firstOrNull { it.providerId == p.id && it.model == model }?.let { return it.id }
         val id = newId()
         save(ProviderConfig(id, p.kind, p.baseUrl, model, caps, p.name, p.id), null)
@@ -913,52 +909,6 @@ class ProviderStore(
         writeConfig()
         return true
     }
-
-    /** 迁移只补记已有朗读选择；用户决定如何处理同时用于对话的旧模型。 */
-    @Synchronized
-    internal fun importLegacyTtsChoice(providerId: String, model: String): Boolean {
-        // 旧版点服务商就存下空模型名:不补记,由调用方清掉这个选择
-        if (model.isBlank()) return true
-        val p = provider(providerId) ?: return false
-        if (model in p.ttsModels) return true
-        return saveProviderSettings(p.withTtsMark(model, true))
-    }
-
-    /** 用户明确设置模型的 TTS 用途，也接受手填模型。 */
-    @Synchronized
-    fun setTtsModel(providerId: String, model: String, enabled: Boolean): Boolean {
-        val p = provider(providerId) ?: return false
-        val id = model.trim().takeIf { it.isNotEmpty() } ?: return false
-        val updated = _providers.value.map { if (it.id == providerId) p.withTtsMark(id, enabled) else it }
-        val removedIds = if (enabled) _configs.value.filter { it.providerId == p.id && it.model.trim() == id }.mapTo(hashSetOf()) { it.id }
-            else emptySet()
-        if ((id in p.ttsModels) == enabled && removedIds.isEmpty()) return true
-        val configs = _configs.value.filterNot { it.id in removedIds }
-        if (removedIds.isEmpty()) return saveRoleSelection(updated, configs, _roles.value)
-        // 组里也去掉这个模型;成员全没了的组删掉,绑在不再满足要求的组上的用途退回默认
-        val groups = _groups.value
-            .map { g -> g.copy(members = g.members.filterNot { it.configId in removedIds }) }
-            .filter { it.members.isNotEmpty() }
-        val caps = { cid: String -> configs.firstOrNull { it.id == cid }?.capabilities }
-        var roles = _roles.value
-        for (role in ModelRole.entries) {
-            val choice = roles[role] as? RoleChoice.Group ?: continue
-            if (groups.firstOrNull { it.id == choice.groupId }?.usableFor(role, caps) == true) continue
-            roles = when (role) {
-                ModelRole.Main -> roles.copy(main = null, mainGroup = null)
-                ModelRole.Vision -> roles.copy(vision = RoleChoice.Off)
-                ModelRole.Light -> roles.copy(light = RoleChoice.SameAsMain)
-            }
-        }
-        val validGroups = groups.filter { g -> g.enabledMembers.any { m -> configs.any { it.id == m.configId } } }.mapTo(hashSetOf()) { it.id }
-        roles = roles.keepOnly(configs.mapTo(hashSetOf()) { it.id }, validGroups)
-        return saveRoleSelection(updated, configs, roles, groups)
-    }
-
-    private fun Provider.withTtsMark(model: String, enabled: Boolean): Provider = copy(
-        ttsModels = if (enabled) ttsModels + model else ttsModels - model,
-        typedModels = if (models.orEmpty().none { it.id == model }) typedModels + model else typedModels,
-    )
 
     private fun saveRoleSelection(
         providers: List<Provider>, configs: List<ProviderConfig>, roles: RoleChoices, groups: List<ModelGroup> = _groups.value,
@@ -1289,12 +1239,11 @@ class ProviderStore(
 
     /**
      * 声音模型:地址、Key、请求头取这家服务商;不套对话模型的计量(朗读用量由调用方另记)。
-     * 服务商不存在、模型未标为 TTS 或地址不合法时为 null。合成比一句话慢，读超时放到 120 秒。
+     * 服务商不存在或地址不合法时为 null。合成比一句话慢，读超时放到 120 秒。
      */
     fun ttsModel(choice: VoiceChoice, capabilities: TtsCapabilities): TtsModel? {
         val p = provider(choice.providerId) ?: return null
         val model = choice.model.trim()
-        if (model !in p.ttsModels) return null
         if (p.baseUrl.trim().toHttpUrlOrNull() == null) return null
         val client = modelHttp.newBuilder().readTimeout(120, TimeUnit.SECONDS).build()
         val header = headers(p.sessionHeader, ModelSession.fresh())
@@ -1302,6 +1251,7 @@ class ProviderStore(
         return when (choice.protocol) {
             TtsProtocol.OpenAiSpeech -> OpenAiSpeechModel(p.baseUrl, key, model, capabilities, client, header)
             TtsProtocol.GeminiTts -> GeminiTtsModel(p.baseUrl, key.orEmpty(), model, capabilities, client, header)
+            TtsProtocol.AndroidSystem -> null
         }
     }
 
@@ -1311,7 +1261,7 @@ class ProviderStore(
      */
     fun imageModel(choice: ImageChoice, capabilities: ImageCapabilities): ImageModel? {
         val p = provider(choice.providerId) ?: return null
-        if (choice.model.isBlank() || ModelOptions.isTtsOnly(p, choice.model)) return null
+        if (choice.model.isBlank()) return null
         val client = modelHttp.newBuilder().readTimeout(180, TimeUnit.SECONDS).build()
         val header = headers(p.sessionHeader, ModelSession.fresh())
         val key = providerKey(p.id)
@@ -1331,12 +1281,7 @@ class ProviderStore(
         kind: ProviderConfig.Kind, baseUrl: String, apiKey: String?, sessionHeader: String?,
         model: String, endpoint: ModelEndpoint?, caps: Capabilities,
         providerId: String = "",
-        /** 服务商详情里改选用途(同时撤掉 TTS 标记)前的试调用,不按标记拦。 */
-        allowTtsMarked: Boolean = false,
     ): ProbeResult {
-        if (!allowTtsMarked && provider(providerId)?.let { ModelOptions.isTtsOnly(it, model) } == true) {
-            return ProbeResult.Failed(ModelError.ToolsUnsupported(model))
-        }
         val probeKey = apiKey?.let { KeyPoolManager.shared.parseKeys(it).firstOrNull() ?: it }
         val cfg = ProviderConfig(PROBE_ID, kind, baseUrl, model, caps.copy(toolCalls = true), providerId = providerId)
         val m = modelFactory(cfg, probeKey, endpoint, ClientSetup(headers(sessionHeader, ModelSession.fresh()), PROBE_MAX_TOKENS))

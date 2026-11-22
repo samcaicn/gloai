@@ -89,6 +89,7 @@
     <string name="models_delete_body">"Its API key will be deleted too. "</string>
     <string name="models_delete_unused">It isn’t used for any role.</string>
     <string name="models_delete_used">%1$s uses it; you’ll need to choose again after deleting.</string>
+    <string name="models_delete_voice">Voice models %1$s will also be deleted.</string>
     <plurals name="models_more">
         <item quantity="one">%1$d more, type a name to filter</item>
         <item quantity="other">%1$d more, type a name to filter</item>

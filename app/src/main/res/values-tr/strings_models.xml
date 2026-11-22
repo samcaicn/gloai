@@ -88,6 +88,7 @@
     <string name="models_delete_body">"API anahtarı da silinecek. "</string>
     <string name="models_delete_unused">Hiçbir rol için kullanılmıyor.</string>
     <string name="models_delete_used">%1$s onu kullanıyor; sildikten sonra yeniden seçmeniz gerekecek.</string>
+    <string name="models_delete_voice">Ses modelleri %1$s de silinecek.</string>
     <plurals name="models_more">
         <item quantity="other">%1$d daha, filtrelemek için bir ad yazın</item>
     </plurals>

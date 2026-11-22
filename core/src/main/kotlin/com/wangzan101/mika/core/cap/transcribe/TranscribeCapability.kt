@@ -8,12 +8,18 @@ import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.ToolContext
 
-/** 转写能力:把工作区里的音频文件转成文字。没有配置服务商转写模型时整个能力不装。 */
+/** 转写能力:把工作区里的音频文件转成文字;动态端口由目录和执行按当前选择过滤。 */
 const val TRANSCRIBE = "transcribe"
 
-internal class TranscribeCapability(val port: TranscribePort?) : Capability {
+internal class TranscribeCapability(
+    private val fixedPort: TranscribePort? = null,
+    private val portProvider: (() -> TranscribePort?)? = null,
+) : Capability {
     override val id = TRANSCRIBE
     override val folds = true
+    override val dynamicAvailability: Boolean get() = portProvider != null
+
+    val port: TranscribePort? get() = if (portProvider != null) portProvider.invoke() else fixedPort
 
     override fun status(): CapabilityStatus =
         if (port != null) CapabilityStatus.Available else CapabilityStatus.Unavailable("no transcription model")

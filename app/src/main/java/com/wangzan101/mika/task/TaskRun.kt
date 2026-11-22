@@ -65,7 +65,7 @@ import com.wangzan101.mika.core.skills.SkillDrafter
 import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.memory.MemoryRuntime
 import com.wangzan101.mika.settings.ProviderStore
-import com.wangzan101.mika.settings.ModelOptions
+import com.wangzan101.mika.voice.model.settingsProtocol
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.record.RunEvent
 import com.wangzan101.mika.core.replay.RouteMatcher
@@ -171,6 +171,23 @@ internal fun restorePipSound(takeover: Takeover?, restorePhone: () -> Unit) {
 internal fun mutePipSound(takeover: Takeover?, mutePhone: () -> Unit) {
     if (takeover?.muteBack() != true) mutePhone()
 }
+
+/** Resolve file-transcription exposure when phone tools are assembled; a stale voice selection only removes this tool. */
+internal fun taskTranscribePort(
+    origin: RunOrigin,
+    stt: com.wangzan101.mika.voice.model.SttSelectionController,
+    legacyPort: () -> com.wangzan101.mika.core.cap.transcribe.TranscribePort?,
+    migratedPort: () -> com.wangzan101.mika.core.cap.transcribe.TranscribePort,
+): com.wangzan101.mika.core.cap.transcribe.TranscribePort? {
+    if (origin != RunOrigin.Ui) return null
+    if (!stt.migrated) return legacyPort()
+    return try {
+        if (stt.batchModel() == null) null else migratedPort()
+    } catch (_: com.wangzan101.mika.voice.model.VoiceModelError) {
+        null
+    }
+}
+
 private val deepSeekPrices by lazy { DeepSeekPriceCache(ProviderStore.modelHttp) }
 
 /**
@@ -507,15 +524,29 @@ class TaskRun(
 
     private val audioSettings by lazy { com.wangzan101.mika.settings.VoiceSettings.get(service) }
 
-    /** 本任务的转写端口:用户选的是服务商转写模型、且这是手机上开始的任务时才建。 */
-    private val transcribePort by lazy {
-        if (provenance.origin != RunOrigin.Ui) return@lazy null
+    /** 未迁移的任务保持原有的一次性端口决定;只有迁移后的目录选择需要动态刷新。 */
+    private val legacyTranscribePort by lazy {
+        val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(service)
         val choice = com.wangzan101.mika.voice.SpeechSettings.get(service).choice.value as? com.wangzan101.mika.voice.SpeechChoice.Provider
             ?: return@lazy null
-        val provider = ProviderStore.get(service).provider(choice.providerId) ?: return@lazy null
-        if (ModelOptions.isTtsOnly(provider, choice.model)) null
-        else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice) { workspaceKey }
+        ProviderStore.get(service).provider(choice.providerId) ?: return@lazy null
+        com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice, voiceModels.stt) { workspaceKey }
     }
+
+    /** 迁移后的转写端口:目录与执行都按当前批量 STT 决定,配置失效只让转写工具不可用。 */
+    private val transcribePort: com.wangzan101.mika.core.cap.transcribe.TranscribePort?
+        get() {
+            if (provenance.origin != RunOrigin.Ui) return null
+            val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(service)
+            return taskTranscribePort(
+                provenance.origin,
+                voiceModels.stt,
+                legacyPort = { legacyTranscribePort },
+                migratedPort = {
+                    com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, null, voiceModels.stt) { workspaceKey }
+                },
+            )
+        }
 
     /**
      * 本任务的音频端口:用户配置并打开了声音模型、且这是手机上开始的任务时才建。
@@ -556,17 +587,50 @@ class TaskRun(
 
     private val audioPort by lazy {
         val state = audioSettings.state.value
-        val choice = state.choice
-        if (!state.enabled || choice == null || provenance.origin != RunOrigin.Ui) null
-        else audioSettings.capabilities()?.let { caps ->
+        if (!state.enabled || provenance.origin != RunOrigin.Ui) null
+        else {
+            val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(service)
+            if (voiceModels.tts.migrated) migratedAudioPort(voiceModels, state) else legacyAudioPort(state)
+        }
+    }
+
+    private fun legacyAudioPort(state: com.wangzan101.mika.settings.VoiceSettingsState): com.wangzan101.mika.media.AndroidAudioPort? {
+        val choice = state.choice ?: return null
+        return audioSettings.capabilities()?.let { caps ->
             com.wangzan101.mika.settings.ProviderStore.get(service).ttsModel(choice, caps)?.let { model ->
-                com.wangzan101.mika.media.AndroidAudioPort(service, conversationId, model, caps, onSaved = ::addSavedAudio,
-                    onGenerated = ::addAudio, defaultVoice = choice.voice.ifBlank { null }, defaultSpeed = choice.speed,
-                    onSpeak = { response -> (service.application as com.wangzan101.mika.MikaApp).voicePlayer.play(response.bytes, response.mime) },
-                    resolveWorkspace = { workspaceKey })
+                buildAudioPort(model, caps, choice.voice, choice.speed)
             }
         }
     }
+
+    private fun migratedAudioPort(
+        voiceModels: com.wangzan101.mika.voice.model.VoiceModelEnvironment,
+        state: com.wangzan101.mika.settings.VoiceSettingsState,
+    ): com.wangzan101.mika.media.AndroidAudioPort? {
+        val ref = voiceModels.tts.current() ?: return null
+        return try {
+            val protocol = voiceModels.tts.requireModel(ref).model.tts?.protocol
+                ?.let { it.settingsProtocol() } ?: return null
+            val caps = audioSettings.capabilities(protocol)
+            val model = voiceModels.tts.createTts(service, ref, caps)
+            buildAudioPort(model, caps, state.voice, state.speed)
+        } catch (_: com.wangzan101.mika.voice.model.VoiceModelError) {
+            null
+        }
+    }
+
+    private fun buildAudioPort(
+        model: com.wangzan101.mika.core.model.TtsModel,
+        caps: com.wangzan101.mika.core.model.TtsCapabilities,
+        defaultVoice: String,
+        defaultSpeed: Float,
+    ): com.wangzan101.mika.media.AndroidAudioPort =
+        com.wangzan101.mika.media.AndroidAudioPort(
+            service, conversationId, model, caps, onSaved = ::addSavedAudio,
+            onGenerated = ::addAudio, defaultVoice = defaultVoice.ifBlank { null }, defaultSpeed = defaultSpeed,
+            onSpeak = { response -> (service.application as com.wangzan101.mika.MikaApp).voicePlayer.play(response.bytes, response.mime) },
+            resolveWorkspace = { workspaceKey },
+        )
 
     /** 沙箱导出了一个文件(share_file 或 `mika share`)。 */
     fun addShared(f: SharedFile) = runState.addShared(f)
@@ -1183,7 +1247,7 @@ class TaskRun(
                 imageSaveEnabled = imageSettings.state.value.saveEnabled,
                 imageAskBeforeSave = imageSettings.state.value.askBeforeSave,
                 imageMaxPerTask = imageSettings.state.value.maxPerTask,
-                transcribe = transcribePort,
+                transcribeProvider = ::transcribePort,
                 audioSaveEnabled = audioSettings.state.value.saveEnabled,
                 audioAskBeforeSave = audioSettings.state.value.askBeforeSave,
                 audioSpeakTool = audioSettings.state.value.speakTool,

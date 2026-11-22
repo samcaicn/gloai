@@ -1,11 +1,14 @@
 package com.wangzan101.mika.media
 
+import android.content.Context
 import com.wangzan101.mika.core.model.StreamingTtsModel
 import com.wangzan101.mika.core.model.TtsCapabilities
 import com.wangzan101.mika.core.model.TtsModel
 import com.wangzan101.mika.core.model.TtsRequest
 import com.wangzan101.mika.settings.VoiceChoice
 import com.wangzan101.mika.settings.VoiceSettings
+import com.wangzan101.mika.voice.model.TtsSelectionController
+import com.wangzan101.mika.voice.model.settingsProtocol
 
 /** Check the current master switch before resolving a provider or synthesizing speech. */
 internal suspend fun readAloud(
@@ -21,15 +24,48 @@ internal suspend fun readAloud(
     if (limited.isBlank()) return
     val caps = settings.capabilities() ?: return
     val tts = model(choice, caps) ?: return
-    val segments = if (choice.streaming && choice.speed == 1f && tts is StreamingTtsModel) {
+    val requests = speechRequests(limited, choice.voice, choice.speed, choice.streaming, tts)
+    play(tts, requests, choice.streaming)
+}
+
+/**
+ * 迁移后的朗读入口:模型从目录解析、经同一控制器/注册表创建,音色/语速/流式偏好留在 [settings]。
+ * 未选模型、关闭总开关或文本为空时静默跳过;解析失败抛给调用方显示。
+ */
+internal suspend fun readAloudMigrated(
+    text: String,
+    settings: VoiceSettings,
+    context: Context,
+    tts: TtsSelectionController,
+    play: suspend (TtsModel, List<TtsRequest>, Boolean) -> Unit,
+) {
+    val state = settings.state.value
+    if (!state.enabled) return
+    val ref = tts.current() ?: return
+    val protocol = tts.requireModel(ref).model.tts?.protocol?.settingsProtocol() ?: return
+    val caps = settings.capabilities(protocol)
+    val limited = clipAtGraphemeBoundary(text, state.maxCharsPerSpeak)
+    if (limited.isBlank()) return
+    val model = tts.createTts(context, ref, caps)
+    val requests = speechRequests(limited, state.voice, state.speed, state.streaming, model)
+    play(model, requests, state.streaming)
+}
+
+private fun speechRequests(
+    limited: String,
+    voice: String,
+    speed: Float,
+    streaming: Boolean,
+    tts: TtsModel,
+): List<TtsRequest> {
+    val segments = if (streaming && speed == 1f && tts is StreamingTtsModel) {
         splitForSpeech(limited)
     } else {
         listOf(limited)
     }
-    val requests = segments.map { segment ->
-        TtsRequest(segment, choice.voice.ifBlank { null }, choice.speed, "wav")
+    return segments.map { segment ->
+        TtsRequest(segment, voice.ifBlank { null }, speed, "wav")
     }
-    play(tts, requests, choice.streaming)
 }
 
 private val GRAPHEME = Regex("\\X")

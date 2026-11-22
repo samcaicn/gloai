@@ -121,11 +121,17 @@ fun ModelSetupScreen(
     onOpenImage: (() -> Unit)? = null,
     /** 设置里查看 Token 用量;上手流程不传。 */
     onOpenUsage: (() -> Unit)? = null,
+    /** 设置里打开统一语音模型目录;上手流程不传。 */
+    onOpenVoiceCatalog: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val vm = remember {
         val signIns = (context.applicationContext as? MikaApp)?.chatGptSignIn ?: ChatGptSignIns(scope)
+        val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(context.applicationContext)
+        val voiceAccounts = voiceModels.credentialStore?.let {
+            com.wangzan101.mika.voice.model.VoiceAccountManager(voiceModels.catalog, it)
+        }
         ModelSetupViewModel(
             store, scope, browser = AndroidSignInBrowser(context.applicationContext), signIns = signIns,
             speech = (context.applicationContext as? MikaApp)?.speech,
@@ -133,7 +139,7 @@ fun ModelSetupScreen(
                 val silent = (context.applicationContext as? MikaApp)?.speech?.systemSilent?.value ?: false
                 SystemSpeech.capability(context.applicationContext, silent)
             },
-            voice = (context.applicationContext as? VoiceSettings.Owner)?.voiceSettings,
+            voiceAccounts = voiceAccounts,
         )
     }
     val ui by vm.state.collectAsState()
@@ -188,7 +194,8 @@ fun ModelSetupScreen(
         openProviders = { showProviders = true },
         openGroups = { groupsOpen = true },
         next = onDone, openSpeech = onOpenSpeech,
-        openVoice = onOpenVoice?.let { open -> { vm.dismissVoiceNotice(); open() } }, openUsage = onOpenUsage,
+        openVoice = onOpenVoice, openUsage = onOpenUsage,
+        openVoiceCatalog = onOpenVoiceCatalog,
         openDecision = { openDecision = true }, openSignIn = { signInSheet = it },
         setReasoningEffort = vm::setReasoningEffort, setModelContext = vm::setModelContext,
     )
@@ -236,9 +243,9 @@ fun ModelSetupScreen(
                     clearPick = vm::clearManualPick,
                     setVision = { model, sees -> vm.setModelVision(p.id, model, sees) },
                     setServiceTier = { model, tier -> vm.setModelServiceTier(p.id, model, tier) },
-                    setTts = { model, enabled -> vm.setTtsModel(p.id, model, enabled) },
                     showAll = { allModels = true },
                     retestModel = { model -> vm.retestModel(p.id, model) },
+                    voiceUsage = vm::providerVoiceUsage,
                     // ChatGPT 照旧直接去浏览器登录;xAI、OpenRouter 先打开说明面板
                     signIn = { if (accountKind != null) signInSheet = accountKind else vm.signInWithChatGpt() },
                     signOut = { if (accountKind != null) vm.signOutAccount(p.id) else vm.signOutChatGpt(p.id) },
@@ -420,6 +427,8 @@ class ModelSetupActions(
     val openImage: (() -> Unit)? = null,
     /** 打开 Token 用量;为 null 时不显示入口(上手流程)。 */
     val openUsage: (() -> Unit)? = null,
+    /** 打开统一语音模型目录;为 null 时不显示入口(上手流程)。 */
+    val openVoiceCatalog: (() -> Unit)? = null,
     /** Independent opt-in decision service; the three model roles remain unchanged. */
     val openDecision: (() -> Unit)? = null,
     val next: () -> Unit = {},
@@ -486,10 +495,10 @@ fun ModelSetupContent(
                     }
                     // 存下服务商、推荐的模型没试通过时的说明和「选主模型」(上手时在服务商一组下面)
                     ProbeNote(ui, actions)
-                    ui.voiceNotice?.let { FooterNote(it, Modifier.testTag("voice-cleared-note"), color = c.warn) }
                     RolesSection(ui, onPick, actions.setReasoningEffort, actions.setModelContext, actions.openVoice, voiceChoice)
                     SpeechSection(ui, actions.openSpeech)
                     ImageModelSection(ui, actions.openImage)
+                    VoiceCatalogSection(actions.openVoiceCatalog)
                     GroupCard(Modifier.padding(top = 8.dp)) {
                         ListRow(MikaIcons.Leaf, ModelsCopy.GROUPS, first = true, onClick = actions.openGroups) { RowChevron() }
                     }
@@ -897,13 +906,6 @@ private fun RolesSection(ui: ModelSetupUi, onPick: (ModelRole) -> Unit, onReason
             RoleCard(ModelsCopy.roleIcon(role), ModelsCopy.roleLabel(role), ModelsCopy.roleLine(ui, role), first = i == 0, tag = "role-${role.name.lowercase()}") {
                 onPick(role)
             }
-            // 旧设置留下的冲突:这个模型也标成了仅用于朗读,到服务商的「用作」里解决
-            ui.ttsConflict(role)?.let { cfg ->
-                Text(
-                    ModelsCopy.ttsConflict(cfg.model), Modifier.padding(start = 70.dp, end = 16.dp, bottom = 10.dp).testTag("role-tts-conflict-${role.name.lowercase()}"),
-                    style = MikaType.Caption, color = MikaTheme.colors.warn,
-                )
-            }
             if (ui.roles[role] == RoleChoice.SameAsMain) {
                 ReasoningControl(ui, role) { onReasoning(role, it) }
             } else {
@@ -951,6 +953,19 @@ private fun ImageModelSection(ui: ModelSetupUi, onImage: (() -> Unit)?) {
             RowValue(ModelsCopy.imageLine(ui).title)
             RowChevron()
         }
+    }
+}
+
+/** 统一语音模型目录入口:能力与协议在此声明;语音输入、朗读和通话页只负责选择与使用偏好。 */
+@Composable
+private fun VoiceCatalogSection(onOpenVoiceCatalog: (() -> Unit)?) {
+    if (onOpenVoiceCatalog == null) return
+    GroupCard {
+        ListRow(
+            ModelsCopy.VOICE_ICON, stringResource(R.string.models_voice_catalog),
+            subtitle = stringResource(R.string.models_voice_catalog_sub),
+            first = true, onClick = onOpenVoiceCatalog,
+        ) { RowChevron() }
     }
 }
 
@@ -1333,11 +1348,9 @@ internal fun ModelContextDialog(
 /** 模型的能力标签;[accent] 为假时一律中性色(列表行里强调色留给「在用」的胶囊)。 */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun Tags(o: ModelOption, forVision: Boolean = false, accent: Boolean = true, tts: Boolean = false) {
+internal fun Tags(o: ModelOption, forVision: Boolean = false, accent: Boolean = true) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        // 标为仅朗读的只标这一个:「不支持工具调用」之类是推断,对它没有意义
-        if (tts) CapabilityTag(stringResource(R.string.role_tts), TagTone.Accent)
-        else ModelSetupCopy.tags(o, forVision).forEach { (text, strong) -> CapabilityTag(text, if (strong && accent) TagTone.Accent else TagTone.Neutral) }
+        ModelSetupCopy.tags(o, forVision).forEach { (text, strong) -> CapabilityTag(text, if (strong && accent) TagTone.Accent else TagTone.Neutral) }
     }
 }
 

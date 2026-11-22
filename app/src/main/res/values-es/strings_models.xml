@@ -84,6 +84,7 @@
     <string name="models_delete_body">"También se eliminará su clave de API. "</string>
     <string name="models_delete_unused">No se usa para ningún rol.</string>
     <string name="models_delete_used">%1$s lo usa; tendrás que volver a elegir después de eliminarlo.</string>
+    <string name="models_delete_voice">Los modelos de voz %1$s también se eliminarán.</string>
     <plurals name="models_more">
         <item quantity="one">%1$d más, escribe un nombre para filtrar</item>
         <item quantity="many">%1$d más, escribe un nombre para filtrar</item>

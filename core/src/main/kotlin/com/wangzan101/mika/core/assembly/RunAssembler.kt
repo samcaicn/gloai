@@ -38,6 +38,7 @@ internal class RunAssembler(private val providers: List<CapabilityProvider>) {
             it.capability == "web" && it.verb == Verb.Navigate }
         return ToolDispatcher(capabilities, general + capabilityTools,
             listOf(CoreSections) + capabilities, config, { ctx -> Interfaces.attach(ctx, capabilities.mapNotNull { it.surface }, stableRefs) },
-            formerPrefix, renamed, retired, moved)
+            formerPrefix, renamed, retired, moved,
+            dynamicCapabilities = capabilities.filter { it.dynamicAvailability }.map { it.id }.toSet())
     }
 }

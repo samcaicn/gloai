@@ -82,6 +82,7 @@
     <string name="models_delete_body">"Kunci API-nya juga akan dihapus. "</string>
     <string name="models_delete_unused">Tidak dipakai untuk peran apa pun.</string>
     <string name="models_delete_used">%1$s memakainya; Anda perlu memilih lagi setelah menghapus.</string>
+    <string name="models_delete_voice">Model suara %1$s juga akan dihapus.</string>
     <plurals name="models_more">
         <item quantity="other">%1$d lagi, ketik nama untuk memfilter</item>
     </plurals>

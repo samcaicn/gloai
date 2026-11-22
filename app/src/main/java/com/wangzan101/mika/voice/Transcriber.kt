@@ -1,10 +1,8 @@
 package com.wangzan101.mika.voice
 
-import com.wangzan101.mika.core.model.ListedModel
 import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.model.ModelHttp
 import com.wangzan101.mika.core.model.headerOrReject
-import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.Provider
 import com.wangzan101.mika.settings.ProviderConfig
 import kotlinx.serialization.json.Json
@@ -42,7 +40,6 @@ class Transcriber(
         p: Provider, key: String?, model: String, method: TranscribeMethod, wav: ByteArray, language: String?,
         mime: String = "audio/wav", filename: String = "audio.wav",
     ): String {
-        require(!ModelOptions.isTtsOnly(p, model)) { "This model is only available for text-to-speech." }
         val base = p.baseUrl.trim().trimEnd('/')
         val gemini = p.kind == ProviderConfig.Kind.Gemini
         val format = formatOf(mime)
@@ -103,36 +100,6 @@ class Transcriber(
         return parse(method, reply.body)
     }
 
-    /**
-     * 选模型时试转:按接口类型依次试,返回第一个通过的;都不行抛最后一个错误。
-     * 通过 = 回 2xx 且解析得出文字字段(空串也算)。Key 的问题(401/403/额度)再试别的方法也没用,直接抛。
-     */
-    suspend fun detect(p: Provider, key: String?, model: String): TranscribeMethod {
-        val order = if (p.kind == ProviderConfig.Kind.Gemini) listOf(TranscribeMethod.GeminiInline)
-        // 只发音频不带指令的放最后:通用模型也会回 2xx(把录音当聊天回一段话),排在前面会被误选
-        else listOf(
-            TranscribeMethod.AudioTranscriptions, TranscribeMethod.ChatInputAudio,
-            TranscribeMethod.ChatInputAudioUri, TranscribeMethod.ChatInputAudioOnly,
-        )
-        val wav = Wav.silence(1000)
-        var last: ModelError? = null
-        for (method in order) {
-            try {
-                transcribe(p, key, model, method, wav, null)
-                return method
-            } catch (e: ModelError) {
-                last = e
-                if (!triesNext(e)) throw e
-            }
-        }
-        throw last ?: ModelError.BadResponse("no method")
-    }
-
-    /** 只有「这个接口不是这么用的」(找不到路径、方法不对、请求不合、回的不是这个格式)才换下一种。 */
-    // 4xx 是服务商拒收这次送法(MK-1 第 2 批起未映射 4xx 归 Server),换种送法再试;5xx 是服务商出问题,不连着试。
-    private fun triesNext(e: ModelError): Boolean = e is ModelError.ModelNotFound || e is ModelError.BadResponse ||
-        (e is ModelError.Server && e.status in 400..499)
-
     private fun builder(url: String, key: String?, gemini: Boolean): Request.Builder = Request.Builder().url(url).apply {
         headers.forEach { (k, v) -> headerOrReject(k, v) }
         if (!key.isNullOrEmpty()) {
@@ -183,19 +150,10 @@ class Transcriber(
         /** 发给模型的指令:只要原话,不要解释(模型面向英文)。 */
         private const val INSTRUCTION = "Transcribe this recording word for word. Output only the transcript text."
 
-        private val SPEECH_TOKENS = listOf("asr", "transcribe", "whisper", "paraformer", "sensevoice", "stt", "speech")
-
         /** 这家能不能做语音转文字:有 Key 的 OpenAI 兼容、Responses、Gemini 可以;Anthropic 和账号登录的不行。 */
         fun supports(p: Provider): Boolean = when (p.kind) {
             ProviderConfig.Kind.OpenAiCompat, ProviderConfig.Kind.OpenAiResponses, ProviderConfig.Kind.Gemini -> p.signIn == null
             else -> false
         }
-
-        /**
-         * 列表里像语音模型的:名字按非字母数字切成段,有一段以 asr、transcribe、whisper 等开头。
-         * 模型列表只标了「是不是对话模型」,没有单独的语音标记,所以只能看名字。
-         */
-        fun looksLikeSpeech(m: ListedModel): Boolean =
-            m.id.lowercase().split(Regex("[^a-z0-9]+")).any { seg -> SPEECH_TOKENS.any { seg.startsWith(it) } }
     }
 }

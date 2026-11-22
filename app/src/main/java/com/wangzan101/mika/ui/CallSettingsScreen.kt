@@ -48,7 +48,7 @@ import java.util.Date
 fun CallSettingsScreen(runtime: CallRuntime, onInstructions: (() -> Unit)? = null, onBack: () -> Unit,
     standalone: Boolean = false, onHelperSetup: () -> Unit = {}, onAbout: () -> Unit = {},
     initialHistoryCallId: String? = null,
-    updateAvailable: Boolean = false, focusRequest: Int = 0) {
+    updateAvailable: Boolean = false, focusRequest: Int = 0, onOpenVoiceCatalog: () -> Unit = {}) {
     var instructionsOpen by rememberSaveable { mutableStateOf(false) }
     var voiceProfilesOpen by rememberSaveable { mutableStateOf(false) }
     var handledFocusRequest by rememberSaveable { mutableIntStateOf(0) }
@@ -62,6 +62,14 @@ fun CallSettingsScreen(runtime: CallRuntime, onInstructions: (() -> Unit)? = nul
         }
     }
     when {
+        // Post-migration the legacy realtime profile screen must never silently misbehave:
+        // redirect to the unified voice catalog where realtime models are edited and tested.
+        voiceProfilesOpen && runtime.realtimeMigrated -> {
+            LaunchedEffect(Unit) {
+                voiceProfilesOpen = false
+                onOpenVoiceCatalog()
+            }
+        }
         voiceProfilesOpen -> CallVoiceProfilesScreen(runtime) { voiceProfilesOpen = false }
         instructionsOpen -> CallInstructionsScreen(runtime) { instructionsOpen = false }
         else -> workspaceState.SaveableStateProvider("call-workspace") {
@@ -354,9 +362,9 @@ private fun CallSettingsWorkspace(
             lastActionWasLockedDial = false
             feedback = CallActionResult(true, it)
         }
-        CallDialog.Profile -> CallProfileDialog(config, onDismiss = { dialog = null }, onSave = { edits ->
+        CallDialog.Profile -> CallProfileDialog(config, runtime.activeVoiceProfile(), onDismiss = { dialog = null }, onSave = { edits ->
             val saved = save { latest ->
-                require(canEditCallSpeaker(edits.speaker, latest.speaker))
+                require(canEditCallSpeaker(edits.speaker, runtime.activeVoiceProfile().speaker))
                 latest.copy(greeting = edits.greeting, systemPrompt = edits.systemPrompt,
                     speaker = edits.speaker, audioMode = edits.audioMode, maxCallSeconds = edits.maxCallSeconds)
             }
@@ -979,17 +987,17 @@ private fun CallCredentialsDialog(runtime: CallRuntime, onDismiss: () -> Unit, o
 }
 
 @Composable
-private fun CallProfileDialog(config: CallConfig, onDismiss: () -> Unit, onSave: suspend (CallConfig) -> Boolean) {
+private fun CallProfileDialog(config: CallConfig, profile: CallVoiceProfile, onDismiss: () -> Unit, onSave: suspend (CallConfig) -> Boolean) {
     var greeting by rememberSaveable { mutableStateOf(config.greeting) }
     var prompt by rememberSaveable { mutableStateOf(config.systemPrompt) }
     var seconds by rememberSaveable { mutableStateOf(config.maxCallSeconds.toString()) }
-    var speaker by rememberSaveable { mutableStateOf(config.speaker) }
+    var speaker by rememberSaveable { mutableStateOf(profile.speaker) }
     var mode by rememberSaveable { mutableStateOf(config.audioMode) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val duration = seconds.toIntOrNull()?.takeIf { it == 0 || it in CallPolicy.MIN_SECONDS..CallPolicy.MAX_SECONDS }
-    val allowedVoice = canEditCallSpeaker(speaker, config.speaker)
+    val allowedVoice = canEditCallSpeaker(speaker, profile.speaker)
     AlertDialog(
         onDismissRequest = { if (!busy) onDismiss() },
         title = { Text(stringResource(R.string.calls_profile)) },

@@ -17,10 +17,29 @@ import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.ClientSetup
+import com.wangzan101.mika.settings.FeatureFlagsCapsuleTest.MemoryPrefs
+import com.wangzan101.mika.settings.KeyCipher
 import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.RoleChoice
+import com.wangzan101.mika.voice.SpeechChoice
+import com.wangzan101.mika.voice.SpeechSettings
+import com.wangzan101.mika.voice.model.MemoryVoiceCatalogBackend
+import com.wangzan101.mika.voice.model.SttBinding
+import com.wangzan101.mika.voice.model.SttProtocol
+import com.wangzan101.mika.voice.model.SttSelection
+import com.wangzan101.mika.voice.model.SttSelectionController
+import com.wangzan101.mika.voice.model.VoiceAccount
+import com.wangzan101.mika.voice.model.VoiceAccountManager
+import com.wangzan101.mika.voice.model.VoiceCapability
+import com.wangzan101.mika.voice.model.VoiceCatalogStore
+import com.wangzan101.mika.voice.model.VoiceCredentialBackend
+import com.wangzan101.mika.voice.model.VoiceCredentialStore
+import com.wangzan101.mika.voice.model.VoiceModel
+import com.wangzan101.mika.voice.model.VoiceModelRef
+import com.wangzan101.mika.voice.model.VoiceService
+import com.wangzan101.mika.voice.model.voiceTestEnvironment
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -84,7 +103,38 @@ class ModelSetupViewModelTest {
         listOf(ListedModel("deepseek-chat"), ListedModel("deepseek-reasoner"), ListedModel("deepseek-coder", toolCalls = false)),
     )
 
-    /** 模型名不限制用途;只有主模型先试调用一次(之后核实过不再试)。标为 TTS 的各处都拒绝,且不发请求。 */
+    @Test fun migratedSpeechSelectionWritesCatalogWithoutLegacyDetection() = runTest {
+        val catalog = VoiceCatalogStore(MemoryVoiceCatalogBackend(), migrated = true)
+        catalog.upsertService(VoiceService("provider:p1", "Provider", VoiceAccount.ExistingProvider("p1")))
+        catalog.upsertModel(VoiceModel("provider:p1", "whisper-1", "Whisper", stt = SttBinding(SttProtocol.AudioTranscriptions)))
+        val ref = VoiceModelRef("provider:p1", "whisper-1", VoiceCapability.STT)
+        val controller = voiceTestEnvironment(catalog).stt
+        val legacy = SpeechSettings(MemoryPrefs())
+        val vm = ModelSetupViewModel(
+            store(), backgroundScope, io = StandardTestDispatcher(testScheduler), speech = legacy, stt = controller,
+        )
+        var picked = 0
+
+        vm.pickSpeechModel("p1", "whisper-1") { picked++ }
+        runCurrent()
+
+        assertEquals(SttSelection.Model(ref), controller.current())
+        assertEquals(SpeechChoice.Auto, legacy.choice.value)
+        assertEquals(1, picked)
+        vm.pickSttModel(ref) { picked++ }
+        runCurrent()
+        assertEquals(2, picked)
+        legacy.noteSystemSilent()
+        legacy.noteSystemSilent()
+        assertTrue(legacy.systemSilent.value)
+        vm.pickSpeech(SpeechChoice.System)
+        runCurrent()
+        assertEquals(SttSelection.Model(SttSelectionController.SYSTEM_STT_REF), controller.current())
+        assertEquals(SpeechChoice.Auto, legacy.choice.value)
+        assertFalse(legacy.systemSilent.value)
+    }
+
+    /** 模型名不限制用途;只有主模型先试调用一次(之后核实过不再试)。 */
     @Test fun modelNamesDoNotRestrictExplicitRoleChangesAndOnlyMainIsProbed() = runTest {
         val store = store()
         val id = "fishaudio/drama-3-int4"
@@ -97,22 +147,6 @@ class ModelSetupViewModelTest {
         }
         assertEquals("只有主模型试调用", listOf(id), built.map { it.first })
         assertEquals(setOf(id), store.provider(provider.id)?.verifiedModels)
-        assertTrue(vm.setTtsModel(provider.id, id, true))
-        for (role in ModelRole.entries) {
-            vm.pick(role, provider.id, id)
-            runCurrent()
-            assertEquals(ListState.Failed(tr(com.wangzan101.mika.R.string.model_tts_only_not_supported)), vm.state.value.manualPick[provider.id])
-            vm.pickFallback(role, 0, provider.id, id)
-            runCurrent()
-            assertTrue(vm.state.value.manualPick[provider.id] is ListState.Failed)
-        }
-        var done = 0
-        vm.useFromProvider(ModelRole.Main, provider.id, id) { done++ }
-        runCurrent()
-        assertEquals(1, done)
-        assertEquals(id, store.configFor(ModelRole.Main)?.model)
-        assertTrue(store.provider(provider.id)!!.ttsModels.isEmpty())
-        assertEquals("从 TTS 改回主模型再试一次", 2, probes.size)
     }
 
     /** 主模型试调用没通过(不调用工具、找不到模型):原来的主模型不动,说原因;看图、轻量不试。 */
@@ -248,57 +282,29 @@ class ModelSetupViewModelTest {
         assertEquals("看图备援不试", 2, built.size)
     }
 
-    /** 旧设置的冲突(主模型同时标为 TTS):「用作 → 主模型」先试调用,没通过标记和主模型都留着;通过才撤掉标记。 */
-    @Test fun resolvingALegacyConflictToMainProbesFirst() = runTest {
+    /** 「用作 → 主模型」先试调用,没通过原来的主模型不动;通过才换。 */
+    @Test fun useFromProviderProbesMainFirst() = runTest {
         val store = store()
         val p = store.connect("Relay", ProviderConfig.Kind.OpenAiCompat, "https://relay.test/v1", "k", listOf(ListedModel("xxx-tts-proxy")))
-        assertTrue(store.use(ModelRole.Main, p.id, "xxx-tts-proxy", ProviderPresets.custom.capabilities))
-        assertTrue(store.importLegacyTtsChoice(p.id, "xxx-tts-proxy"))
+        assertTrue(store.use(ModelRole.Main, p.id, "old-main", ProviderPresets.custom.capabilities))
         val vm = vm(store)
         runCurrent()
-        assertEquals("xxx-tts-proxy", vm.state.value.ttsConflict(ModelRole.Main)?.model)
         reply = { throw ModelError.ModelNotFound("xxx-tts-proxy") }
         var done = 0
         vm.useFromProvider(ModelRole.Main, p.id, "xxx-tts-proxy") { done++ }
         runCurrent()
         assertEquals(0, done)
         assertTrue(vm.state.value.manualPick[p.id] is ListState.Failed)
-        assertEquals(setOf("xxx-tts-proxy"), store.provider(p.id)?.ttsModels)
-        assertEquals("xxx-tts-proxy", store.configFor(ModelRole.Main)?.model)
+        assertEquals("old-main", store.configFor(ModelRole.Main)?.model)
         reply = { ModelReply(listOf(Part.ToolCall("c1", "get_time", "{}")), StopReason.ToolUse, null) }
         vm.useFromProvider(ModelRole.Main, p.id, "xxx-tts-proxy") { done++ }
         runCurrent()
         assertEquals(1, done)
-        assertTrue(store.provider(p.id)!!.ttsModels.isEmpty())
+        assertEquals("xxx-tts-proxy", store.configFor(ModelRole.Main)?.model)
         assertEquals(setOf("xxx-tts-proxy"), store.provider(p.id)?.verifiedModels)
-        assertNull(vm.state.value.ttsConflict(ModelRole.Main))
         assertEquals(2, built.size)
     }
 
-    /** 撤掉声音模型正在用的 TTS 标记(取消标记或改作对话用途):提示声音模型已取消;别的模型不提示。 */
-    @Test fun unmarkingTheVoiceModelShowsANotice() = runTest {
-        val store = store()
-        val p = store.connect("Speech", ProviderConfig.Kind.OpenAiCompat, "https://tts.test/v1", "k", listOf(ListedModel("tts-1"), ListedModel("tts-2")))
-        assertTrue(store.setTtsModel(p.id, "tts-1", true))
-        assertTrue(store.setTtsModel(p.id, "tts-2", true))
-        val voice = com.wangzan101.mika.settings.VoiceSettings(com.wangzan101.mika.settings.FeatureFlagsCapsuleTest.MemoryPrefs())
-        voice.setChoice(com.wangzan101.mika.settings.VoiceChoice(p.id, "tts-1", com.wangzan101.mika.settings.TtsProtocol.OpenAiSpeech))
-        val vm = ModelSetupViewModel(store, backgroundScope, io = StandardTestDispatcher(testScheduler), voice = voice)
-        runCurrent()
-        assertTrue(vm.state.value.voiceUses(p.id, "tts-1"))
-        assertTrue(vm.setTtsModel(p.id, "tts-2", false))
-        assertNull(vm.state.value.voiceNotice)
-        assertTrue(vm.setTtsModel(p.id, "tts-1", false))
-        assertEquals(tr(com.wangzan101.mika.R.string.voice_choice_cleared, "tts-1"), vm.state.value.voiceNotice)
-        vm.dismissVoiceNotice()
-        assertNull(vm.state.value.voiceNotice)
-        assertTrue(store.setTtsModel(p.id, "tts-1", true))
-        runCurrent()
-        vm.useFromProvider(ModelRole.Light, p.id, "tts-1"); runCurrent()
-        assertEquals("tts-1", store.configFor(ModelRole.Light)?.model)
-        assertEquals(tr(com.wangzan101.mika.R.string.voice_choice_cleared, "tts-1"), vm.state.value.voiceNotice)
-        assertTrue(built.isEmpty())
-    }
     private val localSpeechUrl = "http://192.168.2.231:8091/v1"
 
     /** 第一家、还没有主模型:手填了模型名的只试它一个,通了当主模型。 */
@@ -381,7 +387,7 @@ class ModelSetupViewModelTest {
         assertTrue(built.isEmpty())
     }
 
-    @Test fun reconnectingSavesMixedCatalogAndKeepsTtsMarksWithoutProbing() = runTest {
+    @Test fun reconnectingSavesMixedCatalogWithoutProbing() = runTest {
         val models = listOf(
             ListedModel("fishaudio/drama-3-int4"),
             ListedModel("vendor/opaque-speech", unsupportedApis = listOf("/v1/audio/speech")),
@@ -391,7 +397,6 @@ class ModelSetupViewModelTest {
         listing[localSpeechUrl] = ModelListResult.Ok(models)
         val store = store()
         val p = store.connect("192.168.2.231", ProviderConfig.Kind.OpenAiCompat, localSpeechUrl, null, emptyList())
-        assertTrue(store.setTtsModel(p.id, "vendor/opaque-marked", true))
         val other = store.connect("Relay", ProviderConfig.Kind.OpenAiCompat, "https://relay.test/v1", "k", listOf(ListedModel("a")))
         assertTrue(store.use(ModelRole.Main, other.id, "a", ProviderPresets.custom.capabilities))
         val vm = vm(store)
@@ -404,7 +409,6 @@ class ModelSetupViewModelTest {
         assertEquals("a", store.configFor(ModelRole.Main)?.model)
         val saved = store.provider(p.id)!!
         assertEquals(models, saved.models)
-        assertEquals(setOf("vendor/opaque-marked"), saved.ttsModels)
     }
 
     /** 目录里有、但 Mika 调不了的模型(只写了别的接口):设成看图/轻量前必须试调用,不通就不设。 */
@@ -1167,4 +1171,42 @@ class ModelSetupViewModelTest {
         assertFalse(failed.message.contains("Bearer"))
         assertEquals("sk", store.providerKey(id))
     }
+
+    /** 删服务商前预览依赖它的语音模型:能力引用照实返回,确认面板靠它说清影响。 */
+    @Test fun providerDeletionPreviewsDependentVoiceModels() = runTest {
+        val catalog = VoiceCatalogStore(MemoryVoiceCatalogBackend(), migrated = true)
+        catalog.upsertService(VoiceService("provider:p1", "One", VoiceAccount.ExistingProvider("p1")))
+        catalog.upsertService(VoiceService("local", "Local", VoiceAccount.None))
+        catalog.upsertModel(VoiceModel("provider:p1", "m1", "M1", stt = SttBinding(SttProtocol.AudioTranscriptions)))
+        catalog.upsertModel(VoiceModel("provider:p1", "m2", "M2", tts = com.wangzan101.mika.voice.model.TtsBinding(com.wangzan101.mika.voice.model.TtsProtocol.OpenAiSpeech)))
+        catalog.upsertModel(VoiceModel("local", "m3", "M3", stt = SttBinding(SttProtocol.FunAsrStreaming)))
+        val store = store()
+        val manager = VoiceAccountManager(catalog, voiceCredentialStore())
+        val vm = ModelSetupViewModel(
+            store, backgroundScope, io = StandardTestDispatcher(testScheduler), voiceAccounts = manager,
+        )
+
+        val usage = vm.providerVoiceUsage("p1")
+
+        assertEquals(
+            setOf(
+                VoiceModelRef("provider:p1", "m1", VoiceCapability.STT),
+                VoiceModelRef("provider:p1", "m2", VoiceCapability.TTS),
+            ),
+            usage.toSet(),
+        )
+        assertEquals("本地服务商的模型不算进来", emptyList<VoiceModelRef>(), vm.providerVoiceUsage("local"))
+    }
+
+    private fun voiceCredentialStore(): VoiceCredentialStore = VoiceCredentialStore(
+        object : VoiceCredentialBackend {
+            override fun read(secretId: String): String? = null
+            override fun write(secretId: String, value: String): Boolean = true
+            override fun delete(secretId: String) {}
+        },
+        object : KeyCipher {
+            override fun encrypt(plain: ByteArray): ByteArray = plain.reversedArray()
+            override fun decrypt(data: ByteArray): ByteArray = data.reversedArray()
+        },
+    )
 }

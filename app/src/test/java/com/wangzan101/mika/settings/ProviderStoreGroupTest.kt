@@ -179,31 +179,4 @@ class ProviderStoreGroupTest {
         override suspend fun complete(system: String, messages: List<Message>, tools: List<ToolSpec>): ModelReply =
             ModelReply(emptyList(), StopReason.EndTurn, Usage(3, 2))
     }
-
-    /** 标为仅朗读的模型不能新加进组;标记时从组里拿掉,组空了就删,绑在它上面的用途退回默认。 */
-    @Test
-    fun ttsMarkedModelsNeverJoinGroupsAndMarkingRemovesThem() {
-        val s = store()
-        val p = s.connectOne(models = arrayOf("m1", "m2", "speech"))
-        assertTrue(s.setTtsModel(p.id, "speech", true))
-        assertNull("标为 TTS 的不建成员配置", s.ensureConfig(p.id, "speech", caps()))
-        val a = s.member(p, "m1")
-        val b = s.member(p, "m2")
-        assertTrue(s.saveGroup(ModelGroup("g", "G", members = listOf(GroupMember(a, 0), GroupMember(b, 1)))))
-        assertTrue(s.saveGroup(ModelGroup("solo", "Solo", members = listOf(GroupMember(b, 0)))))
-        assertTrue(s.choose(ModelRole.Main, RoleChoice.Group("solo")))
-        // 再选一个具体模型当轻量,组里的配置不会因为没有用途被删掉
-        assertTrue(s.use(ModelRole.Light, p.id, "m1", caps()))
-        assertEquals(setOf(a, b), s.configs.value.map { it.id }.toSet())
-
-        assertTrue(s.setTtsModel(p.id, "m2", true))
-        assertEquals(listOf(listOf(a)), s.groups.value.map { g -> g.members.map { it.configId } })
-        assertNull("组没了,主模型退回没选", s.roles.value.mainGroup)
-        assertFalse(s.roles.value.hasMain)
-        assertEquals(listOf("g"), store().groups.value.map { it.id })
-        // 旧设置补记的 TTS 标记(配置还在):已在组里的留着、组照样能存;不能加进别的组
-        assertTrue(s.importLegacyTtsChoice(p.id, "m1"))
-        assertTrue(s.saveGroup(ModelGroup("g", "G2", members = listOf(GroupMember(a, 0)))))
-        assertFalse(s.saveGroup(ModelGroup("x", "X", members = listOf(GroupMember(a, 0)))))
-    }
 }

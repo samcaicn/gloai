@@ -36,7 +36,12 @@ import com.wangzan101.mika.settings.VoiceSettings
 import com.wangzan101.mika.voice.SpeechChoice
 import com.wangzan101.mika.voice.SpeechSettings
 import com.wangzan101.mika.voice.SystemCapability
-import com.wangzan101.mika.voice.Transcriber
+import com.wangzan101.mika.voice.TranscribeMethod
+import com.wangzan101.mika.voice.model.SttSelectionController
+import com.wangzan101.mika.voice.model.VoiceAccount
+import com.wangzan101.mika.voice.model.VoiceCapability
+import com.wangzan101.mika.voice.model.VoiceCatalogSnapshot
+import com.wangzan101.mika.voice.model.VoiceModelRef
 import com.wangzan101.mika.core.chatgpt.ChatGptAuth
 import com.wangzan101.mika.core.chatgpt.SignInException
 import com.wangzan101.mika.core.chatgpt.SignInFailure
@@ -267,12 +272,10 @@ data class ModelSetupUi(
     /** 语音转文字现在的选择,和这台手机自带识别的能力(给用途卡片和选择页用)。 */
     val speech: SpeechChoice = SpeechChoice.Auto,
     val systemSpeech: SystemCapability = SystemCapability(available = false, onDevice = false),
+    /** 迁移后的语音目录;null 表示仍走旧设置。 */
+    val sttCatalog: VoiceCatalogSnapshot? = null,
     /** 正在拿一小段录音试转的服务商 id;没有时为 null。 */
     val speechTesting: String? = null,
-    /** 声音模型现在的选择(给「用作」面板说明 TTS 标记在不在用);没传声音设置时为 null。 */
-    val voiceChoice: VoiceChoice? = null,
-    /** 刚才的操作撤掉了声音模型正在用的 TTS 标记,声音模型因此被取消;打开声音模型页时清掉。 */
-    val voiceNotice: String? = null,
 ) {
     /** 还没有服务商时表单总是展开。 */
     val showForm: Boolean get() = formOpen || providers.isEmpty()
@@ -297,11 +300,9 @@ data class ModelSetupUi(
     /** 对话用途可选的模型。服务商详情同时显示 TTS 模型。 */
     fun options(p: Provider): List<ModelOption> = ModelOptions.ofProvider(p, configs)
 
-    fun isTtsOnlyProvider(p: Provider): Boolean = !ModelOptions.mayHaveNonTtsModels(p) && options(p).isEmpty()
-
     /** 一个服务商的全部模型,在用的排前面,其余保持原来的顺序。 */
     fun sortedOptions(p: Provider): List<ModelOption> = ModelOptions.ofProvider(p, configs, includeTts = true)
-        .sortedBy { if (it.id in p.ttsModels || rolesOf(p.id, it.id).isNotEmpty()) 0 else 1 }
+        .sortedBy { if (rolesOf(p.id, it.id).isNotEmpty()) 0 else 1 }
 
     /** 实际在用这个模型的用途(含「用主模型」跟过来的),按主模型、看图、轻量的顺序。 */
     fun rolesOf(providerId: String, model: String): List<ModelRole> =
@@ -313,7 +314,7 @@ data class ModelSetupUi(
     /** 这家正在使用的对话模型，包括各用途的备援。 */
     fun usedChatModels(p: Provider): List<String> =
         roles.referenced.mapNotNull { id -> configs.firstOrNull { it.id == id && it.providerId == p.id }?.model }
-            .distinct().filter { ModelOptions.canUseForChat(p, it) }
+            .distinct().filter { it.isNotBlank() }
 
     /** 在用、没有模型列表且未验证的手填模型。 */
     fun unverified(p: Provider): List<String> = usedChatModels(p).filter(p::untested)
@@ -331,20 +332,6 @@ data class ModelSetupUi(
         p.kind == ProviderConfig.Kind.Xai -> xaiAccount?.signedIn != true
         p.signIn != null -> p.id !in keyed
         else -> false
-    }
-
-    /** 声音模型正在用这家的 [model]。 */
-    fun voiceUses(providerId: String, model: String): Boolean =
-        voiceChoice?.let { it.providerId == providerId && it.model.trim() == model.trim() } == true
-
-    /**
-     * 旧设置留下的冲突:[role] 明确选的模型在它的服务商上也标成了仅用于朗读。没有冲突为 null。
-     * 用户到服务商的「用作」面板里决定保留哪个用途。
-     */
-    fun ttsConflict(role: ModelRole): ProviderConfig? {
-        val id = (roles[role] as? RoleChoice.Model)?.configId ?: return null
-        val cfg = configs.firstOrNull { it.id == id } ?: return null
-        return cfg.takeIf { providerOf(it)?.let { p -> ModelOptions.isTtsOnly(p, it.model) } == true }
     }
 
     /** 这个用途明确选的是不是这个模型(「用主模型」不算)。 */
@@ -370,10 +357,9 @@ class ModelSetupViewModel(
     /** 语音转文字的选择;测试和上手流程不传,卡片就不出现。 */
     private val speech: SpeechSettings? = null,
     private val systemSpeech: () -> SystemCapability = { SystemCapability(available = false, onDevice = false) },
-    /** 选语音模型时试转用的转写器,和按住说话用的是同一种建法(带客户端标识头)。 */
-    private val transcriber: (Provider) -> Transcriber = { p -> Transcriber(ProviderStore.modelHttp, store.clientHeaders(p)) },
-    /** 声音模型设置:撤掉它正在用的 TTS 标记时提示一句(见 [ModelSetupUi.voiceNotice]);上手流程和测试可不传。 */
-    private val voice: VoiceSettings? = null,
+    private val stt: SttSelectionController? = null,
+    /** 统一语音目录的账号管理:删除服务商时一并清掉依赖它的语音模型;测试和上手流程可不传。 */
+    private val voiceAccounts: com.wangzan101.mika.voice.model.VoiceAccountManager? = null,
 ) {
     private val _state = MutableStateFlow(snapshot(ModelSetupUi(AddForm.of(ProviderPresets.all.first()))))
     val state: StateFlow<ModelSetupUi> = _state.asStateFlow()
@@ -390,7 +376,7 @@ class ModelSetupViewModel(
         // 别处(开发者选项等)改了存储时跟着更新
         scope.launch { merge(store.providers, store.configs, store.roles, store.groups).collect { sync() } }
         speech?.let { s -> scope.launch { s.choice.collect { sync() } } }
-        voice?.let { v -> scope.launch { v.state.collect { sync() } } }
+        stt?.let { controller -> scope.launch { controller.catalog.state.collect { sync() } } }
         // 登录在别处结束(通知上取消了)或界面重建前就开始了:跟着它的进度
         scope.launch {
             signIns.running.collect { running ->
@@ -458,7 +444,7 @@ class ModelSetupViewModel(
             openRouterAccount = store.openRouterAccount()?.let { p -> SubscriptionAccount("", store.hasKey(p.id)) },
             speech = speech?.choice?.value ?: SpeechChoice.Auto,
             systemSpeech = systemSpeech(),
-            voiceChoice = voice?.state?.value?.choice,
+            sttCatalog = stt?.takeIf { it.migrated }?.catalog?.state?.value,
         )
     }
 
@@ -565,7 +551,7 @@ class ModelSetupViewModel(
             if (!store.roles.value.hasMain) {
                 val options = ModelOptions.ofProvider(saved, store.list())
                 // 手填的是列表里写明 Mika 调不了的(不在 options 里)就不试它
-                val candidate = typed.takeIf { t -> ModelOptions.canUseForChat(saved, t) && (models.none { it.id == t } || options.any { it.id == t }) }
+                val candidate = typed.takeIf { t -> t.isNotBlank() && (models.none { it.id == t } || options.any { it.id == t }) }
                     ?: ModelOptions.defaultMain(options, f.familyTokens) ?: options.firstOrNull()?.id
                 if (candidate != null) {
                     val problem = verifyMain(saved, candidate)
@@ -682,12 +668,12 @@ class ModelSetupViewModel(
     private suspend fun probeModel(
         kind: ProviderConfig.Kind, baseUrl: String, key: String?, sessionHeader: String?,
         model: String, endpoint: ModelEndpoint?, caps: Capabilities, exampleKind: ProviderConfig.Kind,
-        providerId: String = "", allowTts: Boolean = false,
+        providerId: String = "",
     ): ProbeOutcome {
         val result = try {
             withContext(io) {
                 withTimeout(PROBE_TIMEOUT_MS) {
-                    store.probe(kind, baseUrl, key, sessionHeader, model, endpoint, caps, providerId, allowTtsMarked = allowTts)
+                    store.probe(kind, baseUrl, key, sessionHeader, model, endpoint, caps, providerId)
                 }
             }
         } catch (e: TimeoutCancellationException) {
@@ -715,32 +701,29 @@ class ModelSetupViewModel(
 
     /**
      * 已连上的服务商里试调用 [model]:用存着的 Key、请求头,能力按已有的配置或预设。
-     * 标为 TTS 的模型不试;[allowTts] 为真时例外(服务商详情里改选用途,会同时撤掉标记,见 [useFromProvider])。
      */
-    private suspend fun probeSaved(p: Provider, model: String, allowTts: Boolean = false): ProbeOutcome {
+    private suspend fun probeSaved(p: Provider, model: String): ProbeOutcome {
         val stored = store.provider(p.id)
             ?: return ProbeOutcome.Failed(tr(R.string.model_probe_not_found, model, ModelSetupCopy.modelExample(p.kind)))
-        if (!allowTts && !ModelOptions.canUseForChat(stored, model)) return ProbeOutcome.Failed(tr(R.string.model_tts_only_not_supported))
-        val fresh = if (allowTts) stored.copy(ttsModels = stored.ttsModels - model) else stored
-        val options = ModelOptions.ofProvider(fresh, store.list())
-        val caps = options.firstOrNull { it.id == model }?.capabilities ?: ModelOptions.baseOf(fresh)
-        val listed = fresh.models?.firstOrNull { it.id == model }
-        val example = ProviderPresets.forHost(fresh.baseUrl)?.kind ?: fresh.kind
+        val options = ModelOptions.ofProvider(stored, store.list())
+        val caps = options.firstOrNull { it.id == model }?.capabilities ?: ModelOptions.baseOf(stored)
+        val listed = stored.models?.firstOrNull { it.id == model }
+        val example = ProviderPresets.forHost(stored.baseUrl)?.kind ?: stored.kind
         return probeModel(
-            fresh.kind, fresh.baseUrl, store.providerKey(p.id), fresh.sessionHeader, model, listed?.endpoint, caps, example,
-            providerId = fresh.id, allowTts = allowTts,
+            stored.kind, stored.baseUrl, store.providerKey(p.id), stored.sessionHeader, model, listed?.endpoint, caps, example,
+            providerId = stored.id,
         )
     }
 
     /**
      * 设主模型前的把关:让 [model] 调用一次工具,只回话、不调用工具也算没通过(主模型要会调用工具)。
-     * [Provider.verifiedModels] 只说明回复过,不作为跳过的依据;已经是主模型、且不是在解决 TTS 冲突时才不再测。
+     * [Provider.verifiedModels] 只说明回复过,不作为跳过的依据;已经是主模型不再测。
      * 通过时记为核实过。返回没通过的原因,通过为 null。
      */
-    private suspend fun verifyMain(p: Provider, model: String, allowTts: Boolean = false): String? {
+    private suspend fun verifyMain(p: Provider, model: String): String? {
         // verifiedModels 只说明回复过(转写、无工具回复也算),不能证明会调用工具;只有已经是主模型的不再测
-        if (!allowTts && store.isMainModel(p.id, model)) return null
-        return when (val outcome = probeSaved(p, model, allowTts)) {
+        if (store.isMainModel(p.id, model)) return null
+        return when (val outcome = probeSaved(p, model)) {
             ProbeOutcome.Passed -> {
                 withContext(io) { store.markVerified(p.id, model) }
                 null
@@ -754,8 +737,8 @@ class ModelSetupViewModel(
      * 选择页里手填的模型名,看图、轻量和备援也先试调用这一个(主模型走 [verifyMain]):手填错了这里就露出来,不等到任务失败。
      * 只回话、不调用工具也算没通过,看图例外(看图不靠工具)。通过(含只回话的看图)时记为核实过。返回没通过的原因,通过为 null。
      */
-    private suspend fun verifyTyped(p: Provider, model: String, role: ModelRole, allowTts: Boolean = false): String? =
-        when (val outcome = probeSaved(p, model, allowTts)) {
+    private suspend fun verifyTyped(p: Provider, model: String, role: ModelRole): String? =
+        when (val outcome = probeSaved(p, model)) {
             ProbeOutcome.Passed -> {
                 withContext(io) { store.markVerified(p.id, model) }
                 null
@@ -959,47 +942,24 @@ class ModelSetupViewModel(
         return saved
     }
 
-    /** 标记或取消 TTS。取消的正是声音模型在用的那个时,提示声音模型被取消(见 [ModelSetupUi.voiceNotice])。 */
-    fun setTtsModel(providerId: String, model: String, enabled: Boolean): Boolean {
-        val clearsVoice = !enabled && clearsVoice(providerId, model)
-        val saved = store.setTtsModel(providerId, model, enabled)
-        _state.update { snapshot(if (saved && clearsVoice) it.copy(voiceNotice = voiceClearedText(model)) else it) }
-        return saved
-    }
-
-    /** 这次撤掉 [model] 的 TTS 标记会让声音模型失去选择(声音设置随后由 [VoiceSettings.reconcileTtsChoice] 清掉)。 */
-    private fun clearsVoice(providerId: String, model: String): Boolean {
-        val name = model.trim()
-        return store.provider(providerId)?.ttsModels?.contains(name) == true && _state.value.voiceUses(providerId, name)
-    }
-
-    private fun voiceClearedText(model: String) = tr(R.string.voice_choice_cleared, model.trim())
-
-    fun dismissVoiceNotice() = _state.update { it.copy(voiceNotice = null) }
-
     /**
-     * 服务商详情「用作」里明确改选用途,可同时撤掉同一模型的 TTS 标记(解决旧设置的用途冲突也走这里)。
-     * 主模型和 [pick] 一样先试调用;看图、轻量是手填的(列表里没有)时也先试调用(见 [verifyTyped])。没通过不改,TTS 标记和原来的选择都留着;
+     * 服务商详情「用作」里明确改选用途。
+     * 主模型和 [pick] 一样先试调用;看图、轻量是手填的(列表里没有)时也先试调用(见 [verifyTyped])。没通过不改;
      * 进度和原因在 [ModelSetupUi.manualPick]。保存成功后调 [onDone]。
      */
     fun useFromProvider(role: ModelRole, providerId: String, model: String, onDone: () -> Unit = {}) {
-        val clearsVoice = clearsVoice(providerId, model)
         saveModelSelection(
-            providerId, model, clearNote = role == ModelRole.Main, allowTts = true,
+            providerId, model, clearNote = role == ModelRole.Main,
             // 主模型照样先试调用;看图、轻量只有手填的(列表里没有)才试,列表里的不试
             verify = when {
-                role == ModelRole.Main -> { p, name -> verifyMain(p, name, allowTts = true) }
-                else -> { p, name -> if (listed(p, name)) null else verifyTyped(p, name, role, allowTts = true) }
+                role == ModelRole.Main -> { p, name -> verifyMain(p, name) }
+                else -> { p, name -> if (listed(p, name)) null else verifyTyped(p, name, role) }
             },
-            onPicked = {
-                if (clearsVoice) _state.update { it.copy(voiceNotice = voiceClearedText(model)) }
-                onDone()
-            },
+            onPicked = onDone,
         ) { provider, name ->
-            val unmarked = provider.copy(ttsModels = provider.ttsModels - name)
-            val caps = ModelOptions.ofProvider(unmarked, store.list()).firstOrNull { it.id == name }?.capabilities
+            val caps = ModelOptions.ofProvider(provider, store.list()).firstOrNull { it.id == name }?.capabilities
                 ?: ModelOptions.baseOf(provider)
-            if (store.use(role, provider.id, name, caps, reassignTts = true)) null else tr(R.string.model_context_save_failed)
+            if (store.use(role, provider.id, name, caps)) null else tr(R.string.model_context_save_failed)
         }
     }
 
@@ -1064,12 +1024,11 @@ class ModelSetupViewModel(
     }
 
     /**
-     * 选择页、「用作」面板保存一个模型:标为 TTS 的不接受([allowTts] 为真时例外);有 [verify] 的先过它(设主模型的试调用),
+     * 选择页、「用作」面板保存一个模型:有 [verify] 的先过它(设主模型的试调用),
      * 再 [save]。进度和原因记在 [ModelSetupUi.manualPick]。
      */
     private fun saveModelSelection(
         providerId: String, model: String, clearNote: Boolean, onPicked: () -> Unit,
-        allowTts: Boolean = false,
         verify: (suspend (Provider, String) -> String?)? = null,
         save: (Provider, String) -> String?,
     ) {
@@ -1081,11 +1040,9 @@ class ModelSetupViewModel(
                 val checked = store.provider(providerId)
                 when {
                     checked == null -> tr(R.string.model_context_save_failed)
-                    !allowTts && !ModelOptions.canUseForChat(checked, name) -> tr(R.string.model_tts_only_not_supported)
                     else -> verify?.invoke(checked, name)
                 } ?: withContext(io) {
                     val provider = store.provider(providerId) ?: return@withContext tr(R.string.model_context_save_failed)
-                    if (!allowTts && !ModelOptions.canUseForChat(provider, name)) return@withContext tr(R.string.model_tts_only_not_supported)
                     val failure = save(provider, name)
                     if (failure == null && provider.models.orEmpty().none { it.id == name }) {
                         store.markTyped(providerId, name)
@@ -1154,62 +1111,58 @@ class ModelSetupViewModel(
     /** 选「手机自带」或「不用」,当场生效。 */
     fun pickSpeech(choice: SpeechChoice) {
         if (choice is SpeechChoice.Provider) return
-        speech?.set(choice)
+        if (stt?.migrated == true) {
+            when (choice) {
+                SpeechChoice.Auto, SpeechChoice.System, SpeechChoice.Off -> {
+                    if (choice != SpeechChoice.Off) speech?.retrySystem()
+                    stt.select(choice)
+                }
+                else -> return
+            }
+        } else {
+            speech?.set(choice)
+        }
         _speechProbe.value = emptyMap()
         sync()
     }
 
+    /** 迁移后的目录选择只写模型引用,不试转、不探测协议。 */
+    fun pickSttModel(ref: VoiceModelRef, onPicked: () -> Unit = {}) {
+        val controller = stt?.takeIf { it.migrated } ?: return
+        controller.select(ref)
+        _speechProbe.value = emptyMap()
+        sync()
+        onPicked()
+    }
+
     /**
-     * 选某个服务商的语音模型:先拿一小段静音试转(顺便认出该用哪种接口),通了才存成选择并记为核实过,然后调 [onPicked];
-     * 不通就在那一组下面说原因([speechProbe]),不改现在的选择。
+     * 迁移后按目录引用直接选择;迁移前不再拿静音试转探测接口,直接按服务商类型落成显式选择(默认接口),
+     * 然后调 [onPicked]。旧选择经迁移后仍带着显式 [TranscribeMethod],运行时不重新探测。
      */
     fun pickSpeechModel(providerId: String, model: String, onPicked: () -> Unit = {}) {
         val m = model.trim()
-        val settings = speech ?: return
         if (m.isEmpty() || _state.value.speechTesting != null) return
-        val p = store.provider(providerId) ?: return
-        if (ModelOptions.isTtsOnly(p, m)) {
-            _speechProbe.value = _speechProbe.value + (providerId to tr(R.string.model_tts_only_not_supported))
+        val migrated = stt?.takeIf { it.migrated }
+        if (migrated != null) {
+            val snapshot = migrated.catalog.state.value
+            val matches = snapshot.models.filter { candidate ->
+                candidate.id == m && candidate.stt != null && snapshot.services.any { service ->
+                    service.id == candidate.serviceId && (
+                        service.id == "provider:$providerId" ||
+                            (service.account as? VoiceAccount.ExistingProvider)?.providerId == providerId
+                        )
+                }
+            }.map { VoiceModelRef(it.serviceId, it.id, VoiceCapability.STT) }
+            if (matches.size == 1) pickSttModel(matches.single(), onPicked)
             return
         }
-        _speechProbe.value = _speechProbe.value - providerId
-        _state.update { it.copy(speechTesting = providerId) }
-        scope.launch {
-            val problem = try {
-                val method = withContext(io) {
-                    withTimeout(PROBE_TIMEOUT_MS) { transcriber(p).detect(p, store.providerKey(p.id), m) }
-                }
-                val currentProvider = store.provider(providerId)
-                when {
-                    currentProvider == null -> tr(R.string.voice_unavailable_provider_gone)
-                    ModelOptions.isTtsOnly(currentProvider, m) -> tr(R.string.model_tts_only_not_supported)
-                    else -> {
-                        withContext(io) { store.markVerified(p.id, m) }
-                        settings.set(SpeechChoice.Provider(p.id, m, method))
-                        null
-                    }
-                }
-            } catch (e: TimeoutCancellationException) {
-                tr(R.string.speech_pick_timeout, m, (PROBE_TIMEOUT_MS / 1000).toInt())
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: ModelError) {
-                speechFailure(m, p, e)
-            } catch (e: Exception) {
-                tr(R.string.speech_pick_failed, e.message.orEmpty())
-            }
-            if (problem != null) _speechProbe.value = _speechProbe.value + (providerId to problem)
-            _state.update { snapshot(it.copy(speechTesting = null)) }
-            if (problem == null) onPicked()
-        }
-    }
-
-    /** 试转没通过的原因:账号没开通、找不到模型用选主模型时同一套说法,其余照服务商回的原话。 */
-    private fun speechFailure(model: String, p: Provider, e: ModelError): String = when (e) {
-        is ModelError.ModelNotAvailable -> tr(R.string.model_probe_not_available, model, e.detail.ifEmpty { e.message.orEmpty() })
-        is ModelError.ModelNotFound -> tr(R.string.model_probe_not_found, model, ModelSetupCopy.modelExample(ProviderPresets.forHost(p.baseUrl)?.kind ?: p.kind))
-        is ModelError.Proxy -> tr(R.string.speech_pick_failed, proxyReason(e))
-        else -> tr(R.string.speech_pick_failed, e.message.orEmpty())
+        val settings = speech ?: return
+        val p = store.provider(providerId) ?: return
+        // 迁移前没有目录可依,按服务商类型落成显式选择;默认接口,不再试转探测
+        val method = if (p.kind == ProviderConfig.Kind.Gemini) TranscribeMethod.GeminiInline else TranscribeMethod.AudioTranscriptions
+        settings.set(SpeechChoice.Provider(p.id, m, method))
+        sync()
+        onPicked()
     }
 
     private fun proxyReason(e: ModelError.Proxy): String = tr(
@@ -1334,7 +1287,11 @@ class ModelSetupViewModel(
         }
     }
 
-    /** 删掉服务商和它的 Key;用着它的用途退回默认。 */
+    /** 删服务商前预览它名下的语音模型能力引用;删除面板靠它说清影响。 */
+    fun providerVoiceUsage(providerId: String): List<com.wangzan101.mika.voice.model.VoiceModelRef> =
+        voiceAccounts?.providerVoiceUsage(providerId) ?: emptyList()
+
+    /** 删掉服务商和它的 Key;用着它的用途退回默认,依赖它的语音模型一并清掉。 */
     fun removeProvider(providerId: String) {
         scope.launch {
             withContext(io) {
@@ -1346,6 +1303,7 @@ class ModelSetupViewModel(
                 }
                 // OpenRouter 授权来的 Key 随服务商一起删;OpenRouter 那边的 Key 要用户自己到 Keys 页面删
                 store.removeProvider(providerId)
+                voiceAccounts?.deleteProviderWithVoiceUsage(providerId)
             }
             _state.update { snapshot(it.copy(listing = it.listing - providerId)) }
         }

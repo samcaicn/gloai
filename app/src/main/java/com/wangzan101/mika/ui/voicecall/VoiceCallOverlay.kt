@@ -74,6 +74,7 @@ import com.wangzan101.mika.ui.ChatCopy
 import com.wangzan101.mika.ui.findActivity
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.voice.model.VoiceModelEnvironment
 import com.wangzan101.mika.voicecall.AndroidVoiceCallAudio
 import com.wangzan101.mika.voicecall.EndReason
 import com.wangzan101.mika.voicecall.VoiceCallAudioRoute
@@ -468,6 +469,20 @@ class VoiceCallController(
     private var currentRealtime: CallRealtimeSession? = null
     private var callScope: CoroutineScope? = null
 
+    /** After migration both entry points resolve the active model through this one controller. */
+    private val realtime = VoiceModelEnvironment.get(deps.context).realtime
+
+    /** The active realtime profile; legacy reads the profile store, migrated reads the catalog. */
+    private fun activeProfile(): CallVoiceProfile? {
+        if (!realtime.migrated) return deps.profile()
+        val ref = realtime.current() ?: return null
+        return runCatching { realtime.profile(ref) }.getOrNull()
+    }
+
+    private fun activeCredentials(profile: CallVoiceProfile): VolcRealtimeCredentials? =
+        if (realtime.migrated) runCatching { realtime.credentials() }.getOrNull()
+        else deps.credentials(profile.id)
+
     /** 拆掉当前通话的协程域(换新一通、收起终态通话、宿主离开时);会话自身已是终态或会被调用方先落终态。 */
     private fun cancelCallScope() {
         callScope?.cancel()
@@ -482,13 +497,17 @@ class VoiceCallController(
             current.call.visible = true
             return
         }
-        val profile = deps.profile()
+        val profile = activeProfile()
+        if (profile == null) {
+            stage = VoiceCallStage.Gate(VoiceCallGateStage.NeedCredentials)
+            return
+        }
         // 应用内通话只用双向实时语音协议:别的协议进不去,也不静默失败,门禁页说明并引到配置
         if (profile.protocol != CallVoiceProtocol.VOLC_DUPLEX) {
             stage = VoiceCallStage.Gate(VoiceCallGateStage.UnsupportedProtocol)
             return
         }
-        if (!profile.credentialsConfigured || deps.credentials(profile.id) == null) {
+        if (!profile.credentialsConfigured || activeCredentials(profile) == null) {
             stage = VoiceCallStage.Gate(VoiceCallGateStage.NeedCredentials)
             return
         }
@@ -560,8 +579,8 @@ class VoiceCallController(
 
     private fun openCall() {
         cancelCallScope()
-        val profile = deps.profile()
-        if (profile.protocol != CallVoiceProtocol.VOLC_DUPLEX) {
+        val profile = activeProfile()
+        if (profile == null || profile.protocol != CallVoiceProtocol.VOLC_DUPLEX) {
             stage = VoiceCallStage.Gate(VoiceCallGateStage.UnsupportedProtocol)
             return
         }
@@ -593,7 +612,7 @@ class VoiceCallController(
             audio = AndroidVoiceCallAudio(deps.context),
             foregroundResumed = deps.foregroundResumed,
             connect = {
-                val credentials = deps.credentials(profile.id)
+                val credentials = activeCredentials(profile)
                     ?: throw VolcRealtimeException(VolcRealtimeException.Kind.AUTH)
                 VolcRealtimeClient(endpoint = profile.endpoint).connect(
                     credentials,

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>语音模型</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --panel: #ffffff; --ink: #1a1a1a; --muted: #6f6f6a;
+    --line: #e6e6e1; --brand: #2f6fed; --brand-ink: #ffffff;
+    --stt: #0e9f6e; --tts: #7c3aed; --rt: #d97706;
+    --stt-bg: #e6f6ef; --tts-bg: #f1e9fd; --rt-bg: #fdf1e0;
+    --danger: #dc2626;
+    --radius: 12px; --gap: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121212; --panel: #1c1c1e; --ink: #f2f2f0; --muted: #a2a2a0;
+      --line: #2c2c2e; --brand: #5b8def; --brand-ink: #0b0b0b;
+      --stt-bg: #12301f; --tts-bg: #251a3a; --rt-bg: #33210d;
+      --stt: #34d399; --tts: #a78bfa; --rt: #fbbf24;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121212; --panel: #1c1c1e; --ink: #f2f2f0; --muted: #a2a2a0;
+    --line: #2c2c2e; --brand: #5b8def; --brand-ink: #0b0b0b;
+    --stt-bg: #12301f; --tts-bg: #251a3a; --rt-bg: #33210d;
+    --stt: #34d399; --tts: #a78bfa; --rt: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+         background: var(--bg); color: var(--ink); line-height: 1.5; }
+  .shell { max-width: 720px; margin: 0 auto; padding: 20px 16px 64px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+  h1 { font-size: 22px; margin: 0; font-weight: 700; }
+  .sub { color: var(--muted); font-size: 13px; margin: 2px 0 18px; }
+  .btn { border: 0; border-radius: 9px; padding: 9px 14px; font-size: 14px; cursor: pointer; font-weight: 600; }
+  .btn.primary { background: var(--brand); color: var(--brand-ink); }
+  .btn.ghost { background: transparent; color: var(--brand); border: 1px solid var(--line); }
+  .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .service { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; }
+  .service-head { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+  .service-name { font-weight: 650; font-size: 15px; }
+  .account-chip { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 20px; padding: 1px 9px; }
+  .model { padding: 13px 16px; border-bottom: 1px solid var(--line); }
+  .model:last-child { border-bottom: 0; }
+  .model-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .model-name { font-weight: 600; font-size: 14.5px; }
+  .model-id { font-size: 12px; color: var(--muted); font-family: ui-monospace, monospace; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .cap { border-radius: 8px; padding: 5px 9px; font-size: 12px; font-weight: 650; display: inline-flex; align-items: center; gap: 6px; }
+  .cap.stt { color: var(--stt); background: var(--stt-bg); }
+  .cap.tts { color: var(--tts); background: var(--tts-bg); }
+  .cap.rt  { color: var(--rt);  background: var(--rt-bg); }
+  .proto { font-weight: 400; opacity: .85; }
+  .cap .test { background: transparent; border: 0; color: inherit; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 0; }
+  .row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 7px; width: 30px; height: 30px; cursor: pointer; font-size: 14px; }
+  .icon-btn:hover { color: var(--ink); }
+  .status { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .status .ok { color: var(--stt); }
+  .status .warn { color: var(--rt); }
+  .empty { text-align: center; color: var(--muted); padding: 36px 16px; }
+  /* form / sheet */
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: flex-end; justify-content: center; z-index: 10; }
+  .backdrop.open { display: flex; }
+  .sheet { background: var(--panel); width: 100%; max-width: 560px; border-radius: 18px 18px 0 0; max-height: 88vh; overflow-y: auto; padding: 20px 20px 28px; }
+  .sheet h2 { margin: 0 0 4px; font-size: 18px; }
+  .field { margin-top: 14px; }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  input[type=text], select { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--ink); font-size: 14px; }
+  .caps-row { display: flex; gap: 8px; }
+  .caps-row label { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; font-size: 14px; color: var(--muted); }
+  .caps-row input { display: none; }
+  .caps-row input:checked + span { color: var(--ink); font-weight: 700; }
+  .caps-row label:has(input:checked) { border-color: var(--brand); color: var(--ink); }
+  .proto-block { border-left: 3px solid var(--line); padding: 4px 0 4px 14px; margin-top: 12px; }
+  .proto-block.stt { border-left-color: var(--stt); }
+  .proto-block.tts { border-left-color: var(--tts); }
+  .proto-block.rt  { border-left-color: var(--rt); }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .sheet-actions .btn { flex: 1; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <h1>语音模型</h1>
+    <button class="btn primary" onclick="openAdd()">＋ 添加模型</button>
+  </header>
+  <div class="sub">统一管理语音转文字、文字转语音和实时通话的模型。能力与协议在此声明；语音输入、朗读和通话设置页只负责选择与使用偏好。</div>
+
+  <div id="list"></div>
+
+  <div class="empty" id="empty" style="display:none">还没有语音模型。点击「添加模型」开始。</div>
+</div>
+
+<div class="backdrop" id="sheet">
+  <div class="sheet">
+    <h2 id="sheet-title">添加模型</h2>
+    <div class="sub" style="margin-bottom:0">声明能力与协议，保存为「未验证」或立即测试。</div>
+
+    <div class="field">
+      <label>账号来源</label>
+      <select id="f-account">
+        <option value="existing">已有服务商账号（复用地址与密钥）</option>
+        <option value="owned">新建语音专用账号（加密保存）</option>
+        <option value="none">无凭据（系统 / 自建服务）</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>模型 ID / 名称</label>
+      <input type="text" id="f-model" placeholder="例如 gpt-4o-transcribe，或自定义标识">
+    </div>
+
+    <div class="field">
+      <label>能力</label>
+      <div class="caps-row">
+        <label><input type="checkbox" class="cap-toggle" data-cap="stt" onchange="syncProto()"><span>语音转文字</span></label>
+        <label><input type="checkbox" class="cap-toggle" data-cap="tts" onchange="syncProto()"><span>文字转语音</span></label>
+        <label><input type="checkbox" class="cap-toggle" data-cap="rt" onchange="syncProto()"><span>实时通话</span></label>
+      </div>
+    </div>
+
+    <div id="proto-stt" class="proto-block stt field" style="display:none">
+      <label>语音转文字 · 协议</label>
+      <select><option>系统识别</option><option>音频转写</option><option>聊天音频输入</option><option>Gemini 内联</option><option>豆包流式</option><option>FunASR 流式</option><option>百炼流式</option></select>
+      <div class="hint">聊天音频输入可另设 data 写法与是否附转写指令；流式服务按需填资源 ID / 地域 / 语言。</div>
+    </div>
+
+    <div id="proto-tts" class="proto-block tts field" style="display:none">
+      <label>文字转语音 · 协议</label>
+      <select><option>系统合成</option><option>OpenAI Speech</option><option>Gemini TTS</option></select>
+    </div>
+
+    <div id="proto-rt" class="proto-block rt field" style="display:none">
+      <label>实时通话 · 协议</label>
+      <select><option>火山双工</option><option>OpenAI Realtime</option></select>
+      <div class="field" style="margin-top:8px"><label>接口地址 / 模型 / 音色</label>
+        <input type="text" placeholder="wss://… · 模型名 · 音色编号" style="margin-bottom:6px"></div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn ghost" onclick="closeAdd()">取消</button>
+      <button class="btn primary" onclick="saveAsUnverified()">保存为未验证</button>
+      <button class="btn ghost" onclick="saveAndTest()">保存并测试</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const list = document.getElementById('list');
+  const empty = document.getElementById('empty');
+  let models = seed();
+
+  function seed() {
+    return [
+      { svc: '系统', account: '无凭据', items: [
+        { name: '系统识别', id: 'system-stt', caps: [{c:'stt', p:'系统识别', v:'ok'}], edit:false },
+        { name: '系统合成', id: 'system-tts', caps: [{c:'tts', p:'系统合成', v:'ok'}], edit:false },
+      ]},
+      { svc: '火山引擎', account: '已有服务商', items: [
+        { name: '豆包语音', id: 'doubao-asr', caps: [{c:'stt', p:'豆包流式', v:'warn'}] },
+        { name: '豆包朗读', id: 'doubao-tts', caps: [{c:'tts', p:'OpenAI Speech', v:'ok'}] },
+        { name: '豆包实时', id: 'doubao-rt', caps: [{c:'rt', p:'火山双工', v:'warn'}] },
+      ]},
+      { svc: 'OpenAI', account: '已有服务商', items: [
+        { name: '语音转写', id: 'gpt-4o-transcribe', caps: [{c:'stt', p:'音频转写', v:'ok'}] },
+        { name: '朗读', id: 'tts-1', caps: [{c:'tts', p:'OpenAI Speech', v:'ok'}] },
+        { name: '实时语音', id: 'gpt-4o-realtime', caps: [{c:'rt', p:'OpenAI Realtime', v:'warn'}] },
+      ]},
+      { svc: '自建 FunASR', account: '语音专用账号', items: [
+        { name: 'Paraformer', id: 'paraformer-zh', caps: [{c:'stt', p:'FunASR 流式', v:'ok'}] },
+      ]},
+    ];
+  }
+
+  function render() {
+    list.innerHTML = '';
+    empty.style.display = models.length ? 'none' : 'block';
+    models.forEach(svc => {
+      const sec = document.createElement('div'); sec.className = 'service';
+      const head = document.createElement('div'); head.className = 'service-head';
+      head.innerHTML = `<span class="service-name"></span><span class="account-chip"></span>`;
+      head.querySelector('.service-name').textContent = svc.svc;
+      head.querySelector('.account-chip').textContent = svc.account;
+      sec.appendChild(head);
+      svc.items.forEach(m => sec.appendChild(modelRow(m)));
+      list.appendChild(sec);
+    });
+  }
+
+  function modelRow(m) {
+    const row = document.createElement('div'); row.className = 'model';
+    const top = document.createElement('div'); top.className = 'model-top';
+    top.innerHTML = `<div><div class="model-name"></div><div class="model-id"></div></div>`;
+    top.querySelector('.model-name').textContent = m.name;
+    top.querySelector('.model-id').textContent = m.id;
+    if (m.edit !== false) {
+      const act = document.createElement('div'); act.className = 'row-actions';
+      act.innerHTML = `<button class="icon-btn" title="编辑">✎</button><button class="icon-btn" title="删除">🗑</button>`;
+      act.querySelectorAll('.icon-btn')[0].onclick = () => openEdit(m);
+      act.querySelectorAll('.icon-btn')[1].onclick = () => { if (confirm('删除该模型？')) alert('已删除（原型）'); };
+      top.appendChild(act);
+    }
+    row.appendChild(top);
+
+    const badges = document.createElement('div'); badges.className = 'badges';
+    m.caps.forEach(cp => {
+      const b = document.createElement('span'); b.className = 'cap ' + cp.c;
+      b.innerHTML = `<span>${cp.c === 'stt' ? '语音转文字' : cp.c === 'tts' ? '文字转语音' : '实时通话'}</span>` +
+        `<span class="proto">${cp.p}</span><button class="test">${cp.c === 'stt' ? '测试' : cp.c === 'tts' ? '试听' : '连接测试'}</button>`;
+      b.querySelector('.test').onclick = () => alert(cp.c === 'rt' ? '仅记录连接成功（原型）' : cp.c === 'stt' ? '请按住说一句以真实验证（原型）' : '合成并从真实播放路径试听（原型）');
+      badges.appendChild(b);
+    });
+    row.appendChild(badges);
+
+    const status = document.createElement('div'); status.className = 'status';
+    if (m.caps.some(c => c.v === 'warn')) status.innerHTML = '状态：<span class="warn">未验证</span> · 连接/能力验证待完成';
+    else status.innerHTML = '状态：<span class="ok">已验证</span>';
+    row.appendChild(status);
+    return row;
+  }
+
+  function syncProto() {
+    document.querySelectorAll('.cap-toggle').forEach(cb => {
+      document.getElementById('proto-' + cb.dataset.cap).style.display = cb.checked ? 'block' : 'none';
+    });
+  }
+  function openAdd() { document.getElementById('sheet-title').textContent = '添加模型'; document.getElementById('sheet').classList.add('open'); }
+  function openEdit(m) { document.getElementById('sheet-title').textContent = '编辑模型 · ' + m.name; document.getElementById('sheet').classList.add('open'); }
+  function closeAdd() { document.getElementById('sheet').classList.remove('open'); }
+  function saveAsUnverified() { closeAdd(); alert('已保存为「未验证」（原型）'); }
+  function saveAndTest() { closeAdd(); alert('已保存并开始测试（原型）'); }
+
+  render();
+</script>
+</body>
+</html>

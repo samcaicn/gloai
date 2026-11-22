@@ -23,7 +23,10 @@ enum class TtsProtocol(val wire: String) {
     OpenAiSpeech("openai-speech"),
 
     /** Gemini TTS:generateContent + responseModalities AUDIO。 */
-    GeminiTts("gemini-tts");
+    GeminiTts("gemini-tts"),
+
+    /** 内置 Android 系统语音合成;只用于目录能力提示,旧版选择从不落成它。 */
+    AndroidSystem("android-system");
 
     companion object {
         fun of(wire: String?): TtsProtocol? = entries.firstOrNull { it.wire == wire }
@@ -51,6 +54,10 @@ data class VoiceChoice(
 data class VoiceSettingsState(
     val enabled: Boolean = true,
     val choice: VoiceChoice? = null,
+    /** 迁移后的音色/语速/流式使用偏好;模型选择在目录里,这里只留使用偏好。 */
+    val voice: String = "",
+    val speed: Float = 1.0f,
+    val streaming: Boolean = false,
     val autoRead: Boolean = false,
     val speakTool: Boolean = false,
     /** 允许把生成的音频存进手机音乐库;默认关。 */
@@ -73,29 +80,45 @@ class VoiceSettings(private val prefs: SharedPreferences) {
     private val _state = MutableStateFlow(read())
     val state: StateFlow<VoiceSettingsState> = _state.asStateFlow()
 
-    /** 旧版在声音页直接填写模型。首次升级时保留这个选择及其音色和协议。 */
+    /** Usage preferences remain in this store; migration reads but never rewrites them. */
+    internal fun legacySnapshot(): VoiceSettingsState = state.value
+
+    /** 旧版在声音页直接填写模型。首次升级时保留这个选择及其音色和协议;选择经统一目录迁移,这里不再按标记过滤。 */
     internal fun reconcileTtsChoice(store: ProviderStore) {
         val choice = state.value.choice
         if (!prefs.getBoolean(KEY_TTS_ROLE_MIGRATED, false)) {
             if (choice != null && store.provider(choice.providerId) != null) {
                 val model = choice.model.trim()
-                if (!store.importLegacyTtsChoice(choice.providerId, model)) return
                 if (model != choice.model) setChoice(choice.copy(model = model))
             }
             prefs.edit().putBoolean(KEY_TTS_ROLE_MIGRATED, true).apply()
-        }
-        if (choice != null && store.provider(choice.providerId)?.ttsModels?.contains(choice.model.trim()) != true) {
-            setChoice(null)
         }
     }
 
     fun setEnabled(on: Boolean) = update { copy(enabled = on) }
 
     fun setChoice(choice: VoiceChoice?) = update {
-        copy(choice = choice?.copy(
+        val normalized = choice?.copy(
             speed = normalizeVoiceSpeed(choice.speed),
             streaming = choice.streaming && choice.protocol == TtsProtocol.OpenAiSpeech,
-        ))
+        )
+        copy(
+            choice = normalized,
+            voice = normalized?.voice.orEmpty(),
+            speed = normalized?.speed ?: 1f,
+            streaming = normalized?.streaming ?: false,
+        )
+    }
+
+    fun setVoice(voice: String) = update { copy(voice = voice, choice = choice?.copy(voice = voice)) }
+
+    fun setSpeed(speed: Float) = update {
+        val normalized = normalizeVoiceSpeed(speed)
+        copy(speed = normalized, choice = choice?.copy(speed = normalized))
+    }
+
+    fun setStreaming(on: Boolean) = update {
+        copy(streaming = on, choice = choice?.copy(streaming = on && choice.protocol == TtsProtocol.OpenAiSpeech))
     }
 
     fun setAutoRead(on: Boolean) = update { copy(autoRead = on) }
@@ -111,18 +134,26 @@ class VoiceSettings(private val prefs: SharedPreferences) {
     /** 按当前协议给的能力。音色不限制（由服务商校验）；OpenAI 支持多种容器，Gemini 这里统一回到 WAV。 */
     fun capabilities(): TtsCapabilities? {
         val choice = _state.value.choice ?: return null
-        return when (choice.protocol) {
-            TtsProtocol.OpenAiSpeech -> TtsCapabilities(
-                voices = null,
-                maxChars = _state.value.maxCharsPerSpeak,
-                formats = setOf("wav", "mp3", "opus", "aac", "flac", "pcm"),
-            )
-            TtsProtocol.GeminiTts -> TtsCapabilities(
-                voices = null,
-                maxChars = _state.value.maxCharsPerSpeak,
-                formats = setOf("wav"),
-            )
-        }
+        return capabilities(choice.protocol)
+    }
+
+    /** 迁移后按目录模型的协议给能力;字数上限仍取这里的使用偏好。 */
+    fun capabilities(protocol: TtsProtocol): TtsCapabilities = when (protocol) {
+        TtsProtocol.OpenAiSpeech -> TtsCapabilities(
+            voices = null,
+            maxChars = _state.value.maxCharsPerSpeak,
+            formats = setOf("wav", "mp3", "opus", "aac", "flac", "pcm"),
+        )
+        TtsProtocol.GeminiTts -> TtsCapabilities(
+            voices = null,
+            maxChars = _state.value.maxCharsPerSpeak,
+            formats = setOf("wav"),
+        )
+        TtsProtocol.AndroidSystem -> TtsCapabilities(
+            voices = null,
+            maxChars = _state.value.maxCharsPerSpeak,
+            formats = setOf("wav"),
+        )
     }
 
     private fun update(block: VoiceSettingsState.() -> VoiceSettingsState) {
@@ -143,13 +174,13 @@ class VoiceSettings(private val prefs: SharedPreferences) {
         put("saveEnabled", state.saveEnabled)
         put("askBeforeSave", state.askBeforeSave)
         put("maxCharsPerSpeak", state.maxCharsPerSpeak)
+        put("voice", state.voice)
+        put("speed", state.speed)
+        put("streaming", state.streaming)
         state.choice?.let { c ->
             put("providerId", c.providerId)
             put("model", c.model)
             put("protocol", c.protocol.wire)
-            put("voice", c.voice)
-            put("speed", c.speed)
-            put("streaming", c.streaming)
         }
     }
 
@@ -158,18 +189,24 @@ class VoiceSettings(private val prefs: SharedPreferences) {
         val providerId = (obj["providerId"] as? JsonPrimitive)?.contentOrNull
         val model = (obj["model"] as? JsonPrimitive)?.contentOrNull
         val protocol = TtsProtocol.of((obj["protocol"] as? JsonPrimitive)?.contentOrNull)
+        val voice = (obj["voice"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+        val speed = normalizeVoiceSpeed((obj["speed"] as? JsonPrimitive)?.contentOrNull?.toFloatOrNull() ?: 1f)
+        val streaming = bool("streaming", false)
         val choice = if (providerId.isNullOrBlank() || model.isNullOrBlank() || protocol == null) null
         else VoiceChoice(
             providerId = providerId,
             model = model,
             protocol = protocol,
-            voice = (obj["voice"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
-            speed = normalizeVoiceSpeed((obj["speed"] as? JsonPrimitive)?.contentOrNull?.toFloatOrNull() ?: 1f),
-            streaming = protocol == TtsProtocol.OpenAiSpeech && bool("streaming", false),
+            voice = voice,
+            speed = speed,
+            streaming = protocol == TtsProtocol.OpenAiSpeech && streaming,
         )
         return VoiceSettingsState(
             enabled = bool("enabled", true),
             choice = choice,
+            voice = voice,
+            speed = speed,
+            streaming = streaming,
             autoRead = bool("autoRead", false),
             speakTool = bool("speakTool", false),
             saveEnabled = bool("saveEnabled", false),

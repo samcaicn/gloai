@@ -82,6 +82,7 @@
     <string name="models_delete_body">"API キーも削除されます。"</string>
     <string name="models_delete_unused">どの役割にも使われていません。</string>
     <string name="models_delete_used">%1$s で使われています。削除後に選び直す必要があります。</string>
+    <string name="models_delete_voice">音声モデル %1$s も削除されます。</string>
     <plurals name="models_more">
         <item quantity="other">ほか %1$d 件。名前を入力して絞り込めます</item>
     </plurals>

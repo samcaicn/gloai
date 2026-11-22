@@ -84,6 +84,7 @@
     <string name="models_delete_body">"A chave de API dele também será excluída. "</string>
     <string name="models_delete_unused">Ele não é usado em nenhuma função.</string>
     <string name="models_delete_used">%1$s usa este provedor; você precisará escolher de novo depois de excluir.</string>
+    <string name="models_delete_voice">Os modelos de voz %1$s também serão excluídos.</string>
     <plurals name="models_more">
         <item quantity="one">mais %1$d, digite um nome para filtrar</item>
         <item quantity="many">mais %1$d, digite um nome para filtrar</item>

@@ -145,8 +145,10 @@ fun toolDispatcher(
     audioAskBeforeSave: Boolean = true,
     /** 用户允许模型主动说话;默认关。 */
     audioSpeakTool: Boolean = false,
-    /** 音频转写;为空时不装转写能力(没配置服务商转写模型)。 */
+    /** 固定音频转写端口;为空且未给 [transcribeProvider] 时不装转写能力。 */
     transcribe: com.wangzan101.mika.core.cap.transcribe.TranscribePort? = null,
+    /** 随当前 STT 选择动态解析转写端口;目录和执行都重新检查,不重建任务内其他状态。 */
+    transcribeProvider: (() -> com.wangzan101.mika.core.cap.transcribe.TranscribePort?)? = null,
     /** 图片生成/改图/存相册;为空时不装图片能力(没配置图片模型或用户没打开)。 */
     image: com.wangzan101.mika.core.cap.image.ImagePort? = null,
     /** 用户允许保存图片到相册;默认关。 */
@@ -217,12 +219,12 @@ fun toolDispatcher(
             override fun open(spec: RunSpec) =
                 wechatOwner?.let { com.wangzan101.mika.core.wechat.WechatOwnerCapability(it) }
         },
-    ) + listOfNotNull(transcribe?.let { port ->
+    ) + listOfNotNull(if (transcribe != null || transcribeProvider != null) {
         object : CapabilityProvider {
             override val id = com.wangzan101.mika.core.cap.transcribe.TRANSCRIBE
-            override fun open(spec: RunSpec) = com.wangzan101.mika.core.cap.transcribe.TranscribeCapability(port)
+            override fun open(spec: RunSpec) = com.wangzan101.mika.core.cap.transcribe.TranscribeCapability(transcribe, transcribeProvider)
         }
-    }) + listOfNotNull(audio?.let { port ->
+    } else null) + listOfNotNull(audio?.let { port ->
         object : CapabilityProvider {
             override val id = com.wangzan101.mika.core.cap.audio.AUDIO
             override fun open(spec: RunSpec) = com.wangzan101.mika.core.cap.audio.AudioCapability(port, audioSaveEnabled, audioAskBeforeSave, audioSpeakTool)

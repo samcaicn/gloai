@@ -82,6 +82,7 @@
     <string name="models_delete_body">"API 키도 함께 삭제돼요. "</string>
     <string name="models_delete_unused">어떤 역할에도 사용하지 않아요.</string>
     <string name="models_delete_used">%1$s에서 사용 중이에요. 삭제한 뒤 다시 골라야 해요.</string>
+    <string name="models_delete_voice">음성 모델 %1$s도 함께 삭제돼요.</string>
     <plurals name="models_more">
         <item quantity="other">%1$d개 더 있어요. 이름을 입력해 필터링하세요</item>
     </plurals>

@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.KeyCipher
 import com.wangzan101.mika.settings.KeystoreKeyCipher
+import com.wangzan101.mika.voice.model.LegacySpeechSnapshot
+import com.wangzan101.mika.voice.model.VoiceCredentials
 import java.util.Base64
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -170,6 +172,36 @@ class SpeechSettings(private val prefs: SharedPreferences, private val cipher: K
     /** 这一行算不算设置过:有可以沿用的那种。 */
     val hasLive: Boolean get() = lastLive != null
 
+    /** Reads all still-addressable legacy choices without changing the rollback store. */
+    internal fun legacySnapshot(): LegacySpeechSnapshot {
+        val selected = _choice.value
+        val storedDoubao = doubaoCredentials()
+        check(!hasDoubaoCredentials || storedDoubao != null) { "Legacy Doubao credentials are unreadable" }
+        val doubao = storedDoubao?.let { VoiceCredentials(it.apiKey, it.appId, it.accessKey) }
+        val bailianCredentials = mutableMapOf<BailianRegion, VoiceCredentials>()
+        val bailianChoices = BailianRegion.entries.mapNotNull { region ->
+            val active = (selected as? SpeechChoice.Bailian)?.takeIf { it.region == region }
+            val hasKey = hasBailianKey(region)
+            val key = if (hasKey) bailianKey(region) else null
+            check(!hasKey || key != null) { "Legacy Bailian credentials are unreadable" }
+            if (key != null) bailianCredentials[region] = VoiceCredentials(apiKey = key)
+            if (active == null && !hasKey) return@mapNotNull null
+            active ?: SpeechChoice.Bailian(
+                model = bailianModel(region),
+                region = region,
+                workspace = bailianWorkspace(region),
+                language = bailianLanguage(region),
+            )
+        }
+        val savedFunAsr = funAsrUrl?.let { SpeechChoice.FunAsr(it, funAsrLanguage) }
+        return LegacySpeechSnapshot(
+            selection = selected,
+            savedChoices = (listOfNotNull(savedFunAsr) + bailianChoices + listOfNotNull(lastLive)).distinct(),
+            doubaoCredentials = doubao,
+            bailianCredentials = bailianCredentials,
+        )
+    }
+
     private val _systemSilent = MutableStateFlow(prefs.getBoolean(SILENT, false))
     val systemSilent: StateFlow<Boolean> = _systemSilent.asStateFlow()
 
@@ -181,6 +213,12 @@ class SpeechSettings(private val prefs: SharedPreferences, private val cipher: K
         edit.apply()
         _choice.value = choice
         if (retry) _systemSilent.value = false
+    }
+
+    /** 重试系统识别时只清健康记号;迁移后旧选择仍保持只读。 */
+    fun retrySystem() {
+        prefs.edit().remove(SILENT).remove(STRIKES).apply()
+        _systemSilent.value = false
     }
 
     /** 手机自带识别这次一个回调都没给:连着第 [SILENT_STRIKES] 次才记成不响应。 */
