@@ -19,8 +19,12 @@ class MainScreenSpillTest {
         sameTask: Boolean = false, standard: Boolean = true, now: Int = MainScreenSpill.MAIN, user: Int = 0,
     ) = MainScreenSpill.Arrival(task, pkg, user, at, from, sameTask, standard, now)
 
-    private fun decide(vararg a: MainScreenSpill.Arrival, topBefore: Int = 3, taps: List<MainScreenSpill.Tap> = emptyList()) =
-        MainScreenSpill.decide(a.toList(), since, window, topBefore, home, taps, launchers)
+    private fun decide(
+        vararg a: MainScreenSpill.Arrival,
+        topBefore: Int = 3,
+        taps: List<MainScreenSpill.Tap> = emptyList(),
+        userActiveBefore: Boolean = false,
+    ) = MainScreenSpill.decide(a.toList(), since, window, topBefore, home, taps, launchers, userActiveBefore)
 
     @Test fun newTaskOnTheMainScreenRightAfterTheActionIsPulledBack() {
         assertEquals(listOf(PullBack(arrival())), decide(arrival()))
@@ -57,8 +61,14 @@ class MainScreenSpillTest {
     @Test fun userTappingTheMainScreenMeansTheUserOpenedIt() {
         val other = MainScreenSpill.Tap(since + 400, "com.other")
         assertTrue(decide(arrival(at = since + 900), taps = listOf(other)).isEmpty())
-        // 动作之前的点按不算
-        assertEquals(1, decide(arrival(at = since + 900), taps = listOf(MainScreenSpill.Tap(since - 100, "com.other"))).size)
+    }
+
+    @Test fun userActivityJustBeforeTheActionIsConservative() {
+        // 动作开始前用户刚在主屏上动过手(两次动作之间点的,只有计数、没有具体时刻):归属说不清,不拉回、报成用户在用
+        val a = arrival(at = since + 900)
+        assertEquals(listOf(InUse(a)), decide(a, userActiveBefore = true))
+        // 动作之前没动过手:照常拉回
+        assertEquals(listOf(PullBack(a)), decide(a, userActiveBefore = false))
     }
 
     @Test fun systemTouchWithoutASemanticClickKeepsTheUsersAppOnTheMainScreen() {
