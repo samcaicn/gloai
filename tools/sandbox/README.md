@@ -37,6 +37,10 @@ python3 tools/sandbox/build-runtime.py --check     # 重新生成并与仓库里
 
 `build-runtime.py` 里的 `WANT` 必须与 core 的 `SANDBOX_PACKAGES` 一致(`BundledRuntimeTest` 核对)。
 
+`--resolve` 按分支索引求依赖闭包。最小根文件系统比索引旧时,那个包在运行环境里仍是根文件系统的版本
+(锁文件里的一条 `apk` 不能替换根文件系统自带的包),所以有包要求它的精确版本时 `--resolve` 直接失败,
+并指出该换到哪个 minirootfs 版本。
+
 运行环境包含 `tzdata`。每次启动命令时,`ProcRunner.env` 都把手机当前的 IANA 时区写入 `TZ`,
 让命令行、Python 和 Node 的本地时间与手机一致,并保留夏令时和历史偏移规则;手机切换时区后,下一条命令随之更新。
 

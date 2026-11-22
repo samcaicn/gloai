@@ -209,5 +209,92 @@ class PipLockTest(unittest.TestCase):
         self.assertTrue(wheels)
 
 
+class ResolveAdoptionTest(unittest.TestCase):
+    """`--resolve` against a minirootfs that lags the branch index: nothing can upgrade it."""
+
+    BASE = "P:busybox\nV:1.36.0-r0\nD:musl\n\nP:musl\nV:1.2.5-r9\nD:\n\n"
+    INDEX = ("P:busybox\nV:1.37.0-r20\nD:musl\nC:Q1aaa=\n\n"
+             "P:busybox-binsh\nV:1.37.0-r20\nD:busybox=1.37.0-r20\nC:Q1bbb=\n\n"
+             "P:musl\nV:1.2.5-r9\nD:\nC:Q1ccc=\n")
+
+    @staticmethod
+    def member(name):
+        """A tar member stand-in: parse_index and the signature check want .name only."""
+        class Name:
+            pass
+        m = Name()
+        m.name = name
+        return m
+
+    def resolve(self, want, index=None):
+        """Run --resolve on a fixed minirootfs and index; return (exit code, stdout, stderr, lock)."""
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        base = Path(directory.name)
+        lock = base / "sources.lock"
+        body = (self.INDEX if index is None else index).encode()
+        alpine = {"version": "3.22.7", "url": "https://example.invalid/mr.tar.gz", "sha256": "0" * 64}
+
+        def tarball():
+            buf = io.BytesIO()
+            with tarfile.open(fileobj=buf, mode="w:") as t:
+                data = self.BASE.encode()
+                ti = tarfile.TarInfo("./lib/apk/db/installed")
+                ti.size = len(data)
+                t.addfile(ti, io.BytesIO(data))
+            return buf.getvalue()
+
+        def download(url, path):
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            Path(path).write_bytes(b"")
+
+        member = self.member
+        out, err, code = io.StringIO(), io.StringIO(), 0
+        with patch.object(build_runtime, "read_lock", lambda: (alpine, [])), \
+                patch.object(build_runtime, "minirootfs", lambda a: (tarball(), {})), \
+                patch.object(build_runtime, "fetch", download), \
+                patch.object(build_runtime, "gzip_streams", lambda raw: [b"sig", b"body", b""]), \
+                patch.object(build_runtime, "tar_members",
+                             lambda raw: [(member("sig"), b"")] if raw == b"sig"
+                             else [(member("APKINDEX"), body)]), \
+                patch.object(build_runtime, "rsa_verify", lambda *a: None), \
+                patch.object(build_runtime, "cached", lambda *a, **k: b"apk"), \
+                patch.object(build_runtime, "WANT", want), \
+                patch.object(build_runtime, "CACHE", str(base)), \
+                patch.object(build_runtime, "LOCK", str(lock)), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            try:
+                build_runtime.resolve()
+            except SystemExit as stop:
+                code = stop.code
+        return code, out.getvalue(), err.getvalue(), lock.read_text(encoding="utf-8") if lock.exists() else ""
+
+    def test_a_lagging_package_is_reported_with_the_version_that_ships(self):
+        # The message exists to say which package lagged and by how much. p and q are one record,
+        # so reading the version after the overwrite printed the index version on both sides.
+        code, out, err, _ = self.resolve([])
+        self.assertEqual(0, code, err)
+        self.assertIn("minirootfs busybox 1.36.0-r0 -> index 1.37.0-r20", out)
+        self.assertIn("the runtime keeps 1.36.0-r0", out)
+
+    def test_an_exact_requirement_a_lagging_minirootfs_cannot_meet_fails(self):
+        # busybox-binsh pins busybox=1.37.0-r20; the runtime would carry 1.36.0-r0 from the
+        # minirootfs and nothing in the build can replace it, so the lock must not be written.
+        code, out, err, lock = self.resolve(["busybox-binsh"])
+        self.assertEqual(1, code, out)
+        self.assertIn("busybox=1.37.0-r20", err)
+        self.assertIn("1.36.0-r0", err)
+        self.assertIn("minirootfs", err)
+        self.assertEqual("", lock)
+
+    def test_a_lagging_package_nobody_pins_still_resolves(self):
+        # Nothing needs the exact version, so the older one is harmless and --resolve goes on.
+        index = self.INDEX.replace("D:busybox=1.37.0-r20", "D:busybox")
+        code, out, err, lock = self.resolve(["busybox-binsh"], index)
+        self.assertEqual(0, code, err)
+        self.assertIn("busybox-binsh 1.37.0-r20", lock)
+        self.assertNotIn("apk main busybox 1.", lock)
+
+
 if __name__ == "__main__":
     unittest.main()
