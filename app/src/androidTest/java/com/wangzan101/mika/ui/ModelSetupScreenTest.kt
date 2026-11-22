@@ -173,7 +173,7 @@ class ModelSetupScreenTest {
                 ModelSetupContent(
                     connected(), onboarding = false,
                     actions = ModelSetupActions(
-                        openSpeech = {}, openVoice = {}, openRealtimeVoice = {}, openVoiceCatalog = {},
+                        openSpeech = {}, openVoice = {}, openCallMode = {}, openVoiceCatalog = {},
                     ),
                     liveVoiceCatalog = snapshot,
                     onBack = {},
@@ -181,7 +181,7 @@ class ModelSetupScreenTest {
             }
         }
         compose.onNodeWithTag("role-voice").assertDoesNotExist()
-        compose.onNodeWithTag("voice-hub-realtime").performScrollTo().assertExists()
+        compose.onNodeWithTag("voice-hub-call-mode").performScrollTo().assertExists()
     }
 
     @Test fun migratedCatalogShowsOneVoiceGroupWithThreeUses() {
@@ -197,7 +197,7 @@ class ModelSetupScreenTest {
                     ui, onboarding = false,
                     actions = ModelSetupActions(
                         openSpeech = { calls += "stt" }, openVoice = { calls += "tts" },
-                        openRealtimeVoice = { calls += "realtime" }, openVoiceCatalog = { calls += "services" },
+                        openCallMode = { calls += "callMode" }, openVoiceCatalog = { calls += "services" },
                     ),
                     onBack = {},
                 )
@@ -206,9 +206,9 @@ class ModelSetupScreenTest {
         compose.onNodeWithTag("role-voice").assertDoesNotExist()
         compose.onNodeWithTag("voice-hub-stt").performScrollTo().performClick()
         compose.onNodeWithTag("voice-hub-tts").performScrollTo().performClick()
-        compose.onNodeWithTag("voice-hub-realtime").performScrollTo().performClick()
+        compose.onNodeWithTag("voice-hub-call-mode").performScrollTo().performClick()
         compose.onNodeWithTag("voice-hub-services").performScrollTo().performClick()
-        assertEquals(listOf("stt", "tts", "realtime", "services"), calls)
+        assertEquals(listOf("stt", "tts", "callMode", "services"), calls)
     }
 
     @Test fun voiceSettingsShowsSavedChoiceWithoutModelList() {

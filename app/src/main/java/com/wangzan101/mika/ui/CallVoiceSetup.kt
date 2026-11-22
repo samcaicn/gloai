@@ -40,6 +40,12 @@ import com.wangzan101.mika.ui.components.RowChevron
 import com.wangzan101.mika.ui.components.RowValue
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.ui.components.SegmentedControl
+import com.wangzan101.mika.voice.model.CallEngine
+import com.wangzan101.mika.voice.model.SttSelection
+import com.wangzan101.mika.voice.model.SttSelectionController
+import com.wangzan101.mika.voice.model.TtsSelectionController
+import com.wangzan101.mika.voice.model.VoiceCatalogSnapshot
 import com.wangzan101.mika.voice.model.VoiceCapability
 import com.wangzan101.mika.voice.model.VoiceModelEnvironment
 import com.wangzan101.mika.voice.model.VoiceModelRef
@@ -48,8 +54,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /**
- * 「电话语音」: phone calls follow the Voice call choice by default, or use their own realtime model and voice.
- * Following shares the voice too; changing it here changes it for voice calls as well, and the page says so.
+ * 「电话用的听和说」: phone calls follow the voice settings by default, or get their own call mode and models
+ * (an 8 kHz phone recognizer, a calmer voice). Device recognition only hears the microphone, so it is never offered
+ * for listening on a call.
  */
 @Composable
 internal fun CallVoiceScreen(runtime: CallRuntime, onBack: () -> Unit, onOpenServices: () -> Unit) {
@@ -60,13 +67,14 @@ internal fun CallVoiceScreen(runtime: CallRuntime, onBack: () -> Unit, onOpenSer
     val providers by remember { ProviderStore.get(context) }.providers.collectAsState()
     val scope = rememberCoroutineScope()
     val failureText = stringResource(R.string.calls_action_failed)
+    val sample = stringResource(R.string.voice_try_sample)
     var busy by remember { mutableStateOf(false) }
     var feedback by remember { mutableStateOf<CallActionResult?>(null) }
     var voicesOpen by rememberSaveable { mutableStateOf(false) }
-    val selections = snapshot.selections
-    val own = selections.callRealtime
-    val effective = own ?: selections.realtime
-    val effectiveModel = snapshot.modelOf(effective)
+    val s = snapshot.selections
+    val follows = s.callEngine == null && s.callStt == null && s.callTts == null && s.callRealtime == null
+    val engine = s.resolvedCallEngine
+    val sharedListen = (s.stt as? SttSelection.Model)?.ref?.takeIf { it != SttSelectionController.SYSTEM_STT_REF }
 
     fun run(action: suspend () -> CallActionResult) {
         if (busy) return
@@ -86,73 +94,152 @@ internal fun CallVoiceScreen(runtime: CallRuntime, onBack: () -> Unit, onOpenSer
     }
 
     PageScaffold(stringResource(R.string.calls_voice_title), onBack, Modifier.testTag("call-voice")) {
+        Text(stringResource(R.string.calls_voice_phone_lead), Modifier.padding(bottom = 12.dp), style = MikaType.Body, color = MikaTheme.colors.ink2)
         feedback?.let { CallFeedback(it) }
         GroupCard {
+            val followBad = s.resolvedEngine == CallEngine.Standard && sharedListen == null
             RadioRow(
-                stringResource(R.string.calls_voice_follow), selected = own == null, enabled = !busy, first = true,
-                subtitle = snapshot.nameOf(selections.realtime) ?: stringResource(R.string.calls_voice_follow_none),
-                onClick = { if (own != null) run { runtime.selectCallVoice(null) } },
+                stringResource(R.string.calls_voice_follow_settings), selected = follows, enabled = !busy, first = true,
+                subtitle = followLine(snapshot),
+                below = if (followBad) { { Text(stringResource(R.string.calls_voice_device_warn), style = MikaType.Hint, color = MikaTheme.colors.warn) } } else null,
+                onClick = { if (!follows) run { runtime.selectPhoneVoice(null, null, null) } },
                 modifier = Modifier.testTag("call-voice-follow"),
             )
             RadioRow(
-                stringResource(R.string.calls_voice_own), selected = own != null, enabled = !busy,
-                subtitle = stringResource(R.string.calls_voice_own_note),
+                stringResource(R.string.calls_voice_own_settings), selected = !follows, enabled = !busy,
+                subtitle = stringResource(R.string.calls_voice_own_settings_sub),
                 onClick = {
-                    if (own != null) return@RadioRow
-                    val first = selections.realtime ?: voiceOptions(VoiceCapability.REALTIME, snapshot, providers).firstOrNull()
-                        ?.let { viewModel.ensureInCatalog(it) } ?: return@RadioRow
-                    run { runtime.selectCallVoice(first) }
+                    if (follows) run { runtime.selectPhoneVoice(engine, sharedListen, s.tts) }
                 },
                 modifier = Modifier.testTag("call-voice-own"),
             )
         }
-        if (own != null) {
-            val options = voiceOptions(VoiceCapability.REALTIME, snapshot, providers)
-            GroupLabel(stringResource(R.string.voice_choices_label))
-            VoiceOptionList(
-                options, own, stringResource(R.string.voice_try_realtime), viewModel,
-                onPick = { option -> run { runtime.selectCallVoice(viewModel.ensureInCatalog(option)) } },
-                onTest = { option -> viewModel.tryChoice(option, "") },
-                pickable = { !busy },
+        if (!follows) {
+            GroupLabel(stringResource(R.string.calls_voice_for_calls))
+            SegmentedControl(
+                listOf(stringResource(R.string.call_mode_standard), stringResource(R.string.call_mode_realtime)),
+                if (engine == CallEngine.Standard) 0 else 1,
+                { i ->
+                    val picked = if (i == 0) CallEngine.Standard else CallEngine.Realtime
+                    if (picked != engine) run { runtime.selectPhoneVoice(picked, s.callStt, s.callTts, s.callTtsVoice) }
+                },
+                Modifier.padding(bottom = 12.dp), tags = listOf("call-engine-standard", "call-engine-realtime"),
             )
-        }
-        val binding = effectiveModel?.realtime
-        if (effectiveModel != null && binding != null) {
-            val voice = if (own != null) selections.callSpeaker.ifBlank { binding.speaker } else binding.speaker
-            GroupLabel(stringResource(R.string.voice_settings_of, voiceModelDisplayName(effectiveModel)))
-            GroupCard {
-                ListRow(null, stringResource(R.string.voice_voice), first = true, onClick = { voicesOpen = true },
-                    modifier = Modifier.testTag("call-voice-speaker")) {
-                    RowValue(if (voice.isBlank()) stringResource(R.string.voice_voice_default) else VoiceVoices.label(voice))
-                    RowChevron()
-                }
-            }
-            if (own == null) FooterNote(stringResource(R.string.calls_voice_shared_note))
-            if (voicesOpen) {
-                VoicePickerSheet(
-                    VoiceVoices.withCurrent(VoiceVoices.realtime(binding.protocol), voice),
-                    onPick = { picked ->
-                        if (own != null) run { runtime.selectCallVoice(own, picked) }
-                        else voiceModels.catalog.upsertModel(effectiveModel.copy(realtime = binding.copy(speaker = picked)))
-                    },
-                    onDismiss = { voicesOpen = false },
+            if (engine == CallEngine.Standard) {
+                val listen = s.callStt ?: sharedListen
+                GroupLabel(stringResource(R.string.call_mode_listen))
+                VoiceOptionList(
+                    voiceOptions(VoiceCapability.STT, snapshot, providers).filter { it.ref != SttSelectionController.SYSTEM_STT_REF },
+                    listen, stringResource(R.string.voice_try_stt), viewModel,
+                    onPick = { option -> run { runtime.selectPhoneVoice(CallEngine.Standard, viewModel.ensureInCatalog(option), s.callTts, s.callTtsVoice) } },
+                    onTest = { option -> viewModel.tryChoice(option, sample) },
+                    pickable = { !busy },
                 )
+                val speak = s.callTts ?: s.tts
+                GroupLabel(stringResource(R.string.call_mode_speak))
+                VoiceOptionList(
+                    voiceOptions(VoiceCapability.TTS, snapshot, providers).filter { it.ref != TtsSelectionController.SYSTEM_TTS_REF },
+                    speak, stringResource(R.string.voice_try_tts), viewModel,
+                    onPick = { option -> run { runtime.selectPhoneVoice(CallEngine.Standard, s.callStt, viewModel.ensureInCatalog(option), "") } },
+                    onTest = { option -> viewModel.tryChoice(option, sample) },
+                    pickable = { !busy },
+                )
+                val own = s.callTts
+                val model = snapshot.modelOf(own)
+                if (own != null && model != null) {
+                    GroupCard(Modifier.padding(top = 8.dp)) {
+                        ListRow(null, stringResource(R.string.voice_voice), first = true, onClick = { voicesOpen = true },
+                            modifier = Modifier.testTag("call-voice-tts-voice")) {
+                            RowValue(if (s.callTtsVoice.isBlank()) stringResource(R.string.voice_voice_default) else VoiceVoices.label(s.callTtsVoice))
+                            RowChevron()
+                        }
+                    }
+                    if (voicesOpen) {
+                        VoicePickerSheet(
+                            VoiceVoices.withCurrent(VoiceVoices.tts(model), s.callTtsVoice),
+                            onPick = { picked -> run { runtime.selectPhoneVoice(CallEngine.Standard, s.callStt, own, picked) } },
+                            onDismiss = { voicesOpen = false },
+                        )
+                    }
+                }
+            } else {
+                RealtimeForCalls(runtime, snapshot, providers, viewModel, voiceModels, busy, voicesOpen, { voicesOpen = it }, ::run)
             }
         }
         VoiceMoreServices(onOpenServices)
     }
 }
 
-/** One-line summary for the call settings row: who speaks on the phone. */
+@Composable
+private fun followLine(snapshot: VoiceCatalogSnapshot): String {
+    val s = snapshot.selections
+    val none = stringResource(R.string.voice_hub_none)
+    return when (s.resolvedEngine) {
+        CallEngine.Standard -> {
+            val listen = (s.stt as? SttSelection.Model)?.let { snapshot.nameOf(it.ref) } ?: stringResource(R.string.voice_source_device)
+            stringResource(R.string.calls_voice_listen_speak, listen, snapshot.nameOf(s.tts) ?: none)
+        }
+        CallEngine.Realtime -> callModeLine(snapshot, CallEngine.Realtime)
+    }
+}
+
+/** Phone calls' own realtime model and its voice. */
+@Composable
+private fun RealtimeForCalls(
+    runtime: CallRuntime, snapshot: VoiceCatalogSnapshot, providers: List<com.wangzan101.mika.settings.Provider>,
+    viewModel: VoiceCatalogViewModel, voiceModels: VoiceModelEnvironment, busy: Boolean,
+    voicesOpen: Boolean, setVoicesOpen: (Boolean) -> Unit, run: (suspend () -> CallActionResult) -> Unit,
+) {
+    val s = snapshot.selections
+    val own = s.callRealtime
+    val effective = own ?: s.realtime
+    GroupLabel(stringResource(R.string.call_mode_realtime_model))
+    VoiceOptionList(
+        voiceOptions(VoiceCapability.REALTIME, snapshot, providers), effective, stringResource(R.string.voice_try_realtime), viewModel,
+        onPick = { option -> run { runtime.selectCallVoice(viewModel.ensureInCatalog(option)) } },
+        onTest = { option -> viewModel.tryChoice(option, "") },
+        pickable = { !busy },
+    )
+    val model = snapshot.modelOf(effective)
+    val binding = model?.realtime
+    if (model != null && binding != null) {
+        val voice = if (own != null) s.callSpeaker.ifBlank { binding.speaker } else binding.speaker
+        GroupCard(Modifier.padding(top = 8.dp)) {
+            ListRow(null, stringResource(R.string.voice_voice), first = true, onClick = { setVoicesOpen(true) },
+                modifier = Modifier.testTag("call-voice-speaker")) {
+                RowValue(if (voice.isBlank()) stringResource(R.string.voice_voice_default) else VoiceVoices.label(voice))
+                RowChevron()
+            }
+        }
+        if (own == null) FooterNote(stringResource(R.string.calls_voice_shared_note))
+        if (voicesOpen) {
+            VoicePickerSheet(
+                VoiceVoices.withCurrent(VoiceVoices.realtime(binding.protocol), voice),
+                onPick = { picked ->
+                    if (own != null) run { runtime.selectCallVoice(own, picked) }
+                    else voiceModels.catalog.upsertModel(model.copy(realtime = binding.copy(speaker = picked)))
+                },
+                onDismiss = { setVoicesOpen(false) },
+            )
+        }
+    }
+}
+
+/** One-line summary for the call settings row: how phone calls listen and speak. */
 @Composable
 internal fun callVoiceSummary(runtime: CallRuntime): String {
     val snapshot by runtime.realtimeCatalog.collectAsState()
-    val own = snapshot.selections.callRealtime
-    return when {
-        own != null -> stringResource(R.string.realtime_calls_own, snapshot.nameOf(own) ?: own.modelId)
-        snapshot.selections.realtime != null ->
-            stringResource(R.string.calls_voice_follow_summary, snapshot.nameOf(snapshot.selections.realtime).orEmpty())
-        else -> stringResource(R.string.voice_hub_none)
+    val s = snapshot.selections
+    val follows = s.callEngine == null && s.callStt == null && s.callTts == null && s.callRealtime == null
+    if (follows) return stringResource(R.string.calls_voice_follow_settings) + " · " + followLine(snapshot)
+    val none = stringResource(R.string.voice_hub_none)
+    return stringResource(R.string.calls_voice_own_settings) + " · " + when (s.resolvedCallEngine) {
+        CallEngine.Standard -> stringResource(
+            R.string.calls_voice_listen_speak,
+            snapshot.nameOf(s.callStt ?: (s.stt as? SttSelection.Model)?.ref) ?: none,
+            snapshot.nameOf(s.callTts ?: s.tts) ?: none,
+        )
+        CallEngine.Realtime -> snapshot.nameOf(s.callRealtime ?: s.realtime) ?: none
     }
 }
 

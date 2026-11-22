@@ -687,8 +687,9 @@ private fun MikaRoot(
                 mcpServers = app.mcpServers,
                 openPhoneOps = openPhoneOps, onPhoneOpsOpened = { openPhoneOps = false })
         }
-        Route.Models -> ModelsScreen(store, onBack = back, onOpenSpeech = { nav.push(Route.SpeechModel) }, onOpenVoice = { nav.push(Route.VoiceModel) }, onOpenImage = { nav.push(Route.ImageModel) }, onOpenUsage = { nav.push(Route.Usage) }, onOpenVoiceCatalog = { nav.push(Route.VoiceServices) }, onOpenRealtimeVoice = { nav.push(Route.RealtimeVoice) })
+        Route.Models -> ModelsScreen(store, onBack = back, onOpenSpeech = { nav.push(Route.SpeechModel) }, onOpenVoice = { nav.push(Route.VoiceModel) }, onOpenImage = { nav.push(Route.ImageModel) }, onOpenUsage = { nav.push(Route.Usage) }, onOpenVoiceCatalog = { nav.push(Route.VoiceServices) }, onOpenCallMode = { nav.push(Route.CallMode) })
         Route.VoiceModel -> VoiceModelScreen(store, onBack = back, onOpenServices = { nav.push(Route.VoiceServices) })
+        Route.CallMode -> CallModeScreen(onBack = back, onOpenStt = { nav.push(Route.SpeechModel) }, onOpenTts = { nav.push(Route.VoiceModel) }, onOpenRealtime = { nav.push(Route.RealtimeVoice) })
         Route.RealtimeVoice -> RealtimeVoiceScreen(store, onBack = back, onOpenCalls = { nav.push(Route.Calls) }, onOpenServices = { nav.push(Route.VoiceServices) })
         Route.VoiceServices -> VoiceServicesScreen(store, onBack = back, onOpenCustom = { nav.push(Route.VoiceCatalog) })
         Route.VoiceCatalog -> VoiceCatalogScreen(com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(context), onBack = back)
@@ -859,7 +860,10 @@ private fun MikaRoot(
     }
 
     // 通话页盖在整棵导航上:全屏 Dialog,收起后宿主还在,服务保活的通话随时能亮回来
-    VoiceCallHost(voiceCallDeps, voiceCallSignal + localVoiceCall, onGoConfigure = { nav.push(Route.Calls) })
+    VoiceCallHost(voiceCallDeps, voiceCallSignal + localVoiceCall, onGoConfigure = { gate ->
+        // 标准通话缺的是听和说的模型,去「通话方式」;实时通话缺凭据,去电话页的语音设置
+        nav.push(if (gate == com.wangzan101.mika.ui.voicecall.VoiceCallGateStage.NeedListenSpeak) Route.CallMode else Route.Calls)
+    })
 
     var showLanguagePrompt by rememberSaveable { mutableStateOf(!AppLanguage.hasPrompted(context)) }
     if (showLanguagePrompt && onboarding == null) {

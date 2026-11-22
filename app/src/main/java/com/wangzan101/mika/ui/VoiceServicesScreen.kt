@@ -10,7 +10,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -31,7 +33,6 @@ import com.wangzan101.mika.ui.components.GroupLabel
 import com.wangzan101.mika.ui.components.InputRow
 import com.wangzan101.mika.ui.components.ListRow
 import com.wangzan101.mika.ui.components.MikaButton
-import com.wangzan101.mika.ui.components.MikaSwitch
 import com.wangzan101.mika.ui.components.PillTone
 import com.wangzan101.mika.ui.components.RowChevron
 import com.wangzan101.mika.ui.components.SegmentedControl
@@ -39,8 +40,6 @@ import com.wangzan101.mika.ui.components.StatusPill
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
-import com.wangzan101.mika.voice.BailianProtocol
-import com.wangzan101.mika.voice.BailianRegion
 import com.wangzan101.mika.voice.model.ProviderVoiceOffers
 import com.wangzan101.mika.voice.model.SttSelection
 import com.wangzan101.mika.voice.model.SttSelectionController
@@ -53,14 +52,19 @@ import com.wangzan101.mika.voice.model.VoiceModelEnvironment
 import com.wangzan101.mika.voice.model.VoiceModelError
 import com.wangzan101.mika.voice.model.VoiceModelRef
 import com.wangzan101.mika.voice.model.VoicePreset
+import com.wangzan101.mika.voice.model.VoicePresetPlan
 import com.wangzan101.mika.voice.model.VoicePresets
-import com.wangzan101.mika.voice.model.VolcSttPlan
+import com.wangzan101.mika.voice.model.VoiceService
+import com.wangzan101.mika.voice.model.VoiceModel
+import com.wangzan101.mika.voice.model.VoiceVendor
+import com.wangzan101.mika.voice.model.VoiceVendors
 
-private enum class PresetKind { Volc, Bailian, Compatible, SelfHosted }
+private enum class PresetKind { Compatible, SelfHosted }
 
 /**
- * 「语音服务」: every account voice draws on, split by where it comes from, and the place to connect another one.
- * Known services are presets that ask only for their own fields; the full catalog form stays under Advanced.
+ * 「语音服务」: every account voice draws on. Built-in vendors ask for their own fields once and bring all their
+ * listen, speak and realtime models; the OpenAI-compatible form, self-hosted recognition and the full catalog
+ * form stay under Advanced.
  */
 @Composable
 fun VoiceServicesScreen(store: ProviderStore, onBack: () -> Unit, onOpenCustom: () -> Unit) {
@@ -69,27 +73,43 @@ fun VoiceServicesScreen(store: ProviderStore, onBack: () -> Unit, onOpenCustom: 
     val viewModel = rememberVoiceCatalogViewModel(voiceModels)
     val snapshot by voiceModels.catalog.state.collectAsState()
     val providers by store.providers.collectAsState()
-    var adding by rememberSaveable { mutableStateOf(false) }
+    var vendorForm by rememberSaveable { mutableStateOf<String?>(null) }
+    var detail by rememberSaveable { mutableStateOf<String?>(null) }
     var preset by rememberSaveable { mutableStateOf<PresetKind?>(null) }
     var saved by rememberSaveable { mutableStateOf<List<String>?>(null) }
     val results = saved?.mapNotNull(::decodeRef)
     val back: () -> Unit = {
         when {
-            results != null -> { saved = null; preset = null; adding = false }
+            results != null -> { saved = null; preset = null; vendorForm = null }
             preset != null -> preset = null
-            adding -> adding = false
+            vendorForm != null -> vendorForm = null
+            detail != null -> detail = null
             else -> onBack()
         }
     }
-    BackHandler(enabled = adding || preset != null || results != null) { back() }
+    fun apply(plan: VoicePresetPlan) {
+        val manager = VoiceAccountManager(voiceModels.catalog, requireNotNull(voiceModels.credentialStore))
+        saved = VoicePresets.apply(manager, voiceModels.catalog, plan).map(::encodeRef)
+    }
+    BackHandler(enabled = vendorForm != null || detail != null || preset != null || results != null) { back() }
     when {
-        results != null -> PresetResult(snapshot, results, viewModel, voiceModels, onDone = back)
-        preset != null -> PresetForm(requireNotNull(preset), back) { plan ->
-            val manager = VoiceAccountManager(voiceModels.catalog, requireNotNull(voiceModels.credentialStore))
-            saved = VoicePresets.apply(manager, voiceModels.catalog, plan).map(::encodeRef)
+        results != null -> PresetResult(snapshot, results, viewModel, voiceModels, onDone = {
+            // 存完回到这家服务商的详情,看它带来的全部模型
+            detail = results.firstOrNull()?.serviceId ?: detail
+            saved = null; preset = null; vendorForm = null
+        })
+        preset != null -> PresetForm(requireNotNull(preset), back, ::apply)
+        vendorForm != null -> VoiceVendors.byId(requireNotNull(vendorForm))?.let { VendorForm(it, back, ::apply) } ?: back()
+        detail != null -> {
+            val service = snapshot.services.firstOrNull { it.id == detail }
+            if (service == null) back()
+            else VendorDetail(snapshot, service, voiceModels, back,
+                onChangeKey = VoiceVendors.forService(service.id)?.let { vendor -> { vendorForm = vendor.id } } ?: onOpenCustom)
         }
-        adding -> AddVoiceService(back, onPick = { preset = it }, onOpenCustom = onOpenCustom)
-        else -> ServiceList(snapshot, providers, back, onAdd = { adding = true }, onOpenCustom = onOpenCustom)
+        else -> ServiceList(
+            snapshot, providers, back,
+            onVendor = { vendorForm = it.id }, onService = { detail = it }, onPreset = { preset = it }, onOpenCustom = onOpenCustom,
+        )
     }
 }
 
@@ -110,13 +130,45 @@ private fun capabilityLine(caps: Collection<VoiceCapability>): String = VoiceCap
     )
 }.joinToString(" · ")
 
+/** "Listen 2 · Speak 1 · Realtime 1": how many models of each kind, leaving out kinds with none. */
+@Composable
+private fun modelCountLine(models: List<VoiceModel>): String = VoiceCapability.entries.mapNotNull { cap ->
+    val n = models.count { (cap in it.capabilities) }
+    if (n == 0) null else stringResource(
+        when (cap) {
+            VoiceCapability.STT -> R.string.voice_vendor_cap_stt
+            VoiceCapability.TTS -> R.string.voice_vendor_cap_tts
+            VoiceCapability.REALTIME -> R.string.voice_vendor_cap_rt
+        },
+        n,
+    )
+}.joinToString(" · ")
+
 @Composable
 private fun ServiceList(
-    snapshot: VoiceCatalogSnapshot, providers: List<Provider>, onBack: () -> Unit, onAdd: () -> Unit, onOpenCustom: () -> Unit,
+    snapshot: VoiceCatalogSnapshot, providers: List<Provider>, onBack: () -> Unit,
+    onVendor: (VoiceVendor) -> Unit, onService: (String) -> Unit, onPreset: (PresetKind) -> Unit, onOpenCustom: () -> Unit,
 ) {
     val c = MikaTheme.colors
+    val own = snapshot.services.filter {
+        it.account !is VoiceAccount.ExistingProvider && it.id != SttSelectionController.SYSTEM_STT_SERVICE.id &&
+            it.id != TtsSelectionController.SYSTEM_TTS_REF.serviceId
+    }
+    val unconnected = VoiceVendors.all.filter { vendor -> own.none { vendor.owns(it.id) } }
     Page(stringResource(R.string.voice_hub_services), onBack) {
-        Text(stringResource(R.string.voice_services_lead), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
+        Text(stringResource(R.string.voice_vendors_lead), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
+        GroupLabel(stringResource(R.string.voice_vendors_connected))
+        GroupCard {
+            ListRow(
+                MikaIcons.Mic, stringResource(R.string.voice_source_device),
+                capabilityLine(setOf(VoiceCapability.STT, VoiceCapability.TTS)), first = true,
+            ) { StatusPill(stringResource(R.string.voice_services_builtin), PillTone.Neutral) }
+            own.forEach { service ->
+                val models = snapshot.models.filter { it.serviceId == service.id }
+                ListRow(MikaIcons.Key, service.name, modelCountLine(models), onClick = { onService(service.id) },
+                    modifier = Modifier.testTag("voice-service-${service.id}")) { RowChevron() }
+            }
+        }
         if (providers.isNotEmpty()) {
             GroupLabel(stringResource(R.string.voice_services_from_chat))
             GroupCard {
@@ -131,66 +183,162 @@ private fun ServiceList(
                 }
             }
         }
-        GroupLabel(stringResource(R.string.voice_services_voice_only))
-        GroupCard {
-            ListRow(
-                MikaIcons.Mic, stringResource(R.string.voice_source_device),
-                capabilityLine(setOf(VoiceCapability.STT, VoiceCapability.TTS)), first = true,
-            ) { StatusPill(stringResource(R.string.voice_services_builtin), PillTone.Neutral) }
-            snapshot.services.filter {
-                it.account !is VoiceAccount.ExistingProvider && it.id != SttSelectionController.SYSTEM_STT_SERVICE.id &&
-                    it.id != TtsSelectionController.SYSTEM_TTS_REF.serviceId
-            }.forEach { service ->
-                val caps = snapshot.models.filter { it.serviceId == service.id }.flatMap { it.capabilities }.toSet()
-                ListRow(MikaIcons.Key, service.name, capabilityLine(caps), onClick = onOpenCustom,
-                    modifier = Modifier.testTag("voice-service-${service.id}")) { RowChevron() }
+        if (unconnected.isNotEmpty()) {
+            GroupLabel(stringResource(R.string.voice_vendors_builtin))
+            GroupCard {
+                unconnected.forEachIndexed { index, vendor ->
+                    ListRow(MikaIcons.Plus, vendor.name, modelCountLine(vendor.preview), first = index == 0,
+                        onClick = { onVendor(vendor) }, modifier = Modifier.testTag("vendor-${vendor.id}")) { RowChevron() }
+                }
             }
-            ListRow(MikaIcons.Plus, stringResource(R.string.voice_services_add), onClick = onAdd,
-                modifier = Modifier.testTag("voice-service-add")) { RowChevron() }
+        }
+        GroupLabel(stringResource(R.string.voice_add_advanced))
+        GroupCard {
+            ListRow(MikaIcons.Key, stringResource(R.string.voice_preset_compat), stringResource(R.string.voice_preset_compat_sub), first = true,
+                onClick = { onPreset(PresetKind.Compatible) }, modifier = Modifier.testTag("preset-compat")) { RowChevron() }
+            ListRow(MikaIcons.Key, stringResource(R.string.voice_preset_selfhosted), stringResource(R.string.voice_preset_selfhosted_sub),
+                onClick = { onPreset(PresetKind.SelfHosted) }, modifier = Modifier.testTag("preset-selfhosted")) { RowChevron() }
+            ListRow(null, stringResource(R.string.voice_add_custom), stringResource(R.string.voice_add_custom_sub),
+                onClick = onOpenCustom, modifier = Modifier.testTag("voice-service-add")) { RowChevron() }
         }
         FooterNote(stringResource(R.string.voice_services_footer), Modifier.padding(top = 6.dp))
     }
 }
 
+/** One connected service: its key, then every model it brings, grouped by what it does, each usable from here. */
 @Composable
-private fun AddVoiceService(onBack: () -> Unit, onPick: (PresetKind) -> Unit, onOpenCustom: () -> Unit) {
-    val c = MikaTheme.colors
-    Page(stringResource(R.string.voice_services_add), onBack) {
-        Text(stringResource(R.string.voice_add_lead), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
-        GroupLabel(stringResource(R.string.voice_add_common))
-        GroupCard {
-            ListRow(MikaIcons.Key, stringResource(R.string.voice_preset_volc), stringResource(R.string.voice_preset_volc_sub), first = true,
-                onClick = { onPick(PresetKind.Volc) }, modifier = Modifier.testTag("preset-volc")) { RowChevron() }
-            ListRow(MikaIcons.Key, stringResource(R.string.voice_preset_bailian), stringResource(R.string.voice_preset_bailian_sub),
-                onClick = { onPick(PresetKind.Bailian) }, modifier = Modifier.testTag("preset-bailian")) { RowChevron() }
-            ListRow(MikaIcons.Key, stringResource(R.string.voice_preset_compat), stringResource(R.string.voice_preset_compat_sub),
-                onClick = { onPick(PresetKind.Compatible) }, modifier = Modifier.testTag("preset-compat")) { RowChevron() }
+private fun VendorDetail(
+    snapshot: VoiceCatalogSnapshot, service: VoiceService, voiceModels: VoiceModelEnvironment,
+    onBack: () -> Unit, onChangeKey: () -> Unit,
+) {
+    val models = snapshot.models.filter { it.serviceId == service.id }
+    Page(service.name, onBack) {
+        GroupCard(Modifier.padding(top = 8.dp)) {
+            ListRow(MikaIcons.Key, service.name, stringResource(R.string.voice_vendor_key_saved), first = true) {
+                MikaButton(stringResource(R.string.voice_vendor_change_key), onClick = onChangeKey,
+                    kind = ButtonKind.Secondary, size = ButtonSize.Small, modifier = Modifier.testTag("vendor-change-key"))
+            }
         }
-        GroupLabel(stringResource(R.string.voice_add_self_hosted))
-        GroupCard {
-            ListRow(MikaIcons.Key, stringResource(R.string.voice_preset_selfhosted), stringResource(R.string.voice_preset_selfhosted_sub),
-                first = true, onClick = { onPick(PresetKind.SelfHosted) }, modifier = Modifier.testTag("preset-selfhosted")) { RowChevron() }
-        }
-        GroupLabel(stringResource(R.string.voice_add_advanced))
-        GroupCard {
-            ListRow(null, stringResource(R.string.voice_add_custom), stringResource(R.string.voice_add_custom_sub), first = true,
-                onClick = onOpenCustom) { RowChevron() }
+        VoiceCapability.entries.forEach { cap ->
+            val list = models.filter { (cap in it.capabilities) }
+            if (list.isEmpty()) return@forEach
+            GroupLabel(stringResource(
+                when (cap) {
+                    VoiceCapability.STT -> R.string.voice_vendor_stt_models
+                    VoiceCapability.TTS -> R.string.voice_vendor_tts_models
+                    VoiceCapability.REALTIME -> R.string.voice_vendor_rt_models
+                },
+                list.size,
+            ))
+            GroupCard {
+                list.forEachIndexed { index, model ->
+                    val ref = VoiceModelRef(model.serviceId, model.id, cap)
+                    val inUse = when (cap) {
+                        VoiceCapability.STT -> snapshot.selections.stt == SttSelection.Model(ref)
+                        VoiceCapability.TTS -> snapshot.selections.tts == ref
+                        VoiceCapability.REALTIME -> snapshot.selections.realtime == ref
+                    }
+                    ListRow(null, voiceModelDisplayName(model), first = index == 0) {
+                        if (inUse) StatusPill(stringResource(R.string.voice_result_in_use), PillTone.Accent)
+                        else MikaButton(
+                            stringResource(
+                                when (cap) {
+                                    VoiceCapability.STT -> R.string.voice_vendor_set_stt
+                                    VoiceCapability.TTS -> R.string.voice_vendor_set_tts
+                                    VoiceCapability.REALTIME -> R.string.voice_vendor_set_rt
+                                },
+                            ),
+                            onClick = {
+                                when (cap) {
+                                    VoiceCapability.STT -> voiceModels.stt.select(ref)
+                                    VoiceCapability.TTS -> voiceModels.tts.select(ref)
+                                    VoiceCapability.REALTIME -> voiceModels.realtime.select(ref)
+                                }
+                            },
+                            kind = ButtonKind.Tonal, size = ButtonSize.Small,
+                            modifier = Modifier.testTag("vendor-use-${cap.name.lowercase()}-${model.id}"),
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun PresetForm(kind: PresetKind, onBack: () -> Unit, onSave: (com.wangzan101.mika.voice.model.VoicePresetPlan) -> Unit) {
+private fun vendorFieldLabel(key: String): String = when (key) {
+    VoiceVendors.F_API_KEY -> stringResource(R.string.voice_field_api_key)
+    VoiceVendors.F_APP_ID -> stringResource(R.string.voice_field_app_id)
+    VoiceVendors.F_ACCESS_TOKEN -> stringResource(R.string.voice_field_access_token)
+    VoiceVendors.F_SECRET_ID -> stringResource(R.string.voice_field_secret_id)
+    VoiceVendors.F_SECRET_KEY -> stringResource(R.string.voice_field_secret_key)
+    VoiceVendors.F_API_SECRET -> stringResource(R.string.voice_field_api_secret)
+    VoiceVendors.F_REGION -> stringResource(R.string.voice_field_region)
+    VoiceVendors.F_WORKSPACE -> stringResource(R.string.voice_bailian_workspace)
+    else -> key
+}
+
+@Composable
+private fun regionLabel(choice: String): String = when (choice) {
+    VoiceVendors.REGION_BEIJING -> stringResource(R.string.voice_region_beijing)
+    VoiceVendors.REGION_SINGAPORE -> stringResource(R.string.voice_region_singapore)
+    VoiceVendors.REGION_CN -> stringResource(R.string.voice_region_cn)
+    VoiceVendors.REGION_INTL -> stringResource(R.string.voice_region_intl)
+    else -> choice
+}
+
+/** Only the fields this vendor asks for; no model to pick, every model it has is added. */
+@Composable
+private fun VendorForm(vendor: VoiceVendor, onBack: () -> Unit, onSave: (VoicePresetPlan) -> Unit) {
+    val c = MikaTheme.colors
+    val values = rememberSaveable(vendor.id, saver = mapSaver(
+        save = { it.toMap() },
+        restore = { saved -> mutableStateMapOf<String, String>().apply { saved.forEach { (k, v) -> put(k, v as String) } } },
+    )) { mutableStateMapOf<String, String>().apply { vendor.fields.forEach { f -> f.choices.firstOrNull()?.let { put(f.key, it) } } } }
+    var error by remember { mutableStateOf<String?>(null) }
+    val optional = stringResource(R.string.voice_field_optional)
+    Page(vendor.name, onBack) {
+        Text(modelCountLine(vendor.preview), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
+        GroupLabel(stringResource(R.string.voice_vendor_fields))
+        val text = vendor.fields.filter { it.choices.isEmpty() }
+        GroupCard {
+            text.forEachIndexed { index, field ->
+                InputRow(
+                    vendorFieldLabel(field.key), values[field.key].orEmpty(), { values[field.key] = it },
+                    if (field.optional) optional else if (field.key == VoiceVendors.F_REGION) "eastasia" else "",
+                    first = index == 0, secret = field.secret, labelWidth = 104.dp,
+                    modifier = Modifier.testTag("vendor-field-${field.key}"),
+                )
+            }
+        }
+        vendor.fields.filter { it.choices.isNotEmpty() }.forEach { field ->
+            GroupLabel(vendorFieldLabel(field.key))
+            SegmentedControl(
+                field.choices.map { regionLabel(it) }, field.choices.indexOf(values[field.key]).coerceAtLeast(0),
+                { values[field.key] = field.choices[it] }, Modifier.padding(bottom = 12.dp),
+            )
+        }
+        if (vendor.id == VoicePresets.VOLC_SERVICE) FooterNote(stringResource(R.string.voice_volc_auth_note))
+        error?.let { Text(it, Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = MikaType.Hint, color = c.bad) }
+        MikaButton(
+            stringResource(R.string.voice_save_and_test),
+            onClick = {
+                try {
+                    onSave(vendor.plan(values.toMap()))
+                } catch (e: VoiceModelError) {
+                    error = e.detail
+                }
+            },
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("vendor-save"),
+        )
+        FooterNote(stringResource(R.string.voice_vendor_form_note), Modifier.padding(top = 8.dp))
+    }
+}
+
+@Composable
+private fun PresetForm(kind: PresetKind, onBack: () -> Unit, onSave: (VoicePresetPlan) -> Unit) {
     val c = MikaTheme.colors
     var apiKey by rememberSaveable { mutableStateOf("") }
-    var appId by rememberSaveable { mutableStateOf("") }
-    var token by rememberSaveable { mutableStateOf("") }
-    var volcStt by rememberSaveable { mutableStateOf(true) }
-    var volcPlan by rememberSaveable { mutableStateOf(VolcSttPlan.Duration) }
-    var volcRealtime by rememberSaveable { mutableStateOf(true) }
-    var region by rememberSaveable { mutableStateOf(BailianRegion.Beijing) }
-    var workspace by rememberSaveable { mutableStateOf("") }
-    var model by rememberSaveable { mutableStateOf(BailianProtocol.DEFAULT_MODEL) }
     var name by rememberSaveable { mutableStateOf("") }
     var url by rememberSaveable { mutableStateOf("") }
     var sttModel by rememberSaveable { mutableStateOf("") }
@@ -199,8 +347,6 @@ private fun PresetForm(kind: PresetKind, onBack: () -> Unit, onSave: (com.wangza
     var error by remember { mutableStateOf<String?>(null) }
     val title = stringResource(
         when (kind) {
-            PresetKind.Volc -> R.string.voice_preset_volc
-            PresetKind.Bailian -> R.string.voice_preset_bailian
             PresetKind.Compatible -> R.string.voice_preset_compat
             PresetKind.SelfHosted -> R.string.voice_preset_selfhosted
         },
@@ -210,8 +356,6 @@ private fun PresetForm(kind: PresetKind, onBack: () -> Unit, onSave: (com.wangza
         Text(
             stringResource(
                 when (kind) {
-                    PresetKind.Volc -> R.string.voice_volc_lead
-                    PresetKind.Bailian -> R.string.voice_bailian_lead
                     PresetKind.Compatible -> R.string.voice_compat_lead
                     PresetKind.SelfHosted -> R.string.voice_selfhosted_lead
                 },
@@ -219,44 +363,6 @@ private fun PresetForm(kind: PresetKind, onBack: () -> Unit, onSave: (com.wangza
             Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2,
         )
         when (kind) {
-            PresetKind.Volc -> {
-                GroupCard {
-                    InputRow(stringResource(R.string.voice_field_api_key), apiKey, { apiKey = it }, optional, first = true, secret = true)
-                    InputRow(stringResource(R.string.voice_field_app_id), appId, { appId = it }, optional)
-                    InputRow(stringResource(R.string.voice_field_access_token), token, { token = it }, optional, secret = true)
-                }
-                FooterNote(stringResource(R.string.voice_volc_auth_note))
-                GroupLabel(stringResource(R.string.voice_volc_unlocks))
-                GroupCard {
-                    ListRow(MikaIcons.Mic, stringResource(R.string.voice_volc_use_stt), stringResource(R.string.voice_volc_use_stt_note), first = true) {
-                        MikaSwitch(volcStt, { volcStt = it })
-                    }
-                    if (volcStt) {
-                        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                            Text(stringResource(R.string.voice_volc_plan), style = MikaType.Hint, color = c.ink3)
-                            SegmentedControl(
-                                listOf(stringResource(R.string.voice_volc_plan_duration), stringResource(R.string.voice_volc_plan_concurrent)),
-                                volcPlan.ordinal, { volcPlan = VolcSttPlan.entries[it] }, Modifier.padding(top = 6.dp),
-                            )
-                        }
-                    }
-                    ListRow(MikaIcons.Handset, stringResource(R.string.voice_volc_use_rt), stringResource(R.string.voice_volc_use_rt_note)) {
-                        MikaSwitch(volcRealtime, { volcRealtime = it })
-                    }
-                }
-            }
-            PresetKind.Bailian -> {
-                GroupCard {
-                    InputRow(stringResource(R.string.voice_field_api_key), apiKey, { apiKey = it }, "sk-…", first = true, secret = true)
-                    InputRow(stringResource(R.string.voice_bailian_workspace), workspace, { workspace = it }, optional)
-                    InputRow(stringResource(R.string.voice_field_model), model, { model = it }, BailianProtocol.DEFAULT_MODEL)
-                }
-                GroupLabel(stringResource(R.string.voice_bailian_region))
-                SegmentedControl(
-                    listOf(stringResource(R.string.voice_region_beijing), stringResource(R.string.voice_region_singapore)),
-                    region.ordinal, { region = BailianRegion.entries[it] }, Modifier.padding(bottom = 12.dp),
-                )
-            }
             PresetKind.Compatible -> {
                 GroupCard {
                     InputRow(stringResource(R.string.voice_field_url), url, { url = it }, "https://…/v1", first = true, keyboard = KeyboardType.Uri)
@@ -282,8 +388,6 @@ private fun PresetForm(kind: PresetKind, onBack: () -> Unit, onSave: (com.wangza
             stringResource(R.string.voice_save_and_test),
             onClick = {
                 val preset = when (kind) {
-                    PresetKind.Volc -> VoicePreset.Volc(apiKey, appId, token, volcStt, volcPlan, volcRealtime)
-                    PresetKind.Bailian -> VoicePreset.Bailian(apiKey, region, workspace, model)
                     PresetKind.Compatible -> VoicePreset.OpenAiCompatible(name, url, apiKey, sttModel, ttsModel, rtModel)
                     PresetKind.SelfHosted -> VoicePreset.SelfHostedStt(url)
                 }

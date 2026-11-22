@@ -114,9 +114,9 @@ fun ModelsScreen(
     onOpenImage: (() -> Unit)? = null,
     onOpenUsage: (() -> Unit)? = null,
     onOpenVoiceCatalog: (() -> Unit)? = null,
-    onOpenRealtimeVoice: (() -> Unit)? = null,
+    onOpenCallMode: (() -> Unit)? = null,
 ) {
-    ModelSetupScreen(store, onboarding = false, onBack = onBack, onDone = onBack, onOpenSpeech = onOpenSpeech, onOpenVoice = onOpenVoice, onOpenImage = onOpenImage, onOpenUsage = onOpenUsage, onOpenVoiceCatalog = onOpenVoiceCatalog, onOpenRealtimeVoice = onOpenRealtimeVoice)
+    ModelSetupScreen(store, onboarding = false, onBack = onBack, onDone = onBack, onOpenSpeech = onOpenSpeech, onOpenVoice = onOpenVoice, onOpenImage = onOpenImage, onOpenUsage = onOpenUsage, onOpenVoiceCatalog = onOpenVoiceCatalog, onOpenCallMode = onOpenCallMode)
 }
 
 /** 子页面共用的骨架:顶栏 + 可滚动内容。 */

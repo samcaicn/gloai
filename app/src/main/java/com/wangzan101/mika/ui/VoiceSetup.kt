@@ -51,6 +51,7 @@ import com.wangzan101.mika.voice.model.SttSelectionController
 import com.wangzan101.mika.core.model.TtsCapabilities
 import com.wangzan101.mika.voice.model.VoiceAccount
 import com.wangzan101.mika.voice.model.VoiceAccountManager
+import com.wangzan101.mika.voice.model.CallEngine
 import com.wangzan101.mika.voice.model.VoiceCapability
 import com.wangzan101.mika.voice.model.VoiceCatalogSnapshot
 import com.wangzan101.mika.voice.model.VoiceModel
@@ -234,7 +235,7 @@ internal fun VoiceHubSection(
     readAloudOn: Boolean,
     onStt: () -> Unit,
     onTts: () -> Unit,
-    onRealtime: () -> Unit,
+    onCallMode: () -> Unit,
     onServices: () -> Unit,
 ) {
     val selections = snapshot.selections
@@ -252,9 +253,14 @@ internal fun VoiceHubSection(
         ListRow(MikaIcons.Sound, stringResource(R.string.voice_hub_tts),
             if (readAloudOn) ttsName ?: stringResource(R.string.voice_hub_none) else stringResource(R.string.voice_hub_off),
             onClick = onTts, modifier = Modifier.testTag("voice-hub-tts")) { RowChevron() }
-        ListRow(MikaIcons.Handset, stringResource(R.string.voice_hub_realtime), realtimeName ?: stringResource(R.string.voice_hub_none),
-            onClick = onRealtime, modifier = Modifier.testTag("voice-hub-realtime")) {
-            if (realtimeName == null) StatusPill(stringResource(R.string.voice_hub_setup), PillTone.Warn)
+        val engine = selections.resolvedEngine
+        val needsSetup = when (engine) {
+            CallEngine.Standard -> selections.listenUnusableForCalls() || selections.tts == null
+            CallEngine.Realtime -> realtimeName == null
+        }
+        ListRow(MikaIcons.Handset, stringResource(R.string.voice_hub_call_mode), callModeLine(snapshot, engine),
+            onClick = onCallMode, modifier = Modifier.testTag("voice-hub-call-mode")) {
+            if (needsSetup) StatusPill(stringResource(R.string.voice_hub_setup), PillTone.Warn)
             RowChevron()
         }
     }

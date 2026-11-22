@@ -631,6 +631,23 @@ class CallRuntime(private val app: MikaApp) {
         ok(if (now == before) "电话语音已保存" else "电话语音已更换，自动接听需要重新开启")
     }
 
+    /**
+     * Phone calls' own engine and listen/speak models ([com.wangzan101.mika.voice.model.VoiceCatalogStore.setPhoneVoice]);
+     * a null [engine] with no models makes phone calls follow the voice settings again, realtime choice included.
+     */
+    suspend fun selectPhoneVoice(engine: CallEngine?, stt: VoiceModelRef?, tts: VoiceModelRef?, ttsVoice: String = ""): CallActionResult = onMain {
+        if (work != null || lockedDial != null) return@onMain fail("请先结束当前通话或锁屏拨出安排")
+        if (!realtimeController.migrated) return@onMain fail("实时语音配置尚未迁移")
+        val before = standardCalls to callVoiceRef()
+        realtimeController.catalog.setPhoneVoice(engine, stt, tts, ttsVoice)
+        if (engine == null && stt == null && tts == null) realtimeController.selectForCalls(null)
+        syncRealtimeState()
+        val changed = (standardCalls to callVoiceRef()) != before
+        if (changed) settings.save(settings.state.value.copy(autoAnswer = false))
+        publish()
+        ok(if (changed) "电话语音已更换，自动接听需要重新开启" else "电话语音已保存")
+    }
+
     suspend fun saveVoiceProfile(profile: CallVoiceProfile, credentials: VolcRealtimeCredentials? = null): CallActionResult = onMain {
         if (work != null || lockedDial != null) return@onMain fail("请先结束当前通话或锁屏拨出安排")
         if (realtimeController.migrated) {

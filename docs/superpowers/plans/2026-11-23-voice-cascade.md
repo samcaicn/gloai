@@ -27,7 +27,7 @@
 | `CascadeListener` | 每句话开一个 STT 会话并喂音频，收尾时 release，拿 Final |
 | `SentenceSplitter` | 按逗号句号切句，供逐段合成 |
 | `CascadeSpeaker` | 逐段 TTS → PCM → 24 kHz，`Audio` 事件；可被打断 |
-| `CascadeBrain` | 「想」：`PhoneBrain`（LLM + 历史 + `send_dtmf`）与 `RelayBrain`（应用内：整句交 `mika_request`，结果原样读出） |
+| `CascadeBrain` | 「想」：统一用 `LlmBrain`（聊天模型 + 滚动历史 + 工具循环）。电话给它 `send_dtmf`；应用内给它 `mika_request`——路由回来的结果是写给模型看的英文指令，必须再过一遍模型才能说出口，所以应用内不做原样转读 |
 | `CascadeVoiceSession` | 编排上面几块，产出与实时模型相同的事件序列；粗略打断 |
 | `CascadeEngine` | 按选择组装听 / 说 / 想，给两种通话用 |
 

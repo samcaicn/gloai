@@ -125,7 +125,7 @@ fun ModelSetupScreen(
     /** 设置里打开统一语音模型目录;上手流程不传。 */
     onOpenVoiceCatalog: (() -> Unit)? = null,
     /** 设置里打开「语音通话」选择页;上手流程不传。 */
-    onOpenRealtimeVoice: (() -> Unit)? = null,
+    onOpenCallMode: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -150,7 +150,7 @@ fun ModelSetupScreen(
     val voiceState = voiceSettings?.state?.collectAsState()?.value
     val voiceChoice = voiceState?.choice
     // 子页里改了朗读/通话的选择,回到这页要马上看到,所以直接跟目录走,不等 vm 下次同步
-    val liveVoiceCatalog = if (onOpenRealtimeVoice != null) {
+    val liveVoiceCatalog = if (onOpenCallMode != null) {
         remember { com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(context) }.catalog.state.collectAsState().value
     } else null
     var picking by rememberSaveable { mutableStateOf<ModelRole?>(null) }
@@ -203,7 +203,7 @@ fun ModelSetupScreen(
         openGroups = { groupsOpen = true },
         next = onDone, openSpeech = onOpenSpeech,
         openVoice = onOpenVoice, openUsage = onOpenUsage,
-        openVoiceCatalog = onOpenVoiceCatalog, openRealtimeVoice = onOpenRealtimeVoice,
+        openVoiceCatalog = onOpenVoiceCatalog, openCallMode = onOpenCallMode,
         openDecision = { openDecision = true }, openSignIn = { signInSheet = it },
         setReasoningEffort = vm::setReasoningEffort, setModelContext = vm::setModelContext,
     )
@@ -439,7 +439,7 @@ class ModelSetupActions(
     /** 打开统一语音模型目录;为 null 时不显示入口(上手流程)。 */
     val openVoiceCatalog: (() -> Unit)? = null,
     /** 打开「语音通话」选择页;为 null 时不显示(上手流程)。 */
-    val openRealtimeVoice: (() -> Unit)? = null,
+    val openCallMode: (() -> Unit)? = null,
     /** Independent opt-in decision service; the three model roles remain unchanged. */
     val openDecision: (() -> Unit)? = null,
     val next: () -> Unit = {},
@@ -511,14 +511,14 @@ fun ModelSetupContent(
                     // 设置页的 vm 不带语音控制器,迁移与否直接看目录本身
                     val voiceCatalog = liveVoiceCatalog?.takeIf { it.legacyMigrationComplete } ?: ui.sttCatalog
                     val hubOpen = voiceCatalog != null && actions.openSpeech != null && actions.openVoice != null &&
-                        actions.openRealtimeVoice != null && actions.openVoiceCatalog != null
+                        actions.openCallMode != null && actions.openVoiceCatalog != null
                     if (voiceCatalog != null && hubOpen) {
                         RolesSection(ui, onPick, actions.setReasoningEffort, actions.setModelContext)
                         ImageModelSection(ui, actions.openImage)
                         VoiceHubSection(
                             voiceCatalog, ui.providers, readAloudOn,
                             onStt = actions.openSpeech!!, onTts = actions.openVoice!!,
-                            onRealtime = actions.openRealtimeVoice!!, onServices = actions.openVoiceCatalog!!,
+                            onCallMode = actions.openCallMode!!, onServices = actions.openVoiceCatalog!!,
                         )
                     } else {
                         RolesSection(ui, onPick, actions.setReasoningEffort, actions.setModelContext, actions.openVoice, voiceChoice)

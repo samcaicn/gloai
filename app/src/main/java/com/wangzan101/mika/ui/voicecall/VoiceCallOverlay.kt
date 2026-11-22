@@ -357,7 +357,7 @@ private fun PageButton(label: String, modifier: Modifier = Modifier, onClick: ()
  * 进通话前的门:没权限、权限被拒过、没配凭据、配置的协议不支持通话,各占一页;
  * 都在页内给按钮,不自动弹系统框。
  */
-enum class VoiceCallGateStage { NeedPermission, PermissionDenied, NeedCredentials, UnsupportedProtocol }
+enum class VoiceCallGateStage { NeedPermission, PermissionDenied, NeedCredentials, UnsupportedProtocol, NeedListenSpeak }
 
 /**
  * 门禁页:和通话页同一个深色全屏骨架,球安静地转(Globe),中间是说明和按钮。
@@ -408,6 +408,12 @@ fun VoiceCallGate(
                         VoiceCallGateStage.NeedCredentials -> {
                             title = stringResource(R.string.voicecall_setup_title)
                             body = stringResource(R.string.voicecall_setup_body)
+                            action = stringResource(R.string.voicecall_go_setup)
+                            go = onGoConfigure
+                        }
+                        VoiceCallGateStage.NeedListenSpeak -> {
+                            title = stringResource(R.string.voicecall_standard_title)
+                            body = stringResource(R.string.voicecall_standard_body)
                             action = stringResource(R.string.voicecall_go_setup)
                             go = onGoConfigure
                         }
@@ -509,7 +515,7 @@ class VoiceCallController(
         }
         if (standard()) {
             if (cascade.blocker(CallUse.InApp) != null) {
-                stage = VoiceCallStage.Gate(VoiceCallGateStage.NeedCredentials)
+                stage = VoiceCallStage.Gate(VoiceCallGateStage.NeedListenSpeak)
                 return
             }
             when {
@@ -555,7 +561,7 @@ class VoiceCallController(
     /** 回到前台时重查:在设置里开了权限就直接开。 */
     fun onResume() {
         val current = stage
-        if (current is VoiceCallStage.Gate && current.stage != VoiceCallGateStage.NeedCredentials && micGranted()) openCall()
+        if (current is VoiceCallStage.Gate && (current.stage == VoiceCallGateStage.NeedPermission || current.stage == VoiceCallGateStage.PermissionDenied) && micGranted()) openCall()
     }
 
     /** 收起:通话还活着就只藏页面(前台服务保活);失败不重试的落 Ended 收场;已结束的直接拆掉。 */
@@ -701,7 +707,7 @@ class VoiceCallDeps(
  * 回前台重查都接好。通话页本身不感知前台服务在不在——保活是服务的事,页面只看会话状态。
  */
 @Composable
-fun VoiceCallHost(deps: VoiceCallDeps, openSignal: Int, onGoConfigure: () -> Unit) {
+fun VoiceCallHost(deps: VoiceCallDeps, openSignal: Int, onGoConfigure: (VoiceCallGateStage) -> Unit) {
     val context = LocalContext.current
     val controller = remember(deps) {
         VoiceCallController(
@@ -757,7 +763,7 @@ fun VoiceCallHost(deps: VoiceCallDeps, openSignal: Int, onGoConfigure: () -> Uni
             },
             onGoConfigure = {
                 controller.collapse()
-                onGoConfigure()
+                onGoConfigure(stage.stage)
             },
             onCollapse = controller::collapse,
         )
