@@ -563,6 +563,8 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
 
     override fun onCreate() {
         super.onCreate()
+        // One-time legacy voice migration before any migrated consumer is initialized; a failure retains legacy behavior.
+        runCatching { migrateLegacyVoice() }
         // 上次进程在复制或绑定分享草稿途中退出时留下的临时文件;目录至多保留一份有效草稿。
         runCatching { sharedDrafts.cleanup() }
         scope.launch(Dispatchers.IO) {
@@ -648,6 +650,21 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                 )
             }.onFailure { Log.w("MikaChat", "could not auto archive conversations", it) }
         }
+    }
+
+    /** One-time legacy voice migration; builds the read-only snapshot without initializing [calls]. */
+    private fun migrateLegacyVoice() {
+        val environment = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(this)
+        val source = com.wangzan101.mika.voice.model.LegacyVoiceSnapshotSource {
+            val profileStore = com.wangzan101.mika.calls.CallVoiceProfileStore.create(this)
+            val activeProfileId = com.wangzan101.mika.calls.CallSettings.create(this).state.value.activeVoiceProfileId
+            com.wangzan101.mika.voice.model.LegacyVoiceSnapshot(
+                speech = speech.legacySnapshot(),
+                tts = voiceSettings.legacySnapshot(),
+                realtime = profileStore.legacySnapshot(activeProfileId),
+            )
+        }
+        environment.migrateLegacy(source)
     }
 
     /** 用户重新打开 Mika:补上退出时略过的启动工作(见 [com.wangzan101.mika.quit.MikaQuit])。 */

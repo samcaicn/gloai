@@ -75,6 +75,36 @@ class VoiceCatalogStore(
         }
     }
 
+    /** Deletes one service with every dependent model, selection and verification in a single snapshot. */
+    @Synchronized
+    fun deleteService(serviceId: String) {
+        deleteServices(setOf(serviceId))
+    }
+
+    /** Deletes several services atomically; each dependent model, selection and verification goes in the same snapshot. */
+    @Synchronized
+    fun deleteServices(serviceIds: Set<String>) {
+        if (serviceIds.isEmpty()) return
+        commit { current ->
+            val services = current.services.filterNot { it.id in serviceIds }
+            val models = current.models.filterNot { it.serviceId in serviceIds }
+            current.copy(
+                services = services,
+                models = models,
+                selections = pruneSelections(current.selections, models),
+                verifications = current.verifications.filterNot { it.ref.serviceId in serviceIds },
+            )
+        }
+    }
+
+    /** Drops every verification under a service without touching its models; used when account configuration changes. */
+    @Synchronized
+    fun invalidateVerification(serviceId: String) {
+        commit { current ->
+            current.copy(verifications = current.verifications.filterNot { it.ref.serviceId == serviceId })
+        }
+    }
+
     @Synchronized
     fun setSttSelection(selection: SttSelection) {
         commit { it.copy(selections = it.selections.copy(stt = selection)) }

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="models_voice_catalog">Modelos de voz</string>
+    <string name="models_voice_catalog_sub">Gerencie modelos de fala para texto, texto para fala e chamadas ao vivo em um só lugar</string>
+    <string name="voice_catalog_title">Modelos de voz</string>
+    <string name="voice_catalog_sub">Gerencie modelos de fala para texto, texto para fala e chamadas ao vivo em um só lugar. Capacidades e protocolos são declarados aqui; as páginas de entrada de voz, leitura e chamadas apenas escolhem e usam preferências.</string>
+    <string name="voice_catalog_add">Adicionar modelo</string>
+    <string name="voice_catalog_empty">Ainda não há modelos de voz. Toque em «Adicionar modelo» para começar.</string>
+    <string name="voice_catalog_read_failed">Não foi possível ler o catálogo de modelos de voz</string>
+    <string name="voice_catalog_migration_failed">A migração das configurações de voz anteriores falhou; o comportamento anterior é mantido</string>
+    <string name="voice_catalog_account">Origem da conta</string>
+    <string name="voice_catalog_account_existing">Conta de provedor existente (reutilizar endereço e chave)</string>
+    <string name="voice_catalog_account_owned">Nova conta de voz (criptografada)</string>
+    <string name="voice_catalog_account_none">Sem credenciais (sistema / auto-hospedado)</string>
+    <string name="voice_catalog_provider_id">ID do provedor</string>
+    <string name="voice_catalog_api_key">Chave de API</string>
+    <string name="voice_catalog_app_id">ID do app</string>
+    <string name="voice_catalog_access_key">Chave de acesso</string>
+    <string name="voice_catalog_service_name">Nome do serviço</string>
+    <string name="voice_catalog_model_id">ID do modelo</string>
+    <string name="voice_catalog_model_id_hint">Por exemplo, gpt-4o-transcribe ou um identificador personalizado</string>
+    <string name="voice_catalog_display_name">Nome de exibição</string>
+    <string name="voice_catalog_capabilities">Capacidades</string>
+    <string name="voice_catalog_cap_stt">Fala para texto</string>
+    <string name="voice_catalog_cap_tts">Texto para fala</string>
+    <string name="voice_catalog_cap_realtime">Chamada ao vivo</string>
+    <string name="voice_catalog_stt_protocol">Protocolo de fala para texto</string>
+    <string name="voice_catalog_tts_protocol">Protocolo de texto para fala</string>
+    <string name="voice_catalog_realtime_protocol">Protocolo de chamada ao vivo</string>
+    <string name="voice_catalog_endpoint">Endpoint</string>
+    <string name="voice_catalog_save_unverified">Salvar sem verificar</string>
+    <string name="voice_catalog_save_test">Salvar e testar</string>
+    <string name="voice_catalog_delete">Excluir</string>
+    <string name="voice_catalog_edit">Editar</string>
+    <string name="voice_catalog_delete_model_title">Excluir este modelo?</string>
+    <string name="voice_catalog_test">Testar</string>
+    <string name="voice_catalog_try_tts">Pré-visualizar</string>
+    <string name="voice_catalog_test_realtime">Teste de conexão</string>
+    <string name="voice_catalog_verified">Verificado</string>
+    <string name="voice_catalog_unverified">Não verificado</string>
+    <string name="voice_catalog_testing">Testando…</string>
+    <string name="voice_catalog_listening">Ouvindo, diga algo…</string>
+</resources>

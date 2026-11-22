@@ -112,8 +112,9 @@ fun ModelsScreen(
     onOpenVoice: (() -> Unit)? = null,
     onOpenImage: (() -> Unit)? = null,
     onOpenUsage: (() -> Unit)? = null,
+    onOpenVoiceCatalog: (() -> Unit)? = null,
 ) {
-    ModelSetupScreen(store, onboarding = false, onBack = onBack, onDone = onBack, onOpenSpeech = onOpenSpeech, onOpenVoice = onOpenVoice, onOpenImage = onOpenImage, onOpenUsage = onOpenUsage)
+    ModelSetupScreen(store, onboarding = false, onBack = onBack, onDone = onBack, onOpenSpeech = onOpenSpeech, onOpenVoice = onOpenVoice, onOpenImage = onOpenImage, onOpenUsage = onOpenUsage, onOpenVoiceCatalog = onOpenVoiceCatalog)
 }
 
 /** 子页面共用的骨架:顶栏 + 可滚动内容。 */

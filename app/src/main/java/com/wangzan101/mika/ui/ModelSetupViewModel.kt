@@ -382,6 +382,8 @@ class ModelSetupViewModel(
     /** 声音模型设置:撤掉它正在用的 TTS 标记时提示一句(见 [ModelSetupUi.voiceNotice]);上手流程和测试可不传。 */
     private val voice: VoiceSettings? = null,
     private val stt: SttSelectionController? = null,
+    /** 统一语音目录的账号管理:删除服务商时一并清掉依赖它的语音模型;测试和上手流程可不传。 */
+    private val voiceAccounts: com.wangzan101.mika.voice.model.VoiceAccountManager? = null,
 ) {
     private val _state = MutableStateFlow(snapshot(ModelSetupUi(AddForm.of(ProviderPresets.all.first()))))
     val state: StateFlow<ModelSetupUi> = _state.asStateFlow()
@@ -1377,7 +1379,7 @@ class ModelSetupViewModel(
         }
     }
 
-    /** 删掉服务商和它的 Key;用着它的用途退回默认。 */
+    /** 删掉服务商和它的 Key;用着它的用途退回默认,依赖它的语音模型一并清掉。 */
     fun removeProvider(providerId: String) {
         scope.launch {
             withContext(io) {
@@ -1389,6 +1391,7 @@ class ModelSetupViewModel(
                 }
                 // OpenRouter 授权来的 Key 随服务商一起删;OpenRouter 那边的 Key 要用户自己到 Keys 页面删
                 store.removeProvider(providerId)
+                voiceAccounts?.deleteProviderWithVoiceUsage(providerId)
             }
             _state.update { snapshot(it.copy(listing = it.listing - providerId)) }
         }

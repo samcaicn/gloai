@@ -9,7 +9,14 @@ class VoiceModelEnvironment(
     val accountResolver: VoiceAccountResolver,
     val registry: VoiceAdapterRegistry,
     val credentials: VoiceOwnedAccountSource,
+    /** Writable voice-owned credential store; null in tests that never persist owned accounts. */
+    val credentialStore: VoiceCredentialStore? = null,
 ) {
+    /** Set when the one-time legacy migration failed; the catalog page surfaces it while legacy behavior is retained. */
+    @Volatile
+    var migrationError: VoiceModelError? = null
+        private set
+
     init {
         val initial = catalog.state.value
         if (initial.error == null) {
@@ -26,6 +33,13 @@ class VoiceModelEnvironment(
                 catalog.upsertModel(existing.copy(stt = SttSelectionController.SYSTEM_STT_MODEL.stt))
             }
         }
+    }
+
+    /** Runs the one-time legacy migration; a failed read is recorded and legacy behavior is retained. */
+    fun migrateLegacy(source: LegacyVoiceSnapshotSource) {
+        val store = credentialStore ?: return
+        val result = LegacyVoiceMigration(source, catalog, store).migrateIfNeeded()
+        if (result is MigrationResult.Failed) migrationError = result.error
     }
 
     val stt: SttSelectionController by lazy { SttSelectionController(this) }
@@ -54,6 +68,7 @@ class VoiceModelEnvironment(
                 accountResolver = VoiceAccountResolver(ProviderStore.get(context), credentials),
                 registry = VoiceAdapterRegistry(),
                 credentials = credentials,
+                credentialStore = credentials,
             )
         }
     }

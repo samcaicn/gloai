@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="models_voice_catalog">語音模型</string>
+    <string name="models_voice_catalog_sub">統一管理語音轉文字、文字轉語音和實時通話的模型</string>
+    <string name="voice_catalog_title">語音模型</string>
+    <string name="voice_catalog_sub">統一管理語音轉文字、文字轉語音和實時通話的模型。能力與協定在此宣告；語音輸入、朗讀和通話設定頁只負責選擇與使用偏好。</string>
+    <string name="voice_catalog_add">新增模型</string>
+    <string name="voice_catalog_empty">還沒有語音模型。點擊「新增模型」開始。</string>
+    <string name="voice_catalog_read_failed">語音模型目錄無法讀取</string>
+    <string name="voice_catalog_migration_failed">遷移舊版語音設定失敗，仍保留舊版行為</string>
+    <string name="voice_catalog_account">帳號來源</string>
+    <string name="voice_catalog_account_existing">已有服務商帳號（複用位址與金鑰）</string>
+    <string name="voice_catalog_account_owned">新建語音專用帳號（加密儲存）</string>
+    <string name="voice_catalog_account_none">無憑據（系統 / 自建服務）</string>
+    <string name="voice_catalog_provider_id">服務商 ID</string>
+    <string name="voice_catalog_api_key">API 金鑰</string>
+    <string name="voice_catalog_app_id">App ID</string>
+    <string name="voice_catalog_access_key">Access Key</string>
+    <string name="voice_catalog_service_name">服務名稱</string>
+    <string name="voice_catalog_model_id">模型 ID</string>
+    <string name="voice_catalog_model_id_hint">例如 gpt-4o-transcribe，或自訂識別</string>
+    <string name="voice_catalog_display_name">顯示名稱</string>
+    <string name="voice_catalog_capabilities">能力</string>
+    <string name="voice_catalog_cap_stt">語音轉文字</string>
+    <string name="voice_catalog_cap_tts">文字轉語音</string>
+    <string name="voice_catalog_cap_realtime">實時通話</string>
+    <string name="voice_catalog_stt_protocol">語音轉文字 · 協定</string>
+    <string name="voice_catalog_tts_protocol">文字轉語音 · 協定</string>
+    <string name="voice_catalog_realtime_protocol">實時通話 · 協定</string>
+    <string name="voice_catalog_endpoint">介面位址</string>
+    <string name="voice_catalog_save_unverified">儲存為未驗證</string>
+    <string name="voice_catalog_save_test">儲存並測試</string>
+    <string name="voice_catalog_delete">刪除</string>
+    <string name="voice_catalog_edit">編輯</string>
+    <string name="voice_catalog_delete_model_title">刪除該模型？</string>
+    <string name="voice_catalog_test">測試</string>
+    <string name="voice_catalog_try_tts">試聽</string>
+    <string name="voice_catalog_test_realtime">連線測試</string>
+    <string name="voice_catalog_verified">已驗證</string>
+    <string name="voice_catalog_unverified">未驗證</string>
+    <string name="voice_catalog_testing">測試中…</string>
+    <string name="voice_catalog_listening">正在聽，請說一句…</string>
+</resources>

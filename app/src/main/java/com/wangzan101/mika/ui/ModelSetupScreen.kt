@@ -121,11 +121,17 @@ fun ModelSetupScreen(
     onOpenImage: (() -> Unit)? = null,
     /** 设置里查看 Token 用量;上手流程不传。 */
     onOpenUsage: (() -> Unit)? = null,
+    /** 设置里打开统一语音模型目录;上手流程不传。 */
+    onOpenVoiceCatalog: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val vm = remember {
         val signIns = (context.applicationContext as? MikaApp)?.chatGptSignIn ?: ChatGptSignIns(scope)
+        val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(context.applicationContext)
+        val voiceAccounts = voiceModels.credentialStore?.let {
+            com.wangzan101.mika.voice.model.VoiceAccountManager(voiceModels.catalog, it)
+        }
         ModelSetupViewModel(
             store, scope, browser = AndroidSignInBrowser(context.applicationContext), signIns = signIns,
             speech = (context.applicationContext as? MikaApp)?.speech,
@@ -134,6 +140,7 @@ fun ModelSetupScreen(
                 SystemSpeech.capability(context.applicationContext, silent)
             },
             voice = (context.applicationContext as? VoiceSettings.Owner)?.voiceSettings,
+            voiceAccounts = voiceAccounts,
         )
     }
     val ui by vm.state.collectAsState()
@@ -189,6 +196,7 @@ fun ModelSetupScreen(
         openGroups = { groupsOpen = true },
         next = onDone, openSpeech = onOpenSpeech,
         openVoice = onOpenVoice?.let { open -> { vm.dismissVoiceNotice(); open() } }, openUsage = onOpenUsage,
+        openVoiceCatalog = onOpenVoiceCatalog,
         openDecision = { openDecision = true }, openSignIn = { signInSheet = it },
         setReasoningEffort = vm::setReasoningEffort, setModelContext = vm::setModelContext,
     )
@@ -420,6 +428,8 @@ class ModelSetupActions(
     val openImage: (() -> Unit)? = null,
     /** 打开 Token 用量;为 null 时不显示入口(上手流程)。 */
     val openUsage: (() -> Unit)? = null,
+    /** 打开统一语音模型目录;为 null 时不显示入口(上手流程)。 */
+    val openVoiceCatalog: (() -> Unit)? = null,
     /** Independent opt-in decision service; the three model roles remain unchanged. */
     val openDecision: (() -> Unit)? = null,
     val next: () -> Unit = {},
@@ -490,6 +500,7 @@ fun ModelSetupContent(
                     RolesSection(ui, onPick, actions.setReasoningEffort, actions.setModelContext, actions.openVoice, voiceChoice)
                     SpeechSection(ui, actions.openSpeech)
                     ImageModelSection(ui, actions.openImage)
+                    VoiceCatalogSection(actions.openVoiceCatalog)
                     GroupCard(Modifier.padding(top = 8.dp)) {
                         ListRow(MikaIcons.Leaf, ModelsCopy.GROUPS, first = true, onClick = actions.openGroups) { RowChevron() }
                     }
@@ -951,6 +962,19 @@ private fun ImageModelSection(ui: ModelSetupUi, onImage: (() -> Unit)?) {
             RowValue(ModelsCopy.imageLine(ui).title)
             RowChevron()
         }
+    }
+}
+
+/** 统一语音模型目录入口:能力与协议在此声明;语音输入、朗读和通话页只负责选择与使用偏好。 */
+@Composable
+private fun VoiceCatalogSection(onOpenVoiceCatalog: (() -> Unit)?) {
+    if (onOpenVoiceCatalog == null) return
+    GroupCard {
+        ListRow(
+            ModelsCopy.VOICE_ICON, stringResource(R.string.models_voice_catalog),
+            subtitle = stringResource(R.string.models_voice_catalog_sub),
+            first = true, onClick = onOpenVoiceCatalog,
+        ) { RowChevron() }
     }
 }
 
