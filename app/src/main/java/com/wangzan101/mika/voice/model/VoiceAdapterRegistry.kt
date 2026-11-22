@@ -1,6 +1,7 @@
 package com.wangzan101.mika.voice.model
 
 import com.wangzan101.mika.voice.model.adapters.AndroidSystemSttAdapter
+import com.wangzan101.mika.voice.model.adapters.AndroidSystemTtsAdapter
 import com.wangzan101.mika.voice.model.adapters.BailianSttAdapter
 import com.wangzan101.mika.voice.model.adapters.DoubaoSttAdapter
 import com.wangzan101.mika.voice.model.adapters.FunAsrSttAdapter
@@ -26,7 +27,7 @@ class VoiceAdapterRegistry(
     ttsAdapters: List<TtsAdapter> = listOf(
         OpenAiSpeechTtsAdapter(),
         GeminiTtsAdapter(),
-        // Android system TTS is intentionally registered by the later system-TTS task.
+        AndroidSystemTtsAdapter(),
     ),
     realtimeAdapters: List<RealtimeAdapter> = listOf(
         VolcDuplexRealtimeAdapter(),

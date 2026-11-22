@@ -62,6 +62,7 @@ class LegacyVoiceMigration(
         fun build(): VoiceCatalogSnapshot {
             addService(SttSelectionController.SYSTEM_STT_SERVICE)
             addModel(SttSelectionController.SYSTEM_STT_MODEL)
+            addModel(TtsSelectionController.SYSTEM_TTS_MODEL)
             addChoice(legacySpeech.selection)
             legacySpeech.savedChoices.forEach(::addChoice)
             if (legacySpeech.doubaoCredentials != null) addService(doubaoService())
@@ -72,7 +73,8 @@ class LegacyVoiceMigration(
                 models = models.values.toList(),
                 selections = VoiceSelections(
                     stt = legacySpeech.selection.toSttSelection(),
-                    tts = legacyTts.choice?.ref(),
+                    // 全新安装(没有旧朗读选择)默认落在内置系统 TTS;已有的云端选择原样保留。
+                    tts = legacyTts.choice?.ref() ?: TtsSelectionController.SYSTEM_TTS_REF,
                     realtime = legacyRealtime.profiles.firstOrNull {
                         it.profile.id == legacyRealtime.activeProfileId
                     }?.let { realtimeRef(it.profile) },

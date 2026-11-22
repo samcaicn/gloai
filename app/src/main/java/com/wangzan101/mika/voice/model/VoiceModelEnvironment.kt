@@ -45,6 +45,15 @@ class VoiceModelEnvironment(
             } else if (existing.stt != SttSelectionController.SYSTEM_STT_MODEL.stt) {
                 catalog.upsertModel(existing.copy(stt = SttSelectionController.SYSTEM_STT_MODEL.stt))
             }
+            val existingTts = catalog.state.value.models.firstOrNull {
+                it.serviceId == TtsSelectionController.SYSTEM_TTS_MODEL.serviceId && it.id == TtsSelectionController.SYSTEM_TTS_MODEL.id
+            }
+            if (existingTts == null) {
+                catalog.upsertModel(TtsSelectionController.SYSTEM_TTS_MODEL)
+            } else if (existingTts.tts != TtsSelectionController.SYSTEM_TTS_MODEL.tts) {
+                catalog.upsertModel(existingTts.copy(tts = TtsSelectionController.SYSTEM_TTS_MODEL.tts))
+            }
+            TtsSelectionController(this).ensureDefault()
         }
     }
 

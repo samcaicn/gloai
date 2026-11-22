@@ -155,7 +155,7 @@ class VoiceAdapterRegistryTest {
             assertEquals(protocol, registry.stt(resolved(sttModel(protocol, binding), account)).protocol)
         }
 
-        TtsProtocol.entries.filterNot { it == TtsProtocol.AndroidSystem }.forEach { protocol ->
+        TtsProtocol.entries.forEach { protocol ->
             val model = VoiceModel("tts-service", "tts-model", "TTS", tts = TtsBinding(protocol))
             assertEquals(protocol, registry.tts(resolved(model)).protocol)
         }
@@ -174,12 +174,11 @@ class VoiceAdapterRegistryTest {
         assertEquals(VoiceCapability.STT, error.requested)
     }
 
-    @Test fun `android system TTS remains unregistered in this task`() {
+    @Test fun `android system TTS resolves through the registry`() {
         val registry = VoiceAdapterRegistry()
         val model = resolved(VoiceModel("android-system", "system-tts", "System TTS", tts = TtsBinding(TtsProtocol.AndroidSystem)), ResolvedAccount.None)
 
-        val error = assertThrows(VoiceModelError.Unsupported::class.java) { registry.tts(model) }
-        assertEquals(VoiceCapability.TTS, error.requested)
+        assertEquals(TtsProtocol.AndroidSystem, registry.tts(model).protocol)
     }
 
     @Test fun `provider STT bindings preserve each existing transcribe method`() {

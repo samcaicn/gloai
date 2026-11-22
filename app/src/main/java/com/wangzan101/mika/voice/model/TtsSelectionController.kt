@@ -22,6 +22,17 @@ class TtsSelectionController(private val environment: VoiceModelEnvironment) {
         environment.catalog.setTtsSelection(ref)
     }
 
+    /**
+     * 全新安装的默认选择:目录还没迁移、且没有朗读选择时,落在内置系统 TTS 上。
+     * 迁移产生的选择(含云端)从不被改写;迁移后的目录交给迁移结果。
+     */
+    internal fun ensureDefault() {
+        val snapshot = environment.catalog.state.value
+        if (!snapshot.legacyMigrationComplete && snapshot.selections.tts == null) {
+            environment.catalog.setTtsSelection(SYSTEM_TTS_REF)
+        }
+    }
+
     fun requireModel(ref: VoiceModelRef): ResolvedVoiceModel {
         val snapshot = environment.catalog.state.value
         if (snapshot.error != null) throw VoiceModelError.IncompleteConfig("Voice catalog is not readable")
@@ -37,5 +48,19 @@ class TtsSelectionController(private val environment: VoiceModelEnvironment) {
     fun createTts(context: Context, ref: VoiceModelRef, capabilities: TtsCapabilities): TtsModel {
         val model = requireModel(ref)
         return environment.registry.tts(model).create(context, model, capabilities)
+    }
+
+    companion object {
+        val SYSTEM_TTS_REF = VoiceModelRef("android-system", "system-tts", VoiceCapability.TTS)
+
+        /** 和内置系统识别共用同一个 android-system 服务,不另建服务。 */
+        val SYSTEM_TTS_SERVICE = SttSelectionController.SYSTEM_STT_SERVICE
+
+        val SYSTEM_TTS_MODEL = VoiceModel(
+            serviceId = "android-system",
+            id = "system-tts",
+            displayName = "Android system speech synthesis",
+            tts = TtsBinding(TtsProtocol.AndroidSystem),
+        )
     }
 }

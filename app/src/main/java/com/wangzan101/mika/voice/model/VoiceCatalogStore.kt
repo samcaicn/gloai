@@ -219,7 +219,7 @@ class VoiceCatalogStore(
 
     private fun validateRef(ref: VoiceModelRef, capability: VoiceCapability, models: List<VoiceModel>) {
         require(ref.capability == capability && ref.serviceId.isNotBlank() && ref.modelId.isNotBlank())
-        if (ref == SYSTEM_STT_REF) return
+        if (ref == SYSTEM_STT_REF || ref == SYSTEM_TTS_REF) return
         require(models.any { it.sameIdentity(ref.serviceId, ref.modelId) && it.binding(capability) != null }) {
             "Voice selection does not resolve to a configured capability"
         }
@@ -229,7 +229,7 @@ class VoiceCatalogStore(
         val stt = (selections.stt as? SttSelection.Model)?.ref
         return selections.copy(
             stt = if (stt == null || stt == SYSTEM_STT_REF || stt.selectable(models)) selections.stt else SttSelection.Off,
-            tts = selections.tts?.takeIf { it.selectable(models) },
+            tts = selections.tts?.takeIf { it == SYSTEM_TTS_REF || it.selectable(models) },
             realtime = selections.realtime?.takeIf { it.selectable(models) },
         )
     }
@@ -289,5 +289,6 @@ class VoiceCatalogStore(
 
     private companion object {
         val SYSTEM_STT_REF = VoiceModelRef("android-system", "system-stt", VoiceCapability.STT)
+        val SYSTEM_TTS_REF = VoiceModelRef("android-system", "system-tts", VoiceCapability.TTS)
     }
 }
