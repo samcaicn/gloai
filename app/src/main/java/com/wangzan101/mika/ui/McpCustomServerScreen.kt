@@ -110,8 +110,20 @@ fun McpCustomServerScreen(
             store.add(cfg, token.ifBlank { null }).onSuccess { savedId = it.id }
         } else {
             store.update(cfg).also {
-                if (it.isSuccess && token.isNotBlank()) store.setToken(cfg.id, token)
-                if (it.isSuccess && !oauth && initial?.auth == "oauth") store.clearOAuth(cfg.id)
+                if (it.isSuccess) {
+                    // 传输/认证切换时清掉不再适用的旧秘密,避免残留。
+                    when {
+                        cfg.transport == "stdio" -> {
+                            store.setToken(cfg.id, null)
+                            store.clearOAuth(cfg.id)
+                        }
+                        cfg.auth == "oauth" -> store.setToken(cfg.id, null)
+                        else -> {
+                            store.clearOAuth(cfg.id)
+                            if (token.isNotBlank()) store.setToken(cfg.id, token)
+                        }
+                    }
+                }
             }
         }
         result.exceptionOrNull()?.let { error = it.message; return null }

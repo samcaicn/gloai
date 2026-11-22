@@ -107,8 +107,8 @@ class McpServerStore(
     val catalog: McpCatalog = McpCatalog.Empty,
     /** stdio 预设含包时的安装/缓存;为 null 时这类预设报不可用。 */
     private val packageProvisioner: McpPackageProvisioner? = null,
-    /** stdio 包下载确认(进程内);包装进工作区缓存后无需再确认。 */
-    val packageConsent: McpPackageConsent = McpPackageConsent(),
+    /** stdio 包下载确认;已确认的「包名 + 精确版本 + 来源」持久化,重装 App 后仍有效,不需重复确认。 */
+    val packageConsent: McpPackageConsent = McpPackageConsent(File(dir, "mcp-package-consent.json")),
 ) {
     private val file = File(dir, "mcp-servers.json")
     private val secretsFile = File(dir, "mcp-server-secrets.bin")
@@ -201,6 +201,20 @@ class McpServerStore(
     }
 
     /**
+     * 按预设 id 新增或替换:重试/重新授权时复用已有配置 id,不产生重复条目(秘密仍归同一 config id)。
+     * 复用 id 也避免同一预设反复添加后出现多个 disabled 副本。
+     */
+    @Synchronized fun savePreset(config: McpServerConfig): Result<McpServerConfig> {
+        validate(config)?.let { return Result.failure(IllegalArgumentException(it)) }
+        val existing = config.presetId?.let { pid -> _servers.value.firstOrNull { it.presetId == pid } }
+        val effective = if (existing != null) config.copy(id = existing.id) else config
+        val next = if (existing != null) _servers.value.map { if (it.id == existing.id) effective else it } else _servers.value + effective
+        saveConfigs(next)
+        _servers.value = next
+        return Result.success(effective)
+    }
+
+    /**
      * Connect a preset for the first time: save its config and secrets, then run the normal
      * connection test. On failure the config is kept but disabled, so the user can edit and retry.
      */
@@ -210,10 +224,14 @@ class McpServerStore(
         secrets: Map<String, String>,
     ): Result<McpTestResult> {
         val config = presetConfig(presetId, values).getOrElse { return Result.failure(it) }
-        add(config).onFailure { return Result.failure(it) }
-        secrets.forEach { (fieldId, value) -> setSecret(config.id, fieldId, value) }
-        val result = test(config)
-        if (result.isFailure) setEnabled(config.id, false)
+        val saved = savePreset(config).getOrElse { return Result.failure(it) }
+        // 只写该预设声明的秘密字段(非空);未知字段不落进加密存储,避免 resolver 永久报「未知字段」。
+        val declared = saved.presetSnapshot?.fields?.filter { it.secret }?.map { it.id }?.toSet()
+        secrets.forEach { (fieldId, value) ->
+            if (value.isNotBlank() && (declared == null || fieldId in declared)) setSecret(saved.id, fieldId, value)
+        }
+        val result = test(saved)
+        if (result.isFailure) setEnabled(saved.id, false)
         return result
     }
 

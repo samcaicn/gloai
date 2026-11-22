@@ -166,6 +166,19 @@ class McpPackageManagerTest {
         assertEquals("mcp_package_unsupported", u.code)
     }
 
+    @Test fun consentPersistsAcrossInstances() {
+        val file = File(tmp.root, "consent.json")
+        val a = McpPackageConsent(file)
+        assertFalse(a.accepted(npm))
+        a.accept(npm)
+        // 新实例从磁盘读回已确认项;换版本/来源不算同一项。
+        val b = McpPackageConsent(file)
+        assertTrue(b.accepted(npm))
+        assertFalse(b.accepted(npm.copy(version = "9.9.9")))
+        b.accept(pypi)
+        assertTrue(McpPackageConsent(file).accepted(pypi))
+    }
+
     @Test fun nodeAndPythonPackagesResolvePinnedArgvWithoutSecrets() = runBlocking {
         val port = FakePort()
         val consent = McpPackageConsent().apply { accept(npm); accept(pypi) }

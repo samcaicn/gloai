@@ -47,14 +47,14 @@ class McpConnectorState(
     internal var inFlight: Job? = null
         private set
 
-    /** 打开预设,只呈现该预设声明的字段;stdio 含包且尚未确认时进入待确认。重新打开同一预设保留未提交的非秘密草稿。 */
+    /** 打开预设,只呈现该预设声明的字段;stdio 含包且尚未确认时进入待确认。重新打开同一预设保留未提交的非秘密草稿,秘密草稿丢弃。 */
     fun openPreset(id: String) {
         cancel()
         val preset = catalog.presets.find { it.id == id } ?: return
         val needsConsent = preset.packageSpec?.let { !store.packageAccepted(it) } == true
         val existing = _stage.value as? McpConnectStage.Form
         _stage.value = if (existing?.preset?.id == id) {
-            existing.copy(connecting = false, error = null, needsPackageConsent = needsConsent)
+            existing.copy(connecting = false, error = null, needsPackageConsent = needsConsent, secretValues = emptyMap())
         } else {
             McpConnectStage.Form(
                 preset = preset,
@@ -107,7 +107,7 @@ class McpConnectorState(
         }
     }
 
-    /** OAuth:保存配置后走现有发现/注册/PKCE 流程;回调拿到令牌后自动读取工具目录。 */
+    /** OAuth:保存配置后走现有发现/注册/PKCE 流程;回调拿到令牌后自动读取工具目录。重试/重新授权复用同一 config id,不产生重复条目。 */
     fun authorize(openBrowser: (String) -> Unit) {
         val form = _stage.value as? McpConnectStage.Form ?: return
         val preset = form.preset
@@ -115,19 +115,20 @@ class McpConnectorState(
             val config = store.presetConfig(preset.id, form.values).getOrElse {
                 return@launch form.copy(connecting = false, error = it.message)
             }
-            store.add(config).getOrElse { return@launch form.copy(connecting = false, error = it.message) }
-            store.authorize(config, openBrowser).getOrElse {
-                store.setEnabled(config.id, false)
+            val saved = store.savePreset(config).getOrElse {
                 return@launch form.copy(connecting = false, error = it.message)
             }
-            val result = store.test(config).fold(
-                onSuccess = { McpConnectStage.Connected(config, it.tools) },
+            store.authorize(saved, openBrowser).getOrElse {
+                store.setEnabled(saved.id, false)
+                return@launch form.copy(connecting = false, error = it.message)
+            }
+            store.test(saved).fold(
+                onSuccess = { McpConnectStage.Connected(saved, it.tools) },
                 onFailure = {
-                    store.setEnabled(config.id, false)
+                    store.setEnabled(saved.id, false)
                     form.copy(connecting = false, error = it.message)
                 },
             )
-            result
         }
     }
 
@@ -164,13 +165,24 @@ class McpConnectorState(
     private fun launch(form: McpConnectStage.Form, block: suspend () -> McpConnectStage) {
         inFlight = scope.launch {
             _stage.value = form.copy(connecting = true, error = null)
-            _stage.value = try {
+            val result = try {
                 block()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 // 缺失必填字段等预检错误也以失败态呈现,不冒泡崩溃。
                 form.copy(connecting = false, error = e.message ?: e.javaClass.simpleName)
+            }
+            _stage.value = if (result is McpConnectStage.Form) {
+                // 连接期间字段仍可编辑;落定时把当前草稿(非秘密值 + 秘密值 + 包确认态)带回来,别用点击瞬间的旧快照覆盖编辑。
+                val current = _stage.value as? McpConnectStage.Form
+                result.copy(
+                    values = current?.values ?: result.values,
+                    secretValues = current?.secretValues ?: result.secretValues,
+                    needsPackageConsent = current?.needsPackageConsent ?: result.needsPackageConsent,
+                )
+            } else {
+                result
             }
         }
     }

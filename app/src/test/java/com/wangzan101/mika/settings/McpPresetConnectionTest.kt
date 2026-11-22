@@ -11,6 +11,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -129,6 +130,38 @@ class McpPresetConnectionTest {
         assertEquals("secret-token", s.secret(saved.id, "token"))
         assertFalse(s.health.value.getValue(saved.id).ok)
         assertEquals(0, s.connections().connections.size)
+    }
+
+    @Test fun connectPresetRetryReusesConfigInsteadOfDuplicating() = runBlocking {
+        val preset = McpPreset(
+            id = "dead", name = "Dead", summary = McpCopy(mapOf("en" to "Dead")),
+            category = "data", transport = "streamable-http", auth = "fields",
+            endpoint = "https://127.0.0.1:1/mcp",
+            fields = listOf(McpPresetField("token", McpCopy(mapOf("en" to "Token")), secret = true, required = true, target = "bearer")),
+            officialSource = "https://example.com/docs",
+        )
+        val s = store(catalog(preset))
+        s.connectPreset("dead", emptyMap(), mapOf("token" to "first"))
+        s.connectPreset("dead", emptyMap(), mapOf("token" to "second"))
+        // 重试复用同一 config id,不产生重复条目;秘密覆盖到同一 id。
+        val saved = s.servers.value.single()
+        assertEquals("dead", saved.presetId)
+        assertEquals("second", s.secret(saved.id, "token"))
+    }
+
+    @Test fun connectPresetIgnoresUndeclaredSecrets() = runBlocking {
+        val preset = McpPreset(
+            id = "dead", name = "Dead", summary = McpCopy(mapOf("en" to "Dead")),
+            category = "data", transport = "streamable-http", auth = "fields",
+            endpoint = "https://127.0.0.1:1/mcp",
+            fields = listOf(McpPresetField("token", McpCopy(mapOf("en" to "Token")), secret = true, required = true, target = "bearer")),
+            officialSource = "https://example.com/docs",
+        )
+        val s = store(catalog(preset))
+        s.connectPreset("dead", emptyMap(), mapOf("token" to "real", "nope" to "x", "" to ""))
+        val saved = s.servers.value.single()
+        assertEquals("real", s.secret(saved.id, "token"))
+        assertNull(s.secret(saved.id, "nope"))
     }
 
     @Test fun existingPresetConfigKeepsConnectionSnapshotAfterCatalogUpdate() {

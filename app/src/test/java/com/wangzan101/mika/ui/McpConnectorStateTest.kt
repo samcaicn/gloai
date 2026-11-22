@@ -175,6 +175,20 @@ class McpConnectorStateTest {
         assertNull(form.error)
     }
 
+    @Test fun reopenSamePresetDropsSecretDraft() {
+        val cat = catalog(httpFieldsPreset())
+        val store = McpServerStore(tmp.root, ReverseCipher(), OkHttpClient(), catalog = cat)
+        val connector = McpConnectorState(store, cat, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined))
+        connector.openPreset("acme")
+        connector.updateField("tenant", "north")
+        connector.updateField("token", "bearer-secret")
+        // 返回目录后重开同一预设:非秘密草稿保留,秘密草稿丢弃(不再残留显示)。
+        connector.openPreset("acme")
+        val form = connector.stage.value as McpConnectStage.Form
+        assertEquals(mapOf("tenant" to "north"), form.values)
+        assertTrue(form.secretValues.isEmpty())
+    }
+
     @Test fun replaceSecretsWritesOnlyDeclaredNonBlankFields() {
         val cat = catalog(httpFieldsPreset())
         val store = McpServerStore(tmp.root, ReverseCipher(), OkHttpClient(), catalog = cat)
