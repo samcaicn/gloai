@@ -64,7 +64,6 @@ import com.wangzan101.mika.core.skills.SkillDrafter
 import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.memory.MemoryRuntime
 import com.wangzan101.mika.settings.ProviderStore
-import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.voice.model.settingsProtocol
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.record.RunEvent
@@ -527,9 +526,8 @@ class TaskRun(
         val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(service)
         val choice = com.wangzan101.mika.voice.SpeechSettings.get(service).choice.value as? com.wangzan101.mika.voice.SpeechChoice.Provider
             ?: return@lazy null
-        val provider = ProviderStore.get(service).provider(choice.providerId) ?: return@lazy null
-        if (ModelOptions.isTtsOnly(provider, choice.model)) null
-        else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice, voiceModels.stt) { workspaceKey }
+        ProviderStore.get(service).provider(choice.providerId) ?: return@lazy null
+        com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice, voiceModels.stt) { workspaceKey }
     }
 
     /** 迁移后的转写端口:目录与执行都按当前批量 STT 决定,配置失效只让转写工具不可用。 */

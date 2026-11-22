@@ -16,7 +16,7 @@ import org.junit.rules.TemporaryFolder
 class VoiceSettingsTest {
     @get:Rule val tmp = TemporaryFolder()
 
-    @Test fun existingVoiceIsMarkedOnlyOnceAndKeepsItsSettings() {
+    @Test fun reconcileKeepsChoiceAndMarksMigrated() {
         val store = ProviderStore(tmp.root, AesGcmKeyCipher { error("No credentials in this fixture") })
         val p = store.connect("Speech", ProviderConfig.Kind.OpenAiCompat, "https://tts.test/v1", null, emptyList())
         val prefs = MemoryPrefs()
@@ -25,18 +25,13 @@ class VoiceSettingsTest {
         settings.setChoice(choice)
 
         settings.reconcileTtsChoice(store)
-        assertEquals(setOf("private-tts"), store.provider(p.id)?.ttsModels)
-        assertEquals(choice, settings.state.value.choice)
-
-        store.setTtsModel(p.id, "private-tts", false)
-        val restarted = VoiceSettings(prefs)
-        restarted.reconcileTtsChoice(store)
+        // 旧标记不再写入;选择原样保留,只记下已迁移
         assertTrue(store.provider(p.id)!!.ttsModels.isEmpty())
-        assertNull(restarted.state.value.choice)
-        assertNull(VoiceSettings(prefs).state.value.choice)
+        assertEquals(choice, settings.state.value.choice)
+        assertTrue(prefs.getBoolean("voice_tts_role_migrated", false))
     }
 
-    @Test fun blankLegacyModelIsNotMarkedAndTheChoiceIsCleared() {
+    @Test fun reconcileTrimsBlankLegacyModel() {
         val store = ProviderStore(tmp.root, AesGcmKeyCipher { error("No credentials in this fixture") })
         val p = store.connect("Speech", ProviderConfig.Kind.OpenAiCompat, "https://tts.test/v1", null, emptyList())
         val prefs = MemoryPrefs()
@@ -46,11 +41,11 @@ class VoiceSettingsTest {
         settings.reconcileTtsChoice(store)
         assertTrue(store.provider(p.id)!!.ttsModels.isEmpty())
         assertTrue(store.provider(p.id)!!.typedModels.isEmpty())
-        assertNull(settings.state.value.choice)
+        assertEquals("", settings.state.value.choice?.model)
         assertTrue(prefs.getBoolean("voice_tts_role_migrated", false))
     }
 
-    @Test fun importingVoiceKeepsAnExistingMainModelWithATtsLikeName() {
+    @Test fun importingVoiceKeepsAnExistingMainModel() {
         val store = ProviderStore(tmp.root, AesGcmKeyCipher { error("No credentials in this fixture") })
         val p = store.connect("Relay", ProviderConfig.Kind.OpenAiCompat, "https://relay.test/v1", null, emptyList())
         val model = "xxx-tts-proxy"
@@ -60,7 +55,7 @@ class VoiceSettingsTest {
         settings.setChoice(original)
         settings.reconcileTtsChoice(store)
         assertEquals(original, settings.state.value.choice)
-        assertTrue(model in store.provider(p.id)!!.ttsModels)
+        assertTrue(store.provider(p.id)!!.ttsModels.isEmpty())
         assertEquals(model, store.configFor(com.wangzan101.mika.core.model.ModelRole.Main)?.model)
     }
 

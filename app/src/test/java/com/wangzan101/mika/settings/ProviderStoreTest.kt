@@ -296,70 +296,6 @@ class ProviderStoreTest {
     private fun connected(s: ProviderStore, name: String = "P", key: String = "k") =
         s.connect(name, ProviderConfig.Kind.OpenAiCompat, "https://${name.lowercase()}.test/v1", key, listOf(ListedModel("m1"), ListedModel("m2")))
 
-    @Test fun markingTtsRemovesItsChatRoleAndFallbacksButKeepsOtherModels() {
-        val s = store()
-        val p = connected(s)
-        val other = connected(s, "Other")
-        assertTrue(p.ttsModels.isEmpty())
-        assertTrue(s.use(ModelRole.Main, p.id, "m1", none))
-        val speechId = s.roles.value.main!!
-        assertTrue(s.use(ModelRole.Vision, p.id, "m1", none))
-        assertTrue(s.use(ModelRole.Light, p.id, "m1", none))
-        val otherId = s.ensureConfigId(other.id, "m1", none)!!
-        for (role in ModelRole.entries) {
-            assertTrue(s.setFallback(role, 0, otherId))
-        }
-
-        assertTrue(s.setTtsModel(p.id, "m1", true))
-        assertEquals(RoleChoices(
-            mainFallbacks = listOf(otherId), visionFallbacks = listOf(otherId), lightFallbacks = listOf(otherId),
-        ), s.roles.value)
-        assertNull(s.configById(speechId))
-        assertEquals(other.id, s.configById(otherId)?.providerId)
-        assertTrue(s.setTtsModel(p.id, " manual-tts ", true))
-        assertTrue(s.setTtsModel(p.id, "m1", true))
-        s.rememberModels(p.id, listOf(ListedModel("m2")))
-        val reconnected = s.connect(p.name, p.kind, p.baseUrl, null, emptyList())
-        assertEquals(p.id, reconnected.id)
-        assertEquals(setOf("m1", "manual-tts"), reconnected.ttsModels)
-        assertTrue(s.provider(other.id)!!.ttsModels.isEmpty())
-
-        val reopened = store()
-        assertEquals(setOf("m1", "manual-tts"), reopened.provider(p.id)!!.ttsModels)
-        assertEquals(s.roles.value, reopened.roles.value)
-        assertTrue(reopened.setTtsModel(p.id, "m1", false))
-        assertEquals(setOf("manual-tts"), store().provider(p.id)!!.ttsModels)
-        assertNull(reopened.configFor(ModelRole.Main))
-        assertFalse(reopened.setTtsModel(p.id, " ", true))
-        assertFalse(reopened.setTtsModel("missing", "m1", true))
-    }
-
-    @Test fun soleTtsModelCanBeReassignedToMainOrSimplyUnmarked() = runTest {
-        val s = store()
-        val id = "fishaudio/drama-3-int4"
-        val p = s.connect("Local", ProviderConfig.Kind.OpenAiCompat, "https://local.test/v1", null, emptyList())
-        assertTrue(s.use(ModelRole.Main, p.id, id, none))
-        assertTrue(s.setTtsModel(p.id, id, true))
-        assertNull(s.configFor(ModelRole.Main))
-        assertFalse(s.use(ModelRole.Main, p.id, id, none))
-        assertTrue(s.probe(p.kind, p.baseUrl, null, null, id, null, none, providerId = p.id) is ProbeResult.Failed)
-        val blocked = File(tmp.root, "providers.json.tmp")
-        assertTrue(blocked.mkdir())
-        assertFalse(s.use(ModelRole.Main, p.id, id, none, reassignTts = true))
-        assertTrue(blocked.delete())
-        assertNull(s.configFor(ModelRole.Main))
-        assertEquals(setOf(id), s.provider(p.id)!!.ttsModels)
-        assertTrue(s.use(ModelRole.Main, p.id, id, none, reassignTts = true))
-        val reopened = store()
-        assertEquals(id, reopened.configFor(ModelRole.Main)?.model)
-        assertTrue(reopened.provider(p.id)!!.ttsModels.isEmpty())
-        assertTrue(reopened.setTtsModel(p.id, id, true))
-        assertTrue(reopened.setTtsModel(p.id, id, false))
-        assertNull(reopened.configFor(ModelRole.Main))
-        assertTrue(id in reopened.provider(p.id)!!.typedModels)
-        assertTrue(built.isEmpty())
-    }
-
     @Test fun overlappingLegacyRolesSurviveRestartAndRefreshUntilTheUserChooses() {
         val s = store()
         val provider = connected(s)
@@ -372,38 +308,28 @@ class ProviderStoreTest {
         existing.writeText(stored.replace(entryStart, "\"ttsModels\":[\"m1\"],$entryStart"))
 
         val reopened = store()
+        // 旧 ttsModels 字段仍作为遗留数据可读;不再按它过滤运行时的用途
         assertEquals(setOf("m1"), reopened.provider(provider.id)?.ttsModels)
         reopened.rememberModels(provider.id, listOf(ListedModel("m1"), ListedModel("m2")))
         assertEquals("m1", reopened.configFor(ModelRole.Main)?.model)
         assertEquals("m2", reopened.configFor(ModelRole.Vision)?.model)
         assertEquals(reopened.roles.value, store().roles.value)
-        assertTrue(reopened.setTtsModel(provider.id, "m1", true))
-        assertNull(reopened.configFor(ModelRole.Main))
-        assertEquals("m2", reopened.configFor(ModelRole.Vision)?.model)
     }
 
-    @Test fun ttsAdapterRequiresThisProvidersModelToBeMarked() {
+    @Test fun ttsAdapterBuildsForAnyNonBlankModel() {
         val s = store()
         val p = connected(s)
-        val other = connected(s, "Other")
         val choice = VoiceChoice(p.id, " manual-tts ", TtsProtocol.OpenAiSpeech)
         val capabilities = TtsCapabilities()
-        assertNull(s.ttsModel(choice, capabilities))
-        assertTrue(s.setTtsModel(other.id, "manual-tts", true))
-        assertNull(s.ttsModel(choice, capabilities))
-
-        assertTrue(s.setTtsModel(p.id, choice.model, true))
+        // 不再要求模型标为 TTS;模型名去空格后直接建
         assertEquals("manual-tts", s.ttsModel(choice, capabilities)?.name)
-        assertNull(s.ttsModel(choice.copy(model = "m1"), capabilities))
-        assertTrue(s.setTtsModel(p.id, choice.model, false))
-        assertNull(s.ttsModel(choice, capabilities))
+        assertEquals("m1", s.ttsModel(choice.copy(model = "m1"), capabilities)?.name)
     }
 
     /** 地址读回来不合法(手改过的文件):不建朗读模型、不抛,试听和朗读按没选处理。 */
     @Test fun ttsAdapterIsNullForAnInvalidBaseUrl() {
         val s = store()
         val p = connected(s)
-        assertTrue(s.setTtsModel(p.id, "tts-1", true))
         val file = File(tmp.root, "providers.json")
         file.writeText(file.readText().replace("https://p.test/v1", "not a url"))
         val reopened = store()
@@ -412,30 +338,14 @@ class ProviderStoreTest {
         assertNull(reopened.ttsModel(VoiceChoice(p.id, "tts-1", TtsProtocol.GeminiTts), TtsCapabilities()))
     }
 
-    /** 旧版存下的空模型名:导入声音选择不补记 TTS,也不留成手填模型;文件里已有的空手填名读入时丢掉。 */
-    @Test fun blankLegacyModelIsNeverMarkedOrKeptAsTyped() {
+    /** 文件里已有的空手填名读入时丢掉。 */
+    @Test fun blankTypedModelsAreDroppedOnRead() {
         val s = store()
         val p = connected(s)
-        assertTrue(s.importLegacyTtsChoice(p.id, ""))
-        assertTrue(s.importLegacyTtsChoice(p.id, "  "))
-        assertTrue(s.provider(p.id)!!.ttsModels.isEmpty())
-        assertTrue(s.provider(p.id)!!.typedModels.isEmpty())
-        assertTrue(s.setTtsModel(p.id, "manual-tts", true))
+        s.markTyped(p.id, "manual-tts")
         val file = File(tmp.root, "providers.json")
         file.writeText(file.readText().replace("\"typedModels\":[\"manual-tts\"]", "\"typedModels\":[\"\",\" \",\"manual-tts\"]"))
         assertEquals(setOf("manual-tts"), store().provider(p.id)?.typedModels)
-    }
-
-    @Test fun failedTtsMarkingSaveLeavesTheActiveAndPersistedValuesAlone() {
-        val s = store()
-        val p = connected(s)
-        assertTrue(s.setTtsModel(p.id, "m1", true))
-        val blocked = File(tmp.root, "providers.json.tmp")
-        assertTrue(blocked.mkdir())
-        assertFalse(s.setTtsModel(p.id, "m2", true))
-        assertEquals(setOf("m1"), s.provider(p.id)!!.ttsModels)
-        assertTrue(blocked.delete())
-        assertEquals(setOf("m1"), store().provider(p.id)!!.ttsModels)
     }
 
     @Test fun keyChangeInvalidatesAllowanceForOnlyThatProvider() {

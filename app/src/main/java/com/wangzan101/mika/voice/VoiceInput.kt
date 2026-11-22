@@ -7,7 +7,6 @@ import com.wangzan101.mika.R
 import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.i18n.AppLanguage
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.Provider
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.voice.model.SttSelection
@@ -151,9 +150,6 @@ class VoiceInput(
                 ProviderSpeech(PcmRecorder(), { wav ->
                     val provider = providers.provider(spec.provider.id)
                         ?: throw ModelError.BadResponse(tr(R.string.voice_unavailable_provider_gone))
-                    if (ModelOptions.isTtsOnly(provider, spec.model)) {
-                        throw ModelError.BadResponse(tr(R.string.model_tts_only_not_supported))
-                    }
                     transcriber(provider).transcribe(provider, providers.providerKey(provider.id), spec.model, spec.method, wav, iso)
                 })
             }

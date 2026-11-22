@@ -309,7 +309,7 @@ internal fun ResolvedVoiceModel.legacyProvider(endpoint: String, forceGemini: Bo
     val baseUrl = existing?.provider?.baseUrl ?: endpoint
     if (baseUrl.isBlank()) throw VoiceModelError.IncompleteConfig("Voice account endpoint is missing")
     val kind = if (forceGemini) ProviderConfig.Kind.Gemini else existing?.provider?.kind ?: ProviderConfig.Kind.OpenAiCompat
-    return existing?.provider?.copy(kind = kind, ttsModels = existing.provider.ttsModels - model.id) ?: Provider(
+    return existing?.provider?.copy(kind = kind) ?: Provider(
         id = service.id,
         name = service.name,
         kind = kind,

@@ -20,7 +20,6 @@ import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.settings.ImageChoice
 import com.wangzan101.mika.settings.ImageModelSettings
 import com.wangzan101.mika.settings.ImageProtocol
-import com.wangzan101.mika.settings.ModelOptions
 import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.ui.components.FooterNote
@@ -50,13 +49,7 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
     val c = MikaTheme.colors
     var model by remember { mutableStateOf(state.choice?.model.orEmpty()) }
     var test by remember { mutableStateOf<String?>(null) }
-    val provider = providers.firstOrNull { it.id == state.choice?.providerId }
-    val ttsModel = provider != null && ModelOptions.isTtsOnly(provider, model)
-    val eligibleProviders = providers.filter { candidate ->
-        val currentModel = state.choice?.takeIf { it.providerId == candidate.id }?.model.orEmpty()
-        ModelOptions.mayHaveNonTtsModels(candidate) ||
-            currentModel.isNotBlank() && !ModelOptions.isTtsOnly(candidate, currentModel)
-    }
+    val eligibleProviders = providers
     val choice = state.choice?.takeIf { selected -> eligibleProviders.any { it.id == selected.providerId } }
 
     Page(tr(R.string.role_image), onBack) {
@@ -79,7 +72,6 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
                         subtitle = p.baseUrl,
                         onClick = {
                             val protocol = if (p.kind == ProviderConfig.Kind.Gemini) ImageProtocol.GeminiImage else ImageProtocol.OpenAiImages
-                            if (ModelOptions.isTtsOnly(p, model)) model = ""
                             settings.setChoice(ImageChoice(p.id, model, protocol))
                             test = null
                         },
@@ -118,7 +110,6 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
                 )
             }
         }
-        if (ttsModel) FooterNote(tr(R.string.model_tts_only_not_supported), color = c.bad)
 
         GroupLabel(tr(R.string.image_limits), Modifier.padding(top = 12.dp))
         GroupCard {
@@ -157,7 +148,7 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
                     }
                 }
             },
-            enabled = choice != null && model.isNotBlank() && !ttsModel,
+            enabled = choice != null && model.isNotBlank(),
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         )
         test?.let { FooterNote(it, Modifier.padding(top = 8.dp)) }

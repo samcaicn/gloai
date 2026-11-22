@@ -56,11 +56,12 @@ class SpeechResolverTest {
         )
     }
 
-    @Test fun previouslySelectedSpeechSynthesisModelIsUnavailable() {
+    @Test fun providerSelectionIgnoresTtsMarks() {
+        val marked = p1.copy(ttsModels = setOf("custom"))
         val choice = SpeechChoice.Provider(p1.id, "custom", TranscribeMethod.AudioTranscriptions)
         assertEquals(
-            SpeechEngineSpec.Unavailable(SpeechEngineSpec.Why.TtsOnly),
-            SpeechResolver.resolve(choice, none, listOf(p1.copy(ttsModels = setOf(choice.model)))),
+            SpeechEngineSpec.Provider(marked, "custom", TranscribeMethod.AudioTranscriptions),
+            SpeechResolver.resolve(choice, none, listOf(marked)),
         )
     }
 

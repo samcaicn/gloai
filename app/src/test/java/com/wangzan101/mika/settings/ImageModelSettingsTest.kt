@@ -95,19 +95,19 @@ class ImageModelSettingsTest {
         assertEquals(0, noEdit.maxReferences)
     }
 
-    @Test fun imageAdapterExcludesOnlyExplicitlyMarkedTtsModelsWithinMixedProviders() {
+    @Test fun imageAdapterIgnoresTtsMarks() {
         val store = ProviderStore(tmp.root, AesGcmKeyCipher { error("No credentials in this fixture") })
         val provider = store.connect(
             "Mixed", ProviderConfig.Kind.OpenAiCompat, "https://example.test/v1", null,
             listOf(ListedModel("image-model"), ListedModel("fishaudio/drama-3-int4")),
         )
-        store.setTtsModel(provider.id, "custom", true)
         val choice = ImageChoice(provider.id, "image-model", ImageProtocol.OpenAiImages)
         val settings = ImageModelSettings(MemoryPrefs())
         settings.setChoice(choice)
         val caps = settings.capabilities()!!
         assertEquals("image-model", store.imageModel(choice, caps)?.name)
         assertEquals("fishaudio/drama-3-int4", store.imageModel(choice.copy(model = "fishaudio/drama-3-int4"), caps)?.name)
-        assertNull(store.imageModel(choice.copy(model = "custom"), caps))
+        // 手填的、不在列表里的模型不再因标记或名字被排除
+        assertEquals("custom", store.imageModel(choice.copy(model = "custom"), caps)?.name)
     }
 }

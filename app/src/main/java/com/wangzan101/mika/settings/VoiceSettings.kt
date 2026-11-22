@@ -83,19 +83,15 @@ class VoiceSettings(private val prefs: SharedPreferences) {
     /** Usage preferences remain in this store; migration reads but never rewrites them. */
     internal fun legacySnapshot(): VoiceSettingsState = state.value
 
-    /** 旧版在声音页直接填写模型。首次升级时保留这个选择及其音色和协议。 */
+    /** 旧版在声音页直接填写模型。首次升级时保留这个选择及其音色和协议;选择经统一目录迁移,这里不再按标记过滤。 */
     internal fun reconcileTtsChoice(store: ProviderStore) {
         val choice = state.value.choice
         if (!prefs.getBoolean(KEY_TTS_ROLE_MIGRATED, false)) {
             if (choice != null && store.provider(choice.providerId) != null) {
                 val model = choice.model.trim()
-                if (!store.importLegacyTtsChoice(choice.providerId, model)) return
                 if (model != choice.model) setChoice(choice.copy(model = model))
             }
             prefs.edit().putBoolean(KEY_TTS_ROLE_MIGRATED, true).apply()
-        }
-        if (choice != null && store.provider(choice.providerId)?.ttsModels?.contains(choice.model.trim()) != true) {
-            setChoice(null)
         }
     }
 

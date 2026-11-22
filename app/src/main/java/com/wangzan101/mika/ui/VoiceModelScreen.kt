@@ -19,8 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.core.model.TtsRequest
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.settings.ModelOptions
-import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.TtsProtocol
 import com.wangzan101.mika.settings.VoiceChoice
@@ -65,11 +63,7 @@ internal fun VoiceModelContent(store: ProviderStore, settings: VoiceSettings, on
     val context = LocalContext.current
     val state by settings.state.collectAsState()
     val providers by store.providers.collectAsState()
-    val configs by store.configs.collectAsState()
-    val ttsProviders = providers.filter { it.ttsModels.isNotEmpty() }
-    val savedChoice = state.choice
-    val selectedProvider = ttsProviders.firstOrNull { it.id == savedChoice?.providerId }
-    val choice = savedChoice?.takeIf { selectedProvider != null && it.model in selectedProvider.ttsModels }
+    val choice = state.choice
     val player = remember { VoicePlayer(context) }
     val playback by player.state.collectAsState()
     var speed by remember(choice?.providerId, choice?.model) { mutableStateOf((choice?.speed ?: 1.0f).toString()) }
@@ -90,25 +84,8 @@ internal fun VoiceModelContent(store: ProviderStore, settings: VoiceSettings, on
             )
         }
 
-        if (ttsProviders.isEmpty()) {
-            FooterNote(tr(if (providers.isEmpty()) R.string.voice_no_providers else R.string.voice_no_tts_models))
-        } else {
-            ModelPickerRows(
-                groups = ttsProviders.map { provider ->
-                    provider to ModelOptions.ofProvider(provider, configs, includeTts = true)
-                        .filter { it.id in provider.ttsModels }
-                },
-                pick = { providerId, model ->
-                    val provider = ttsProviders.firstOrNull { it.id == providerId && model in it.ttsModels }
-                    if (provider != null) {
-                        val previous = savedChoice?.takeIf { it.providerId == provider.id }
-                        val protocol = if (provider.kind == ProviderConfig.Kind.Gemini) TtsProtocol.GeminiTts else TtsProtocol.OpenAiSpeech
-                        saveChoice(previous?.copy(model = model) ?: VoiceChoice(provider.id, model, protocol))
-                    }
-                },
-                isSelected = { providerId, model -> choice?.providerId == providerId && choice.model == model },
-                isTts = { _, _ -> true },
-            )
+        if (providers.isEmpty()) {
+            FooterNote(tr(R.string.voice_no_providers))
         }
 
         choice?.let {
