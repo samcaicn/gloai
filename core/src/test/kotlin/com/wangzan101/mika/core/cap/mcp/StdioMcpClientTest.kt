@@ -121,7 +121,7 @@ class StdioMcpClientTest {
         val endpoint = StdioMcpEndpoint.connect(
             serverId = "local",
             command = listOf("fake-server"),
-            launcher = McpStdioLauncher { _, _ -> process },
+            launcher = McpStdioLauncher { _, _, _ -> process },
             workspace = "test",
             timeoutSec = 5,
         ).getOrThrow()
@@ -145,7 +145,7 @@ class StdioMcpClientTest {
     @Test(timeout = 20_000) fun requestIdsRemainUniqueAfterHandshake() = runBlocking {
         val process = FakeProcess(strictIds = true)
         val endpoint = StdioMcpEndpoint.connect("strict", listOf("fake-server"),
-            McpStdioLauncher { _, _ -> process }, "test", timeoutSec = 5).getOrThrow()
+            McpStdioLauncher { _, _, _ -> process }, "test", timeoutSec = 5).getOrThrow()
         try {
             assertEquals("resource body", endpoint.readResource("file://a").text)
             assertEquals("user: do it", endpoint.getPrompt("summarize", buildJsonObject {}).text)
@@ -163,5 +163,46 @@ class StdioMcpClientTest {
         assertEquals(listOf("a b", "c"), parseStdioCommand("a\\ b c"))
         assertEquals(listOf(""), parseStdioCommand("\"\""))
         assertThrows(McpClientException::class.java) { parseStdioCommand("\"unclosed") }
+    }
+
+    @Test(timeout = 20_000) fun stdioPassesOnlyResolvedEnvironment() = runBlocking {
+        val process = FakeProcess()
+        var receivedEnv: Map<String, String> = emptyMap()
+        var receivedArgv: List<String> = emptyList()
+        val endpoint = StdioMcpEndpoint.connect(
+            serverId = "local",
+            command = listOf("fake-server", "--region", "us"),
+            launcher = McpStdioLauncher { _, argv, environment ->
+                receivedArgv = argv
+                receivedEnv = environment
+                process
+            },
+            workspace = "test",
+            environment = mapOf("SECRET_TOKEN" to "s3cret", "REGION" to "us"),
+            timeoutSec = 5,
+        ).getOrThrow()
+        try {
+            assertEquals(mapOf("SECRET_TOKEN" to "s3cret", "REGION" to "us"), receivedEnv)
+            assertEquals(listOf("fake-server", "--region", "us"), receivedArgv)
+            assertFalse("argv must never carry secrets", receivedArgv.contains("s3cret"))
+        } finally {
+            endpoint.close()
+        }
+    }
+
+    @Test(timeout = 20_000) fun legacyStdioConfigStillLaunchesWithNoExtraEnvironment() = runBlocking {
+        var receivedEnv: Map<String, String>? = null
+        val endpoint = StdioMcpEndpoint.connect(
+            serverId = "legacy",
+            command = listOf("fake-server"),
+            launcher = McpStdioLauncher { _, _, environment -> receivedEnv = environment; FakeProcess() },
+            workspace = "test",
+            timeoutSec = 5,
+        ).getOrThrow()
+        try {
+            assertEquals(emptyMap<String, String>(), receivedEnv)
+        } finally {
+            endpoint.close()
+        }
     }
 }

@@ -377,11 +377,12 @@ class McpServerStore(
         when (config.transport) {
             "stdio" -> {
                 val launcher = stdio ?: throw IllegalStateException("stdio MCP servers are not available on this build")
-                val argv = if (config.presetId != null) resolvedPreset(config)?.argv ?: parseStdioCommand(config.command)
-                else parseStdioCommand(config.command)
+                val resolved = if (config.presetId != null) resolvedPreset(config) else null
+                val argv = resolved?.argv ?: parseStdioCommand(config.command)
+                val environment = resolved?.environment ?: emptyMap()
                 StdioMcpEndpoint.connect(
                     serverId = config.id, command = argv, launcher = launcher, workspace = workspace,
-                    timeoutSec = config.timeoutSec,
+                    environment = environment, timeoutSec = config.timeoutSec,
                     clientName = "Mika", clientVersion = BuildConfig.VERSION_NAME,
                 ).map { it as com.wangzan101.mika.core.cap.mcp.McpEndpoint }
             }

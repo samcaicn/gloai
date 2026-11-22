@@ -31,9 +31,9 @@ interface McpStdioProcess : Closeable {
     val stderr: InputStream
 }
 
-/** 启动 stdio server;[workspace] 是沙箱里的对话工作区,命令在沙箱里跑。 */
+/** 启动 stdio server;[workspace] 是沙箱里的对话工作区,[environment] 是解析出的显式环境(秘密经这里进进程,不进 argv)。 */
 fun interface McpStdioLauncher {
-    suspend fun launch(workspace: String, argv: List<String>): McpStdioProcess
+    suspend fun launch(workspace: String, argv: List<String>, environment: Map<String, String>): McpStdioProcess
 }
 
 /**
@@ -150,6 +150,7 @@ class StdioMcpEndpoint private constructor(
             command: List<String>,
             launcher: McpStdioLauncher,
             workspace: String,
+            environment: Map<String, String> = emptyMap(),
             timeoutSec: Int = 60,
             clientName: String = "Mika",
             clientVersion: String = "1",
@@ -158,7 +159,7 @@ class StdioMcpEndpoint private constructor(
             require(command.isNotEmpty()) { "stdio command is empty" }
             require(timeoutSec in 1..3600) { "timeoutSec must be 1..3600" }
             return try {
-                Result.success(connectUnsafe(serverId, command, launcher, workspace, timeoutSec, clientName, clientVersion, protocolVersion))
+                Result.success(connectUnsafe(serverId, command, launcher, workspace, environment, timeoutSec, clientName, clientVersion, protocolVersion))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -171,12 +172,13 @@ class StdioMcpEndpoint private constructor(
             command: List<String>,
             launcher: McpStdioLauncher,
             workspace: String,
+            environment: Map<String, String>,
             timeoutSec: Int,
             clientName: String,
             clientVersion: String,
             protocolVersion: String,
         ): StdioMcpEndpoint {
-            val process = launcher.launch(workspace, command)
+            val process = launcher.launch(workspace, command, environment)
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val pending = ConcurrentHashMap<Long, CompletableDeferred<JsonObject>>()
             scope.launch { readMessages(process.stdout, pending) }

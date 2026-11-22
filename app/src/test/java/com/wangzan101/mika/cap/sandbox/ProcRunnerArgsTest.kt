@@ -3,6 +3,7 @@ package com.wangzan101.mika.cap.sandbox
 import com.wangzan101.mika.core.workspace.SandboxTree
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -76,6 +77,29 @@ class ProcRunnerArgsTest {
         assertTrue(env.keys.none { it == "LD_PRELOAD" || it.startsWith("ANDROID_") })
         val bridged = ProcRunner.env(dirs, "mika-bridge-x", "tok", "conv1")
         assertEquals("mika-bridge-x", bridged["MIKA_BRIDGE"]); assertEquals("tok", bridged["MIKA_TOKEN"])
+    }
+
+    /** 解析出的 stdio 秘密环境只在显式 allowlist 上追加:保留 PATH/HOME/TZ 等基础项,不继承宿主/App 环境,非法键与 NUL 拒绝。 */
+    @Test fun sandboxProcessEnvironmentUsesExplicitAllowlist() {
+        val env = ProcRunner.env(dirs, null, null, "conv1", extra = mapOf("SECRET_API_KEY" to "k", "REGION" to "cn"))
+        // 基础项仍在
+        assertEquals("/root", env["HOME"])
+        assertEquals(ProcRunner.PATH, env["PATH"])
+        assertTrue(env.containsKey("TZ"))
+        // 只追加解析出的环境
+        assertEquals("k", env["SECRET_API_KEY"])
+        assertEquals("cn", env["REGION"])
+        // 不继承宿主 / App 环境:键只落在显式 allowlist 内
+        assertTrue(env.keys.none { it == "LD_PRELOAD" || it.startsWith("ANDROID_") || it == "JAVA_HOME" })
+        // 非法键(格式不符)与 NUL 值拒绝;不允许覆盖基础项
+        for (bad in listOf("1BAD", "A-B", "A.B", "PATH")) {
+            assertThrows(IllegalArgumentException::class.java) {
+                ProcRunner.env(dirs, null, null, "conv1", extra = mapOf(bad to "v"))
+            }
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ProcRunner.env(dirs, null, null, "conv1", extra = mapOf("OK" to "a\u0000b"))
+        }
     }
 
     /** 代理只在给了时出现:大小写两套变量都给(有的工具只认大写),本机地址照旧直连。 */

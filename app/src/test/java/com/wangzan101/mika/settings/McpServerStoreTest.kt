@@ -140,7 +140,7 @@ class McpServerStoreTest {
     }
 
     /** 假的 stdio server:只回答 initialize 和 tools/list,用来验证 store 的启动与接入。 */
-    private fun stdioLauncher(): McpStdioLauncher = McpStdioLauncher { _, _ ->
+    private fun stdioLauncher(): McpStdioLauncher = McpStdioLauncher { _, _, _ ->
         val toServer = PipedOutputStream()
         val fromClient = PipedInputStream(toServer)
         val fromServer = PipedOutputStream()
@@ -224,8 +224,8 @@ class McpServerStoreTest {
     /** 像沙箱那样:进程活着时拿着树的租约,关掉时交还;被独占的收回时停进程、记进 [revokes]。命令是 silent 的不回话。 */
     private fun leasingLauncher(tree: SandboxTree, closes: AtomicInteger, revokes: AtomicInteger = AtomicInteger()): McpStdioLauncher {
         val inner = stdioLauncher()
-        return McpStdioLauncher { ws, argv ->
-            val p = if (argv.first() == "silent") silentProcess() else inner.launch(ws, argv)
+        return McpStdioLauncher { ws, argv, _ ->
+            val p = if (argv.first() == "silent") silentProcess() else inner.launch(ws, argv, emptyMap())
             val lease = tree.lease { revokes.incrementAndGet(); p.close() }
             object : McpStdioProcess by p {
                 override fun close() {

@@ -19,6 +19,15 @@ object ProcRunner {
     const val PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     /** 走代理时本机、局域网地址照旧直连(和 Mika 自己的连接同一套,见 [LocalHosts])。 */
     const val NO_PROXY = LocalHosts.NO_PROXY
+    /** 显式追加的环境变量名格式(和 preset 的 env 目标一致)。 */
+    private val ENV_NAME = Regex("[A-Za-z_][A-Za-z0-9_]*")
+    /** 基础 allowlist 里由 Mika 自己填的键,解析出的环境不得覆盖。 */
+    private val RESERVED_ENV = setOf(
+        "PROOT_LOADER", "PROOT_TMP_DIR", "HOME", "PATH", "LANG", "TMPDIR", "TZ",
+        "MIKA_BRIDGE", "MIKA_TOKEN", "MIKA_CONVERSATION", "TERM", "HISTFILE",
+        "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+        "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+    )
 
     /**
      * [cwd]:`/workspace` 下的相对路径,空串为 `/workspace`;[standIns]:`files/sandbox/proc/` 里的替身文件名,
@@ -58,6 +67,8 @@ object ProcRunner {
         /** 容器的网络代理;空串表示不用(见 NetProxyStore)。不允许联网时调用方给空串。 */
         proxy: String = "",
         pty: Boolean = false,
+        /** 解析出的显式环境(stdio 秘密经这里进进程);只追加、不覆盖基础项,键/值经校验。 */
+        extra: Map<String, String> = emptyMap(),
     ): Map<String, String> = buildMap {
         put("PROOT_LOADER", dirs.lib("libproot_loader.so").path)
         put("PROOT_TMP_DIR", dirs.tmp.path)
@@ -83,6 +94,12 @@ object ProcRunner {
             }
             put("no_proxy", NO_PROXY)
             put("NO_PROXY", NO_PROXY)
+        }
+        // 解析出的显式环境只追加在 allowlist 之上,不覆盖任何基础项;秘密值不进 argv,也不写日志。
+        extra.forEach { (name, value) ->
+            require(ENV_NAME.matches(name) && name !in RESERVED_ENV) { "Invalid environment variable name" }
+            require(!value.contains('\u0000')) { "Environment values cannot contain NUL" }
+            put(name, value)
         }
     }
 

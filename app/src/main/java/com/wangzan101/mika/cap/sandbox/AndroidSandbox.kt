@@ -215,7 +215,7 @@ class AndroidSandbox internal constructor(
      * 一来就先停掉进程、收回许可,不会被一个任务里开着的 server 挡上一个小时;之后再调这个进程就报连接已断。
      * 建目录到启动这一段另拿一次短的 shared,独占的要等它做完才删,启动完再核一次有没有被收回。
      */
-    override suspend fun openProcess(workspace: String, argv: List<String>, cwd: String?): SandboxProcess {
+    override suspend fun openProcess(workspace: String, argv: List<String>, cwd: String?, environment: Map<String, String>): SandboxProcess {
         val network = (status() as? SandboxStatus.Ready)?.network == true
         val rel = cwd?.takeIf { it.isNotEmpty() }?.let { c ->
             val n = SandboxPaths.normalize(c)?.takeIf(SandboxPaths::isWritable)
@@ -236,7 +236,7 @@ class AndroidSandbox internal constructor(
                     }
                 }
                 val cmd = ProcRunner.argv(dirs, ws, rel, 3600, network, standIns(), argv)
-                val env = ProcRunner.env(dirs, null, null, workspace, if (network) proxy() else "")
+                val env = ProcRunner.env(dirs, null, null, workspace, if (network) proxy() else "", extra = environment)
                 val p = withContext(launcherThread + NonCancellable) {
                     ProcessBuilder(cmd).redirectErrorStream(false).apply {
                         environment().clear()
