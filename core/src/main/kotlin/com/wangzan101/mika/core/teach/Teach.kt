@@ -79,6 +79,8 @@ data class TeachSession(
     val updatedAt: Long = 0L,
     /** 收下后展示给用户的技能名。旧会话没有这个字段。 */
     val acceptedName: String? = null,
+    /** 整理时正文是模型写的（false 是按本机规则整理）；旧会话没有这个字段。 */
+    val byModel: Boolean? = null,
 ) {
     fun step(id: Int): TeachStep? = steps.find { it.id == id }
 }
@@ -312,6 +314,9 @@ object TeachWatch {
 
 /** 发给模型的脱敏摘要，或本机直接整理出的草稿。 */
 object TeachDraft {
+    /** 整理出来的技能，以及它是不是模型写的（不是就按本机规则整理）。 */
+    data class Result(val skill: PersonalSkill, val byModel: Boolean)
+
     fun request(session: TeachSession, route: TeachRoute): String = buildString {
         appendLine("目标:${plain(session.goal)}")
         appendLine("这是同一次人工示范折叠后的路线。回桌面、找图标、打开浏览器这类只因为人在做才有的动作已经省略。")
@@ -393,7 +398,7 @@ object TeachDraft {
 
     /**
      * 有模型就先把脱敏摘要交给它；稿不可用或没有模型时，用本机整理的那份。
-     * 返回的技能始终是待确认，且标明来自示范。
+     * 返回的技能始终是待确认，且标明来自示范；[Result.byModel] 说明这次正文是不是模型写的。
      */
     suspend fun draft(
         session: TeachSession,
@@ -404,16 +409,18 @@ object TeachDraft {
         runnableScripts: Set<String>,
         nameTaken: (String) -> Boolean,
         nowMs: Long,
-    ): PersonalSkill? {
+    ): Result? {
         if (route.steps.none { it.kind != null } || !teachGoalAccepted(session.goal)) return null
         val fromModel = model?.let { ask(it, session, route) }?.let { raw ->
-            val caveated = ensureCaveats(PersonalSkills.withoutField(SkillDrafter.stripFence(raw), "updates"))
-            val ok = acceptsModel(caveated) && SkillDrafter.validate(caveated, toolNames, scriptTool, runnableScripts) == null
-            caveated.takeIf { ok }
+            val body = PersonalSkills.withoutField(SkillDrafter.stripFence(raw), "updates")
+            // 「试跑成功」要查模型原稿:先补上出处提示再查,那句话就被盖过去了,永远查不出来。
+            if (!acceptsModel(body)) return@let null
+            val caveated = ensureCaveats(body)
+            caveated.takeIf { SkillDrafter.validate(caveated, toolNames, scriptTool, runnableScripts) == null }
         }
         val base = fromModel ?: assemble(session, route, "placeholder")
-        val validated = SkillDrafter.validate(base, toolNames, scriptTool, runnableScripts)
-        val md0 = if (validated == null && fromModel != null) base else assemble(session, route, "placeholder")
+        val useModel = fromModel != null && SkillDrafter.validate(base, toolNames, scriptTool, runnableScripts) == null
+        val md0 = if (useModel) base else assemble(session, route, "placeholder")
         if (SkillDrafter.validate(md0, toolNames, scriptTool, runnableScripts) != null) return null
         val name = freshName(session.id, nameTaken)
         val md = PersonalSkills.withField(
@@ -421,15 +428,18 @@ object TeachDraft {
             "learned_from", TeachSkill.PREFIX + session.id,
         )
         if (SkillDrafter.validate(md, toolNames, scriptTool, runnableScripts) != null) return null
-        return PersonalSkill(
-            name = name,
-            markdown = md,
-            status = SkillStatus.pending,
-            learnedFrom = TeachSkill.PREFIX + session.id,
-            replacesDraftOf = null,
-            createdAt = nowMs,
-            outcomes = emptyList(),
-            source = TeachSkill.SOURCE,
+        return Result(
+            skill = PersonalSkill(
+                name = name,
+                markdown = md,
+                status = SkillStatus.pending,
+                learnedFrom = TeachSkill.PREFIX + session.id,
+                replacesDraftOf = null,
+                createdAt = nowMs,
+                outcomes = emptyList(),
+                source = TeachSkill.SOURCE,
+            ),
+            byModel = useModel,
         )
     }
 

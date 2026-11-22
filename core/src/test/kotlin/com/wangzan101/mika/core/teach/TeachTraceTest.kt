@@ -159,9 +159,9 @@ class TeachTraceTest {
     @Test fun draftStaysPendingAndUnverifiedUntilAccepted() = runBlocking {
         val s = TeachTrace.reduce(session(), obs(TeachEventKind.Click, description = "筛选", title = "列表"), own)
         val model = FakeModel(ModelReply(listOf(Part.Text("试跑成功了，入口不存在。")), StopReason.EndTurn, null))
-        val skill = TeachDraft.draft(s, TeachRoute.fold(s.steps, emptySet(), emptySet()) { it }, model, emptySet(), null, emptySet(), { false }, 10L)
-        assertTrue(skill != null)
-        skill!!
+        val drafted = TeachDraft.draft(s, TeachRoute.fold(s.steps, emptySet(), emptySet()) { it }, model, emptySet(), null, emptySet(), { false }, 10L)
+        assertTrue(drafted != null)
+        val skill = drafted!!.skill
         assertEquals(SkillStatus.pending, skill.status)
         assertEquals(TeachSkill.SOURCE, skill.source)
         assertTrue(skill.markdown.contains(TeachSkill.NOT_TRIAL_RUN))

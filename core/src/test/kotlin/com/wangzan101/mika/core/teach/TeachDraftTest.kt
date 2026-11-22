@@ -10,6 +10,7 @@ import com.wangzan101.mika.core.model.ToolSpec
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -101,14 +102,53 @@ class TeachDraftTest {
         """.trimIndent()
         val skill = drafted(reply)
         assertNotNull(skill)
-        assertTrue(skill!!.markdown.contains("The star is the third icon in the bottom bar"))
-        assertFalse(skill.markdown.contains("这份由本机按示范路线整理"))
+        assertTrue(skill!!.skill.markdown.contains("The star is the third icon in the bottom bar"))
+        assertFalse(skill.skill.markdown.contains("这份由本机按示范路线整理"))
+        assertTrue("保留的模型稿要标成模型写的", skill.byModel)
     }
 
     /** 模型稿不成形时仍然退回本机整理，不因此丢掉整次示范。 */
     @Test fun brokenModelDraftFallsBackToLocalAssembly() = runBlocking {
         val skill = drafted("Just a sentence, no sections at all.")
         assertNotNull(skill)
-        assertTrue(skill!!.markdown.contains("这份由本机按示范路线整理"))
+        assertTrue(skill!!.skill.markdown.contains("这份由本机按示范路线整理"))
+        assertFalse("本机整理的稿不能被标成模型写的", skill.byModel)
+    }
+
+    /** 模型说「试跑成功」就不收它的稿：补上的出处提示不能把这句话洗白。 */    @Test fun modelClaimingATrialRunFallsBackToTheLocalAssembly() = runBlocking {
+        val reply = """
+            ---
+            name: xhs-search-save
+            display: 小红书搜装修并收藏
+            description: 当我说「帮我找装修案例并收藏第一条」时用
+            apps: [com.xingin.xhs]
+            aliases: []
+            source: demonstrated
+            ---
+            ## 入口
+            直接打开小红书。
+            ## 步骤
+            1. 点搜索，输入关键词。
+            ## 容易出错的地方
+            收藏在右下角，不是小心心。
+            ## 怎样算办成(核实证据)
+            已经试跑成功，底部显示已收藏。
+            ## 什么时候停下交给用户
+            遇到登录页就停。
+        """.trimIndent()
+        val skill = drafted(reply)
+        assertNotNull(skill)
+        assertFalse("声称试跑成功的模型稿不能收", skill!!.skill.markdown.contains("已经试跑成功"))
+        assertTrue(skill.skill.markdown.contains("这份由本机按示范路线整理"))
+    }
+
+    /** 只剩「启动 App」的路线整不出技能:没有真实操作的示范不该变成一份空壳。 */
+    @Test fun aRouteWithoutAnyRealActionProducesNoSkill() = runBlocking {
+        val onlyLaunch = TeachRoute(
+            steps = listOf(RouteStep("com.xingin.xhs", "启动 com.xingin.xhs", null)),
+            apps = listOf(RouteApp("com.xingin.xhs", "com.xingin.xhs", false)),
+            folded = emptyList(),
+        )
+        assertNull(TeachDraft.draft(session(), onlyLaunch, null, emptySet(), null, emptySet(), { false }, 1_000L))
     }
 }

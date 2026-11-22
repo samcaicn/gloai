@@ -20,14 +20,17 @@ import com.wangzan101.mika.core.teach.TeachRecovery
 import com.wangzan101.mika.core.teach.TeachRoute
 import com.wangzan101.mika.core.teach.TeachSession
 import com.wangzan101.mika.core.teach.TeachSkill
+import com.wangzan101.mika.core.teach.TeachSummary
 import com.wangzan101.mika.core.teach.TeachTrace
 import com.wangzan101.mika.core.teach.TeachWatch
 import com.wangzan101.mika.core.teach.teachGoalAccepted
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.task.TaskCenterState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,6 +68,8 @@ class TeachRuntime(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val lock = Any()
     private var session: TeachSession? = null
+    /** 正在整理的那一次;用户丢弃或开始新的示范时作废,晚到的结果不许再写。 */
+    private var work: Job? = null
     private var draft: PersonalSkill? = null
     private var folded: List<String> = emptyList()
     private var basic = false
@@ -90,7 +95,7 @@ class TeachRuntime(
         when (next.phase) {
             TeachPhase.Drafting -> {
                 publish(null)
-                scope.launch { summarize(snapshot) }
+                launchWork(snapshot)
             }
             TeachPhase.Reviewing -> scope.launch { restoreDraft(snapshot) }
             else -> publish(null)
@@ -129,6 +134,7 @@ class TeachRuntime(
             val current = session
             if (current != null && current.phase != TeachPhase.Saved && current.phase != TeachPhase.Idle) return null
         }
+        work?.cancel()
         if (!chip.show(TeachPhase.Recording)) return fail(TeachNotice.NoVisibleStop)
         synchronized(lock) {
             session = TeachSession(newId(), clean, TeachPhase.Recording, updatedAt = System.currentTimeMillis())
@@ -183,7 +189,7 @@ class TeachRuntime(
             next
         }
         TeachNotifier.cancel(app)
-        scope.launch { summarize(snapshot) }
+        launchWork(snapshot)
     }
 
     /** 整理失败或没看到操作后，再整理一次。 */
@@ -197,7 +203,7 @@ class TeachRuntime(
             publish(null)
             next
         }
-        scope.launch { summarize(snapshot) }
+        launchWork(snapshot)
     }
 
     /** 用户看过总结后收下：这时技能才启用（试用）。 */
@@ -219,6 +225,7 @@ class TeachRuntime(
 
     fun discard() {
         chip.hide()
+        work?.cancel()
         val rejected = synchronized(lock) {
             val id = session?.draftId
             session = null
@@ -251,73 +258,119 @@ class TeachRuntime(
     }
 
     private suspend fun summarize(snapshot: TeachSession) {
-        val route = withContext(Dispatchers.IO) { foldRoute(snapshot) }
-        if (route.steps.none { it.kind != null }) {
-            failDraft(snapshot, TeachNotice.NoSteps)
-            return
-        }
+        val route = withContext(Dispatchers.IO) {
+            try {
+                foldRoute(snapshot)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+        } ?: return failDraft(snapshot, TeachNotice.DraftFailed)
+        if (route.steps.none { it.kind != null }) return failDraft(snapshot, TeachNotice.NoSteps)
         val existing = withContext(Dispatchers.IO) { TeachPending.find(skills().drafts(), snapshot.id) }
         if (existing != null) {
-            val noModel = withContext(Dispatchers.IO) { model() == null }
-            complete(snapshot, existing.first, existing.second, route.folded, noModel)
+            adoptDraft(snapshot, route, existing.first, TeachDraft.Result(existing.second, byModel = snapshot.byModel ?: false))
             return
         }
-        val chosen = withContext(Dispatchers.IO) { model() }
-        val skill = withContext(Dispatchers.IO) { build(snapshot, route, chosen) }
-        if (skill == null) {
-            failDraft(snapshot, TeachNotice.DraftFailed)
-            return
+        val outcome = withContext(Dispatchers.IO) {
+            TeachSummary.run(
+                current = { isCurrent(snapshot) },
+                build = { build(snapshot, route, model()) },
+                store = { draftId, result -> commitDraft(snapshot, route, draftId, result) },
+                newId = ::newId,
+            )
         }
-        val draftId = newId()
-        val stored = withContext(Dispatchers.IO) {
-            runCatching { TeachPublish.toPending(skills(), draftId, skill) }.isSuccess
+        if (outcome == TeachSummary.Outcome.Failed) failDraft(snapshot, TeachNotice.DraftFailed)
+    }
+
+    /** 现在还是不是这一次示范：用户已经丢弃、或已经开始了新的一次，晚到的整理结果就不能再写。 */
+    private fun isCurrent(snapshot: TeachSession): Boolean = synchronized(lock) {
+        val cur = session
+        cur?.id == snapshot.id && cur.phase == TeachPhase.Drafting
+    }
+
+    /** 草稿上次已经写完、会话没来得及落盘：只补记会话，不再写一遍。 */
+    private fun adoptDraft(snapshot: TeachSession, route: TeachRoute, draftId: String, result: TeachDraft.Result) {
+        synchronized(lock) {
+            val cur = session ?: return
+            if (cur.id != snapshot.id || cur.phase != TeachPhase.Drafting) return
+            applyDraft(cur, route, draftId, result)
         }
-        if (!stored) {
-            failDraft(snapshot, TeachNotice.DraftFailed)
-            return
+    }
+
+    /**
+     * 写进待确认，并把草稿编号记进会话。检查和写盘在同一把锁里，丢弃那边也拿这把锁：
+     * 两边谁也插不进中间，用户丢弃以后不会再冒出一份没人认领的草稿。
+     */
+    private fun commitDraft(snapshot: TeachSession, route: TeachRoute, draftId: String, result: TeachDraft.Result): Boolean =
+        synchronized(lock) {
+            val cur = session
+            if (cur?.id != snapshot.id || cur.phase != TeachPhase.Drafting) return@synchronized false
+            if (runCatching { TeachPublish.toPending(skills(), draftId, result.skill) }.isFailure) return@synchronized false
+            applyDraft(cur, route, draftId, result)
+            true
         }
-        complete(snapshot, draftId, skill, route.folded, chosen == null)
+
+    private fun applyDraft(cur: TeachSession, route: TeachRoute, draftId: String, result: TeachDraft.Result) {
+        draft = result.skill
+        folded = route.folded
+        basic = !result.byModel
+        session = cur.copy(
+            phase = TeachPhase.Reviewing,
+            draftId = draftId,
+            byModel = result.byModel,
+            updatedAt = System.currentTimeMillis(),
+        )
+        files.save(session!!)
+        publish(null)
+    }
+
+    /** 整理一次。上一次还没跑完（用户又点了重整理）就作废，结果只认最后一次。 */
+    private fun launchWork(snapshot: TeachSession) {
+        work?.cancel()
+        work = scope.launch {
+            try {
+                summarize(snapshot)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                failDraft(snapshot, TeachNotice.DraftFailed)
+            }
+        }
     }
 
     /** 草稿已经存过、会话没来得及落盘：按轨迹编号找回，不重复生成。 */
     private suspend fun restoreDraft(snapshot: TeachSession) {
-        val found = withContext(Dispatchers.IO) {
-            val drafts = skills().drafts()
-            snapshot.draftId?.let { id -> drafts[id]?.let { id to it } }
-                ?: TeachPending.find(drafts, snapshot.id)
+        val found = try {
+            withContext(Dispatchers.IO) {
+                val drafts = skills().drafts()
+                snapshot.draftId?.let { id -> drafts[id]?.let { id to it } } ?: TeachPending.find(drafts, snapshot.id)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
         }
         if (found == null) {
             publish(TeachNotice.DraftFailed)
             return
         }
-        val routeFolded = withContext(Dispatchers.IO) { foldRoute(snapshot).folded }
-        val noModel = withContext(Dispatchers.IO) { model() == null }
+        val routeFolded = try {
+            withContext(Dispatchers.IO) { foldRoute(snapshot).folded }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            emptyList()
+        }
+        val byModel = snapshot.byModel ?: withContext(Dispatchers.IO) { model() != null }
         synchronized(lock) {
             val cur = session ?: return
             if (cur.id != snapshot.id) return
             draft = found.second
             folded = routeFolded
-            basic = noModel
-            session = cur.copy(phase = TeachPhase.Reviewing, draftId = found.first)
-            files.save(session!!)
-            publish(null)
-        }
-    }
-
-    private fun complete(
-        snapshot: TeachSession,
-        draftId: String,
-        skill: PersonalSkill,
-        foldedSteps: List<String>,
-        noModel: Boolean,
-    ) {
-        synchronized(lock) {
-            val cur = session
-            if (cur?.id != snapshot.id || cur.phase != TeachPhase.Drafting) return
-            draft = skill
-            folded = foldedSteps
-            basic = noModel
-            session = cur.copy(phase = TeachPhase.Reviewing, draftId = draftId, updatedAt = System.currentTimeMillis())
+            basic = !byModel
+            session = cur.copy(phase = TeachPhase.Reviewing, draftId = found.first, byModel = byModel)
             files.save(session!!)
             publish(null)
         }
@@ -333,7 +386,7 @@ class TeachRuntime(
         }
     }
 
-    private suspend fun build(snapshot: TeachSession, route: TeachRoute, chosen: ChatModel?): PersonalSkill? {
+    private suspend fun build(snapshot: TeachSession, route: TeachRoute, chosen: ChatModel?): TeachDraft.Result? {
         val skills = skills()
         val bundled = GuideCatalog.loadBundled()
         val taken = { name: String ->

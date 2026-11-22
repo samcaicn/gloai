@@ -50,9 +50,9 @@ class TeachFilesTest {
         assertTrue(raw.contains("筛选"))
 
         val skills = PersonalSkillFiles(File(tmp.root, "skills-root"))
-        val skill = TeachDraft.draft(session, TeachRoute.fold(session.steps, emptySet(), emptySet()) { it }, null, emptySet(), null, emptySet(), { false }, 5L)
-        assertNotNull(skill)
-        skill!!
+        val drafted = TeachDraft.draft(session, TeachRoute.fold(session.steps, emptySet(), emptySet()) { it }, null, emptySet(), null, emptySet(), { false }, 5L)
+        assertNotNull(drafted)
+        val skill = drafted!!.skill
         assertEquals(SkillStatus.pending, skill.status)
         TeachPublish.toPending(skills, "draftc", skill)
         val hidden = GuideCatalog.withPersonal(GuideCatalog.loadBundled(), skills)
