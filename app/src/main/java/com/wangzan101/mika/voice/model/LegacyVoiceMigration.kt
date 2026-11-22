@@ -60,6 +60,8 @@ class LegacyVoiceMigration(
         private val verifications = mutableListOf<VoiceVerificationRecord>()
 
         fun build(): VoiceCatalogSnapshot {
+            addService(SttSelectionController.SYSTEM_STT_SERVICE)
+            addModel(SttSelectionController.SYSTEM_STT_MODEL)
             addChoice(legacySpeech.selection)
             legacySpeech.savedChoices.forEach(::addChoice)
             if (legacySpeech.doubaoCredentials != null) addService(doubaoService())

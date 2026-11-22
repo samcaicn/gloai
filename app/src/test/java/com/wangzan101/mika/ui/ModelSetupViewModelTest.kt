@@ -17,10 +17,25 @@ import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.ClientSetup
+import com.wangzan101.mika.settings.FeatureFlagsCapsuleTest.MemoryPrefs
 import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.RoleChoice
+import com.wangzan101.mika.voice.SpeechChoice
+import com.wangzan101.mika.voice.SpeechSettings
+import com.wangzan101.mika.voice.model.MemoryVoiceCatalogBackend
+import com.wangzan101.mika.voice.model.SttBinding
+import com.wangzan101.mika.voice.model.SttProtocol
+import com.wangzan101.mika.voice.model.SttSelection
+import com.wangzan101.mika.voice.model.SttSelectionController
+import com.wangzan101.mika.voice.model.VoiceAccount
+import com.wangzan101.mika.voice.model.VoiceCapability
+import com.wangzan101.mika.voice.model.VoiceCatalogStore
+import com.wangzan101.mika.voice.model.VoiceModel
+import com.wangzan101.mika.voice.model.VoiceModelRef
+import com.wangzan101.mika.voice.model.VoiceService
+import com.wangzan101.mika.voice.model.voiceTestEnvironment
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -83,6 +98,38 @@ class ModelSetupViewModelTest {
     private val deepseek = ModelListResult.Ok(
         listOf(ListedModel("deepseek-chat"), ListedModel("deepseek-reasoner"), ListedModel("deepseek-coder", toolCalls = false)),
     )
+
+    @Test fun migratedSpeechSelectionWritesCatalogWithoutLegacyDetection() = runTest {
+        val catalog = VoiceCatalogStore(MemoryVoiceCatalogBackend(), migrated = true)
+        catalog.upsertService(VoiceService("provider:p1", "Provider", VoiceAccount.ExistingProvider("p1")))
+        catalog.upsertModel(VoiceModel("provider:p1", "whisper-1", "Whisper", stt = SttBinding(SttProtocol.AudioTranscriptions)))
+        val ref = VoiceModelRef("provider:p1", "whisper-1", VoiceCapability.STT)
+        val controller = voiceTestEnvironment(catalog).stt
+        val legacy = SpeechSettings(MemoryPrefs())
+        val vm = ModelSetupViewModel(
+            store(), backgroundScope, io = StandardTestDispatcher(testScheduler), speech = legacy, stt = controller,
+            transcriber = { throw AssertionError("migrated selection must not detect protocols") },
+        )
+        var picked = 0
+
+        vm.pickSpeechModel("p1", "whisper-1") { picked++ }
+        runCurrent()
+
+        assertEquals(SttSelection.Model(ref), controller.current())
+        assertEquals(SpeechChoice.Auto, legacy.choice.value)
+        assertEquals(1, picked)
+        vm.pickSttModel(ref) { picked++ }
+        runCurrent()
+        assertEquals(2, picked)
+        legacy.noteSystemSilent()
+        legacy.noteSystemSilent()
+        assertTrue(legacy.systemSilent.value)
+        vm.pickSpeech(SpeechChoice.System)
+        runCurrent()
+        assertEquals(SttSelection.Model(SttSelectionController.SYSTEM_STT_REF), controller.current())
+        assertEquals(SpeechChoice.Auto, legacy.choice.value)
+        assertFalse(legacy.systemSilent.value)
+    }
 
     /** 模型名不限制用途;只有主模型先试调用一次(之后核实过不再试)。标为 TTS 的各处都拒绝,且不发请求。 */
     @Test fun modelNamesDoNotRestrictExplicitRoleChangesAndOnlyMainIsProbed() = runTest {

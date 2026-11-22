@@ -37,6 +37,11 @@ import com.wangzan101.mika.voice.SpeechChoice
 import com.wangzan101.mika.voice.SpeechSettings
 import com.wangzan101.mika.voice.SystemCapability
 import com.wangzan101.mika.voice.Transcriber
+import com.wangzan101.mika.voice.model.SttSelectionController
+import com.wangzan101.mika.voice.model.VoiceAccount
+import com.wangzan101.mika.voice.model.VoiceCapability
+import com.wangzan101.mika.voice.model.VoiceCatalogSnapshot
+import com.wangzan101.mika.voice.model.VoiceModelRef
 import com.wangzan101.mika.core.chatgpt.ChatGptAuth
 import com.wangzan101.mika.core.chatgpt.SignInException
 import com.wangzan101.mika.core.chatgpt.SignInFailure
@@ -267,6 +272,8 @@ data class ModelSetupUi(
     /** 语音转文字现在的选择,和这台手机自带识别的能力(给用途卡片和选择页用)。 */
     val speech: SpeechChoice = SpeechChoice.Auto,
     val systemSpeech: SystemCapability = SystemCapability(available = false, onDevice = false),
+    /** 迁移后的语音目录;null 表示仍走旧设置。 */
+    val sttCatalog: VoiceCatalogSnapshot? = null,
     /** 正在拿一小段录音试转的服务商 id;没有时为 null。 */
     val speechTesting: String? = null,
     /** 声音模型现在的选择(给「用作」面板说明 TTS 标记在不在用);没传声音设置时为 null。 */
@@ -374,6 +381,7 @@ class ModelSetupViewModel(
     private val transcriber: (Provider) -> Transcriber = { p -> Transcriber(ProviderStore.modelHttp, store.clientHeaders(p)) },
     /** 声音模型设置:撤掉它正在用的 TTS 标记时提示一句(见 [ModelSetupUi.voiceNotice]);上手流程和测试可不传。 */
     private val voice: VoiceSettings? = null,
+    private val stt: SttSelectionController? = null,
 ) {
     private val _state = MutableStateFlow(snapshot(ModelSetupUi(AddForm.of(ProviderPresets.all.first()))))
     val state: StateFlow<ModelSetupUi> = _state.asStateFlow()
@@ -390,6 +398,7 @@ class ModelSetupViewModel(
         // 别处(开发者选项等)改了存储时跟着更新
         scope.launch { merge(store.providers, store.configs, store.roles, store.groups).collect { sync() } }
         speech?.let { s -> scope.launch { s.choice.collect { sync() } } }
+        stt?.let { controller -> scope.launch { controller.catalog.state.collect { sync() } } }
         voice?.let { v -> scope.launch { v.state.collect { sync() } } }
         // 登录在别处结束(通知上取消了)或界面重建前就开始了:跟着它的进度
         scope.launch {
@@ -458,6 +467,7 @@ class ModelSetupViewModel(
             openRouterAccount = store.openRouterAccount()?.let { p -> SubscriptionAccount("", store.hasKey(p.id)) },
             speech = speech?.choice?.value ?: SpeechChoice.Auto,
             systemSpeech = systemSpeech(),
+            sttCatalog = stt?.takeIf { it.migrated }?.catalog?.state?.value,
             voiceChoice = voice?.state?.value?.choice,
         )
     }
@@ -1154,19 +1164,52 @@ class ModelSetupViewModel(
     /** 选「手机自带」或「不用」,当场生效。 */
     fun pickSpeech(choice: SpeechChoice) {
         if (choice is SpeechChoice.Provider) return
-        speech?.set(choice)
+        if (stt?.migrated == true) {
+            when (choice) {
+                SpeechChoice.Auto, SpeechChoice.System, SpeechChoice.Off -> {
+                    if (choice != SpeechChoice.Off) speech?.retrySystem()
+                    stt.select(choice)
+                }
+                else -> return
+            }
+        } else {
+            speech?.set(choice)
+        }
         _speechProbe.value = emptyMap()
         sync()
     }
 
+    /** 迁移后的目录选择只写模型引用,不试转、不探测协议。 */
+    fun pickSttModel(ref: VoiceModelRef, onPicked: () -> Unit = {}) {
+        val controller = stt?.takeIf { it.migrated } ?: return
+        controller.select(ref)
+        _speechProbe.value = emptyMap()
+        sync()
+        onPicked()
+    }
+
     /**
-     * 选某个服务商的语音模型:先拿一小段静音试转(顺便认出该用哪种接口),通了才存成选择并记为核实过,然后调 [onPicked];
-     * 不通就在那一组下面说原因([speechProbe]),不改现在的选择。
+     * 迁移后按目录引用直接选择;迁移前先拿一小段静音试转(顺便认出该用哪种接口),通了才存成选择并记为核实过,
+     * 然后调 [onPicked];不通就在那一组下面说原因([speechProbe]),不改现在的选择。
      */
     fun pickSpeechModel(providerId: String, model: String, onPicked: () -> Unit = {}) {
         val m = model.trim()
-        val settings = speech ?: return
         if (m.isEmpty() || _state.value.speechTesting != null) return
+        val migrated = stt?.takeIf { it.migrated }
+        if (migrated != null) {
+            val snapshot = migrated.catalog.state.value
+            val matches = snapshot.models.filter { candidate ->
+                candidate.id == m && candidate.stt != null && snapshot.services.any { service ->
+                    service.id == candidate.serviceId && (
+                        service.id == "provider:$providerId" ||
+                            (service.account as? VoiceAccount.ExistingProvider)?.providerId == providerId
+                        )
+                }
+            }.map { VoiceModelRef(it.serviceId, it.id, VoiceCapability.STT) }
+            if (matches.size == 1) pickSttModel(matches.single(), onPicked)
+            return
+        }
+        val settings = speech ?: return
         val p = store.provider(providerId) ?: return
         if (ModelOptions.isTtsOnly(p, m)) {
             _speechProbe.value = _speechProbe.value + (providerId to tr(R.string.model_tts_only_not_supported))

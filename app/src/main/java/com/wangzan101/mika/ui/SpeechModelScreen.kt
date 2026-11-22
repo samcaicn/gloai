@@ -54,6 +54,11 @@ import com.wangzan101.mika.voice.BailianRegion
 import com.wangzan101.mika.voice.FunAsrProtocol
 import com.wangzan101.mika.voice.LiveAsrTransport
 import com.wangzan101.mika.voice.probeLiveAsr
+import com.wangzan101.mika.voice.model.SttSelection
+import com.wangzan101.mika.voice.model.SttSelectionController
+import com.wangzan101.mika.voice.model.VoiceModelEnvironment
+import com.wangzan101.mika.voice.model.VoiceModelRef
+import com.wangzan101.mika.voice.model.VoiceCapability
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -62,6 +67,8 @@ import kotlinx.coroutines.withContext
 class SpeechPickActions(
     /** 「手机自带」或「不用」:当场生效并返回。 */
     val pick: (SpeechChoice) -> Unit = {},
+    /** 迁移后的目录模型:只保存引用,不联网。 */
+    val pickRef: (VoiceModelRef) -> Unit = {},
     /** (服务商 id, 模型名):先试转,通了才选上并返回;列表里点的和手填的都走这里。 */
     val pickModel: (String, String) -> Unit = { _, _ -> },
     /** 进豆包流式识别的设置页。 */
@@ -87,6 +94,7 @@ fun SpeechModelScreen(store: ProviderStore, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val settings = (context.applicationContext as? MikaApp)?.speech
+    val voiceModels = remember { VoiceModelEnvironment.get(context) }
     var doubaoConfigured by remember { mutableStateOf(settings?.hasDoubaoCredentials == true) }
     // 豆包的设置页叠在这一页上面;返回键先关它
     var doubaoOpen by remember { mutableStateOf(false) }
@@ -123,13 +131,18 @@ fun SpeechModelScreen(store: ProviderStore, onBack: () -> Unit) {
                 val silent = settings?.systemSilent?.value ?: false
                 SystemSpeech.capability(context.applicationContext, silent)
             },
+            stt = voiceModels.stt,
         )
     }
     val ui by vm.state.collectAsState()
     val probe by vm.speechProbe.collectAsState()
-    LaunchedEffect(Unit) { vm.ensureListed(); vm.clearSpeechProbe() }
+    LaunchedEffect(ui.sttCatalog != null) {
+        if (ui.sttCatalog == null) vm.ensureListed()
+        vm.clearSpeechProbe()
+    }
     val actions = SpeechPickActions(
         pick = { vm.pickSpeech(it); onBack() },
+        pickRef = { vm.pickSttModel(it, onPicked = onBack) },
         pickModel = { pid, model -> vm.pickSpeechModel(pid, model, onPicked = onBack) },
         openDoubao = { doubaoOpen = true },
         // 存好后回到语音转文字页,看得到它已选上
@@ -187,7 +200,68 @@ fun SpeechModelScreen(store: ProviderStore, onBack: () -> Unit) {
                 onClearBailian = { region -> settings?.clearBailian(region); funAsrDone() },
             ) { funAsrOpen = false }
         }
+        ui.sttCatalog != null -> MigratedSpeechModelContent(ui, actions, onBack)
         else -> SpeechModelContent(ui, probe, actions, onBack, doubaoConfigured, funAsrLast != null)
+    }
+}
+
+/** 迁移后只选择目录里的模型;系统健康说明保留,模型选择本身不发送请求。 */
+@Composable
+private fun MigratedSpeechModelContent(ui: ModelSetupUi, actions: SpeechPickActions, onBack: () -> Unit) {
+    val catalog = requireNotNull(ui.sttCatalog)
+    val system = ui.systemSpeech
+    val selection = catalog.selections.stt
+    val systemSelected = system.usable &&
+        (selection == SttSelection.Model(SttSelectionController.SYSTEM_STT_REF) || selection == SttSelection.Auto)
+    val c = MikaTheme.colors
+    Page(tr(R.string.role_speech), onBack) {
+        Text(
+            tr(R.string.speech_hint), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2,
+        )
+        GroupCard {
+            RadioRow(
+                tr(R.string.speech_system), selected = systemSelected, enabled = system.available,
+                onClick = { actions.pick(SpeechChoice.System) }, first = true,
+                subtitle = tr(
+                    when {
+                        !system.available -> R.string.speech_system_none_note
+                        !system.responsive -> R.string.speech_system_silent_note
+                        system.onDevice -> R.string.speech_system_note
+                        else -> R.string.speech_system_note_online
+                    },
+                ),
+                trailing = {
+                    when {
+                        system.usable -> StatusPill(tr(R.string.speech_tag_ok), PillTone.Ok)
+                        system.available -> StatusPill(tr(R.string.speech_tag_silent), PillTone.Neutral)
+                        else -> StatusPill(tr(R.string.speech_tag_none), PillTone.Neutral)
+                    }
+                },
+            )
+            RadioRow(
+                tr(R.string.models_off), selected = selection == SttSelection.Off,
+                onClick = { actions.pick(SpeechChoice.Off) }, subtitle = tr(R.string.speech_off_note),
+            )
+        }
+        catalog.services.filter { it.id != SttSelectionController.SYSTEM_STT_SERVICE.id }.forEach { service ->
+            val models = catalog.models.filter { it.serviceId == service.id && it.stt != null }
+            if (models.isEmpty()) return@forEach
+            GroupLabel(service.name)
+            GroupCard {
+                models.forEachIndexed { index, model ->
+                    val ref = VoiceModelRef(service.id, model.id, VoiceCapability.STT)
+                    RadioRow(
+                        model.displayName,
+                        selected = selection == SttSelection.Model(ref),
+                        onClick = { actions.pickRef(ref) },
+                        first = index == 0,
+                        titleStyle = ModelIdStyle,
+                        trailing = { CapabilityTag(tr(R.string.speech_tag_speech)) },
+                    )
+                }
+            }
+        }
+        FooterNote(tr(R.string.speech_footer), Modifier.padding(top = 8.dp))
     }
 }
 

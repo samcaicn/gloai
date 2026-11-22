@@ -215,6 +215,12 @@ class SpeechSettings(private val prefs: SharedPreferences, private val cipher: K
         if (retry) _systemSilent.value = false
     }
 
+    /** 重试系统识别时只清健康记号;迁移后旧选择仍保持只读。 */
+    fun retrySystem() {
+        prefs.edit().remove(SILENT).remove(STRIKES).apply()
+        _systemSilent.value = false
+    }
+
     /** 手机自带识别这次一个回调都没给:连着第 [SILENT_STRIKES] 次才记成不响应。 */
     fun noteSystemSilent() {
         val strikes = prefs.getInt(STRIKES, 0) + 1

@@ -504,14 +504,20 @@ class TaskRun(
 
     private val audioSettings by lazy { com.wangzan101.mika.settings.VoiceSettings.get(service) }
 
-    /** 本任务的转写端口:用户选的是服务商转写模型、且这是手机上开始的任务时才建。 */
+    /** 本任务的转写端口:只有当前批量 STT 能接文件,且这是手机上开始的任务时才建。 */
     private val transcribePort by lazy {
         if (provenance.origin != RunOrigin.Ui) return@lazy null
-        val choice = com.wangzan101.mika.voice.SpeechSettings.get(service).choice.value as? com.wangzan101.mika.voice.SpeechChoice.Provider
-            ?: return@lazy null
-        val provider = ProviderStore.get(service).provider(choice.providerId) ?: return@lazy null
-        if (ModelOptions.isTtsOnly(provider, choice.model)) null
-        else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice) { workspaceKey }
+        val voiceModels = com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(service)
+        if (voiceModels.stt.migrated) {
+            if (voiceModels.stt.batchModel() == null) null
+            else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, null, voiceModels.stt) { workspaceKey }
+        } else {
+            val choice = com.wangzan101.mika.voice.SpeechSettings.get(service).choice.value as? com.wangzan101.mika.voice.SpeechChoice.Provider
+                ?: return@lazy null
+            val provider = ProviderStore.get(service).provider(choice.providerId) ?: return@lazy null
+            if (ModelOptions.isTtsOnly(provider, choice.model)) null
+            else com.wangzan101.mika.media.AndroidTranscribePort(service, conversationId, choice, voiceModels.stt) { workspaceKey }
+        }
     }
 
     /**

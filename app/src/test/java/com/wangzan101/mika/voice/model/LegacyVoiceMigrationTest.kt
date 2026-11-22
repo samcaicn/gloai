@@ -103,6 +103,8 @@ class LegacyVoiceMigrationTest {
 
             assertEquals(case.choice.toString(), MigrationResult.Migrated, fixture.migration.migrateIfNeeded())
             val snapshot = fixture.catalog.state.value
+            assertEquals(SttSelectionController.SYSTEM_STT_SERVICE, snapshot.services.single { it.id == "android-system" })
+            assertEquals(SttSelectionController.SYSTEM_STT_MODEL, snapshot.models.single { it.id == "system-stt" })
             assertEquals(case.choice.toString(), case.selection, snapshot.selections.stt)
             assertEquals(case.choice.toString(), case.choice, snapshot.selections.stt.toLegacySelection(snapshot))
             val ref = (case.selection as? SttSelection.Model)?.ref
