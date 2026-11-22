@@ -3,10 +3,12 @@ package com.wangzan101.mika.settings
 import com.wangzan101.mika.BuildConfig
 import com.wangzan101.mika.core.cap.mcp.HttpMcpEndpoint
 import com.wangzan101.mika.core.cap.mcp.LegacySseMcpEndpoint
+import com.wangzan101.mika.core.cap.mcp.McpCatalog
 import com.wangzan101.mika.core.cap.mcp.McpOAuth
 import com.wangzan101.mika.core.cap.mcp.McpOAuthException
 import com.wangzan101.mika.core.cap.mcp.McpOAuthTokens
 import com.wangzan101.mika.core.cap.mcp.McpPreset
+import com.wangzan101.mika.core.cap.mcp.McpPresetResolver
 import com.wangzan101.mika.core.cap.mcp.McpStdioLauncher
 import com.wangzan101.mika.core.cap.mcp.StdioMcpEndpoint
 import com.wangzan101.mika.core.cap.mcp.parseStdioCommand
@@ -97,6 +99,8 @@ class McpServerStore(
     ),
     /** stdio server 只能由沙箱启动;为 null 时 stdio 配置会报不可用。 */
     private val stdio: McpStdioLauncher? = null,
+    /** 内置预设目录;测试注入临时目录,App 资产加载在别处接线。 */
+    private val catalog: McpCatalog = McpCatalog.Empty,
 ) {
     private val file = File(dir, "mcp-servers.json")
     private val secretsFile = File(dir, "mcp-server-secrets.bin")
@@ -106,6 +110,7 @@ class McpServerStore(
     private val oauth = McpOAuth(http)
     private val tokenJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val fieldSecrets = McpFieldSecrets(::loadSecrets, ::saveSecrets)
+    private val resolver = McpPresetResolver()
     private val _health = MutableStateFlow<Map<String, McpHealth>>(emptyMap())
     /** 最近一次连接/测试的结果;只在进程内,不落盘。 */
     val health: StateFlow<Map<String, McpHealth>> = _health.asStateFlow()
@@ -160,6 +165,55 @@ class McpServerStore(
     @Synchronized fun setSecret(configId: String, fieldId: String, value: String?) = fieldSecrets.set(configId, fieldId, value)
 
     @Synchronized fun secrets(configId: String): Map<String, String> = fieldSecrets.all(configId)
+
+    /** Build a config from a catalog preset and its non-secret field values. Secrets are supplied later. */
+    fun presetConfig(presetId: String, values: Map<String, String>): Result<McpServerConfig> {
+        val preset = catalog.presets.find { it.id == presetId }
+            ?: return Result.failure(IllegalArgumentException("unknown MCP preset $presetId"))
+        val secretIds = preset.fields.filter { it.secret }.map { it.id }.toSet()
+        val leaked = secretIds.intersect(values.keys)
+        if (leaked.isNotEmpty()) {
+            return Result.failure(IllegalArgumentException("secret fields must be supplied separately: ${leaked.sorted().joinToString()}"))
+        }
+        val resolved = resolver.resolveStructure(preset, values)
+        val nonSecret = preset.fields.filter { !it.secret }.map { it.id }.toSet()
+        return Result.success(
+            McpServerConfig(
+                name = preset.name,
+                url = resolved.url,
+                transport = preset.transport,
+                command = resolved.argv.joinToString(" "),
+                auth = preset.auth,
+                headers = preset.headers,
+                presetId = preset.id,
+                presetSnapshot = preset,
+                fieldValues = values.filterKeys { it in nonSecret },
+            ),
+        )
+    }
+
+    /**
+     * Connect a preset for the first time: save its config and secrets, then run the normal
+     * connection test. On failure the config is kept but disabled, so the user can edit and retry.
+     */
+    suspend fun connectPreset(
+        presetId: String,
+        values: Map<String, String>,
+        secrets: Map<String, String>,
+    ): Result<McpTestResult> {
+        val config = presetConfig(presetId, values).getOrElse { return Result.failure(it) }
+        add(config).onFailure { return Result.failure(it) }
+        secrets.forEach { (fieldId, value) -> setSecret(config.id, fieldId, value) }
+        val result = test(config)
+        if (result.isFailure) setEnabled(config.id, false)
+        return result
+    }
+
+    /** Resolve a saved preset config from its snapshot plus current field secrets (never the live catalog). */
+    private fun resolvedPreset(config: McpServerConfig): com.wangzan101.mika.core.cap.mcp.ResolvedMcpPreset? {
+        val snapshot = config.presetSnapshot ?: return null
+        return resolver.resolve(snapshot, config.fieldValues + fieldSecrets.all(config.id))
+    }
 
     fun validate(config: McpServerConfig): String? {
         if (config.name.isBlank()) return "name is required"
@@ -323,7 +377,8 @@ class McpServerStore(
         when (config.transport) {
             "stdio" -> {
                 val launcher = stdio ?: throw IllegalStateException("stdio MCP servers are not available on this build")
-                val argv = parseStdioCommand(config.command)
+                val argv = if (config.presetId != null) resolvedPreset(config)?.argv ?: parseStdioCommand(config.command)
+                else parseStdioCommand(config.command)
                 StdioMcpEndpoint.connect(
                     serverId = config.id, command = argv, launcher = launcher, workspace = workspace,
                     timeoutSec = config.timeoutSec,
@@ -349,6 +404,11 @@ class McpServerStore(
 
     private suspend fun authHeaders(config: McpServerConfig): Map<String, String> {
         if (config.transport == "stdio") return emptyMap()
+        // Preset with declared fields: resolve Bearer, secret headers and non-secret headers from
+        // the saved snapshot + current secrets, so no secret ever lives in the plain config.
+        if (config.auth == "fields") {
+            return resolvedPreset(config)?.headers ?: config.headers
+        }
         return buildMap {
             putAll(config.headers)
             if (config.auth == "oauth") {
@@ -358,7 +418,7 @@ class McpServerStore(
                     setOAuthTokens(config.id, tokens)
                 }
                 put("Authorization", "Bearer ${tokens.accessToken}")
-            } else {
+            } else if (config.auth == "token") {
                 token(config.id)?.let { put("Authorization", "Bearer $it") }
             }
         }

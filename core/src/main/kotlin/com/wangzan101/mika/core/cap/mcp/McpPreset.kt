@@ -220,12 +220,26 @@ object McpCatalogParser {
 class McpPresetResolver {
     private val envPattern = Regex("[A-Za-z_][A-Za-z0-9_]*")
 
-    fun resolve(preset: McpPreset, values: Map<String, String>): ResolvedMcpPreset {
+    /** Full resolution: every required field (secret or not) must be present in [values]. */
+    fun resolve(preset: McpPreset, values: Map<String, String>): ResolvedMcpPreset =
+        resolveImpl(preset, values, includeSecrets = true)
+
+    /**
+     * Structural resolution for the connection address and non-secret delivery targets: url, argv,
+     * non-secret headers and non-secret environment. Secret fields are ignored (they are supplied
+     * later at connect time), so a preset can be built into a config before its secrets exist.
+     */
+    fun resolveStructure(preset: McpPreset, values: Map<String, String>): ResolvedMcpPreset =
+        resolveImpl(preset, values, includeSecrets = false)
+
+    private fun resolveImpl(preset: McpPreset, values: Map<String, String>, includeSecrets: Boolean): ResolvedMcpPreset {
         val fields = preset.fields.associateBy { it.id }
         val unknown = values.keys - fields.keys
         require(unknown.isEmpty()) { "Unknown preset fields: ${unknown.sorted().joinToString()}" }
-        fields.values.filter { it.required }.forEach { field ->
-            require(!values[field.id].isNullOrBlank()) { "Missing required preset field ${field.id}" }
+        fields.values.forEach { field ->
+            if (field.required && (includeSecrets || !field.secret)) {
+                require(!values[field.id].isNullOrBlank()) { "Missing required preset field ${field.id}" }
+            }
         }
         fun value(id: String): String = values[id].orEmpty()
         fun urlValue(id: String): String = URLEncoder.encode(value(id), Charsets.UTF_8).replace("+", "%20")
@@ -237,6 +251,7 @@ class McpPresetResolver {
         val headers = LinkedHashMap(preset.headers)
         val environment = LinkedHashMap<String, String>()
         fields.values.forEach { field ->
+            if (field.secret && !includeSecrets) return@forEach
             val fieldValue = value(field.id)
             if (fieldValue.isEmpty() && !field.required) return@forEach
             when (field.target) {
