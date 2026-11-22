@@ -1,11 +1,30 @@
 package com.wangzan101.mika.core.teach
 
+import com.wangzan101.mika.core.model.Capabilities
+import com.wangzan101.mika.core.model.ChatModel
+import com.wangzan101.mika.core.model.Message
+import com.wangzan101.mika.core.model.ModelReply
+import com.wangzan101.mika.core.model.Part
+import com.wangzan101.mika.core.model.StopReason
+import com.wangzan101.mika.core.model.ToolSpec
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TeachDraftTest {
     private val id = "b".repeat(32)
+
+    private class FixedModel(private val reply: String) : ChatModel {
+        override val capabilities = Capabilities(toolCalls = true, vision = false, contextTokens = 8_000, reasoning = false)
+        override suspend fun complete(system: String, messages: List<Message>, tools: List<ToolSpec>): ModelReply =
+            ModelReply(listOf(Part.Text(reply)), StopReason.EndTurn, null)
+    }
+
+    private suspend fun drafted(reply: String) = TeachDraft.draft(
+        session(), route(), FixedModel(reply), emptySet(), null, emptySet(), { false }, 1_000L,
+    )
 
     private fun session() = TeachSession(
         id = id,
@@ -54,5 +73,42 @@ class TeachDraftTest {
         assertTrue(md.contains(TeachSkill.NOT_ABSENT))
         assertTrue(md.contains(TeachSkill.NOT_TRIAL_RUN))
         assertTrue(md.contains(TeachSkill.STOP_IF_UNMATCHED))
+    }
+
+    /** 目标是什么语言，模型就按什么语言写；技能正文不带中文的「观察到」也不能因此丢掉模型稿。 */
+    @Test fun modelDraftInTheGoalLanguageIsKeptWithoutChineseEvidenceLabels() = runBlocking {
+        val reply = """
+            ---
+            name: xhs-search-save
+            display: Search Xiaohongshu and save the first note
+            description: When the user wants to search Xiaohongshu and save a note.
+            apps: [com.xingin.xhs]
+            aliases: [save a xiaohongshu note]
+            source: demonstrated
+            ---
+            ## 入口
+            Open Xiaohongshu directly. The search icon is at the top of the home feed.
+            ## 步骤
+            1. Open Xiaohongshu.
+            2. Search for the requested keyword and open the first note.
+            3. Tap the star at the bottom right to save it.
+            ## 容易出错的地方
+            The star is the third icon in the bottom bar, not the heart.
+            ## 怎样算办成(核实证据)
+            The star turns yellow and a "Saved" toast appears.
+            ## 什么时候停下交给用户
+            Stop if a login wall appears.
+        """.trimIndent()
+        val skill = drafted(reply)
+        assertNotNull(skill)
+        assertTrue(skill!!.markdown.contains("The star is the third icon in the bottom bar"))
+        assertFalse(skill.markdown.contains("这份由本机按示范路线整理"))
+    }
+
+    /** 模型稿不成形时仍然退回本机整理，不因此丢掉整次示范。 */
+    @Test fun brokenModelDraftFallsBackToLocalAssembly() = runBlocking {
+        val skill = drafted("Just a sentence, no sections at all.")
+        assertNotNull(skill)
+        assertTrue(skill!!.markdown.contains("这份由本机按示范路线整理"))
     }
 }

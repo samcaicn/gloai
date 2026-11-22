@@ -386,7 +386,6 @@ object TeachDraft {
     }
 
     fun acceptsModel(md: String): Boolean {
-        if ("[观察到]" !in md && "观察到" !in md) return false
         if ("试跑成功" in md && TeachSkill.NOT_TRIAL_RUN !in md) return false
         if (SensitiveFilter.hit(md) != null) return false
         return true
@@ -409,7 +408,8 @@ object TeachDraft {
         if (route.steps.none { it.kind != null } || !teachGoalAccepted(session.goal)) return null
         val fromModel = model?.let { ask(it, session, route) }?.let { raw ->
             val caveated = ensureCaveats(PersonalSkills.withoutField(SkillDrafter.stripFence(raw), "updates"))
-            caveated.takeIf { acceptsModel(it) && SkillDrafter.validate(it, toolNames, scriptTool, runnableScripts) == null }
+            val ok = acceptsModel(caveated) && SkillDrafter.validate(caveated, toolNames, scriptTool, runnableScripts) == null
+            caveated.takeIf { ok }
         }
         val base = fromModel ?: assemble(session, route, "placeholder")
         val validated = SkillDrafter.validate(base, toolNames, scriptTool, runnableScripts)
