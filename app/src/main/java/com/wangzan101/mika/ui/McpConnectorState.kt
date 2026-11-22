@@ -134,6 +134,19 @@ class McpConnectorState(
     /** 失败后重试:走原预设的当前字段与已确认状态。 */
     fun retry() = connect()
 
+    /**
+     * 只替换 [secrets] 中非空字段的秘密;空值保留原秘密。只写加密存储,不进普通配置。
+     * 未在预设快照里声明的字段被忽略,防止把任意键写成秘密。
+     */
+    fun replaceSecrets(config: McpServerConfig, secrets: Map<String, String>) {
+        val declared = config.presetSnapshot?.fields?.filter { it.secret }?.map { it.id }?.toSet()
+        secrets.forEach { (fieldId, value) ->
+            if (value.isNotBlank() && (declared == null || fieldId in declared)) {
+                store.setSecret(config.id, fieldId, value)
+            }
+        }
+    }
+
     /** 取消进行中的连接/下载;草稿(非秘密输入)保留在 Form 里。 */
     fun cancel() {
         inFlight?.cancel()

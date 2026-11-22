@@ -175,6 +175,23 @@ class McpConnectorStateTest {
         assertNull(form.error)
     }
 
+    @Test fun replaceSecretsWritesOnlyDeclaredNonBlankFields() {
+        val cat = catalog(httpFieldsPreset())
+        val store = McpServerStore(tmp.root, ReverseCipher(), OkHttpClient(), catalog = cat)
+        val connector = McpConnectorState(store, cat, kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined))
+        val config = store.presetConfig("acme", mapOf("tenant" to "north")).getOrThrow()
+        store.add(config)
+        store.setSecret(config.id, "token", "old-secret")
+
+        // 非空替换;空值保留;未声明的字段被忽略。
+        connector.replaceSecrets(config, mapOf("token" to "new-secret", "nope" to "x"))
+        assertEquals("new-secret", store.secret(config.id, "token"))
+        assertNull(store.secret(config.id, "nope"))
+
+        connector.replaceSecrets(config, mapOf("token" to ""))
+        assertEquals("new-secret", store.secret(config.id, "token"))
+    }
+
     @Test fun connectFailurePreservesInputs() = runBlocking {
         val cat = catalog(httpFieldsPreset())
         val store = McpServerStore(tmp.root, ReverseCipher(), OkHttpClient(), catalog = cat)
