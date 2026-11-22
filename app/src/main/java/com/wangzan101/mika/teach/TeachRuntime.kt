@@ -130,15 +130,15 @@ class TeachRuntime(
 
     fun start(goal: String): TeachNotice? {
         val clean = goal.trim()
-        if (clean.isEmpty()) return TeachNotice.NeedGoal
-        if (!teachGoalAccepted(clean)) return TeachNotice.SecretGoal
-        if (busy()) return TeachNotice.Busy
-        if (ScreenAccessibility.instance.value == null) return TeachNotice.NoAccessibility
+        if (clean.isEmpty()) return fail(TeachNotice.NeedGoal)
+        if (!teachGoalAccepted(clean)) return fail(TeachNotice.SecretGoal)
+        if (busy()) return fail(TeachNotice.Busy)
+        if (ScreenAccessibility.instance.value == null) return fail(TeachNotice.NoAccessibility)
         synchronized(lock) {
             val current = session
             if (current != null && current.phase != TeachPhase.Saved && current.phase != TeachPhase.Idle) return null
         }
-        if (!chip.show(TeachPhase.Recording)) return TeachNotice.NoVisibleStop
+        if (!chip.show(TeachPhase.Recording)) return fail(TeachNotice.NoVisibleStop)
         synchronized(lock) {
             session = TeachSession(newId(), clean, TeachPhase.Recording, updatedAt = System.currentTimeMillis())
             draft = null
