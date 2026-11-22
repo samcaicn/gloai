@@ -1,6 +1,9 @@
 package com.wangzan101.mika.settings
 
+import com.wangzan101.mika.core.cap.mcp.McpCopy
 import com.wangzan101.mika.core.cap.mcp.McpOAuthTokens
+import com.wangzan101.mika.core.cap.mcp.McpPreset
+import com.wangzan101.mika.core.cap.mcp.McpPresetField
 import com.wangzan101.mika.core.cap.mcp.McpStdioLauncher
 import com.wangzan101.mika.core.cap.mcp.McpStdioProcess
 import com.wangzan101.mika.core.resource.ResourceScope
@@ -498,5 +501,86 @@ class McpServerStoreTest {
         } finally {
             server.shutdown()
         }
+    }
+
+    @Test fun fieldSecretsRoundTripMigrateBackupAndDelete() {
+        val s = store()
+        val a = s.add("A", "https://a.example/mcp").getOrThrow()
+        val b = s.add("B", "https://b.example/mcp").getOrThrow()
+        s.setToken(a.id, "legacy-bearer")
+        s.setOAuthTokens(a.id, McpOAuthTokens(accessToken = "legacy-oauth", clientId = "client", tokenEndpoint = "https://oauth.example/token"))
+        s.setSecret(a.id, "apiKey", "a-secret-one")
+        s.setSecret(a.id, "signingKey", "a-secret-two")
+        s.setSecret(b.id, "apiKey", "b-secret-one")
+
+        assertEquals(mapOf("apiKey" to "a-secret-one", "signingKey" to "a-secret-two"), s.secrets(a.id))
+        assertEquals("a-secret-one", s.secret(a.id, "apiKey"))
+        assertEquals("b-secret-one", s.secret(b.id, "apiKey"))
+        assertFalse(String(File(tmp.root, "mcp-server-secrets.bin").readBytes(), Charsets.UTF_8).contains("a-secret-one"))
+
+        val reopened = store()
+        assertEquals("a-secret-two", reopened.secret(a.id, "signingKey"))
+        assertEquals("legacy-bearer", reopened.token(a.id))
+        assertEquals("legacy-oauth", reopened.oauthTokens(a.id)?.accessToken)
+        reopened.setSecret(a.id, "apiKey", null)
+        assertEquals(null, reopened.secret(a.id, "apiKey"))
+        assertEquals("a-secret-two", reopened.secret(a.id, "signingKey"))
+
+        reopened.remove(a.id)
+        assertTrue(reopened.secrets(a.id).isEmpty())
+        assertEquals(null, reopened.token(a.id))
+        assertEquals(null, reopened.oauthTokens(a.id))
+        assertEquals("b-secret-one", reopened.secret(b.id, "apiKey"))
+    }
+
+    @Test fun legacyCustomConfigLoadsWithoutPresetFields() {
+        val id = "legacy-custom"
+        File(tmp.root, "mcp-servers.json").writeText("""[{"id":"$id","name":"Legacy","url":"https://legacy.example/mcp","enabled":true,"transport":"http-sse","auth":"oauth","allowedTools":["search"],"headers":{"X-Tenant":"demo"}}]""")
+        val oauthJson = """{"accessToken":"old-at","refreshToken":"old-rt","clientId":"old-client","tokenEndpoint":"https://legacy.example/token"}"""
+        val secrets = buildJsonObject {
+            put(id, "old-token")
+            put("oauth:$id", oauthJson)
+        }.toString()
+        File(tmp.root, "mcp-server-secrets.bin").writeBytes(ReverseCipher().encrypt(secrets.toByteArray()))
+
+        val s = store()
+        val config = s.servers.value.single()
+        assertEquals("http-sse", config.transport)
+        assertEquals("oauth", config.auth)
+        assertEquals(listOf("search"), config.allowedTools)
+        assertEquals("demo", config.headers["X-Tenant"])
+        assertEquals(null, config.presetId)
+        assertEquals(null, config.presetSnapshot)
+        assertTrue(config.fieldValues.isEmpty())
+        assertEquals("old-token", s.token(id))
+        assertEquals("old-at", s.oauthTokens(id)?.accessToken)
+    }
+
+    @Test fun presetConfigRejectsSecretInPlainFieldValues() {
+        val snapshot = McpPreset(
+            id = "demo", name = "Demo", summary = McpCopy(mapOf("en" to "Demo")),
+            category = "data", transport = "streamable-http", auth = "fields",
+            endpoint = "https://demo.example/mcp",
+            fields = listOf(
+                McpPresetField("apiKey", McpCopy(mapOf("en" to "API key")), secret = true, required = true, target = "bearer"),
+                McpPresetField("region", McpCopy(mapOf("en" to "Region")), secret = false, required = true, target = "header", name = "X-Region"),
+            ),
+            officialSource = "https://demo.example/docs",
+        )
+        val s = store()
+        val invalid = McpServerConfig(
+            name = "Demo", url = snapshot.endpoint, presetId = snapshot.id, presetSnapshot = snapshot,
+            fieldValues = mapOf("apiKey" to "must-not-be-plain"),
+        )
+        assertTrue(s.add(invalid).isFailure)
+        assertFalse(File(tmp.root, "mcp-servers.json").let { it.isFile && it.readText().contains("must-not-be-plain") })
+
+        val valid = s.add(invalid.copy(fieldValues = mapOf("region" to "cn"))).getOrThrow()
+        s.setSecret(valid.id, "apiKey", "encrypted-only")
+        val plain = File(tmp.root, "mcp-servers.json").readText()
+        assertFalse(plain.contains("encrypted-only"))
+        val reopened = store()
+        assertEquals("cn", reopened.servers.value.single().fieldValues["region"])
+        assertEquals("encrypted-only", reopened.secret(valid.id, "apiKey"))
     }
 }

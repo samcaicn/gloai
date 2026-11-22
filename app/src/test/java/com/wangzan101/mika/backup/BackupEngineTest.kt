@@ -2,6 +2,8 @@ package com.wangzan101.mika.backup
 
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.KeyCipher
+import com.wangzan101.mika.settings.McpServerStore
+import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -170,6 +172,29 @@ class BackupEngineTest {
 
         assertTrue(File(dstPrefs, "device_directory_hints.xml").readText().contains("directories_v1"))
         assertTrue(File(dstPrefs, "plain.xml").readText().contains("nickname\">Vagif</string>"))
+    }
+
+    @Test fun mcpFieldSecretsSurviveBackupWithNewKey() {
+        val srcFiles = tmp.newFolder("mcp-src-files")
+        val srcPrefs = tmp.newFolder("mcp-src-prefs")
+        val source = McpServerStore(File(srcFiles, "settings"), exportCipher, OkHttpClient())
+        val config = source.add("Demo", "https://demo.example/mcp").getOrThrow()
+        source.setSecret(config.id, "apiKey", "backup-secret-one")
+        source.setSecret(config.id, "signingKey", "backup-secret-two")
+        assertFalse(File(srcFiles, "settings/mcp-servers.json").readText().contains("backup-secret-one"))
+
+        val zip = exportBytes(srcFiles, srcPrefs)
+        val dstFiles = tmp.newFolder("mcp-dst-files")
+        val dstPrefs = tmp.newFolder("mcp-dst-prefs")
+        val manifest = engine(dstFiles, dstPrefs, importCipher).import(ByteArrayInputStream(zip), replace = false)
+        assertTrue(manifest.entries.any {
+            it.path == "files/settings/mcp-server-secrets.bin" && it.encrypted && it.alias == "mika-mcp-servers"
+        })
+
+        val restored = McpServerStore(File(dstFiles, "settings"), importCipher, OkHttpClient())
+        assertEquals("backup-secret-one", restored.secret(config.id, "apiKey"))
+        assertEquals("backup-secret-two", restored.secret(config.id, "signingKey"))
+        assertFalse(File(dstFiles, "settings/mcp-servers.json").readText().contains("backup-secret-two"))
     }
 
     @Test fun exportRefusesABackupTheImportCouldNotReadBack() {

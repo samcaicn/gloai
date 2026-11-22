@@ -6,6 +6,7 @@ import com.wangzan101.mika.core.cap.mcp.LegacySseMcpEndpoint
 import com.wangzan101.mika.core.cap.mcp.McpOAuth
 import com.wangzan101.mika.core.cap.mcp.McpOAuthException
 import com.wangzan101.mika.core.cap.mcp.McpOAuthTokens
+import com.wangzan101.mika.core.cap.mcp.McpPreset
 import com.wangzan101.mika.core.cap.mcp.McpStdioLauncher
 import com.wangzan101.mika.core.cap.mcp.StdioMcpEndpoint
 import com.wangzan101.mika.core.cap.mcp.parseStdioCommand
@@ -66,6 +67,12 @@ data class McpServerConfig(
     val allowedTools: List<String>? = null,
     /** 非密的自定义请求头;Authorization 另存。 */
     val headers: Map<String, String> = emptyMap(),
+    /** 预设 id(来自目录);null 表示自定义配置。 */
+    val presetId: String? = null,
+    /** 无秘密的连接快照;目录更新不改变已有配置的地址、transport、认证目的地或命令。 */
+    val presetSnapshot: McpPreset? = null,
+    /** 只存非秘密字段值;秘密字段走 [McpFieldSecrets]。 */
+    val fieldValues: Map<String, String> = emptyMap(),
 )
 
 data class McpHealth(val ok: Boolean, val message: String?, val tools: List<String>, val atMs: Long)
@@ -98,6 +105,7 @@ class McpServerStore(
     val servers: StateFlow<List<McpServerConfig>> = _servers.asStateFlow()
     private val oauth = McpOAuth(http)
     private val tokenJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val fieldSecrets = McpFieldSecrets(::loadSecrets, ::saveSecrets)
     private val _health = MutableStateFlow<Map<String, McpHealth>>(emptyMap())
     /** 最近一次连接/测试的结果;只在进程内,不落盘。 */
     val health: StateFlow<Map<String, McpHealth>> = _health.asStateFlow()
@@ -130,6 +138,7 @@ class McpServerStore(
         val hadToken = secrets.remove(id) != null
         val hadOAuth = secrets.remove("oauth:$id") != null
         if (hadToken || hadOAuth) saveSecrets(secrets)
+        fieldSecrets.clear(id)
     }
 
     @Synchronized fun setEnabled(id: String, enabled: Boolean) {
@@ -146,8 +155,24 @@ class McpServerStore(
         saveSecrets(secrets)
     }
 
+    @Synchronized fun secret(configId: String, fieldId: String): String? = fieldSecrets.get(configId, fieldId)
+
+    @Synchronized fun setSecret(configId: String, fieldId: String, value: String?) = fieldSecrets.set(configId, fieldId, value)
+
+    @Synchronized fun secrets(configId: String): Map<String, String> = fieldSecrets.all(configId)
+
     fun validate(config: McpServerConfig): String? {
         if (config.name.isBlank()) return "name is required"
+        config.presetSnapshot?.let { snapshot ->
+            val secretIds = snapshot.fields.filter { it.secret }.map { it.id }.toSet()
+            val leaked = secretIds.intersect(config.fieldValues.keys)
+            if (leaked.isNotEmpty()) return "secret fields must not be stored in plain field values: ${leaked.sorted().joinToString()}"
+            val declared = snapshot.fields.map { it.id }.toSet()
+            val undeclared = config.fieldValues.keys - declared
+            if (undeclared.isNotEmpty()) return "undeclared field values: ${undeclared.sorted().joinToString()}"
+        } ?: run {
+            if (config.fieldValues.isNotEmpty()) return "field values require a preset snapshot"
+        }
         if (config.transport == "stdio") {
             if (config.command.isBlank()) return "command is required"
             if (config.command.length > 4000) return "command is too long"
