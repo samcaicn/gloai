@@ -80,6 +80,7 @@ import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.RoleChoice
 import com.wangzan101.mika.settings.VoiceChoice
+import com.wangzan101.mika.voice.model.VoiceCatalogSnapshot
 import com.wangzan101.mika.settings.VoiceSettings
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize
@@ -123,6 +124,8 @@ fun ModelSetupScreen(
     onOpenUsage: (() -> Unit)? = null,
     /** 设置里打开统一语音模型目录;上手流程不传。 */
     onOpenVoiceCatalog: (() -> Unit)? = null,
+    /** 设置里打开「语音通话」选择页;上手流程不传。 */
+    onOpenRealtimeVoice: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -144,7 +147,12 @@ fun ModelSetupScreen(
     }
     val ui by vm.state.collectAsState()
     val voiceSettings = if (onOpenVoice != null) (context.applicationContext as? VoiceSettings.Owner)?.voiceSettings else null
-    val voiceChoice = voiceSettings?.state?.collectAsState()?.value?.choice
+    val voiceState = voiceSettings?.state?.collectAsState()?.value
+    val voiceChoice = voiceState?.choice
+    // 子页里改了朗读/通话的选择,回到这页要马上看到,所以直接跟目录走,不等 vm 下次同步
+    val liveVoiceCatalog = if (onOpenRealtimeVoice != null) {
+        remember { com.wangzan101.mika.voice.model.VoiceModelEnvironment.get(context) }.catalog.state.collectAsState().value
+    } else null
     var picking by rememberSaveable { mutableStateOf<ModelRole?>(null) }
     var pickingFallbackRole by rememberSaveable { mutableStateOf<ModelRole?>(null) }
     var pickingFallbackSlot by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -195,7 +203,7 @@ fun ModelSetupScreen(
         openGroups = { groupsOpen = true },
         next = onDone, openSpeech = onOpenSpeech,
         openVoice = onOpenVoice, openUsage = onOpenUsage,
-        openVoiceCatalog = onOpenVoiceCatalog,
+        openVoiceCatalog = onOpenVoiceCatalog, openRealtimeVoice = onOpenRealtimeVoice,
         openDecision = { openDecision = true }, openSignIn = { signInSheet = it },
         setReasoningEffort = vm::setReasoningEffort, setModelContext = vm::setModelContext,
     )
@@ -352,7 +360,8 @@ fun ModelSetupScreen(
         is ModelSubPage.Main -> {
             if (ui.chatGptWelcome) ChatGptWelcome(vm::dismissChatGptWelcome)
             BackHandler(onBack = onBack)
-            ModelSetupContent(ui, onboarding, actions, voiceChoice = voiceChoice, onBack = onBack)
+            ModelSetupContent(ui, onboarding, actions, voiceChoice = voiceChoice, readAloudOn = voiceState?.enabled ?: false,
+                liveVoiceCatalog = liveVoiceCatalog, onBack = onBack)
         }
     }
     }
@@ -429,6 +438,8 @@ class ModelSetupActions(
     val openUsage: (() -> Unit)? = null,
     /** 打开统一语音模型目录;为 null 时不显示入口(上手流程)。 */
     val openVoiceCatalog: (() -> Unit)? = null,
+    /** 打开「语音通话」选择页;为 null 时不显示(上手流程)。 */
+    val openRealtimeVoice: (() -> Unit)? = null,
     /** Independent opt-in decision service; the three model roles remain unchanged. */
     val openDecision: (() -> Unit)? = null,
     val next: () -> Unit = {},
@@ -447,7 +458,8 @@ class ModelSetupActions(
 @Composable
 fun ModelSetupContent(
     ui: ModelSetupUi, onboarding: Boolean, actions: ModelSetupActions,
-    voiceChoice: VoiceChoice? = null, onBack: () -> Unit,
+    voiceChoice: VoiceChoice? = null, readAloudOn: Boolean = false,
+    liveVoiceCatalog: VoiceCatalogSnapshot? = null, onBack: () -> Unit,
 ) {
     val c = MikaTheme.colors
     // 表单收起(测试通过存好了,或取消)后页面上没有要打字的地方,顺手收起键盘
@@ -495,10 +507,24 @@ fun ModelSetupContent(
                     }
                     // 存下服务商、推荐的模型没试通过时的说明和「选主模型」(上手时在服务商一组下面)
                     ProbeNote(ui, actions)
-                    RolesSection(ui, onPick, actions.setReasoningEffort, actions.setModelContext, actions.openVoice, voiceChoice)
-                    SpeechSection(ui, actions.openSpeech)
-                    ImageModelSection(ui, actions.openImage)
-                    VoiceCatalogSection(actions.openVoiceCatalog)
+                    // 迁移到语音目录后,三种用途和来源账号收成一组「语音」;迁移前仍是旧的分散入口
+                    val voiceCatalog = ui.sttCatalog?.let { liveVoiceCatalog ?: it }
+                    val hubOpen = voiceCatalog != null && actions.openSpeech != null && actions.openVoice != null &&
+                        actions.openRealtimeVoice != null && actions.openVoiceCatalog != null
+                    if (voiceCatalog != null && hubOpen) {
+                        RolesSection(ui, onPick, actions.setReasoningEffort, actions.setModelContext)
+                        ImageModelSection(ui, actions.openImage)
+                        VoiceHubSection(
+                            voiceCatalog, ui.providers, readAloudOn,
+                            onStt = actions.openSpeech!!, onTts = actions.openVoice!!,
+                            onRealtime = actions.openRealtimeVoice!!, onServices = actions.openVoiceCatalog!!,
+                        )
+                    } else {
+                        RolesSection(ui, onPick, actions.setReasoningEffort, actions.setModelContext, actions.openVoice, voiceChoice)
+                        SpeechSection(ui, actions.openSpeech)
+                        ImageModelSection(ui, actions.openImage)
+                        VoiceCatalogSection(actions.openVoiceCatalog)
+                    }
                     GroupCard(Modifier.padding(top = 8.dp)) {
                         ListRow(MikaIcons.Leaf, ModelsCopy.GROUPS, first = true, onClick = actions.openGroups) { RowChevron() }
                     }

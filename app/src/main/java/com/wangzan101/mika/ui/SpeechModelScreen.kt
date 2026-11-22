@@ -89,7 +89,7 @@ class SpeechPickActions(
  * 选好(手机自带、不用、试转通过的服务商模型)后回到进来的那一页。
  */
 @Composable
-fun SpeechModelScreen(store: ProviderStore, onBack: () -> Unit) {
+fun SpeechModelScreen(store: ProviderStore, onBack: () -> Unit, onOpenServices: (() -> Unit)? = null) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val settings = (context.applicationContext as? MikaApp)?.speech
@@ -141,7 +141,7 @@ fun SpeechModelScreen(store: ProviderStore, onBack: () -> Unit) {
     }
     val actions = SpeechPickActions(
         pick = { vm.pickSpeech(it); onBack() },
-        pickRef = { vm.pickSttModel(it, onPicked = onBack) },
+        pickRef = { vm.pickSttModel(it) },
         pickModel = { pid, model -> vm.pickSpeechModel(pid, model, onPicked = onBack) },
         openDoubao = { doubaoOpen = true },
         // 存好后回到语音转文字页,看得到它已选上
@@ -199,14 +199,18 @@ fun SpeechModelScreen(store: ProviderStore, onBack: () -> Unit) {
                 onClearBailian = { region -> settings?.clearBailian(region); funAsrDone() },
             ) { funAsrOpen = false }
         }
-        ui.sttCatalog != null -> MigratedSpeechModelContent(ui, actions, onBack)
+        ui.sttCatalog != null -> MigratedSpeechModelContent(ui, actions, onBack, onOpenServices)
         else -> SpeechModelContent(ui, probe, actions, onBack, doubaoConfigured, funAsrLast != null)
     }
 }
 
 /** 迁移后只选择目录里的模型;系统健康说明保留,模型选择本身不发送请求。 */
 @Composable
-private fun MigratedSpeechModelContent(ui: ModelSetupUi, actions: SpeechPickActions, onBack: () -> Unit) {
+private fun MigratedSpeechModelContent(
+    ui: ModelSetupUi, actions: SpeechPickActions, onBack: () -> Unit, onOpenServices: (() -> Unit)?,
+) {
+    val context = LocalContext.current
+    val voiceVm = rememberVoiceCatalogViewModel(remember { VoiceModelEnvironment.get(context) })
     val catalog = requireNotNull(ui.sttCatalog)
     val system = ui.systemSpeech
     val selection = catalog.selections.stt
@@ -242,24 +246,16 @@ private fun MigratedSpeechModelContent(ui: ModelSetupUi, actions: SpeechPickActi
                 onClick = { actions.pick(SpeechChoice.Off) }, subtitle = tr(R.string.speech_off_note),
             )
         }
-        catalog.services.filter { it.id != SttSelectionController.SYSTEM_STT_SERVICE.id }.forEach { service ->
-            val models = catalog.models.filter { it.serviceId == service.id && it.stt != null }
-            if (models.isEmpty()) return@forEach
-            GroupLabel(service.name)
-            GroupCard {
-                models.forEachIndexed { index, model ->
-                    val ref = VoiceModelRef(service.id, model.id, VoiceCapability.STT)
-                    RadioRow(
-                        model.displayName,
-                        selected = selection == SttSelection.Model(ref),
-                        onClick = { actions.pickRef(ref) },
-                        first = index == 0,
-                        titleStyle = ModelIdStyle,
-                        trailing = { CapabilityTag(tr(R.string.speech_tag_speech)) },
-                    )
-                }
-            }
+        val choices = voiceOptions(VoiceCapability.STT, catalog, ui.providers).filter { it.source != VoiceSource.Device }
+        if (choices.isNotEmpty()) {
+            GroupLabel(tr(R.string.voice_choices_label))
+            VoiceOptionList(
+                choices, (selection as? SttSelection.Model)?.ref, tr(R.string.voice_try_stt), voiceVm,
+                onPick = { choice -> actions.pickRef(voiceVm.ensureInCatalog(choice)) },
+                onTest = { choice -> voiceVm.tryChoice(choice, "") },
+            )
         }
+        onOpenServices?.let { VoiceMoreServices(it) }
         FooterNote(tr(R.string.speech_footer), Modifier.padding(top = 8.dp))
     }
 }

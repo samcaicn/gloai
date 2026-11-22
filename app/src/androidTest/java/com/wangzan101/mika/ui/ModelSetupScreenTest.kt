@@ -161,6 +161,33 @@ class ModelSetupScreenTest {
         assertEquals(listOf("voice"), calls)
     }
 
+    @Test fun migratedCatalogShowsOneVoiceGroupWithThreeUses() {
+        val snapshot = com.wangzan101.mika.voice.model.VoiceCatalogSnapshot(
+            services = listOf(com.wangzan101.mika.voice.model.SttSelectionController.SYSTEM_STT_SERVICE),
+            models = listOf(com.wangzan101.mika.voice.model.SttSelectionController.SYSTEM_STT_MODEL),
+            legacyMigrationComplete = true,
+        )
+        val ui = connected().copy(sttCatalog = snapshot)
+        compose.setContent {
+            MikaTheme {
+                ModelSetupContent(
+                    ui, onboarding = false,
+                    actions = ModelSetupActions(
+                        openSpeech = { calls += "stt" }, openVoice = { calls += "tts" },
+                        openRealtimeVoice = { calls += "realtime" }, openVoiceCatalog = { calls += "services" },
+                    ),
+                    onBack = {},
+                )
+            }
+        }
+        compose.onNodeWithTag("role-voice").assertDoesNotExist()
+        compose.onNodeWithTag("voice-hub-stt").performScrollTo().performClick()
+        compose.onNodeWithTag("voice-hub-tts").performScrollTo().performClick()
+        compose.onNodeWithTag("voice-hub-realtime").performScrollTo().performClick()
+        compose.onNodeWithTag("voice-hub-services").performScrollTo().performClick()
+        assertEquals(listOf("stt", "tts", "realtime", "services"), calls)
+    }
+
     @Test fun voiceSettingsShowsSavedChoiceWithoutModelList() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val prefsName = "voice-inline-${tmp.root.name}"

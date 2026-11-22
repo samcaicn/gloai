@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_hub_group">语音</string>
+    <string name="voice_hub_stt">语音输入</string>
+    <string name="voice_hub_tts">朗读回答</string>
+    <string name="voice_hub_realtime">语音通话</string>
+    <string name="voice_hub_services">语音服务</string>
+    <string name="voice_hub_services_sub">%1$d 个可用</string>
+    <string name="voice_hub_footer">每件事选一个来做。语音服务是这些选项的来源账号。</string>
+    <string name="voice_hub_setup">去设置</string>
+    <string name="voice_hub_ready">可用</string>
+    <string name="voice_hub_off">关闭</string>
+    <string name="voice_hub_none">未选择</string>
+    <string name="voice_source_device">这台手机 · 免费</string>
+    <string name="voice_source_account">来自聊天账号 %1$s</string>
+    <string name="voice_source_service">语音服务 %1$s</string>
+    <string name="voice_trait_live">边说边出字</string>
+    <string name="voice_trait_after">说完再出字</string>
+    <string name="voice_trait_free">免费</string>
+    <string name="voice_trait_streaming_read">马上开始读</string>
+    <string name="voice_trait_whole_read">整段生成后再读</string>
+    <string name="voice_trait_interruptible">可随时打断</string>
+    <string name="voice_trait_phone_only">暂只用于打电话</string>
+    <string name="voice_try_stt">说一句试试</string>
+    <string name="voice_try_tts">听一下</string>
+    <string name="voice_try_realtime">连一下</string>
+    <string name="voice_try_sample">你好，我是 Mika。这是一段声音测试。</string>
+    <string name="voice_choices_label">选择</string>
+    <string name="voice_more_label">更多选择</string>
+    <string name="voice_more_services">接入其他语音服务</string>
+    <string name="voice_settings_of">%1$s 的设置</string>
+    <string name="voice_voice">音色</string>
+    <string name="voice_voice_default">默认</string>
+    <string name="realtime_lead">和 Mika 直接对话，随时可以打断。AI 接打电话默认也用这个选择，也可以单独指定。</string>
+    <string name="realtime_empty">还没有语音通话模型</string>
+    <string name="realtime_empty_note">在下面选一个，或接入支持通话的语音服务。</string>
+    <string name="realtime_also_used">也在用这个选择</string>
+    <string name="realtime_calls_follow">跟随语音通话</string>
+    <string name="realtime_calls_own">单独指定：%1$s</string>
+    <string name="realtime_footer">语音通话需要能同时听和说的模型。</string>
+    <string name="realtime_none_available">你接入的服务都还不支持语音通话。在「更多选择」里接入一个。</string>
+</resources>

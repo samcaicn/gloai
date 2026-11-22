@@ -96,31 +96,7 @@ internal fun voiceModelDisplayName(model: VoiceModel): String =
 
 @Composable
 fun VoiceCatalogScreen(voiceModels: VoiceModelEnvironment, onBack: () -> Unit) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val player = remember { VoicePlayer(context) }
-    val viewModel = remember(voiceModels) {
-        val manager = VoiceAccountManager(voiceModels.catalog, requireNotNull(voiceModels.credentialStore))
-        val probe = VoiceModelProbe(
-            environment = voiceModels,
-            startStt = { ref -> voiceModels.stt.start(context, ref, null, SttHooks()) },
-            synthesize = { ref, request ->
-                voiceModels.tts.createTts(context, ref, TtsCapabilities()).synthesize(request)
-            },
-            connectRealtime = { ref ->
-                val controller = voiceModels.realtime
-                controller.provider(ref).connect(controller.profile(ref), controller.credentials(ref), "", false).close()
-            },
-        )
-        VoiceCatalogViewModel(
-            environment = voiceModels,
-            manager = manager,
-            probe = probe,
-            scope = scope,
-            playAudio = { bytes, mime -> player.play(bytes, mime) },
-        )
-    }
-    DisposableEffect(viewModel) { onDispose { player.stop() } }
+    val viewModel = rememberVoiceCatalogViewModel(voiceModels)
     VoiceCatalogContent(viewModel, onBack)
 }
 

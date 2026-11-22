@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_hub_group">Voice</string>
+    <string name="voice_hub_stt">Voice input</string>
+    <string name="voice_hub_tts">Read replies aloud</string>
+    <string name="voice_hub_realtime">Voice call</string>
+    <string name="voice_hub_services">Voice services</string>
+    <string name="voice_hub_services_sub">%1$d available</string>
+    <string name="voice_hub_footer">Pick who does each job. Voice services are the accounts these choices come from.</string>
+    <string name="voice_hub_setup">Set up</string>
+    <string name="voice_hub_ready">Ready</string>
+    <string name="voice_hub_off">Off</string>
+    <string name="voice_hub_none">Not chosen</string>
+    <string name="voice_source_device">This phone · free</string>
+    <string name="voice_source_account">From chat account %1$s</string>
+    <string name="voice_source_service">Voice service %1$s</string>
+    <string name="voice_trait_live">Text as you speak</string>
+    <string name="voice_trait_after">Text after you finish</string>
+    <string name="voice_trait_free">Free</string>
+    <string name="voice_trait_streaming_read">Starts reading right away</string>
+    <string name="voice_trait_whole_read">Reads once the whole clip is ready</string>
+    <string name="voice_trait_interruptible">Can be interrupted</string>
+    <string name="voice_trait_phone_only">Phone calls only for now</string>
+    <string name="voice_try_stt">Say a sentence</string>
+    <string name="voice_try_tts">Listen</string>
+    <string name="voice_try_realtime">Connect</string>
+    <string name="voice_try_sample">Hi, I\'m Mika. This is a voice test.</string>
+    <string name="voice_choices_label">Choose</string>
+    <string name="voice_more_label">More options</string>
+    <string name="voice_more_services">Connect another voice service</string>
+    <string name="voice_settings_of">%1$s settings</string>
+    <string name="voice_voice">Voice</string>
+    <string name="voice_voice_default">Default</string>
+    <string name="realtime_lead">Talk with Mika and interrupt it any time. AI phone calls use the same choice unless they pick their own.</string>
+    <string name="realtime_empty">No voice call model yet</string>
+    <string name="realtime_empty_note">Pick one below, or connect a voice service that offers calls.</string>
+    <string name="realtime_also_used">Also uses this choice</string>
+    <string name="realtime_calls_follow">Same as voice call</string>
+    <string name="realtime_calls_own">Its own: %1$s</string>
+    <string name="realtime_footer">A voice call needs a model that listens and speaks at the same time.</string>
+    <string name="realtime_none_available">None of your services offer voice calls yet. Connect one under More options.</string>
+</resources>

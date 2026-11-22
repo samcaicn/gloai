@@ -34,6 +34,10 @@ import com.wangzan101.mika.ui.components.GroupCard
 import com.wangzan101.mika.ui.components.GroupLabel
 import com.wangzan101.mika.ui.components.InputRow
 import com.wangzan101.mika.ui.components.ListRow
+import com.wangzan101.mika.ui.components.RowChevron
+import com.wangzan101.mika.ui.components.RowValue
+import androidx.compose.ui.platform.testTag
+import com.wangzan101.mika.voice.model.VoiceVoices
 import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.components.MikaSwitch
 import com.wangzan101.mika.ui.components.RadioRow
@@ -47,12 +51,12 @@ import kotlinx.coroutines.launch
  * 不在 [com.wangzan101.mika.core.model.ModelRole] 里;和语音转写、图片模型一样独立。
  */
 @Composable
-fun VoiceModelScreen(store: ProviderStore, onBack: () -> Unit) {
+fun VoiceModelScreen(store: ProviderStore, onBack: () -> Unit, onOpenServices: (() -> Unit)? = null) {
     val context = LocalContext.current
     val settings = VoiceSettings.get(context)
     val voiceModels = remember { VoiceModelEnvironment.get(context) }
     if (voiceModels.tts.migrated) {
-        MigratedVoiceModelContent(voiceModels, settings, onBack)
+        MigratedVoiceModelContent(voiceModels, settings, store, onBack, onOpenServices)
     } else {
         VoiceModelContent(store, settings, onBack)
     }
@@ -200,9 +204,14 @@ internal fun VoiceModelContent(store: ProviderStore, settings: VoiceSettings, on
 private fun MigratedVoiceModelContent(
     voiceModels: VoiceModelEnvironment,
     settings: VoiceSettings,
+    store: ProviderStore,
     onBack: () -> Unit,
+    onOpenServices: (() -> Unit)?,
 ) {
     val context = LocalContext.current
+    val voiceVm = rememberVoiceCatalogViewModel(voiceModels)
+    val providers by store.providers.collectAsState()
+    var voicesOpen by remember { mutableStateOf(false) }
     val state by settings.state.collectAsState()
     val catalog by voiceModels.catalog.state.collectAsState()
     val tts = voiceModels.tts
@@ -226,39 +235,41 @@ private fun MigratedVoiceModelContent(
             )
         }
 
-        if (ttsModels.isEmpty()) {
+        val choices = voiceOptions(VoiceCapability.TTS, catalog, providers)
+        if (choices.isEmpty()) {
             FooterNote(tr(R.string.voice_no_tts_models))
         } else {
-            catalog.services.forEach { service ->
-                val models = ttsModels.filter { it.serviceId == service.id }
-                if (models.isEmpty()) return@forEach
-                GroupLabel(service.name)
-                GroupCard {
-                    models.forEachIndexed { index, model ->
-                        val ref = VoiceModelRef(model.serviceId, model.id, VoiceCapability.TTS)
-                        RadioRow(
-                            voiceModelDisplayName(model),
-                            selected = selection == ref,
-                            onClick = {
-                                tts.select(ref)
-                                test = null
-                            },
-                            first = index == 0,
-                            titleStyle = ModelIdStyle,
-                        )
-                    }
-                }
-            }
+            GroupLabel(tr(R.string.voice_choices_label))
+            VoiceOptionList(
+                choices, selection, tr(R.string.voice_try_tts), voiceVm,
+                onPick = { choice ->
+                    tts.select(voiceVm.ensureInCatalog(choice))
+                    test = null
+                },
+                onTest = { choice -> voiceVm.tryChoice(choice, tr(R.string.voice_try_sample)) },
+            )
         }
+        onOpenServices?.let { VoiceMoreServices(it) }
 
         selectedModel?.let { model ->
             GroupCard {
+                val voices = model.tts?.protocol?.let(VoiceVoices::tts).orEmpty()
+                if (voices.isNotEmpty()) {
+                    ListRow(null, tr(R.string.voice_voice), first = true, onClick = { voicesOpen = true },
+                        modifier = Modifier.testTag("tts-voice")) {
+                        RowValue(state.voice.ifBlank { tr(R.string.voice_voice_default) }.let(VoiceVoices::label))
+                        RowChevron()
+                    }
+                }
+                if (voicesOpen) {
+                    VoicePickerSheet(
+                        VoiceVoices.withCurrent(voices, state.voice),
+                        onPick = { settings.setVoice(it); test = null },
+                        onDismiss = { voicesOpen = false },
+                    )
+                }
                 InputRow(
-                    tr(R.string.voice_name), state.voice, onChange = { settings.setVoice(it) },
-                    placeholder = "alloy / Kore", first = true,
-                )
-                InputRow(
-                    tr(R.string.voice_speed), speed,
+                    tr(R.string.voice_speed), speed, first = voices.isEmpty(),
                     onChange = {
                         speed = it
                         it.toFloatOrNull()?.takeIf { v -> v.isFinite() }?.let { v -> settings.setSpeed(normalizeVoiceSpeed(v)) }
