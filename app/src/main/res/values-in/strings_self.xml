@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_self_operate">Izinkan Mika mengoperasikan layarnya sendiri</string>
-    <string name="settings_self_operate_sub">Buka halaman dan file Mika; bertanya sebelum membuka tautan di browser Anda</string>
+    <string name="settings_self_operate_sub">Tetap bertanya sebelum membuka tautan di browser Anda.</string>
     <string name="settings_pip_operate">Operasikan tampilan kecil secara langsung</string>
     <string name="settings_pip_operate_sub">Ketuk dan geser di jendela kecil untuk mengontrol layar</string>
     <string name="settings_external_schedule">Izinkan skrip membuat tugas terjadwal</string>
-    <string name="settings_external_schedule_sub">Terima permintaan tugas dari aplikasi lain lewat broadcast; maksimal beberapa per menit, ditandai dibuat oleh skrip</string>
+    <string name="settings_external_schedule_sub">Aplikasi lain dapat mengirim tugas lewat broadcast, dibatasi laju dan ditandai dibuat skrip.</string>
     <string name="self_notify_channel">Tindakan Mika</string>
     <string name="self_notify_channel_desc">Apa yang dibuka Mika atau diminta Anda lihat</string>
     <string name="self_notify_open">Lihat</string>

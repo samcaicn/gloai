@@ -4,5 +4,5 @@
     <string name="pocket_guard_unavailable">Memerlukan sensor jarak dan cahaya.</string>
     <string name="pocket_guard_exit">Geser ke kanan untuk keluar</string>
     <string name="pocket_completion_lock_title">Kunci saat tugas berhenti dan ponsel tertutup</string>
-    <string name="pocket_completion_lock_summary">Kunci layar jika ponsel tertutup dan gelap saat tugas selesai atau menunggu.</string>
+    <string name="pocket_completion_lock_summary">Kunci layar jika ponsel tertutup dan gelap.</string>
 </resources>

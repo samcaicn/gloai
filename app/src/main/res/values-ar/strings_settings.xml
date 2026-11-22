@@ -186,7 +186,7 @@
     <string name="skin_accent_follow">لون التمييز من الصورة</string>
     <string name="skin_accent_follow_sub">يستخدم اللون الرئيسي في الصورة بدل لون التمييز أعلاه، إن وُجد</string>
     <string name="settings_self_config">السماح لـ Mika بتغيير إعداداتها</string>
-    <string name="settings_self_config_sub">عند التفعيل، تحصل المهام على أداة لقراءة هذه التفضيلات وتغييرها (السرعة والكتم والكبسولة والمظهر ولون التمييز وإبقاء الشاشة قيد التشغيل). لا تشمل النماذج أو مفاتيح API أو شبكة الحاوية أو أي شيء يحذف البيانات.</string>
+    <string name="settings_self_config_sub">يغيّر التفضيلات المدرجة فقط؛ لا يمس النماذج أو المفاتيح أو الشبكة أو حذف البيانات.</string>
     <string name="settings_step_limit">حد الخطوات لكل مهمة</string>
     <string name="settings_step_limit_sub">يعني الإيقاف عدم وجود حد. عند بلوغ الحد، تتوقف المهمة وتوضح أين توقفت.</string>
     <string name="settings_step_limit_off">بلا حد</string>

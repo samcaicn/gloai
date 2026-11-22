@@ -52,7 +52,8 @@ internal object MainScreenSpill {
 
     /**
      * [since] 动作开始的时刻,[windowMs] 之后冒出来的不算这个动作的;[topBefore] 动作开始时主屏最上面的任务;
-     * [userTaps] 用户在主屏上点东西的时刻和包。同一个任务只出一条(取最后一次),按先后排。
+     * [userTaps] 用户在主屏上点东西的时刻和包;[userActiveBefore] 动作开始前用户刚在主屏上动过手(见 ScreenSpill 的计数基线),
+     * 归属说不清时不拉回。同一个任务只出一条(取最后一次),按先后排。
      */
     fun decide(
         arrivals: List<Arrival>,
@@ -62,12 +63,13 @@ internal object MainScreenSpill {
         excluded: Set<String>,
         userTaps: List<Tap>,
         homePackages: Set<String> = emptySet(),
+        userActiveBefore: Boolean = false,
     ): List<Verdict> {
         val ordered = arrivals.sortedBy { it.at }
         val homeReturns = ordered.filter { it.packageName in homePackages }.map { it.at }
         val out = LinkedHashMap<Int, Verdict>()
         for (a in ordered) {
-            val v = verdict(a, since, windowMs, topBefore, excluded, userTaps, homeReturns) ?: continue
+            val v = verdict(a, since, windowMs, topBefore, excluded, userTaps, homeReturns, userActiveBefore) ?: continue
             out.remove(a.taskId)
             out[a.taskId] = v
         }
@@ -128,6 +130,7 @@ internal object MainScreenSpill {
         excluded: Set<String>,
         userTaps: List<Tap>,
         homeReturns: List<Long>,
+        userActiveBefore: Boolean,
     ): Verdict? {
         if (a.at < since || a.at > since + windowMs) return null
         val pkg = a.packageName ?: return null
@@ -137,6 +140,9 @@ internal object MainScreenSpill {
         // 用户先回主屏桌面，再从桌面或通知栏打开 App：这条导航链不依赖控件是否另发点击事件
         if (homeReturns.any { it in since..a.at }) return null
         if (userTaps.any { it.at in since..a.at }) return null
+        // 动作开始前用户刚在主屏上动过手(两次动作之间,只有计数、没有具体时刻):这次冒出来的说不清是谁开的,
+        // 保守起见不拉回,报成用户在用,免得抢走用户正在用的 App(#798/#651)
+        if (userActiveBefore) return InUse(a)
         // 用户已经在点它了(出现之后点在这一个 App 的窗口上):留给用户,不挪
         if (userTaps.any { it.at >= a.at && it.packageName == pkg }) return InUse(a)
         if (a.taskId == topBefore) return if (a.sameTask) InUse(a) else null

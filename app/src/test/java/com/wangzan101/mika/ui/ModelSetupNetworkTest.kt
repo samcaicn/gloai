@@ -76,7 +76,8 @@ class ModelSetupNetworkTest {
 
         runBlocking {
             vm.saveWithoutTest()
-            withTimeout(15_000) { vm.state.first { !it.showForm } }
+            // 第一家服务商一出现，表单就可能隐藏；保存手填模型并重置表单后才回到 Idle。
+            withTimeout(15_000) { vm.state.first { !it.showForm && it.form.test == ListState.Idle } }
         }
         val saved = store.providers.value.single()
         assertEquals(setOf("manual-model"), saved.typedModels)

@@ -166,7 +166,7 @@
     <string name="skin_accent_follow">アクセントカラーを画像から取る</string>
     <string name="skin_accent_follow_sub">画像の主な色を上で選んだアクセントカラーの代わりに使います（はっきりした色がない画像では従来どおり）</string>
     <string name="settings_self_config">Mika に自分の設定を変更させる</string>
-    <string name="settings_self_config_sub">オンにすると、タスクがこれらの設定(ペース、ミュート、カプセル、外観、アクセントカラー、画面オン)を読み取り・変更するツールを 1 つ使えるようになります。モデル、API キー、コンテナのネットワーク、データを削除するものは含まれません</string>
+    <string name="settings_self_config_sub">一覧の設定だけを変更します。モデル、キー、ネットワーク、データ削除には触れません。</string>
     <string name="settings_step_limit">タスクごとのステップ上限</string>
     <string name="settings_step_limit_sub">オフは無制限です。上限に達するとタスクは止まり、どこで止まったかを表示します。</string>
     <string name="settings_step_limit_off">上限なし</string>

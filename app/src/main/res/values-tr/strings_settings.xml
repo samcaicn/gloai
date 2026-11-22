@@ -166,7 +166,7 @@
     <string name="skin_accent_follow">Vurgu rengi görüntüden</string>
     <string name="skin_accent_follow_sub">Yukarıdaki vurgu rengi yerine, varsa görüntüdeki ana rengi kullanır</string>
     <string name="settings_self_config">Mika\'nın kendi ayarlarını değiştirmesine izin ver</string>
-    <string name="settings_self_config_sub">Açıkken görevler, bu tercihleri okumak ve değiştirmek için tek bir araç alır (hız, sessize alma, kapsül, görünüm, vurgu rengi, ekran açık). Modeller, API anahtarları, konteyner ağı ve veri silen hiçbir şey asla dahil edilmez</string>
+    <string name="settings_self_config_sub">Yalnızca listedeki tercihleri değiştirir; modellere, anahtarlara, ağa veya veri silmeye asla dokunmaz.</string>
     <string name="settings_step_limit">Görev başına adım sınırı</string>
     <string name="settings_step_limit_sub">Kapalı, sınırsız demektir. Sınıra ulaşıldığında görev durur ve nerede durduğunu söyler.</string>
     <string name="settings_step_limit_off">Sınırsız</string>

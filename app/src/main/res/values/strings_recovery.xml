@@ -2,6 +2,7 @@
 <resources>
     <string name="rec_a11y">Turn on accessibility for me</string>
     <string name="rec_default_on">On by default</string>
+    <string name="rec_learn_what">What do these do?</string>
     <string name="rec_a11y_body">Mika uses Accessibility to read the text and buttons on screen. With this on, Mika turns on its own accessibility service in system settings for you; other accessibility services you have on aren’t affected. Turn this off and Mika turns its own service off.</string>
     <string name="rec_battery">Unrestricted battery</string>
     <string name="rec_battery_body">With this on, Mika adds itself to the system’s battery optimization exceptions, so it isn’t stopped in the background to save power and phone control drops less often. It may use a bit more battery. Turn it off to go back to the system default.</string>

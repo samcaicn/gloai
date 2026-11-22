@@ -1,6 +1,8 @@
 package com.wangzan101.mika.core.cap.sandbox
 
 import com.wangzan101.mika.core.model.Part
+import com.wangzan101.mika.core.workspace.DeviceFileSearchQuery
+import com.wangzan101.mika.core.workspace.DeviceFileImport
 import com.wangzan101.mika.core.tool.SubActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -100,6 +102,7 @@ internal class SandboxTools(
     private val onScript: ((String) -> Unit)? = null,
     private val prepareWaitMs: Long = PREPARE_WAIT_MS,
     private val folderAccess: Boolean = false,
+    private val folderFileImporter: FolderFileImporter? = null,
 ) {
     /** 设备支持就提供工具:运行环境首次启动时在后台准备,工具调用时等它。 */
     fun available(): Boolean = sandbox.status() !is SandboxStatus.Unsupported
@@ -131,19 +134,31 @@ internal class SandboxTools(
             outcome = result.outcome, frame = result.frame, images = result.images, record = result.record, screenElements = result.screenElements)
     }
 
-    val foldersAvailable get() = folderAccess && sandbox.folderFiles != null
-    private fun folders(): FolderFiles = sandbox.folderFiles?.takeIf { folderAccess }
+    val foldersAvailable get() = folderAccess && available() && sandbox.folderFiles != null
+    val folderImportAvailable get() = foldersAvailable && folderFileImporter != null
+    private fun folders(): FolderFiles = sandbox.folderFiles?.takeIf { folderAccess && available() }
         ?: throw SandboxError("folder_access_denied", "Folder access is unavailable for this task.", true)
 
+    suspend fun searchFolders(query: DeviceFileSearchQuery) = folders().search(query)
+
+    suspend fun importFolderFile(path: String): DeviceFileImport {
+        val importer = folderFileImporter?.takeIf { foldersAvailable }
+            ?: throw SandboxError("folder_access_denied", "Folder import is unavailable for this task.", true)
+        return importer.importFile(path, workspace())
+    }
+
     internal fun listFolders(a: Args): ToolExecution {
-        val page = folders().list(a.str("path", max = 4096))
+        val path = a.str("path", max = 4096)
+        val page = folders().list(path)
         return ToolExecution(okObj {
             put("entries", JsonArray(page.entries.map { e -> buildJsonObject {
                 put("path", e.path); put("name", e.name); put("isDirectory", e.directory); put("writable", e.writable)
                 e.size?.let { put("size", it) }
+                e.displayLocation?.let { put("displayLocation", it) }
             } }))
             put("truncated", page.truncated)
-            if (page.entries.isEmpty()) put("hint", "No entries. To grant a folder, use Mika settings > Device folders > Choose folder.")
+            if (page.entries.isEmpty() && !page.truncated && (path == null || path == "/folders"))
+                put("hint", "To grant a folder, use Mika settings > Device folders.")
         })
     }
 

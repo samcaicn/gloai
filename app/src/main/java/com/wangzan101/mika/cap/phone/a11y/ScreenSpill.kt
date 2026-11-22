@@ -33,8 +33,9 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 internal class ScreenSpill(private val screen: AndroidScreen) {
 
-    /** 一次动作的盯梢:[since] 开始的时刻,[topBefore] 那时主屏最上面的任务,[agentTopBefore] 那时 Mika 屏上最上面的任务。 */
-    internal class Watch(val since: Long, val topBefore: Int, val agentTopBefore: Int)
+    /** 一次动作的盯梢:[since] 开始的时刻,[topBefore] 那时主屏最上面的任务,[agentTopBefore] 那时 Mika 屏上最上面的任务,
+     * [userActiveBefore] 动作开始前用户刚在主屏上动过手。 */
+    internal class Watch(val since: Long, val topBefore: Int, val agentTopBefore: Int, val userActiveBefore: Boolean)
 
     /** 挪回来的 App 和(系统问打开哪一个时)认出的选项。 */
     internal class Spill(val opened: OpenedElsewhere, val chooser: LaunchChoice?)
@@ -57,6 +58,9 @@ internal class ScreenSpill(private val screen: AndroidScreen) {
 
     /** 用户在主屏上点东西的时刻和包(只在动作前后那一小段里记)。 */
     internal val userTaps = java.util.concurrent.ConcurrentLinkedDeque<MainScreenSpill.Tap>()
+
+    /** 上一次动作开始时主屏交互计数;两次动作之间计数变了,说明用户在主屏上动过手(动作前的点按,时间点拿不到)。 */
+    @Volatile internal var lastInteractions = -1L
     internal val spillScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     @Volatile internal var tapWatch: Job? = null
     @Volatile internal var tapWatchUntil = 0L
@@ -73,11 +77,14 @@ internal class ScreenSpill(private val screen: AndroidScreen) {
     /** 动作之前:请内置助手盯着主屏,记下此刻两块屏最上面的任务;没有屏、接管中或助手不支持时为 null(不盯)。 */
     internal fun armSpillWatch(): Watch? {
         if (!screen.hasDisplay || screen.handedOver()) return null
+        val count = ScreenAccessibility.mainInteractionCount()
+        val userActiveBefore = lastInteractions >= 0 && count != lastInteractions
+        lastInteractions = count
         val since = SystemClock.uptimeMillis()
         watchUserTaps(since + AndroidScreen.SPILL_WINDOW_MS)
         val top = runCatching { screen.shell.watchMainScreen(AndroidScreen.SPILL_WINDOW_MS.toInt()) }.getOrNull() ?: return null
         val agentTop = runCatching { screen.shell.topTaskId(screen.displayId) }.getOrDefault(-1)
-        return Watch(since, top, agentTop).also { watch = it }
+        return Watch(since, top, agentTop, userActiveBefore).also { watch = it }
     }
 
     /** 盯梢期间记下用户在主屏上的点按(Mika 自己的浮层不算);到期自己停。 */
@@ -118,7 +125,7 @@ internal class ScreenSpill(private val screen: AndroidScreen) {
         val arrivals = parseArrivals(b)
         arrivals.maxOfOrNull { it.at }?.let { consumed = maxOf(consumed, it) }
         var last: Spill? = null
-        for (v in MainScreenSpill.decide(arrivals, w.since, AndroidScreen.SPILL_WINDOW_MS, w.topBefore, notSpills, userTaps.toList(), homeApps)) {
+        for (v in MainScreenSpill.decide(arrivals, w.since, AndroidScreen.SPILL_WINDOW_MS, w.topBefore, notSpills, userTaps.toList(), homeApps, w.userActiveBefore)) {
             val a = v.arrival
             val pkg = a.packageName ?: continue
             // 开到用户主屏上的不在应用访问边界看的那块屏上:被禁用的不挪、不读

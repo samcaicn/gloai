@@ -368,7 +368,6 @@
     <string name="chat_audio">Audio</string>
     <string name="chat_audio_play">Play</string>
     <string name="chat_audio_stop">Stop</string>
-    <string name="plus_sub_camera">التقط صورة الآن</string>
     <string name="plus_sub_album">اختر من صورك، يمكن اختيار عدة صور</string>
     <string name="plus_sub_files">مستندات وملفات PDF وأرشيفات</string>
     <string name="plus_sub_device">تصفّح مجلدات هذا الهاتف</string>
@@ -376,10 +375,8 @@
     <string name="plus_sub_clipboard">الصق ما نسخته للتو</string>
     <string name="plus_sub_teach">أظهرها مرة واحدة ليتعلّمها Mika</string>
     <string name="plus_sub_skills">استخدم مهارة لهذه الجولة</string>
-    <string name="plus_sub_checklists">احفظ قائمة مهام</string>
-    <string name="plus_sub_workflows">شغّل مهمة محفوظة متعددة الخطوات</string>
     <string name="plus_sub_tasks">املأ مهمة محفوظة في حقل الإدخال</string>
-    <string name="plus_sub_browser">افتح المتصفح المدمج</string>
+    <string name="plus_sub_browser">المتصفح المدمج</string>
     <string name="plus_skills_empty">لا توجد مهارات شخصية بعد. المهارات التي يتعلّمها Mika من المهام المكتملة ستظهر هنا.</string>
     <string name="plus_clipboard_empty">لا يوجد نص للصقه من الحافظة</string>
     <string name="plus_skill_directive">استخدم مهارة «%1$s»: </string>

@@ -5,5 +5,5 @@
     <string name="pocket_guard_unavailable">Bu telefonda yakınlık ve ışık sensörleri gerekir.</string>
     <string name="pocket_guard_exit">Çıkmak için sağa kaydırın</string>
     <string name="pocket_completion_lock_title">Kapalı bir görev durduğunda kilitle</string>
-    <string name="pocket_completion_lock_summary">Bir görev sona erdiğinde veya beklediğinde telefon kapalı ve karanlıksa ekranı kilitleyin.</string>
+    <string name="pocket_completion_lock_summary">Telefon kapalı ve karanlıksa ekranı kilitleyin.</string>
 </resources>

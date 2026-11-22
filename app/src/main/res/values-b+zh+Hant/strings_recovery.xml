@@ -2,6 +2,7 @@
 <resources>
     <string name="rec_a11y">替我開啟無障礙</string>
     <string name="rec_default_on">預設開啟</string>
+    <string name="rec_learn_what">了解這幾項在做什麼</string>
     <string name="rec_a11y_body">Mika 要用「無障礙」讀螢幕上的文字和按鈕。開啟後,Mika 會替你在系統裡開啟它自己的無障礙服務,你已經開著的其他無障礙服務不受影響。關掉這裡,Mika 會把自己的無障礙服務關掉。</string>
     <string name="rec_battery">不受省電限制</string>
     <string name="rec_battery_body">開啟後,Mika 會把自己加進系統的「電池最佳化」例外名單,系統省電時就不會在背景停掉它,手機操作更不容易中斷;可能會多用一點電。關掉這裡就恢復系統預設的省電管理。</string>

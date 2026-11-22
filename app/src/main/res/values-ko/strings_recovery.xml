@@ -2,6 +2,7 @@
 <resources>
     <string name="rec_a11y">접근성 자동으로 켜기</string>
     <string name="rec_default_on">기본적으로 켜짐</string>
+    <string name="rec_learn_what">이 항목들은 무엇을 하나요?</string>
     <string name="rec_a11y_body">Mika는 접근성을 이용해 화면의 글자와 버튼을 읽어요. 이 기능을 켜면 Mika가 시스템 설정에서 자체 접근성 서비스를 대신 켜 줘요. 이미 켜 둔 다른 접근성 서비스에는 영향이 없어요. 이 기능을 끄면 Mika가 자체 서비스도 꺼요.</string>
     <string name="rec_battery">배터리 제한 없음</string>
     <string name="rec_battery_body">이 기능을 켜면 Mika가 시스템의 배터리 최적화 예외 목록에 추가돼요. 전력 절약을 이유로 백그라운드에서 종료되지 않아 휴대전화 제어가 덜 끊겨요. 배터리를 조금 더 쓸 수 있어요. 끄면 시스템 기본값으로 돌아가요.</string>

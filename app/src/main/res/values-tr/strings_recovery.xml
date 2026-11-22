@@ -2,6 +2,7 @@
 <resources>
     <string name="rec_a11y">Benim için erişilebilirliği aç</string>
     <string name="rec_default_on">Varsayılan olarak açık</string>
+    <string name="rec_learn_what">Bunlar ne yapar?</string>
     <string name="rec_a11y_body">Mika, ekrandaki metni ve düğmeleri okumak için Erişilebilirlik\'i kullanır. Bu açıkken Mika, sistem ayarlarında kendi erişilebilirlik hizmetini sizin için açar; açık olan diğer erişilebilirlik hizmetleriniz etkilenmez. Kapatırsanız Mika kendi hizmetini kapatır.</string>
     <string name="rec_battery">Sınırsız pil</string>
     <string name="rec_battery_body">Bu açıkken Mika kendini sistemin pil optimizasyonu istisnalarına ekler, böylece güç tasarrufu için arka planda durdurulmaz ve telefon kontrolü daha az kopar. Biraz daha fazla pil kullanabilir. Sistem varsayılanına dönmek için kapatın.</string>

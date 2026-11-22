@@ -1,5 +1,9 @@
 package com.wangzan101.mika.core.cap.devicefiles
 
+import com.wangzan101.mika.core.workspace.DeviceFileEntry
+import com.wangzan101.mika.core.workspace.DeviceFileImport
+import com.wangzan101.mika.core.workspace.DeviceFileSearchQuery
+import com.wangzan101.mika.core.workspace.DeviceFileSearchResult
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.run.*

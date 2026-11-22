@@ -181,7 +181,7 @@
     <string name="skin_accent_follow">رنگ تأکیدی از تصویر</string>
     <string name="skin_accent_follow_sub">اگر تصویر رنگ غالبی داشته باشد، به جای رنگ تأکیدی بالا از آن استفاده می‌شود</string>
     <string name="settings_self_config">اجازه به میکا برای تغییر تنظیمات خودش</string>
-    <string name="settings_self_config_sub">در حالت روشن، کارها یک ابزار برای خواندن و تغییر این ترجیحات دارند (سرعت، بی‌صدا کردن، کپسول، ظاهر، رنگ تأکیدی و روشن ماندن صفحه). مدل‌ها، کلیدهای API، شبکهٔ محیط اجرا و موارد حذف داده هرگز شامل آن نیستند</string>
+    <string name="settings_self_config_sub">فقط ترجیحات فهرست‌شده را تغییر می‌دهد؛ هرگز مدل‌ها، کلیدها، شبکه یا حذف داده را لمس نمی‌کند.</string>
     <string name="settings_step_limit">محدودیت مراحل هر کار</string>
     <string name="settings_step_limit_sub">خاموش یعنی بدون محدودیت. با رسیدن به محدودیت، کار متوقف می‌شود و محل توقف را اعلام می‌کند.</string>
     <string name="settings_step_limit_off">بدون محدودیت</string>

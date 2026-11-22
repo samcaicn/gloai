@@ -34,12 +34,16 @@ class RecoverySectionTest {
     }
 
     @Test
-    fun untouchedOnesShowOnWithTheirExplanation() {
+    fun untouchedOnesShowOnAndExplanationsAppearOnToggle() {
         show(RecoveryConsent(), notes = mapOf(RecoveryCapability.Accessibility to RecoveryCopy.NEED_SETUP))
         RecoveryCapability.entries.forEach { compose.onNodeWithTag("recovery-${it.name}").assertIsOn() }
-        compose.onAllNodesWithText("默认打开").assertCountEquals(RecoveryCapability.entries.size)
-        compose.onNodeWithText(RecoveryCopy.switch(RecoveryCapability.BatteryWhitelist).explain).assertIsDisplayed()
+        compose.onAllNodesWithText("默认打开").assertCountEquals(0)
         compose.onNodeWithText(RecoveryCopy.NEED_SETUP).assertIsDisplayed()
+
+        // 说明默认收起,点开「了解这几项在做什么」后才显示。
+        compose.onAllNodesWithText(RecoveryCopy.switch(RecoveryCapability.BatteryWhitelist).explain).assertCountEquals(0)
+        compose.onNodeWithText(RecoveryCopy.LEARN).performClick()
+        compose.onNodeWithText(RecoveryCopy.switch(RecoveryCapability.BatteryWhitelist).explain).assertExists()
     }
 
     @Test

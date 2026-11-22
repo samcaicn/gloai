@@ -231,7 +231,7 @@ internal object ListFolderFiles : SandboxTool {
     override val def = ToolDef("list_folder_files", Prompts.tool("list_folder_files"), mapOf(
         "path" to str("Directory path from a previous listing; omit to list user-granted folders."),
     ), emptyList())
-    override fun offered(ctx: ToolContext) = ctx.sandboxAvailable() && ctx.sandboxRunner?.foldersAvailable == true
+    override fun available(ctx: ToolContext) = ctx.sandboxRunner?.foldersAvailable == true
     override suspend fun execute(a: Args, ctx: ToolContext) = ctx.sandboxRunner!!.run { _, _ ->
         withContext(Dispatchers.IO) { listFolders(a) }
     }

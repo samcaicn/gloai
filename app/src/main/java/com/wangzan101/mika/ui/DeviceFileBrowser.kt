@@ -62,8 +62,8 @@ import com.wangzan101.mika.cap.sandbox.AndroidSandbox
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.cap.sandbox.SandboxState
 import com.wangzan101.mika.chat.WorkspaceResolver
-import com.wangzan101.mika.core.cap.devicefiles.DeviceFileEntry
-import com.wangzan101.mika.core.cap.devicefiles.DeviceFileSearchQuery
+import com.wangzan101.mika.core.workspace.DeviceFileEntry
+import com.wangzan101.mika.core.workspace.DeviceFileSearchQuery
 import com.wangzan101.mika.core.cap.devicefiles.DeviceFilesPort
 import com.wangzan101.mika.settings.DeviceDirectoryStore
 import com.wangzan101.mika.settings.FeatureFlags

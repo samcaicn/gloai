@@ -29,10 +29,12 @@ internal class SandboxCapability(
     folderAccess: Boolean = false,
     /** 这个任务里沙箱命令累计最多跑多久(设置 › 干活时的档位);默认 30 分钟。 */
     private val budgetMs: Long = SANDBOX_BUDGET_MS,
+    folderFileImporter: FolderFileImporter? = null,
+    private val folderTools: List<AgentTool> = emptyList(),
 ) : Capability {
     override val id = SANDBOX
 
-    val runner = port?.let { SandboxTools(it, workspace, visionEnabled, onCommand = onCommand, onProgress = onProgress, onPreparing = onPreparing, onScript = onScript, folderAccess = folderAccess) }
+    val runner = port?.let { SandboxTools(it, workspace, visionEnabled, onCommand = onCommand, onProgress = onProgress, onPreparing = onPreparing, onScript = onScript, folderAccess = folderAccess, folderFileImporter = folderFileImporter) }
 
     /** 设备支持沙箱(工具已提供,可能还在准备)。 */
     fun available(): Boolean = runner?.available() == true
@@ -48,7 +50,7 @@ internal class SandboxCapability(
         is SandboxStatus.Broken -> CapabilityStatus.Unavailable(s.reason)
     }
 
-    override fun tools(): List<AgentTool> = SandboxGroup.tools
+    override fun tools(): List<AgentTool> = if (runner?.foldersAvailable == true) SandboxGroup.tools + folderTools else SandboxGroup.tools
 
     /** 这次的话带着工作区里的文件(附件一行写着 /workspace/ 下的路径):开局就展开沙箱一组。 */
     override fun preload(task: String): Boolean = available() && "${SandboxPaths.WORKSPACE}/" in task

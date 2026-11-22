@@ -133,7 +133,7 @@ class AndroidSandbox internal constructor(
         allowNetwork = { state.networkAllowed },
         proxy = { NetProxyStore.get(context).get() },
         clientScript = { context.assets.open("sandbox/mika").use { it.readBytes() } },
-        folderFiles = GrantedFolderFiles(context.applicationContext.contentResolver),
+        folderFiles = GrantedFolderFiles(context.applicationContext),
     )
 
     private val quota = ShareQuota()

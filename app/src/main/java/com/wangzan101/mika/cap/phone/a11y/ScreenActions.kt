@@ -129,8 +129,9 @@ internal class ScreenActions(private val screen: AndroidScreen) {
 
     suspend fun back(): ActionResult = withContext(Dispatchers.IO) {
         if (!screen.hasDisplay) return@withContext AndroidScreen.NO_APP_OPEN
-        // 按键注入 → 点屏上返回控件 → 无障碍全局返回。逐级降级,不把某个设备上的单点失败当整体不可用。
-        screen.verified(fallback = { clock -> tapBackControl(clock) || screen.a11y.performGlobalBack() }) {
+        // 按键注入 → 点屏上返回控件。逐级降级,不把某个设备上的单点失败当整体不可用。
+        // 不再退回 performGlobalAction(GLOBAL_ACTION_BACK):它作用在服务当前聚焦的屏,焦点在主屏时会把主屏退掉一层(#789)。
+        screen.verified(fallback = { clock -> tapBackControl(clock) }) {
             screen.shell.injectKey(screen.displayId, KeyEvent.KEYCODE_BACK)
         }
     }

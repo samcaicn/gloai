@@ -2,6 +2,7 @@
 <resources>
     <string name="rec_a11y">Activar la accesibilidad por mí</string>
     <string name="rec_default_on">Activado por defecto</string>
+    <string name="rec_learn_what">¿Qué hacen estas opciones?</string>
     <string name="rec_a11y_body">Mika usa Accesibilidad para leer el texto y los botones de la pantalla. Con esto activado, Mika enciende su propio servicio de accesibilidad en los ajustes del sistema por ti; los demás servicios de accesibilidad que tengas activados no se ven afectados. Si lo desactivas, Mika apaga su propio servicio.</string>
     <string name="rec_battery">Batería sin restricciones</string>
     <string name="rec_battery_body">Con esto activado, Mika se añade a las excepciones de optimización de batería del sistema, así no se detiene en segundo plano para ahorrar energía y el control del teléfono se corta menos. Puede gastar algo más de batería. Desactívalo para volver al comportamiento predeterminado del sistema.</string>

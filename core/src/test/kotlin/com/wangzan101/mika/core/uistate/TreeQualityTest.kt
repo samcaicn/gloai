@@ -55,6 +55,13 @@ class TreeQualityTest {
         assertEquals(TreeCheck(null), TreeAdequacy.ofTree(shot(rows(3))))
     }
 
+    @Test fun richNamedTreeIsNotDowngradedByUnlabeledControls() {
+        // 商品页:大量带名字的文本(标题/价格),少数可点控件没有名字——树文字已足够,不该因无名控件转 OCR
+        val rich = (1..65).map { i -> el(i, "商品$i", listOf(50, 100 + i * 30, 900, 120 + i * 30)) }
+        val unnamedButton = el(70, "", listOf(0, 0, 999, 80), clickable = true)
+        assertEquals(TreeCheck(TreeQuality.Adequate), TreeAdequacy.ofTree(shot(rich + unnamedButton)))
+    }
+
     @Test fun largeTextlessAreaNeedsOcrUnlessItOnlyBacksNamedElements() {
         val named = rows(8)
         val textNodes = named.map { UiTreeNode("TextView", it.bounds, text = it.name) }

@@ -978,7 +978,7 @@ class ChatViewModel(
 
     /** Copy selected device files into the conversation that opened the browser. */
     internal fun importDeviceAttachments(conversationId: String, paths: List<String>,
-        copy: suspend (String, String) -> com.wangzan101.mika.core.cap.devicefiles.DeviceFileImport) {
+        copy: suspend (String, String) -> com.wangzan101.mika.core.workspace.DeviceFileImport) {
         if (_ui.value.conversationId != conversationId || !canAttach(_ui.value) || paths.isEmpty()) return
         val slots = (AttachTray.LIMIT - _ui.value.attachments.size).coerceAtLeast(0)
         val selected = paths.distinct().take(slots)

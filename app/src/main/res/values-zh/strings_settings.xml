@@ -166,7 +166,7 @@
     <string name="skin_accent_follow">强调色跟随图片</string>
     <string name="skin_accent_follow_sub">用图上的主色代替上面选的强调色；图上没有明显颜色时照旧</string>
     <string name="settings_self_config">允许 Mika 改自己的设置</string>
-    <string name="settings_self_config_sub">打开后，任务里会多一件工具，能看和改这些偏好（操作节奏、静音、胶囊、外观、强调色、屏幕常亮）。模型和 Key、容器联网、任何删数据的操作都不在其中</string>
+    <string name="settings_self_config_sub">只能改指定偏好，不能碰模型、Key、联网或删数据。</string>
     <string name="settings_step_limit">每个任务的步数上限</string>
     <string name="settings_step_limit_sub">关着表示不限制。到达上限时任务会停下，并说明停在哪一步。</string>
     <string name="settings_step_limit_off">不限制</string>

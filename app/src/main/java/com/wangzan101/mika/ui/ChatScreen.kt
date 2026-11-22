@@ -115,6 +115,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
@@ -164,6 +165,7 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.viewer.FileViewer
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.ui.theme.MikaRadius
+import com.wangzan101.mika.ui.theme.WordmarkWeight
 import com.wangzan101.mika.voice.HoldToTalk
 import com.wangzan101.mika.voice.VoicePlayback
 import com.wangzan101.mika.voice.VoiceSource
@@ -515,7 +517,7 @@ fun ChatScreen(
                         Row(Modifier.clickable(role = Role.Button, onClickLabel = stringResource(R.string.chat_usage_title)) { showUsage = true }
                             .testTag("chat-usage-title").padding(horizontal = 14.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(ChatCopy.APP_TITLE, style = MikaType.Title, color = c.ink, maxLines = 1)
+                            Text(ChatCopy.APP_TITLE, style = MikaType.Title.copy(fontWeight = WordmarkWeight), color = c.ink, maxLines = 1)
                         }
                     }
                     GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
@@ -1185,7 +1187,6 @@ internal fun WorkBlock(ex: Exchange, steers: List<String>, reduceMotion: Boolean
     val elapsed = rememberElapsed(ex.startedAt)
     Column(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
         TurnMeta(elapsed, tokens = null)
-        Spacer(Modifier.height(3.dp))
         Row(
             Modifier.fillMaxWidth().heightIn(min = 24.dp),
             verticalAlignment = Alignment.Top,
@@ -1226,7 +1227,12 @@ internal fun WorkBlock(ex: Exchange, steers: List<String>, reduceMotion: Boolean
 @Composable
 private fun TurnMeta(elapsed: Long?, tokens: Long?) {
     val c = MikaTheme.colors
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+    // 和下面的正文/进展拉开距离:正文行高会把第一行顶到行框上沿,不留空就会贴住这一行
+    Row(
+        Modifier.padding(bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
         Text(ChatCopy.APP_TITLE, style = TurnNameText, color = c.ink)
         if (elapsed != null) {
             Text("·", style = ClockText, color = c.ink3)
@@ -2036,10 +2042,10 @@ private val ComposerInset = 12.dp
 private val FileTileShape = MikaShapes.Tile
 private val EmptyLead = MikaType.Value
 private val BubbleText = MikaType.Body
-/** 回答:正文字号,行距放宽到 1.7。 */
-private val AnswerText = MikaType.Body
+/** 回答:正文字号,两端对齐(中文整段行尾整齐,最后一行除外)。 */
+private val AnswerText = MikaType.Body.copy(textAlign = TextAlign.Justify)
 private val NowText = MikaType.Value
-private val TurnNameText = MikaType.Label.copy(fontWeight = FontWeight.SemiBold)
+private val TurnNameText = MikaType.Label.copy(fontWeight = WordmarkWeight)
 private val ClockText = MikaType.Hint.copy(fontFeatureSettings = "tnum")
 private val StepText = MikaType.Caption
 private val StepCurrentText = MikaType.Caption.copy(fontWeight = FontWeight.Medium)

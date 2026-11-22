@@ -4,5 +4,5 @@
     <string name="pocket_guard_unavailable">Requires proximity and light sensors on this phone.</string>
     <string name="pocket_guard_exit">Slide right to exit</string>
     <string name="pocket_completion_lock_title">Lock when a covered task stops</string>
-    <string name="pocket_completion_lock_summary">Lock the screen if the phone is covered and dark when a task ends or waits.</string>
+    <string name="pocket_completion_lock_summary">Locks the screen when the phone is covered and dark.</string>
 </resources>

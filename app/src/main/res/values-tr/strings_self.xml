@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_self_operate">Mika\'nın kendi ekranlarını çalıştırmasına izin ver</string>
-    <string name="settings_self_operate_sub">Mika\'nın sayfalarını ve dosyalarını açın; tarayıcınızda bir bağlantı açmadan önce sorun</string>
+    <string name="settings_self_operate_sub">Tarayıcınızda bağlantı açmadan önce yine sorar.</string>
     <string name="settings_pip_operate">Küçük görünümü doğrudan çalıştır</string>
     <string name="settings_pip_operate_sub">Ekranı kontrol etmek için küçük pencerede dokunun ve kaydırın</string>
     <string name="settings_external_schedule">Betiklerin zamanlanmış görev oluşturmasına izin ver</string>
-    <string name="settings_external_schedule_sub">Diğer uygulamalardan yayın üzerinden görev isteklerini kabul edin; dakikada en fazla birkaç tane ve betik oluşturdu olarak işaretlenir</string>
+    <string name="settings_external_schedule_sub">Diğer uygulamalar yayın üzerinden görev gönderebilir; hız sınırlı ve betik oluşturdu olarak işaretlenir.</string>
     <string name="self_notify_channel">Mika eylemleri</string>
     <string name="self_notify_channel_desc">Mika\'nın açtıkları veya görmenizi istedikleri</string>
     <string name="self_notify_open">Görüntüle</string>

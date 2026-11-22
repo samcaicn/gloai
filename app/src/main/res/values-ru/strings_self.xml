@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_self_operate">Разрешить Mika управлять своими экранами</string>
-    <string name="settings_self_operate_sub">Открывать страницы и файлы Mika; спрашивает перед открытием ссылки в браузере</string>
+    <string name="settings_self_operate_sub">По-прежнему спрашивает перед открытием ссылок в браузере.</string>
     <string name="settings_pip_operate">Управлять маленьким окном напрямую</string>
     <string name="settings_pip_operate_sub">Нажимайте и проводите в маленьком окне, чтобы управлять экраном</string>
     <string name="settings_external_schedule">Разрешить скриптам создавать запланированные задачи</string>
-    <string name="settings_external_schedule_sub">Принимает задачи от других приложений через broadcast; не более нескольких в минуту, помечаются как созданные скриптом</string>
+    <string name="settings_external_schedule_sub">Другие приложения могут отправлять задачи через broadcast, с ограничением частоты и пометкой как созданные скриптом.</string>
     <string name="self_notify_channel">Действия Mika</string>
     <string name="self_notify_channel_desc">Что Mika открывает или просит посмотреть</string>
     <string name="self_notify_open">Открыть</string>

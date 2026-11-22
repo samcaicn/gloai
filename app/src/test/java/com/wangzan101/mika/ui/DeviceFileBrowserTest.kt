@@ -28,7 +28,7 @@ class DeviceFileBrowserTest {
     @Test
     fun crumbsIntoDirectoryBuildsIntermediateSegmentsFromSearchResult() {
         val base = listOf(DeviceBreadcrumb("Download", "/sdcard/Download"))
-        val entry = com.wangzan101.mika.core.cap.devicefiles.DeviceFileEntry(
+        val entry = com.wangzan101.mika.core.workspace.DeviceFileEntry(
             name = "Invoices",
             path = "/sdcard/Download/Work/Invoices",
             isDirectory = true,

@@ -46,7 +46,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.platform.testTag
@@ -58,9 +60,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -152,11 +157,91 @@ private fun CharSequence.withFind(find: FindHighlight?): AnnotatedString {
     }
 }
 
+// CJK 表意文字、假名。标点(、。：等全角符号)不算,间距只在字与字之间拉。
+private fun isCjkLetter(cp: Int) =
+    cp in 0x3040..0x30FF || cp in 0x3400..0x4DBF || cp in 0x4E00..0x9FFF ||
+        cp in 0xF900..0xFAFF || cp in 0x20000..0x3FFFF
+
+private val TextStyle.justified: Boolean get() = textAlign == TextAlign.Justify
+
+/**
+ * 行内可以摊开的位置:相邻两个汉字(或假名)之间,返回前一个字的区间。
+ * 标点、拉丁字母、数字旁边不摊——那是排版里最不该拉宽的地方。
+ */
+internal fun cjkGapRanges(text: String, start: Int, end: Int): List<IntRange> {
+    val out = ArrayList<IntRange>()
+    var i = start
+    while (i < end) {
+        val cp = text.codePointAt(i)
+        val n = Character.charCount(cp)
+        val next = i + n
+        if (isCjkLetter(cp) && next < end && isCjkLetter(text.codePointAt(next))) out += i until next
+        i = next
+    }
+    return out
+}
+
+/**
+ * 中文两端对齐。
+ *
+ * 为什么不用 `TextAlign.Justify`:Android 35 之前它只拉词与词之间的空格,中文整行没有空格,
+ * 行尾依旧参差不齐,只有夹着英文的那行被硬生生拉开。
+ *
+ * 做法:先按同样的宽度量一遍,拿到每一行离右边还差多少,把余量摊到这一行相邻汉字的字距上;
+ * 再让 [Text] 用同一宽度排版。文案本身不动(不插字符、不加换行),选中、复制、查找、朗读都不受影响。
+ */
+@Composable
+private fun JustifiedText(text: AnnotatedString, style: TextStyle, modifier: Modifier = Modifier) {
+    val measurer = rememberTextMeasurer()
+    val dense = LocalDensity.current
+    // 宽度从文字自己的排版里拿:不能包 BoxWithConstraints,引用块外面是按内容量高的 Row,子组合量不了 intrinsic。
+    var widthPx by remember { mutableIntStateOf(0) }
+    val spaced = remember(text, style, widthPx, measurer) {
+        if (widthPx <= 0) return@remember text
+        val probe = measurer.measure(
+            text,
+            style.copy(textAlign = TextAlign.Start),
+            constraints = Constraints(maxWidth = widthPx),
+            softWrap = true,
+            maxLines = Int.MAX_VALUE,
+        )
+        if (probe.lineCount <= 1) return@remember text
+        val fontPx = with(dense) { style.fontSize.toPx() }
+        if (fontPx <= 0f) return@remember text
+        val plain = text.text
+        val out = AnnotatedString.Builder(text)
+        for (line in 0 until probe.lineCount - 1) {
+            // 最后一行不拉:和书上的段落一样,末行保持自然长度
+            val start = probe.getLineStart(line)
+            val end = probe.getLineEnd(line, visibleEnd = true)
+            val used = probe.getLineRight(line) - probe.getLineLeft(line)
+            // 留一成余量,免得四舍五入把行尾的字挤到下一行
+            val slack = (widthPx - used) * 0.9f
+            if (slack < 0.5f) continue
+            val gaps = cjkGapRanges(plain, start, end)
+            if (gaps.isEmpty()) continue
+            // 每处最多拉到 0.25 字,太宽反而难看
+            val em = (slack / gaps.size / fontPx).coerceAtMost(0.25f)
+            if (em <= 0f) continue
+            gaps.forEach { out.addStyle(SpanStyle(letterSpacing = em.em), it.first, it.last + 1) }
+        }
+        out.toAnnotatedString()
+    }
+    Text(
+        spaced,
+        style = style.copy(textAlign = TextAlign.Start),
+        modifier = modifier.fillMaxWidth().onSizeChanged { widthPx = it.width },
+    )
+}
+
 @Composable
 private fun Block(b: MdBlock, style: TextStyle, depth: Int) {
     val find = LocalFindHighlight.current
     when (b) {
-        is MdBlock.Para -> Text(remember(b.text, find) { b.text.withFind(find) }, style = style)
+        is MdBlock.Para -> {
+            val text = remember(b.text, find) { b.text.withFind(find) }
+            if (style.justified) JustifiedText(text, style, Modifier.fillMaxWidth()) else Text(text, style = style)
+        }
         is MdBlock.Heading -> Text(
             remember(b.text, find) { b.text.withFind(find) },
             Modifier.padding(top = if (LocalReportStyle.current) 12.dp else 2.dp),
@@ -164,6 +249,8 @@ private fun Block(b: MdBlock, style: TextStyle, depth: Int) {
                 fontSize = when (b.level) { 1 -> 19.sp; 2 -> 17.5.sp; 3 -> 16.sp; else -> style.fontSize },
                 lineHeight = when (b.level) { 1 -> 25.sp; 2 -> 23.sp; else -> style.lineHeight },
                 fontWeight = if (LocalReportStyle.current) FontWeight.Bold else FontWeight.SemiBold,
+                // 标题保持左对齐:两端对齐会把两行以上的标题也拉满,标题不该被撑开
+                textAlign = TextAlign.Start,
             ),
         )
         is MdBlock.Code -> CodeBlock(b, style)
@@ -194,7 +281,8 @@ private fun TableBlock(t: MdBlock.Table, style: TextStyle) {
     val find = LocalFindHighlight.current
     val cols = t.header.size
     if (cols == 0) return
-    val cellStyle = style.copy(fontSize = 13.sp, lineHeight = 19.sp)
+    // 单元格按左对齐:表格列宽本来就是定的,两端对齐只会把短句也拉满
+    val cellStyle = style.copy(fontSize = 13.sp, lineHeight = 19.sp, textAlign = TextAlign.Start)
     val rows = listOf(t.header) + t.rows
     Box(Modifier.then(if (report) Modifier.clip(MikaShapes.Card).background(MikaTheme.colors.surface) else Modifier)
         .horizontalScroll(rememberScrollState())) {
