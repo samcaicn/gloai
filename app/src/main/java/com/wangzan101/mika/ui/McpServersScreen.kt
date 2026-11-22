@@ -25,27 +25,73 @@ import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.settings.McpServerConfig
 import com.wangzan101.mika.settings.McpServerStore
+import com.wangzan101.mika.ui.components.ButtonKind
+import com.wangzan101.mika.ui.components.ButtonSize
 import com.wangzan101.mika.ui.components.GroupCard
 import com.wangzan101.mika.ui.components.GroupLabel
 import com.wangzan101.mika.ui.components.ListRow
+import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.components.MikaSwitch
 import com.wangzan101.mika.ui.components.PageScaffold
 import com.wangzan101.mika.ui.components.SegmentedControl
 import com.wangzan101.mika.ui.components.RowChevron
-import com.wangzan101.mika.ui.components.MikaButton
-import com.wangzan101.mika.ui.components.ButtonSize
 import com.wangzan101.mika.ui.theme.MikaIcons
 import android.content.Intent
 import android.net.Uri
 import kotlinx.coroutines.launch
 
+private enum class McpRoute { List, Catalog, Connect }
+
 /** 设置 › MCP 服务器:连接外部 MCP server(outbound),和「连接电脑」的 inbound 设置分开。 */
 @Composable
 fun McpServersScreen(store: McpServerStore, onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    val connector = remember { McpConnectorState(store, store.catalog, scope) }
+    var route by remember { mutableStateOf(McpRoute.List) }
+    var adding by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<McpServerConfig?>(null) }
+
+    when (route) {
+        McpRoute.List -> McpServerList(
+            store = store,
+            onBrowseCatalog = { route = McpRoute.Catalog },
+            onCustomServer = { adding = true },
+            onEdit = { editing = it },
+            onBack = onBack,
+        )
+        McpRoute.Catalog -> McpCatalogScreen(
+            catalog = store.catalog,
+            onOpenPreset = { connector.openPreset(it); route = McpRoute.Connect },
+            onCustomServer = { adding = true },
+            onBack = { route = McpRoute.List },
+        )
+        McpRoute.Connect -> McpConnectScreen(
+            connector = connector,
+            onDone = { connector.close(); route = McpRoute.List },
+            onBack = { connector.cancel(); route = McpRoute.Catalog },
+        )
+    }
+
+    if (adding || editing != null) {
+        McpServerDialog(
+            store = store,
+            initial = editing,
+            onDismiss = { adding = false; editing = null },
+            onChanged = { adding = false; editing = null },
+        )
+    }
+}
+
+@Composable
+private fun McpServerList(
+    store: McpServerStore,
+    onBrowseCatalog: () -> Unit,
+    onCustomServer: () -> Unit,
+    onEdit: (McpServerConfig) -> Unit,
+    onBack: () -> Unit,
+) {
     val servers by store.servers.collectAsState()
     val health by store.health.collectAsState()
-    var editing by remember { mutableStateOf<McpServerConfig?>(null) }
-    var adding by remember { mutableStateOf(false) }
     var refreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -53,6 +99,13 @@ fun McpServersScreen(store: McpServerStore, onBack: () -> Unit) {
         if (servers.isEmpty()) {
             GroupCard {
                 ListRow(MikaIcons.Link, stringResource(R.string.mcp_servers_empty), stringResource(R.string.mcp_servers_empty_sub), first = true)
+            }
+            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MikaButton(stringResource(R.string.mcp_catalog_browse), onBrowseCatalog, Modifier.weight(1f), size = ButtonSize.Medium)
+                MikaButton(
+                    stringResource(R.string.mcp_catalog_custom_server), onCustomServer, Modifier.weight(1f),
+                    kind = ButtonKind.Secondary, size = ButtonSize.Medium,
+                )
             }
         } else {
             GroupCard {
@@ -67,42 +120,30 @@ fun McpServersScreen(store: McpServerStore, onBack: () -> Unit) {
                         } ?: address),
                         detail = state?.let { address },
                         first = i == 0,
-                        onClick = { editing = server },
+                        onClick = { onEdit(server) },
                     ) {
                         MikaSwitch(server.enabled, { on -> store.setEnabled(server.id, on) })
                     }
                 }
             }
-        }
-        Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MikaButton(stringResource(R.string.mcp_servers_add), { adding = true }, size = ButtonSize.Small)
-            MikaButton(
-                stringResource(if (refreshing) R.string.mcp_servers_testing else R.string.mcp_servers_refresh_all),
-                {
-                    refreshing = true
-                    scope.launch {
-                        store.testAll()
-                        refreshing = false
-                    }
-                },
-                size = ButtonSize.Small,
-                enabled = !refreshing && servers.isNotEmpty(),
-            )
+            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MikaButton(stringResource(R.string.mcp_servers_add), onBrowseCatalog, size = ButtonSize.Small)
+                MikaButton(
+                    stringResource(if (refreshing) R.string.mcp_servers_testing else R.string.mcp_servers_refresh_all),
+                    {
+                        refreshing = true
+                        scope.launch {
+                            store.testAll()
+                            refreshing = false
+                        }
+                    },
+                    size = ButtonSize.Small,
+                    enabled = !refreshing && servers.isNotEmpty(),
+                )
+            }
         }
         GroupLabel(stringResource(R.string.mcp_servers_help))
-        Text(
-            stringResource(R.string.mcp_servers_help_text),
-            Modifier.padding(horizontal = 16.dp),
-        )
-    }
-
-    if (adding || editing != null) {
-        McpServerDialog(
-            store = store,
-            initial = editing,
-            onDismiss = { adding = false; editing = null },
-            onChanged = { adding = false; editing = null },
-        )
+        Text(stringResource(R.string.mcp_servers_help_text), Modifier.padding(horizontal = 16.dp))
     }
 }
 

@@ -103,8 +103,8 @@ class McpServerStore(
     ),
     /** stdio server 只能由沙箱启动;为 null 时 stdio 配置会报不可用。 */
     private val stdio: McpStdioLauncher? = null,
-    /** 内置预设目录;测试注入临时目录,App 资产加载在别处接线。 */
-    private val catalog: McpCatalog = McpCatalog.Empty,
+    /** 内置预设目录;测试注入临时目录,App 资产加载在别处接线。UI 用同一份实例取目录。 */
+    val catalog: McpCatalog = McpCatalog.Empty,
     /** stdio 预设含包时的安装/缓存;为 null 时这类预设报不可用。 */
     private val packageProvisioner: McpPackageProvisioner? = null,
     /** stdio 包下载确认(进程内);包装进工作区缓存后无需再确认。 */
