@@ -37,6 +37,17 @@ class McpCatalogAssetsTest {
         }
     }
 
+    @Test fun filesystemFamilyStdioPresetsDeclareAServeDirectory() {
+        // server-filesystem / server-everything 启动必须给「允许访问的目录」参数,否则进程直接退出。
+        val byId = bundled().presets.associateBy { it.id }
+        for (id in listOf("filesystem", "everything")) {
+            val preset = byId.getValue(id)
+            assertEquals("$id: transport", "stdio", preset.transport)
+            assertTrue("$id must declare a directory argument, got ${preset.command}",
+                preset.command.size >= 2 && preset.command.drop(1).any { it.startsWith("/") })
+        }
+    }
+
     @Test fun catalogLoaderSkipsOnlyMalformedEntries() {
         fun preset(id: String, transport: String = "streamable-http", endpoint: String = "https://example.com/mcp") =
             """

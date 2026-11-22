@@ -23,7 +23,8 @@
    "auth": "none",
    "officialSource": "https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem",
    "command": [
-    "mcp-server-filesystem"
+    "mcp-server-filesystem",
+    "/workspace"
    ],
    "packageSpec": {
     "ecosystem": "npm",
@@ -116,7 +117,8 @@
    "auth": "none",
    "officialSource": "https://www.npmjs.com/package/@modelcontextprotocol/server-everything",
    "command": [
-    "mcp-server-everything"
+    "mcp-server-everything",
+    "/workspace"
    ],
    "packageSpec": {
     "ecosystem": "npm",

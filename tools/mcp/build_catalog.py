@@ -213,8 +213,8 @@ def api(sid, name, category, endpoint, source, sumkey, fields=None, transport="s
     return (sid, name, category, transport, "fields", endpoint, f, source, sumkey, None)
 
 
-def stdio(sid, name, category, binname, source, sumkey, eco, pkg, ver, auth="none", fields=()):
-    return (sid, name, category, "stdio", auth, [binname], list(fields), source, sumkey, (eco, pkg, ver, source))
+def stdio(sid, name, category, binname, source, sumkey, eco, pkg, ver, auth="none", fields=(), args=()):
+    return (sid, name, category, "stdio", auth, [binname, *args], list(fields), source, sumkey, (eco, pkg, ver, source))
 
 
 # Auth / field shorthands
@@ -225,7 +225,7 @@ SERVICES = [
     # ===== stdio — official / verifiable packages, versions pinned from the live registry =====
     stdio("filesystem", "Filesystem", "files", "mcp-server-filesystem",
           "https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem", "files",
-          "npm", "@modelcontextprotocol/server-filesystem", "2.4.0"),
+          "npm", "@modelcontextprotocol/server-filesystem", "2.4.0", args=["/workspace"]),
     stdio("memory", "Memory", "memory", "mcp-server-memory",
           "https://www.npmjs.com/package/@modelcontextprotocol/server-memory", "memory",
           "npm", "@modelcontextprotocol/server-memory", "2.2.1"),
@@ -234,7 +234,7 @@ SERVICES = [
           "npm", "@modelcontextprotocol/server-sequential-thinking", "2.2.0"),
     stdio("everything", "Everything", "files", "mcp-server-everything",
           "https://www.npmjs.com/package/@modelcontextprotocol/server-everything", "files",
-          "npm", "@modelcontextprotocol/server-everything", "2.3.1"),
+          "npm", "@modelcontextprotocol/server-everything", "2.3.1", args=["/workspace"]),
     stdio("postgres", "PostgreSQL", "database", "mcp-server-postgres",
           "https://www.npmjs.com/package/@modelcontextprotocol/server-postgres", "database",
           "npm", "@modelcontextprotocol/server-postgres", "0.6.2", auth="fields",
