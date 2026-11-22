@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mika MCP 接入原型</title>
+  <style>
+    /* Layout: Mika settings surfaces, centered app canvas, prototype controls kept outside it. */
+    :root {
+      --bg: #f7f7f8;
+      --surface: #ffffff;
+      --fill: rgba(0, 0, 0, .04);
+      --ink: #1c1c1e;
+      --ink-2: #5f6068;
+      --ink-3: #85868e;
+      --hair: rgba(0, 0, 0, .08);
+      --edge: rgba(0, 0, 0, .07);
+      --accent: #0a7cff;
+      --accent-soft: rgba(10, 124, 255, .10);
+      --on-accent: #ffffff;
+      --ok: #1f9d55;
+      --ok-soft: rgba(31, 157, 85, .12);
+      --warn: #a86400;
+      --warn-soft: rgba(255, 159, 10, .12);
+      --bad: #e5483d;
+      --bad-soft: rgba(229, 72, 61, .10);
+      --neutral-soft: rgba(0, 0, 0, .045);
+      --shadow: rgba(0, 0, 0, .08);
+      --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      --font-utility: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0e0e10;
+        --surface: #1a1a1d;
+        --fill: rgba(255, 255, 255, .06);
+        --ink: #f2f2f4;
+        --ink-2: #a4a5ad;
+        --ink-3: #7d7e86;
+        --hair: rgba(255, 255, 255, .09);
+        --edge: rgba(255, 255, 255, .07);
+        --accent: #3d97ff;
+        --accent-soft: rgba(61, 151, 255, .16);
+        --ok: #3ccf7a;
+        --ok-soft: rgba(60, 207, 122, .14);
+        --warn: #ffb340;
+        --warn-soft: rgba(255, 159, 10, .16);
+        --bad: #ff6961;
+        --bad-soft: rgba(255, 105, 97, .14);
+        --neutral-soft: rgba(255, 255, 255, .07);
+        --shadow: rgba(0, 0, 0, .28);
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0e0e10;
+      --surface: #1a1a1d;
+      --fill: rgba(255, 255, 255, .06);
+      --ink: #f2f2f4;
+      --ink-2: #a4a5ad;
+      --ink-3: #7d7e86;
+      --hair: rgba(255, 255, 255, .09);
+      --edge: rgba(255, 255, 255, .07);
+      --accent: #3d97ff;
+      --accent-soft: rgba(61, 151, 255, .16);
+      --ok: #3ccf7a;
+      --ok-soft: rgba(60, 207, 122, .14);
+      --warn: #ffb340;
+      --warn-soft: rgba(255, 159, 10, .16);
+      --bad: #ff6961;
+      --bad-soft: rgba(255, 105, 97, .14);
+      --neutral-soft: rgba(255, 255, 255, .07);
+      --shadow: rgba(0, 0, 0, .28);
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.55;
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+      padding-block: 20px 32px;
+    }
+    button, input, select, textarea { font: inherit; }
+    button, select { cursor: pointer; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible, a:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; }
+    h1 { font-size: 22px; line-height: 1.3; letter-spacing: -.02em; }
+    h2 { font-size: 18px; line-height: 1.4; }
+    h3 { font-size: 15px; line-height: 1.45; }
+    .demo { max-width: 1240px; margin: 0 auto; }
+    .demo-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .demo-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
+    .demo-title strong { font-size: 16px; }
+    .demo-note { color: var(--ink-2); font-size: 12px; }
+    .demo-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+    .demo-control { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--edge); border-radius: 10px; background: var(--surface); }
+    .demo-control button { border: 0; border-radius: 7px; background: transparent; padding: 5px 10px; font-size: 12px; }
+    .demo-control button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .demo-layout { display: grid; grid-template-columns: 176px minmax(0, 1fr); gap: 24px; align-items: start; }
+    .page-nav { position: sticky; top: 20px; display: grid; gap: 3px; }
+    .page-nav-label { padding: 0 10px 7px; color: var(--ink-3); font-size: 11px; letter-spacing: .08em; }
+    .page-nav button { width: 100%; border: 0; border-radius: 9px; background: transparent; text-align: left; padding: 8px 10px; color: var(--ink-2); font-size: 13px; }
+    .page-nav button:hover { background: var(--fill); color: var(--ink); }
+    .page-nav button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .page-picker { display: none; width: 100%; margin-bottom: 12px; }
+    .canvas { min-width: 0; }
+    .app-frame {
+      width: 100%;
+      max-width: 400px;
+      min-height: 690px;
+      margin: 0 auto;
+      overflow: hidden;
+      border: 1px solid var(--edge);
+      border-radius: 24px;
+      background: var(--bg);
+      box-shadow: 0 16px 48px var(--shadow);
+      transition: max-width 220ms ease;
+    }
+    .app-frame.wide { max-width: 880px; border-radius: 20px; }
+    .app-header {
+      min-height: 62px;
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr) 42px;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 14px 6px;
+      background: var(--bg);
+    }
+    .app-header h1 { text-align: center; font-size: 18px; overflow-wrap: anywhere; }
+    .icon-button { width: 38px; height: 38px; display: inline-grid; place-items: center; border: 0; border-radius: 11px; background: transparent; }
+    .icon-button:hover { background: var(--fill); }
+    .icon-button svg { width: 20px; height: 20px; }
+    .app-content { padding: 10px 18px 24px; }
+    .wide .app-content { padding: 16px 28px 30px; }
+    .stack { display: grid; gap: 14px; }
+    .stack-sm { display: grid; gap: 8px; }
+    .section-label { color: var(--ink-2); font-size: 12px; font-weight: 600; padding: 2px 4px 0; }
+    .muted { color: var(--ink-2); }
+    .quiet { color: var(--ink-3); }
+    .small { font-size: 12px; }
+    .caption { color: var(--ink-2); font-size: 12px; line-height: 1.6; }
+    .card { background: var(--surface); border: 1px solid var(--edge); border-radius: 14px; overflow: hidden; }
+    .card-pad { padding: 16px; }
+    .row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .row > .grow { flex: 1; min-width: 0; }
+    .list-row { width: 100%; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 13px 14px; border: 0; border-bottom: 1px solid var(--hair); background: transparent; text-align: left; }
+    .list-row:last-child { border-bottom: 0; }
+    button.list-row:hover { background: var(--fill); }
+    .service-icon { flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--neutral-soft); color: var(--ink-2); font-size: 14px; font-weight: 700; letter-spacing: -.02em; }
+    .service-icon.large { width: 54px; height: 54px; border-radius: 16px; font-size: 18px; }
+    .row-title { display: block; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+    .row-subtitle { display: block; color: var(--ink-2); font-size: 12px; margin-top: 2px; overflow-wrap: anywhere; }
+    .chevron { flex: 0 0 auto; color: var(--ink-3); }
+    .chevron svg { display: block; width: 16px; height: 16px; }
+    .button { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 11px; padding: 9px 16px; background: var(--accent); color: var(--on-accent); font-weight: 600; }
+    .button:hover { filter: brightness(.96); }
+    .button.secondary { background: var(--fill); color: var(--ink); }
+    .button.ghost { background: transparent; color: var(--accent); }
+    .button.danger { background: var(--bad-soft); color: var(--bad); }
+    .button.full { width: 100%; }
+    .button.small-button { min-height: 34px; padding: 6px 12px; border-radius: 9px; font-size: 12px; }
+    .button-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .button-row > .button { flex: 1; }
+    .text-button { border: 0; background: transparent; color: var(--accent); padding: 4px; text-align: left; }
+    .hero-empty { padding: 34px 20px 26px; text-align: center; display: grid; justify-items: center; gap: 12px; }
+    .empty-mark { width: 66px; height: 66px; display: grid; place-items: center; border-radius: 20px; background: var(--neutral-soft); color: var(--ink-2); }
+    .empty-mark svg { width: 30px; height: 30px; }
+    .search-wrap { position: relative; }
+    .search-wrap svg { position: absolute; left: 13px; top: 12px; width: 18px; height: 18px; color: var(--ink-3); pointer-events: none; }
+    .search { width: 100%; min-height: 42px; border: 1px solid var(--edge); border-radius: 12px; background: var(--surface); color: var(--ink); padding: 9px 12px 9px 40px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+    .chip { border: 1px solid var(--edge); border-radius: 999px; background: var(--surface); color: var(--ink-2); padding: 5px 11px; font-size: 12px; }
+    .chip[aria-pressed="true"] { border-color: transparent; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .service-grid { display: grid; gap: 10px; }
+    .wide .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .service-card { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; border: 1px solid var(--edge); border-radius: 14px; background: var(--surface); padding: 14px; text-align: left; }
+    .service-card:hover { border-color: var(--accent); }
+    .service-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; width: fit-content; border-radius: 6px; padding: 2px 7px; background: var(--fill); color: var(--ink-2); font-size: 11px; }
+    .badge.ok { background: var(--ok-soft); color: var(--ok); }
+    .badge.warn { background: var(--warn-soft); color: var(--warn); }
+    .badge.bad { background: var(--bad-soft); color: var(--bad); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .custom-footer { padding-top: 4px; text-align: center; }
+    .detail-head { display: flex; align-items: center; gap: 14px; padding: 4px 2px 6px; }
+    .detail-head p { margin-top: 3px; }
+    .info-list { display: grid; gap: 0; }
+    .info-item { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--hair); }
+    .info-item:last-child { border-bottom: 0; }
+    .info-item dt { color: var(--ink-2); }
+    .info-item dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+    .field { display: grid; gap: 6px; min-width: 0; }
+    .field label, .field-label { color: var(--ink-2); font-size: 12px; font-weight: 500; }
+    .field input, .field select, .field textarea, .page-picker {
+      width: 100%; min-height: 42px; border: 1px solid var(--edge); border-radius: 11px; background: var(--surface); color: var(--ink); padding: 9px 11px;
+    }
+    .field textarea { min-height: 76px; resize: vertical; }
+    .field-help { color: var(--ink-3); font-size: 11px; }
+    .required { color: var(--bad); }
+    .notice { display: flex; align-items: flex-start; gap: 10px; border-radius: 12px; padding: 12px; background: var(--fill); color: var(--ink-2); font-size: 12px; }
+    .notice.ok { background: var(--ok-soft); color: var(--ok); }
+    .notice.warn { background: var(--warn-soft); color: var(--warn); }
+    .notice.bad { background: var(--bad-soft); color: var(--bad); }
+    .notice svg { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; }
+    .package { font-family: var(--font-utility); font-size: 12px; overflow-wrap: anywhere; }
+    .progress { height: 4px; overflow: hidden; border-radius: 999px; background: var(--fill); }
+    .progress::after { content: ""; display: block; width: 42%; height: 100%; border-radius: inherit; background: var(--accent); animation: progress 1.1s ease-in-out infinite alternate; }
+    @keyframes progress { from { transform: translateX(-10%); } to { transform: translateX(150%); } }
+    .spinner { width: 42px; height: 42px; border: 3px solid var(--accent-soft); border-top-color: var(--accent); border-radius: 50%; animation: spin .9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .state-hero { display: grid; justify-items: center; text-align: center; gap: 12px; padding: 30px 8px 18px; }
+    .state-icon { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 18px; background: var(--ok-soft); color: var(--ok); }
+    .state-icon.bad { background: var(--bad-soft); color: var(--bad); }
+    .state-icon svg { width: 28px; height: 28px; }
+    .switch { position: relative; flex: 0 0 auto; width: 42px; height: 25px; border: 0; border-radius: 99px; background: var(--fill); padding: 2px; }
+    .switch::after { content: ""; display: block; width: 21px; height: 21px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px var(--shadow); transition: transform 180ms ease; }
+    .switch[aria-checked="true"] { background: var(--accent); }
+    .switch[aria-checked="true"]::after { transform: translateX(17px); }
+    details { border-radius: 12px; background: var(--fill); padding: 10px 12px; }
+    summary { cursor: pointer; color: var(--ink-2); font-weight: 500; }
+    details > div { padding-top: 10px; }
+    .tool-list { display: grid; gap: 8px; padding-top: 8px; }
+    .tool { padding: 10px 12px; border-radius: 10px; background: var(--fill); }
+    .tool code { font-family: var(--font-utility); font-size: 12px; color: var(--ink); }
+    .divider { height: 1px; background: var(--hair); }
+    .demo-flow { max-width: 880px; margin: 12px auto 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; color: var(--ink-3); font-size: 11px; }
+    .demo-flow button { border: 0; background: transparent; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; padding: 4px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    @media (max-width: 800px) {
+      body { padding-block: 12px 24px; }
+      .demo-layout { display: block; }
+      .page-nav { display: none; }
+      .page-picker { display: block; }
+      .app-frame { min-height: 0; border-radius: 18px; }
+      .demo-top { align-items: flex-start; }
+    }
+    @media (max-width: 430px) {
+      body { padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); }
+      .demo-title { display: grid; gap: 1px; }
+      .app-content { padding: 8px 14px 22px; }
+      .button-row.stack-narrow { display: grid; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="demo">
+    <div class="demo-top">
+      <div class="demo-title">
+        <strong>Mika · MCP 接入原型</strong>
+        <span class="demo-note">仅本地演示，所有服务与数据均为虚构</span>
+      </div>
+      <div class="demo-controls" aria-label="原型显示设置">
+        <div class="demo-control" aria-label="外观">
+          <button type="button" data-theme="light" aria-pressed="true">浅色</button>
+          <button type="button" data-theme="dark" aria-pressed="false">深色</button>
+        </div>
+        <div class="demo-control" aria-label="画布宽度">
+          <button type="button" data-width="phone" aria-pressed="true">手机</button>
+          <button type="button" data-width="wide" aria-pressed="false">宽屏</button>
+        </div>
+      </div>
+    </div>
+    <div class="demo-layout">
+      <nav class="page-nav" id="page-nav" aria-label="原型页面"></nav>
+      <div class="canvas">
+        <label class="sr-only" for="page-picker">选择原型页面</label>
+        <select class="page-picker" id="page-picker"></select>
+        <section class="app-frame" id="app-frame" aria-label="Mika 应用界面预览">
+          <div id="app"></div>
+        </section>
+        <div class="demo-flow" id="demo-flow" aria-label="原型状态快捷入口"></div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const icons = {
+      back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
+      chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
+      search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
+      link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1"/></svg>',
+      check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>',
+      alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg>',
+      info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>'
+    };
+    const pages = [
+      ['catalog', '服务目录'], ['home-empty', '空首页'], ['home', '已添加首页'],
+      ['oauth', 'OAuth 授权'], ['fields', '多字段密钥'], ['open', '免认证连接'],
+      ['package', 'stdio 包确认'], ['connecting', '连接中'], ['success', '连接成功'],
+      ['failure', '可恢复失败'], ['manage', '服务管理'], ['custom', '自定义服务器']
+    ];
+    const services = [
+      { id: 'oauth', name: '云帆文档', mark: '云', category: '效率', auth: '账号授权', summary: '查找文档、读取内容并整理团队资料。', page: 'oauth' },
+      { id: 'fields', name: '北辰数据', mark: '北', category: '数据', auth: 'API Key', summary: '查询数据集、运行分析并获取结构化结果。', page: 'fields' },
+      { id: 'open', name: '星图搜索', mark: '星', category: '搜索', auth: '无需认证', summary: '搜索公开资料并返回带来源的结果。', page: 'open' },
+      { id: 'package', name: '文件管家', mark: '文', category: '本机', auth: '本机环境', summary: '在授权目录中查找、读取和整理文件。', page: 'package' },
+      { id: 'calendar', name: '时刻日历', mark: '时', category: '效率', auth: '账号授权', summary: '查看日程、创建事件并协调参会时间。', page: 'oauth' },
+      { id: 'messages', name: '协作空间', mark: '协', category: '沟通', auth: 'API Key', summary: '查找频道消息、整理讨论并发送更新。', page: 'fields' },
+      { id: 'long', name: '远山知识库', mark: '远', category: '数据', auth: '账号授权', summary: '跨空间检索团队知识，在保留来源的同时汇总较长资料，并帮助定位需要进一步确认的段落。', page: 'oauth' }
+    ];
+    const state = {
+      page: 'catalog', category: '全部', query: '', theme: 'light', width: 'phone',
+      origin: 'oauth', enabled: true, deleteConfirm: false, advanced: false,
+      customTransport: 'http', values: { workspace: 'demo-workspace', region: '亚太' }
+    };
+    let connectTimer = null;
+
+    function esc(value) {
+      return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function header(title, back = 'catalog', action = '') {
+      return `<header class="app-header">
+        ${back ? `<button class="icon-button" type="button" data-go="${back}" aria-label="返回">${icons.back}</button>` : '<span></span>'}
+        <h1>${title}</h1>${action || '<span></span>'}
+      </header>`;
+    }
+    function customFooter() {
+      return `<div class="custom-footer"><button class="text-button" type="button" data-go="custom">没有需要的？自定义 MCP 服务器</button></div>`;
+    }
+    function serviceCard(service) {
+      return `<button class="service-card" type="button" data-go="${service.page}">
+        <span class="service-icon">${service.mark}</span>
+        <span class="grow"><span class="row-title">${service.name}</span>
+          <span class="row-subtitle">${service.summary}</span>
+          <span class="service-meta"><span class="badge">${service.category}</span><span class="badge">${service.auth}</span></span>
+        </span>
+      </button>`;
+    }
+    function filteredServices() {
+      const q = state.query.trim().toLowerCase();
+      return services.filter(s => (state.category === '全部' || s.category === state.category) &&
+        (!q || `${s.name} ${s.summary} ${s.category}`.toLowerCase().includes(q)));
+    }
+    function catalogResults() {
+      const results = filteredServices();
+      return results.length ? results.map(serviceCard).join('') :
+        `<div class="card card-pad stack-sm"><strong>没有找到匹配的服务</strong><p class="caption">换个关键词或分类试试，也可以使用自定义接入。</p><button class="button secondary full" type="button" data-go="custom">自定义 MCP 服务器</button></div>`;
+    }
+    function catalogPage() {
+      const cats = ['全部', '效率', '数据', '搜索', '沟通', '本机'];
+      return `${header('添加 MCP 服务', 'home')}<div class="app-content stack">
+        <div class="search-wrap">${icons.search}<label class="sr-only" for="catalog-search">搜索服务</label><input class="search" id="catalog-search" type="search" placeholder="搜索服务或能力" value="${esc(state.query)}" autocomplete="off"></div>
+        <div class="chips" aria-label="服务分类">${cats.map(c => `<button class="chip" type="button" data-category="${c}" aria-pressed="${state.category === c}">${c}</button>`).join('')}</div>
+        <div class="row"><p class="caption grow">选择服务后，只需授权或填写必要信息。</p><span class="badge">示例目录</span></div>
+        <div class="service-grid" id="service-results">${catalogResults()}</div>
+        ${customFooter()}
+      </div>`;
+    }
+    function emptyHome() {
+      return `${header('MCP 服务', 'catalog')}<div class="app-content stack">
+        <div class="card hero-empty">
+          <span class="empty-mark">${icons.link}</span>
+          <h2>让 Mika 使用更多工具</h2>
+          <p class="muted">从目录选择服务，授权或填写 Key 即可连接。无需了解地址和连接协议。</p>
+        </div>
+        <button class="button full" type="button" data-go="catalog">浏览服务目录</button>
+        <button class="button secondary full" type="button" data-go="custom">自定义服务器</button>
+        <p class="caption">已连接的服务会在任务需要时提供工具。每个服务都可以单独停用。</p>
+      </div>`;
+    }
+    function home() {
+      return `${header('MCP 服务', 'catalog')}<div class="app-content stack">
+        <div class="row"><p class="caption grow">已添加的服务</p><button class="text-button" type="button" data-action="test-all">全部测试</button></div>
+        <div class="card">
+          <button class="list-row" type="button" data-go="manage"><span class="service-icon">云</span><span class="grow"><span class="row-title">云帆文档</span><span class="row-subtitle"><span class="badge ok"><span class="dot"></span>已连接 · 12 个工具</span></span></span><span class="chevron">${icons.chevron}</span></button>
+          <div class="list-row"><span class="service-icon">北</span><span class="grow"><span class="row-title">北辰数据</span><span class="row-subtitle">上次验证失败 · 可重新连接</span></span><button class="switch" type="button" role="switch" aria-checked="${state.enabled}" aria-label="启用北辰数据" data-action="toggle"></button></div>
+        </div>
+        <button class="button full" type="button" data-go="catalog">添加 MCP 服务</button>
+        <p class="caption">服务失败不会影响其他服务或任务。点击服务可查看工具、换 Key 或调整设置。</p>
+      </div>`;
+    }
+    function detailInfo(auth, account) {
+      return `<dl class="info-list">
+        <div class="info-item"><dt>认证方式</dt><dd>${auth}</dd></div>
+        <div class="info-item"><dt>账号与费用</dt><dd>${account}</dd></div>
+        <div class="info-item"><dt>数据说明</dt><dd>执行任务时，相关内容会发送给这个服务。Mika 仍会把返回内容视为不可信数据。</dd></div>
+      </dl>`;
+    }
+    function oauthPage() {
+      return `${header('云帆文档')}<div class="app-content stack">
+        <div class="detail-head"><span class="service-icon large">云</span><div><h2>云帆文档</h2><p class="muted">文档与团队资料</p></div></div>
+        <p>让 Mika 查找文档、读取内容，并在你确认后创建或更新文档。</p>
+        <div class="card card-pad">${detailInfo('通过云帆账号授权', '需要云帆账号；可使用免费套餐')}</div>
+        <div class="notice">${icons.info}<span>将打开系统浏览器完成授权。回到 Mika 后会自动验证连接并读取工具。</span></div>
+        <button class="button full" type="button" data-connect="oauth">授权登录</button>
+        ${customFooter()}
+      </div>`;
+    }
+    function fieldsPage() {
+      return `${header('北辰数据')}<div class="app-content stack">
+        <div class="detail-head"><span class="service-icon large">北</span><div><h2>北辰数据</h2><p class="muted">多字段认证示例</p></div></div>
+        <p>查询数据集并运行分析。此服务需要两个密钥和工作区信息。</p>
+        <div class="card card-pad stack">
+          <div class="field"><label for="access-key">访问密钥 <span class="required">必填</span></label><input id="access-key" type="password" autocomplete="off" placeholder="输入访问密钥"><span class="field-help">加密保存在本机，不会写入普通配置。</span></div>
+          <div class="field"><label for="signing-key">签名密钥 <span class="required">必填</span></label><input id="signing-key" type="password" autocomplete="off" placeholder="输入签名密钥"></div>
+          <div class="field"><label for="workspace">工作区 ID <span class="required">必填</span></label><input id="workspace" type="text" value="${esc(state.values.workspace)}" data-value="workspace" autocomplete="off"></div>
+          <div class="field"><label for="region">数据区域</label><select id="region" data-value="region"><option${state.values.region === '亚太' ? ' selected' : ''}>亚太</option><option${state.values.region === '欧洲' ? ' selected' : ''}>欧洲</option><option${state.values.region === '北美' ? ' selected' : ''}>北美</option></select></div>
+          <button class="text-button" type="button" data-action="key-help">在哪里获取密钥？</button>
+          <div class="notice" id="key-help" hidden>${icons.info}<span>在北辰数据的「开发者设置 → 访问凭据」中创建。此处仅为虚构示例。</span></div>
+        </div>
+        ${detailInfo('两个加密保存的密钥', '需要开发者账号；按查询量计费')}
+        <button class="button full" type="button" data-connect="fields">连接并保存</button>
+        ${customFooter()}
+      </div>`;
+    }
+    function openPage() {
+      return `${header('星图搜索')}<div class="app-content stack">
+        <div class="detail-head"><span class="service-icon large">星</span><div><h2>星图搜索</h2><p class="muted">公开资料搜索</p></div></div>
+        <p>搜索公开资料并返回带来源的结果，无需账号或密钥。</p>
+        <div class="card card-pad">${detailInfo('无需认证', '无需账号；公共服务可能有使用频率限制')}</div>
+        <button class="button full" type="button" data-connect="open">连接</button>
+        ${customFooter()}
+      </div>`;
+    }
+    function packagePage() {
+      return `${header('文件管家')}<div class="app-content stack">
+        <div class="detail-head"><span class="service-icon large">文</span><div><h2>文件管家</h2><p class="muted">在本机沙箱中运行</p></div></div>
+        <p>在你授权的目录中查找、读取和整理文件。</p>
+        <div class="notice ok">${icons.check}<span>本机环境已就绪。文件访问范围仍由你单独授权。</span></div>
+        <div class="card card-pad stack-sm">
+          <h3>首次使用需要下载运行包</h3>
+          <dl class="info-list">
+            <div class="info-item"><dt>包名</dt><dd class="package">@example/filepilot-mcp</dd></div>
+            <div class="info-item"><dt>来源</dt><dd>示例官方 npm 发布页</dd></div>
+            <div class="info-item"><dt>版本</dt><dd class="package">1.4.2（精确锁定）</dd></div>
+          </dl>
+          <p class="caption">确认后才会下载并缓存。以后使用相同版本无需重复下载。</p>
+        </div>
+        <div class="button-row stack-narrow"><button class="button secondary" type="button" data-go="catalog">取消</button><button class="button" type="button" data-connect="package">确认下载并连接</button></div>
+        ${customFooter()}
+      </div>`;
+    }
+    function connectingPage() {
+      const packageStep = state.origin === 'package' ? '正在安装已确认的包，然后验证服务…' : state.origin === 'oauth' ? '正在完成授权并验证服务…' : '正在验证连接并读取可用工具…';
+      return `${header('正在连接', null)}<div class="app-content">
+        <div class="state-hero"><span class="spinner" aria-hidden="true"></span><h2>${state.origin === 'package' ? '文件管家' : state.origin === 'fields' ? '北辰数据' : state.origin === 'open' ? '星图搜索' : '云帆文档'}</h2><p class="muted" role="status">${packageStep}</p></div>
+        <div class="stack"><div class="progress" aria-hidden="true"></div><p class="caption">只有连接和工具读取都成功后，服务才会启用。</p><button class="button secondary full" type="button" data-action="cancel-connect">取消</button></div>
+      </div>`;
+    }
+    function successPage() {
+      return `${header('连接成功', null)}<div class="app-content stack">
+        <div class="state-hero"><span class="state-icon">${icons.check}</span><h2>云帆文档已连接</h2><p class="muted">已读取 <strong>12 个工具</strong>，服务已启用。</p></div>
+        <div class="card card-pad stack-sm"><h3>接下来</h3><p class="caption">Mika 会在适合的任务中使用这些工具。你可以随时停用服务或更换授权。</p></div>
+        <div class="button-row"><button class="button secondary" type="button" data-action="show-tools">查看工具</button><button class="button" type="button" data-go="home">完成</button></div>
+        <div class="tool-list" id="success-tools" hidden><div class="tool"><code>search_documents</code><p class="caption">按关键词查找文档</p></div><div class="tool"><code>read_document</code><p class="caption">读取指定文档内容</p></div><div class="tool"><code>list_spaces</code><p class="caption">列出可访问的空间</p></div></div>
+        ${customFooter()}
+      </div>`;
+    }
+    function failurePage() {
+      return `${header('连接未完成', null)}<div class="app-content stack">
+        <div class="state-hero"><span class="state-icon bad">${icons.alert}</span><h2>密钥未通过验证</h2><p class="muted">北辰数据拒绝了访问密钥。请检查密钥是否完整、是否已过期。</p></div>
+        <div class="notice bad">${icons.alert}<span>配置已保存为停用状态，未启用服务。非秘密字段仍保留。</span></div>
+        <div class="button-row"><button class="button secondary" type="button" data-connect="fields">重试</button><button class="button" type="button" data-go="fields">修改密钥</button></div>
+        <details><summary>查看技术详情</summary><div><p class="caption">服务返回认证失败（401）。Mika 没有保存或显示密钥内容。</p><p class="package">MCP_AUTHENTICATION_FAILED</p></div></details>
+        ${customFooter()}
+      </div>`;
+    }
+    function managePage() {
+      return `${header('云帆文档', 'home')}<div class="app-content stack">
+        <div class="detail-head"><span class="service-icon large">云</span><div class="grow"><h2>云帆文档</h2><p><span class="badge ok"><span class="dot"></span>已连接</span></p></div><button class="switch" type="button" role="switch" aria-checked="${state.enabled}" aria-label="启用云帆文档" data-action="toggle"></button></div>
+        <p class="caption">最近验证：今天 14:32 · 12 个工具</p>
+        <div class="card">
+          <button class="list-row" type="button" data-action="retest"><span class="grow row-title">重新测试</span><span class="chevron">${icons.chevron}</span></button>
+          <button class="list-row" type="button" data-go="oauth"><span class="grow row-title">重新授权</span><span class="chevron">${icons.chevron}</span></button>
+          <button class="list-row" type="button" data-go="custom"><span class="grow row-title">高级设置</span><span class="chevron">${icons.chevron}</span></button>
+        </div>
+        <div class="stack-sm"><h3>可用工具</h3><div class="tool"><code>search_documents</code><p class="caption">按关键词查找文档</p></div><div class="tool"><code>read_document</code><p class="caption">读取指定文档内容</p></div><div class="tool"><code>create_document</code><p class="caption">创建新文档；执行前遵循任务确认规则</p></div><button class="text-button" type="button" data-action="show-tools">查看全部 12 个工具</button></div>
+        <div class="notice" id="manage-notice" hidden>${icons.info}<span>演示操作已完成，没有发起真实网络请求。</span></div>
+        <div class="divider"></div>
+        <button class="button danger full" type="button" data-action="delete">从 Mika 删除</button>
+        <p class="caption">只会移除 Mika 中的配置，不会撤销云帆账号授权。</p>
+        <div class="card card-pad stack-sm" id="delete-confirm" ${state.deleteConfirm ? '' : 'hidden'}><strong>删除这个服务？</strong><p class="caption">已保存的配置和授权信息会从 Mika 移除。</p><div class="button-row"><button class="button secondary" type="button" data-action="cancel-delete">取消</button><button class="button danger" type="button" data-go="home-empty">确认删除</button></div></div>
+      </div>`;
+    }
+    function customPage() {
+      const isStdio = state.customTransport === 'stdio';
+      return `${header('自定义 MCP 服务器', 'catalog')}<div class="app-content stack">
+        <p class="caption">用于目录未收录的服务，或需要自行调整的连接。</p>
+        <div class="card card-pad stack">
+          <div class="field"><label for="custom-name">名称 <span class="required">必填</span></label><input id="custom-name" type="text" placeholder="我的 MCP 服务"></div>
+          <div class="field"><label for="custom-address">${isStdio ? '启动命令' : '服务器地址'} <span class="required">必填</span></label>${isStdio ? '<textarea id="custom-address" placeholder="可执行文件与参数"></textarea><span class="field-help">参数不经 shell 执行。秘密请使用下方环境变量字段。</span>' : '<input id="custom-address" type="url" placeholder="https://example.com/mcp">'}</div>
+          <div class="field"><label for="custom-auth">认证方式</label><select id="custom-auth"><option>Bearer Token</option><option>OAuth 账号授权</option><option>指定秘密请求头</option><option>无需认证</option></select></div>
+          <div class="field"><label for="custom-token">密钥或 Token</label><input id="custom-token" type="password" autocomplete="off" placeholder="加密保存"></div>
+        </div>
+        <details ${state.advanced ? 'open' : ''}><summary data-action="advanced">高级设置</summary><div class="stack">
+          <div class="field"><label for="custom-transport">Transport</label><select id="custom-transport" data-action="transport"><option value="http"${!isStdio ? ' selected' : ''}>Streamable HTTP</option><option value="sse">Legacy HTTP + SSE</option><option value="stdio"${isStdio ? ' selected' : ''}>stdio（Linux 沙箱）</option></select></div>
+          <div class="field"><label for="custom-headers">普通请求头</label><textarea id="custom-headers" placeholder="X-Tenant: demo&#10;X-Region: apac"></textarea><span class="field-help">秘密请求头使用独立加密字段，不填写在这里。</span></div>
+          <div class="field"><label for="custom-env">stdio 秘密环境变量</label><textarea id="custom-env" placeholder="SERVICE_API_KEY=••••••"></textarea></div>
+          <div class="field"><label for="custom-allowlist">工具白名单</label><input id="custom-allowlist" type="text" placeholder="留空表示启用全部已发现工具"></div>
+          <div class="row"><span class="grow">允许本地 HTTP</span><button class="switch" type="button" role="switch" aria-checked="false" aria-label="允许本地 HTTP" data-action="toggle"></button></div>
+          <div class="row"><span class="grow">信任服务提供的风险注解</span><button class="switch" type="button" role="switch" aria-checked="false" aria-label="信任风险注解" data-action="toggle"></button></div>
+          <div class="field"><label for="custom-timeout">连接超时（秒）</label><input id="custom-timeout" type="number" value="15" min="1"></div>
+          <div class="field"><label for="custom-preview">结果预览长度</label><input id="custom-preview" type="number" value="4000" min="0"></div>
+          <div class="field"><label for="custom-budget">单次任务成本预算</label><input id="custom-budget" type="text" placeholder="使用任务默认预算"></div>
+        </div></details>
+        <div class="notice">${icons.info}<span>自定义服务与目录预设使用相同的安全检查和任务生命周期。</span></div>
+        <div class="button-row"><button class="button secondary" type="button" data-go="catalog">取消</button><button class="button" type="button" data-connect="custom">保存并测试</button></div>
+      </div>`;
+    }
+    function pageHtml() {
+      switch (state.page) {
+        case 'home-empty': return emptyHome();
+        case 'home': return home();
+        case 'oauth': return oauthPage();
+        case 'fields': return fieldsPage();
+        case 'open': return openPage();
+        case 'package': return packagePage();
+        case 'connecting': return connectingPage();
+        case 'success': return successPage();
+        case 'failure': return failurePage();
+        case 'manage': return managePage();
+        case 'custom': return customPage();
+        default: return catalogPage();
+      }
+    }
+    function flowShortcuts() {
+      if (state.page === 'connecting') return '<span>原型控制：</span><button type="button" data-go="success">演示成功</button><button type="button" data-go="failure">演示失败</button>';
+      if (state.page === 'failure') return '<span>可检查输入保留、重试与技术详情。</span>';
+      return '<span>使用左侧页面清单检查所有状态；点击卡片可继续完整流程。</span>';
+    }
+    function render() {
+      clearTimeout(connectTimer);
+      document.documentElement.dataset.theme = state.theme;
+      document.querySelectorAll('[data-theme]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.theme === state.theme)));
+      document.querySelectorAll('[data-width]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.width === state.width)));
+      document.getElementById('app-frame').classList.toggle('wide', state.width === 'wide');
+      document.getElementById('app').innerHTML = pageHtml();
+      document.getElementById('page-nav').innerHTML = '<div class="page-nav-label">原型页面</div>' + pages.map(([id, label]) => `<button type="button" data-go="${id}" ${state.page === id ? 'aria-current="page"' : ''}>${label}</button>`).join('');
+      const picker = document.getElementById('page-picker');
+      picker.innerHTML = pages.map(([id, label]) => `<option value="${id}"${state.page === id ? ' selected' : ''}>${label}</option>`).join('');
+      document.getElementById('demo-flow').innerHTML = flowShortcuts();
+    }
+    function go(page) {
+      state.page = page;
+      if (page !== 'manage') state.deleteConfirm = false;
+      render();
+      const heading = document.querySelector('#app h1');
+      if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
+    }
+    document.addEventListener('click', event => {
+      const button = event.target.closest('button, summary');
+      if (!button) return;
+      if (button.dataset.theme) { state.theme = button.dataset.theme; render(); return; }
+      if (button.dataset.width) { state.width = button.dataset.width; render(); return; }
+      if (button.dataset.go) { go(button.dataset.go); return; }
+      if (button.dataset.category) { state.category = button.dataset.category; render(); return; }
+      if (button.dataset.connect) {
+        state.origin = button.dataset.connect;
+        state.page = 'connecting'; render();
+        connectTimer = setTimeout(() => go('success'), 1400);
+        return;
+      }
+      switch (button.dataset.action) {
+        case 'cancel-connect': go(state.origin === 'custom' ? 'custom' : state.origin); break;
+        case 'toggle': button.setAttribute('aria-checked', String(button.getAttribute('aria-checked') !== 'true')); state.enabled = !state.enabled; break;
+        case 'key-help': { const el = document.getElementById('key-help'); el.hidden = !el.hidden; break; }
+        case 'show-tools': { const el = document.getElementById('success-tools'); if (el) el.hidden = !el.hidden; else { const n = document.getElementById('manage-notice'); if (n) n.hidden = false; } break; }
+        case 'retest': case 'test-all': { const n = document.getElementById('manage-notice'); if (n) n.hidden = false; else go('success'); break; }
+        case 'delete': state.deleteConfirm = true; document.getElementById('delete-confirm').hidden = false; break;
+        case 'cancel-delete': state.deleteConfirm = false; document.getElementById('delete-confirm').hidden = true; break;
+        case 'advanced': state.advanced = !state.advanced; break;
+      }
+    });
+    document.addEventListener('input', event => {
+      if (event.target.id === 'catalog-search') {
+        state.query = event.target.value;
+        document.getElementById('service-results').innerHTML = catalogResults();
+      }
+      if (event.target.dataset.value) state.values[event.target.dataset.value] = event.target.value;
+    });
+    document.addEventListener('change', event => {
+      if (event.target.id === 'page-picker') go(event.target.value);
+      if (event.target.id === 'custom-transport') { state.customTransport = event.target.value; state.advanced = true; render(); }
+      if (event.target.dataset.value) state.values[event.target.dataset.value] = event.target.value;
+    });
+    render();
+  </script>
+</body>
+</html>
