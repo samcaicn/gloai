@@ -84,6 +84,18 @@ class CallSettings(
         return next
     }
 
+    /** After migration the catalog owns realtime verification state; mirrors only those two mirrors. */
+    @Synchronized
+    internal fun mirrorRealtimeState(credentialsConfigured: Boolean, audioVerified: Boolean) {
+        val previous = mutable.value
+        if (previous.credentialsConfigured == credentialsConfigured && previous.audioVerified == audioVerified) return
+        save(previous.copy(
+            credentialsConfigured = credentialsConfigured,
+            audioVerified = audioVerified,
+            autoAnswer = previous.enabled && audioVerified && previous.autoAnswer,
+        ))
+    }
+
     /** Called only by the foreground standby action. A live service is checked separately. */
     @Synchronized
     internal fun authorizeBackgroundStandby(): Boolean {

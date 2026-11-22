@@ -53,33 +53,45 @@ private class CategorizedRealtimeSession(
     }
 }
 
+internal fun RealtimeBinding.callProtocol(): CallVoiceProtocol = when (protocol) {
+    RealtimeProtocol.VolcDuplex -> CallVoiceProtocol.VOLC_DUPLEX
+    RealtimeProtocol.OpenAiRealtime -> CallVoiceProtocol.OPENAI_REALTIME
+}
+
+internal fun RealtimeBinding.defaultEndpoint(): String = when (protocol) {
+    RealtimeProtocol.VolcDuplex -> VolcRealtimeProtocol.ENDPOINT
+    RealtimeProtocol.OpenAiRealtime -> OpenAiCallProtocol.ENDPOINT
+}
+
+internal fun RealtimeBinding.defaultSpeaker(): String = when (protocol) {
+    RealtimeProtocol.VolcDuplex -> VolcRealtimeConfig.DEFAULT_SPEAKER
+    RealtimeProtocol.OpenAiRealtime -> OpenAiCallProtocol.VOICE
+}
+
+/** The display/connection profile for a resolved Realtime model; secrets never pass through it. */
+internal fun ResolvedVoiceModel.realtimeProfile(
+    credentialsConfigured: Boolean,
+    connectionTested: Boolean = false,
+): CallVoiceProfile {
+    val binding = model.realtime ?: throw VoiceModelError.Unsupported(VoiceCapability.REALTIME)
+    return CallVoiceProfile(
+        id = model.id,
+        name = model.displayName,
+        protocol = binding.callProtocol(),
+        endpoint = binding.endpoint.ifBlank { binding.defaultEndpoint() },
+        model = model.id,
+        speaker = binding.speaker.ifBlank { binding.defaultSpeaker() },
+        credentialsConfigured = credentialsConfigured,
+        connectionTested = connectionTested,
+    )
+}
+
 private class ConfiguredRealtimeProvider(
     private val resolved: ResolvedVoiceModel,
     private val binding: RealtimeBinding,
     private val delegate: CallRealtimeProvider,
 ) : CallRealtimeProvider {
-    private val profile = CallVoiceProfile(
-        id = resolved.model.id,
-        name = resolved.model.displayName,
-        protocol = when (binding.protocol) {
-            RealtimeProtocol.VolcDuplex -> CallVoiceProtocol.VOLC_DUPLEX
-            RealtimeProtocol.OpenAiRealtime -> CallVoiceProtocol.OPENAI_REALTIME
-        },
-        endpoint = binding.endpoint.ifBlank {
-            when (binding.protocol) {
-                RealtimeProtocol.VolcDuplex -> VolcRealtimeProtocol.ENDPOINT
-                RealtimeProtocol.OpenAiRealtime -> OpenAiCallProtocol.ENDPOINT
-            }
-        },
-        model = resolved.model.id,
-        speaker = binding.speaker.ifBlank {
-            when (binding.protocol) {
-                RealtimeProtocol.VolcDuplex -> VolcRealtimeConfig.DEFAULT_SPEAKER
-                RealtimeProtocol.OpenAiRealtime -> OpenAiCallProtocol.VOICE
-            }
-        },
-        credentialsConfigured = true,
-    )
+    private val profile = resolved.realtimeProfile(credentialsConfigured = true)
     private val credentials = resolved.account.credentials.let {
         VolcRealtimeCredentials(it.apiKey, it.appId, it.accessKey)
     }

@@ -32,6 +32,8 @@ class VoiceModelEnvironment(
 
     val tts: TtsSelectionController by lazy { TtsSelectionController(this) }
 
+    val realtime: RealtimeSelectionController by lazy { RealtimeSelectionController(this) }
+
     companion object {
         @Volatile
         private var shared: VoiceModelEnvironment? = null
