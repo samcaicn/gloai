@@ -1,5 +1,5 @@
 {
- "version": "3.22.7-250e9fbe32c8",
+ "version": "3.22.7-87756a3797cb",
  "alpine": "3.22.7",
  "packages": [
   {
@@ -553,12 +553,21 @@
   },
   {
    "name": "nodejs",
-   "version": "22.23.4-r0",
+   "version": "22.23.5-r0",
    "license": "MIT",
    "origin": "nodejs",
    "url": "https://nodejs.org/",
    "repo": "main",
-   "commit": "90f35cc6d20e6cb4410bf575de91bada52191009"
+   "commit": "5aeb78766d5b0beae6b10b667e0e7eaed2bfaaf8"
+  },
+  {
+   "name": "npm",
+   "version": "11.6.4-r0",
+   "license": "Artistic-2.0",
+   "origin": "npm",
+   "url": "https://www.npmjs.com/",
+   "repo": "community",
+   "commit": "c7dadb49129003d37706e485d1010db681baf9f1"
   },
   {
    "name": "nspr",

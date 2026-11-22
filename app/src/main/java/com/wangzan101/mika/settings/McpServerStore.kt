@@ -7,6 +7,7 @@ import com.wangzan101.mika.core.cap.mcp.McpCatalog
 import com.wangzan101.mika.core.cap.mcp.McpOAuth
 import com.wangzan101.mika.core.cap.mcp.McpOAuthException
 import com.wangzan101.mika.core.cap.mcp.McpOAuthTokens
+import com.wangzan101.mika.core.cap.mcp.McpPackageSpec
 import com.wangzan101.mika.core.cap.mcp.McpPreset
 import com.wangzan101.mika.core.cap.mcp.McpPresetResolver
 import com.wangzan101.mika.core.cap.mcp.McpStdioLauncher
@@ -19,6 +20,9 @@ import com.wangzan101.mika.core.net.LocalHosts
 import com.wangzan101.mika.core.net.NetProxy
 import com.wangzan101.mika.core.oauth.LoopbackCallback
 import com.wangzan101.mika.core.resource.ResourceScope
+import com.wangzan101.mika.core.workspace.SandboxError
+import com.wangzan101.mika.mcp.McpPackageConsent
+import com.wangzan101.mika.mcp.McpPackageProvisioner
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.CancellationException
@@ -101,6 +105,10 @@ class McpServerStore(
     private val stdio: McpStdioLauncher? = null,
     /** 内置预设目录;测试注入临时目录,App 资产加载在别处接线。 */
     private val catalog: McpCatalog = McpCatalog.Empty,
+    /** stdio 预设含包时的安装/缓存;为 null 时这类预设报不可用。 */
+    private val packageProvisioner: McpPackageProvisioner? = null,
+    /** stdio 包下载确认(进程内);包装进工作区缓存后无需再确认。 */
+    val packageConsent: McpPackageConsent = McpPackageConsent(),
 ) {
     private val file = File(dir, "mcp-servers.json")
     private val secretsFile = File(dir, "mcp-server-secrets.bin")
@@ -214,6 +222,17 @@ class McpServerStore(
         val snapshot = config.presetSnapshot ?: return null
         return resolver.resolve(snapshot, config.fieldValues + fieldSecrets.all(config.id))
     }
+
+    /** 把 provisioner 返回的可执行目录前缀和预设声明的 argv(首个元素是可执行名)拼成最终 argv。 */
+    private fun composeArgv(prefix: List<String>, command: List<String>): List<String> =
+        if (prefix.isEmpty() || command.isEmpty()) command
+        else listOf(prefix.first() + "/" + command.first()) + command.drop(1)
+
+    /** UI 在用户确认下载后调用;绑定包名 + 精确版本 + 来源。 */
+    fun acceptPackage(spec: McpPackageSpec) = packageConsent.accept(spec)
+
+    /** 该包(名 + 精确版本 + 来源)是否已确认。 */
+    fun packageAccepted(spec: McpPackageSpec): Boolean = packageConsent.accepted(spec)
 
     fun validate(config: McpServerConfig): String? {
         if (config.name.isBlank()) return "name is required"
@@ -378,7 +397,17 @@ class McpServerStore(
             "stdio" -> {
                 val launcher = stdio ?: throw IllegalStateException("stdio MCP servers are not available on this build")
                 val resolved = if (config.presetId != null) resolvedPreset(config) else null
-                val argv = resolved?.argv ?: parseStdioCommand(config.command)
+                val spec = config.presetSnapshot?.packageSpec
+                val argv = if (spec != null) {
+                    val provisioner = packageProvisioner
+                        ?: throw SandboxError("mcp_package_unavailable", "Package installation is not available on this device.", recoverable = true)
+                    composeArgv(
+                        provisioner.prepare(workspace, spec, packageConsent.accepted(spec)),
+                        resolved?.argv ?: emptyList(),
+                    )
+                } else {
+                    resolved?.argv ?: parseStdioCommand(config.command)
+                }
                 val environment = resolved?.environment ?: emptyMap()
                 StdioMcpEndpoint.connect(
                     serverId = config.id, command = argv, launcher = launcher, workspace = workspace,

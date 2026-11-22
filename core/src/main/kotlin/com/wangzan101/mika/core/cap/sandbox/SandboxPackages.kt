@@ -7,7 +7,7 @@ package com.wangzan101.mika.core.cap.sandbox
  * (tools/sandbox/build-runtime.py 的 WANT 与此一致,BundledRuntimeTest 核对)。
  */
 val SANDBOX_PACKAGES: List<String> = listOf(
-    "python3", "nodejs", "py3-pillow", "py3-pypdf", "tzdata",
+    "python3", "nodejs", "npm", "py3-pillow", "py3-pypdf", "tzdata",
     "py3-pip", "py3-setuptools", "py3-wheel", "py3-packaging",
     "poppler-utils", "font-wqy-zenhei", "fontconfig",
     "curl", "unzip", "zip", "git", "jq",

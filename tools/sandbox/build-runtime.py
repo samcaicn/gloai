@@ -60,10 +60,10 @@ def _opener(url):
     return opener.open(req, timeout=120)
 ARCH = "aarch64"
 # What `apk add` would be asked for. Keep in sync with core SANDBOX_PACKAGES (a JVM test checks it).
-# Base set: Python/Node + Pillow + pypdf + tzdata + the pip toolchain.
+# Base set: Python/Node + npm + Pillow + pypdf + tzdata + the pip toolchain.
 # Doc set: poppler-utils (PDF->text/image), a CJK font + fontconfig (CJK output).
 # Everyday CLI: curl/unzip/zip/git/jq for fetch/unpack/repo work in scripts.
-WANT = ["python3", "nodejs", "py3-pillow", "py3-pypdf", "tzdata", "py3-pip", "py3-setuptools", "py3-wheel", "py3-packaging", "poppler-utils", "font-wqy-zenhei", "fontconfig", "curl", "unzip", "zip", "git", "jq"]
+WANT = ["python3", "nodejs", "npm", "py3-pillow", "py3-pypdf", "tzdata", "py3-pip", "py3-setuptools", "py3-wheel", "py3-packaging", "poppler-utils", "font-wqy-zenhei", "fontconfig", "curl", "unzip", "zip", "git", "jq"]
 # Install scripts and triggers that a real `apk add` would run on the phone, pinned by SHA-256 of the script, and why
 # the runtime is already right without running them. Any other install script or trigger stops the build.
 SCRIPTS_NOT_RUN = {

@@ -167,6 +167,7 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                     override fun close() = process.close()
                 }
             },
+            packageProvisioner = com.wangzan101.mika.mcp.McpPackageManager(AndroidSandbox(this, SandboxState.get(this))),
         )
     }
     /** 已安装的插件:zip 安装、启停与只读技能;任务开始时给技能目录一份固定快照。 */
