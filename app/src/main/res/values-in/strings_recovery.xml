@@ -2,6 +2,7 @@
 <resources>
     <string name="rec_a11y">Aktifkan aksesibilitas untuk saya</string>
     <string name="rec_default_on">Aktif secara default</string>
+    <string name="rec_learn_what">Apa fungsi opsi ini?</string>
     <string name="rec_a11y_body">Mika memakai Aksesibilitas untuk membaca teks dan tombol di layar. Dengan ini aktif, Mika mengaktifkan layanan aksesibilitasnya sendiri di setelan sistem untuk Anda; layanan aksesibilitas lain yang Anda aktifkan tidak terpengaruh. Jika dinonaktifkan, Mika mematikan layanannya sendiri.</string>
     <string name="rec_battery">Baterai tanpa batasan</string>
     <string name="rec_battery_body">Dengan ini aktif, Mika menambahkan dirinya ke pengecualian optimalisasi baterai sistem, sehingga tidak dihentikan di latar belakang untuk menghemat daya dan kontrol ponsel lebih jarang terputus. Baterai mungkin sedikit lebih boros. Nonaktifkan untuk kembali ke default sistem.</string>

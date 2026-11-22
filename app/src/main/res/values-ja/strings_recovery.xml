@@ -2,6 +2,7 @@
 <resources>
     <string name="rec_a11y">ユーザー補助を自動でオンにする</string>
     <string name="rec_default_on">デフォルトでオン</string>
+    <string name="rec_learn_what">これらは何をするもの？</string>
     <string name="rec_a11y_body">Mika は、ユーザー補助を使って画面上のテキストやボタンを読み取ります。これをオンにすると、Mika が自分のユーザー補助サービスをシステム設定で代わりにオンにします。オンにしているほかのユーザー補助サービスには影響しません。これをオフにすると、Mika は自分のサービスをオフにします。</string>
     <string name="rec_battery">バッテリーを制限しない</string>
     <string name="rec_battery_body">オンにすると、Mika がシステムのバッテリー最適化の対象外に自分を追加します。節電のためにバックグラウンドで停止されにくくなり、スマホの操作が途切れにくくなります。バッテリーの消費が少し増えることがあります。オフにすると、システムのデフォルトに戻ります。</string>

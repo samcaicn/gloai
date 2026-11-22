@@ -178,7 +178,7 @@
     <string name="skin_accent_follow">Цвет акцента из изображения</string>
     <string name="skin_accent_follow_sub">Берёт основной цвет изображения вместо цвета акцента выше, если он есть</string>
     <string name="settings_self_config">Разрешить Mika менять свои настройки</string>
-    <string name="settings_self_config_sub">Когда включено, у задач появляется один инструмент для чтения и изменения этих настроек (темп, звук, капсула, оформление, цвет акцента, экран не гаснет). Модели, ключи API, сеть контейнера и всё, что удаляет данные, никогда не включаются</string>
+    <string name="settings_self_config_sub">Меняет только перечисленные настройки; никогда не трогает модели, ключи, сеть и удаление данных.</string>
     <string name="settings_step_limit">Лимит шагов на задачу</string>
     <string name="settings_step_limit_sub">Выключено — без ограничения. При достижении лимита задача остановится и укажет, где остановилась.</string>
     <string name="settings_step_limit_off">Без ограничения</string>

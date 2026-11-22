@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_self_operate">Mika 自身の画面を操作できるようにする</string>
-    <string name="settings_self_operate_sub">Mika のページやファイルを開きます。ブラウザでリンクを開く前に確認します</string>
+    <string name="settings_self_operate_sub">ブラウザでリンクを開く前に確認します。</string>
     <string name="settings_pip_operate">小さな表示を直接操作する</string>
     <string name="settings_pip_operate_sub">小さなウィンドウでタップ・スワイプして画面を操作する</string>
     <string name="settings_external_schedule">スクリプトによる予約タスク作成を許可</string>
-    <string name="settings_external_schedule_sub">他のアプリからのタスク依頼をブロードキャストで受け付けます。毎分数件までに制限され、スクリプト作成と表示されます</string>
+    <string name="settings_external_schedule_sub">他のアプリはブロードキャストでタスクを送信できます。頻度制限され、スクリプト作成と表示されます。</string>
     <string name="self_notify_channel">Mika の操作</string>
     <string name="self_notify_channel_desc">Mika が開いたもの、見せたいもの</string>
     <string name="self_notify_open">表示</string>

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_self_operate">Permitir que o Mika use as próprias telas</string>
-    <string name="settings_self_operate_sub">Abrir as páginas e arquivos do Mika; pergunta antes de abrir um link no seu navegador</string>
+    <string name="settings_self_operate_sub">Continua perguntando antes de abrir links no seu navegador.</string>
     <string name="settings_pip_operate">Operar a miniatura diretamente</string>
     <string name="settings_pip_operate_sub">Toque e deslize na janela pequena para controlar a tela</string>
     <string name="settings_external_schedule">Permitir que scripts criem tarefas agendadas</string>
-    <string name="settings_external_schedule_sub">Aceita tarefas de outros apps por broadcast; no máximo algumas por minuto, marcadas como criadas por script</string>
+    <string name="settings_external_schedule_sub">Outros apps podem enviar tarefas por broadcast, com limite de frequência e marcadas como script.</string>
     <string name="self_notify_channel">Ações do Mika</string>
     <string name="self_notify_channel_desc">O que o Mika abre ou pede para você ver</string>
     <string name="self_notify_open">Ver</string>

@@ -182,7 +182,7 @@
     <string name="skin_accent_follow">Accent color from the image</string>
     <string name="skin_accent_follow_sub">Uses the main color in the image instead of the accent color above, when it has one</string>
     <string name="settings_self_config">Let Mika change its own settings</string>
-    <string name="settings_self_config_sub">When on, tasks get one tool to read and change these preferences (pace, mute, capsule, appearance, accent color, screen-on). Models, API keys, container network and anything that deletes data are never included</string>
+    <string name="settings_self_config_sub">Can only change the listed preferences; never models, keys, network access or deleting data.</string>
     <string name="settings_step_limit">Step limit per task</string>
     <string name="settings_step_limit_sub">Off means no limit. When the limit is reached, the task stops and says where it stopped.</string>
     <string name="settings_step_limit_off">No limit</string>

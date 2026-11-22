@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_self_operate">اجازه دادن به میکا برای کار با صفحه‌های خودش</string>
-    <string name="settings_self_operate_sub">باز کردن صفحه‌ها و فایل‌های میکا؛ پیش از باز کردن پیوند در مرورگر شما می‌پرسد</string>
+    <string name="settings_self_operate_sub">پیش از باز کردن پیوند در مرورگر شما همچنان می‌پرسد.</string>
     <string name="settings_pip_operate">کنترل مستقیم نمای کوچک</string>
     <string name="settings_pip_operate_sub">برای کنترل صفحه، در پنجرهٔ کوچک بزنید و بکشید</string>
     <string name="settings_external_schedule">به اسکریپت‌ها اجازهٔ ایجاد کارهای زمان‌بندی‌شده بده</string>
-    <string name="settings_external_schedule_sub">درخواست کار از برنامه‌های دیگر را از طریق broadcast بپذیر؛ حداکثر چند مورد در دقیقه، با برچسب ساختهٔ اسکریپت</string>
+    <string name="settings_external_schedule_sub">برنامه‌های دیگر می‌توانند از طریق broadcast کار ارسال کنند، با محدودیت نرخ و برچسب ساختهٔ اسکریپت.</string>
     <string name="self_notify_channel">اقدام‌های میکا</string>
     <string name="self_notify_channel_desc">آنچه میکا باز می‌کند یا از شما می‌خواهد ببینید</string>
     <string name="self_notify_open">مشاهده</string>

@@ -166,7 +166,7 @@
     <string name="skin_accent_follow">이미지에서 강조 색상 가져오기</string>
     <string name="skin_accent_follow_sub">이미지의 주된 색을 위에서 고른 강조 색상 대신 써요. 뚜렷한 색이 없으면 그대로예요</string>
     <string name="settings_self_config">Mika가 자신의 설정을 바꾸도록 허용</string>
-    <string name="settings_self_config_sub">켜면 작업에서 이 환경설정(속도, 음소거, 캡슐, 화면 모드, 강조 색상, 화면 켜 두기)을 읽고 바꾸는 도구를 하나 쓸 수 있어요. 모델, API 키, 컨테이너 네트워크, 데이터를 삭제하는 항목은 포함되지 않아요</string>
+    <string name="settings_self_config_sub">목록의 환경설정만 바꿉니다. 모델, 키, 네트워크, 데이터 삭제는 건드리지 않아요.</string>
     <string name="settings_step_limit">작업당 단계 상한</string>
     <string name="settings_step_limit_sub">끄면 제한 없음입니다. 상한에 도달하면 작업이 멈추고 어디서 멈췄는지 알려 줍니다.</string>
     <string name="settings_step_limit_off">제한 없음</string>

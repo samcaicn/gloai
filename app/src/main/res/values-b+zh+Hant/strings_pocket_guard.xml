@@ -4,5 +4,5 @@
     <string name="pocket_guard_unavailable">需要手機支援距離和光線感測器。</string>
     <string name="pocket_guard_exit">向右拖動，退出防誤觸</string>
     <string name="pocket_completion_lock_title">遮擋時任務停下後鎖定螢幕</string>
-    <string name="pocket_completion_lock_summary">任務結束或等待處理時，若手機仍被遮擋且光線暗，自動鎖定螢幕。</string>
+    <string name="pocket_completion_lock_summary">手機仍被遮擋且光線暗時，自動鎖定螢幕。</string>
 </resources>

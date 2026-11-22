@@ -174,7 +174,7 @@
     <string name="skin_accent_follow">Color de énfasis de la imagen</string>
     <string name="skin_accent_follow_sub">Usa el color principal de la imagen en lugar del color de énfasis de arriba, si lo tiene</string>
     <string name="settings_self_config">Dejar que Mika cambie sus propios ajustes</string>
-    <string name="settings_self_config_sub">Si está activado, las tareas tienen una herramienta para leer y cambiar estas preferencias (ritmo, silencio, cápsula, apariencia, color de énfasis, pantalla encendida). Nunca se incluyen los modelos, las claves de API, la red del contenedor ni nada que elimine datos</string>
+    <string name="settings_self_config_sub">Solo cambia las preferencias listadas; nunca modelos, claves, red ni borrar datos.</string>
     <string name="settings_step_limit">Límite de pasos por tarea</string>
     <string name="settings_step_limit_sub">Desactivado significa sin límite. Al alcanzarlo, la tarea se detiene e indica dónde se detuvo.</string>
     <string name="settings_step_limit_off">Sin límite</string>

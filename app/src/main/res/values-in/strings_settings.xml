@@ -166,7 +166,7 @@
     <string name="skin_accent_follow">Warna aksen dari gambar</string>
     <string name="skin_accent_follow_sub">Memakai warna utama gambar sebagai ganti warna aksen di atas, jika ada</string>
     <string name="settings_self_config">Biarkan Mika mengubah pengaturannya sendiri</string>
-    <string name="settings_self_config_sub">Jika aktif, tugas mendapat satu alat untuk membaca dan mengubah preferensi ini (kecepatan, bisu, kapsul, tampilan, warna aksen, layar menyala). Model, kunci API, jaringan kontainer, dan apa pun yang menghapus data tidak pernah disertakan</string>
+    <string name="settings_self_config_sub">Hanya mengubah preferensi yang tercantum; tidak pernah menyentuh model, kunci, jaringan, atau menghapus data.</string>
     <string name="settings_step_limit">Batas langkah per tugas</string>
     <string name="settings_step_limit_sub">Mati berarti tanpa batas. Saat batas tercapai, tugas berhenti dan menyebutkan di mana berhentinya.</string>
     <string name="settings_step_limit_off">Tanpa batas</string>

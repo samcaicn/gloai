@@ -174,7 +174,7 @@
     <string name="skin_accent_follow">Cor de destaque da imagem</string>
     <string name="skin_accent_follow_sub">Usa a cor principal da imagem em vez da cor de destaque acima, quando houver</string>
     <string name="settings_self_config">Deixar o Mika alterar as próprias configurações</string>
-    <string name="settings_self_config_sub">Ativado, as tarefas ganham uma ferramenta para ler e alterar estas preferências (ritmo, silenciar, cápsula, aparência, cor de destaque, tela ligada). Modelos, chaves de API, rede do contêiner e qualquer coisa que apague dados nunca são incluídos</string>
+    <string name="settings_self_config_sub">Só muda as preferências listadas; nunca modelos, chaves, rede nem apagar dados.</string>
     <string name="settings_step_limit">Limite de passos por tarefa</string>
     <string name="settings_step_limit_sub">Desligado significa sem limite. Ao atingir o limite, a tarefa para e indica onde parou.</string>
     <string name="settings_step_limit_off">Sem limite</string>

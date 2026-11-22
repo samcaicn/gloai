@@ -479,7 +479,7 @@ fun SettingsContent(
 
         GroupLabel(stringResource(R.string.settings_model))
         GroupCard {
-            ListRow(MikaIcons.Spark, stringResource(R.string.settings_model), stringResource(R.string.settings_model_sub), first = true, onClick = onOpenModels) {
+            ListRow(MikaIcons.Spark, stringResource(R.string.settings_model), first = true, onClick = onOpenModels) {
                 RowValue(mainModel ?: stringResource(R.string.settings_not_set))
                 RowChevron()
             }
@@ -494,12 +494,12 @@ fun SettingsContent(
             ListRow(MikaIcons.Clock, stringResource(R.string.drawer_plans), onClick = onOpenPlans) { RowChevron() }
             ListRow(MikaIcons.Globe, stringResource(R.string.drawer_browser), onClick = onOpenBrowser) { RowChevron() }
             ListRow(MikaIcons.Paperclip, stringResource(R.string.file_library_title), onClick = onOpenFiles) { RowChevron() }
-            ListRow(MikaIcons.Phone, stringResource(R.string.calls_title), stringResource(R.string.calls_entry_sub), onClick = onOpenCalls) { RowChevron() }
-            ListRow(MikaIcons.Chats, stringResource(R.string.wechat_title), stringResource(R.string.wechat_settings_sub), onClick = onOpenWechat) {
+            ListRow(MikaIcons.Phone, stringResource(R.string.calls_title), onClick = onOpenCalls) { RowChevron() }
+            ListRow(MikaIcons.Chats, stringResource(R.string.wechat_title), onClick = onOpenWechat) {
                 WechatEntryStatus(wechatState, wechatBound)
                 RowChevron()
             }
-            ListRow(MikaIcons.Ripple, stringResource(R.string.proactive_title), stringResource(R.string.proactive_entry_sub), onClick = onOpenProactive) { RowChevron() }
+            ListRow(MikaIcons.Ripple, stringResource(R.string.proactive_title), onClick = onOpenProactive) { RowChevron() }
             if (personalStart) {
                 ListRow(MikaIcons.Message, stringResource(R.string.drawer_personal), onClick = onOpenPersonal) { RowChevron() }
             }
@@ -507,8 +507,8 @@ fun SettingsContent(
 
         GroupLabel(stringResource(R.string.settings_preferences))
         GroupCard {
-            ListRow(MikaIcons.Moon, stringResource(R.string.settings_during_work), stringResource(R.string.settings_during_work_sub), first = true, onClick = onOpenDuringWork) { RowChevron() }
-            ListRow(MikaIcons.Message, CapsuleSettingsCopy.TITLE, CapsuleSettingsCopy.SUBTITLE, onClick = onOpenCapsule) {
+            ListRow(MikaIcons.Moon, stringResource(R.string.settings_during_work), first = true, onClick = onOpenDuringWork) { RowChevron() }
+            ListRow(MikaIcons.Message, CapsuleSettingsCopy.TITLE, onClick = onOpenCapsule) {
                 RowValue(CapsuleSettingsCopy.label(capsuleMode))
                 RowChevron()
             }
@@ -519,19 +519,19 @@ fun SettingsContent(
             // 人格和语言、外观是一类:定 Mika 怎么表现的全局取值。行尾是现在在用的,主界面上没有别的地方显示它
             onOpenPersonas?.let { open ->
                 val personas = (LocalContext.current.applicationContext as? com.wangzan101.mika.MikaApp)?.personas
-                ListRow(MikaIcons.Chats, stringResource(R.string.persona_title), stringResource(R.string.persona_sub), onClick = open) {
+                ListRow(MikaIcons.Chats, stringResource(R.string.persona_title), onClick = open) {
                     if (personas != null) RowValue(personaSummaryValue(personas))
                     RowChevron()
                 }
             }
             val (notifText, notifTone) = StatusCopy.notificationSummary(status.notificationOverview().summary)
-            ListRow(MikaIcons.Bell, StatusCopy.NOTIFICATIONS, stringResource(R.string.settings_notif_sub), onClick = onOpenNotifications) {
+            ListRow(MikaIcons.Bell, StatusCopy.NOTIFICATIONS, onClick = onOpenNotifications) {
                 RowValue(notifText, notifTone)
                 RowChevron()
             }
             onPersonalStart?.let { change ->
                 val label = stringResource(R.string.settings_personal_start)
-                ListRow(MikaIcons.Spark, label, stringResource(R.string.settings_personal_start_sub)) {
+                ListRow(MikaIcons.Spark, label) {
                     MikaSwitch(personalStart, change, Modifier.semantics { contentDescription = label })
                 }
             }
@@ -540,15 +540,14 @@ fun SettingsContent(
         GroupLabel(stringResource(R.string.settings_data))
         GroupCard {
             onOpenMemory?.let {
-                ListRow(MikaIcons.Heart, stringResource(R.string.memory_and_skills), stringResource(R.string.settings_memory_sub), first = true, onClick = it) { RowChevron() }
+                ListRow(MikaIcons.Heart, stringResource(R.string.memory_and_skills), first = true, onClick = it) { RowChevron() }
             }
             onOpenBackup?.let {
-                ListRow(MikaIcons.Archive, stringResource(R.string.backup_title), stringResource(R.string.backup_sub), first = onOpenMemory == null, onClick = it) { RowChevron() }
+                ListRow(MikaIcons.Archive, stringResource(R.string.backup_title), first = onOpenMemory == null, onClick = it) { RowChevron() }
             }
             ListRow(
                 MikaIcons.Archive,
                 stringResource(R.string.settings_auto_archive),
-                stringResource(R.string.settings_auto_archive_sub),
                 first = onOpenMemory == null && onOpenBackup == null,
                 onClick = onOpenAutoArchive,
             ) {
@@ -561,16 +560,15 @@ fun SettingsContent(
             ListRow(
                 MikaIcons.Message,
                 stringResource(R.string.recommendations_title),
-                stringResource(R.string.recommendations_sub),
                 onClick = onOpenRecommendations,
             ) { RowChevron() }
-            ListRow(MikaIcons.Shield, stringResource(R.string.appaccess_title), stringResource(R.string.appaccess_row_sub), onClick = onOpenAppAccess) { RowChevron() }
-            ListRow(MikaIcons.Shield, stringResource(R.string.sms_login_title), stringResource(R.string.sms_login_default_off), onClick = onOpenSmsLogin) { RowChevron() }
+            ListRow(MikaIcons.Shield, stringResource(R.string.appaccess_title), onClick = onOpenAppAccess) { RowChevron() }
+            ListRow(MikaIcons.Shield, stringResource(R.string.sms_login_title), onClick = onOpenSmsLogin) { RowChevron() }
         }
 
         GroupLabel(stringResource(R.string.settings_advanced))
         GroupCard {
-            ListRow(MikaIcons.Wrench, stringResource(R.string.settings_advanced), stringResource(R.string.settings_advanced_sub), first = true, onClick = onOpenAdvanced) { RowChevron() }
+            ListRow(MikaIcons.Wrench, stringResource(R.string.settings_advanced), first = true, onClick = onOpenAdvanced) { RowChevron() }
         }
         GroupCard {
             ListRow(MikaIcons.Info, stringResource(R.string.settings_about), first = true, onClick = onOpenAbout) {
@@ -652,7 +650,7 @@ fun AdvancedSettingsContent(
                     }
                 }
                 webSearch?.let { config ->
-                    ListRow(MikaIcons.Globe, stringResource(R.string.web_search_title), stringResource(R.string.web_search_row_sub), first = take(), onClick = onOpenWebSearch) {
+                    ListRow(MikaIcons.Globe, stringResource(R.string.web_search_title), first = take(), onClick = onOpenWebSearch) {
                         RowValue(WebSearchCopy.value(config)); RowChevron()
                     }
                 }
@@ -714,7 +712,7 @@ private fun sandboxValue(s: SandboxStatus): String = when (s) {
 private fun StatusSummary(check: Prerequisites.Check, onProblem: (Problem) -> Unit) {
     val problem = check.problems.firstOrNull { it != Problem.FocusMayLeak }
     if (problem == null) {
-        StateCard(MikaIcons.Check, stringResource(R.string.all_ready), stringResource(R.string.settings_all_ready_detail), TileTone.Ok, Modifier.testTag("settings-status"))
+        StateCard(MikaIcons.Check, stringResource(R.string.all_ready), tone = TileTone.Ok, modifier = Modifier.testTag("settings-status"))
     } else {
         val copy = StatusCopy.banner(problem)
         StateCard(
