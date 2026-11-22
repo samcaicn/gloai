@@ -31,11 +31,11 @@ class FeedRecorder(private val maxMs: Int = 60_000) : StreamingRecorder {
         true
     }
 
-    /** Pushes 16 kHz mono samples; ignored before [start] and after [stop]/[cancel]. */
+    /** Pushes 16 kHz mono samples; audio fed before [start] is kept (the session may start a moment later), ignored after [stop]/[cancel]. */
     fun feed(samples: ShortArray) {
         if (samples.isEmpty()) return
         synchronized(lock) {
-            if (!started || stopped) return
+            if (stopped) return
             val cap = Wav.RATE * maxMs / 1000
             val take = minOf(samples.size, cap - size)
             if (take > 0) {

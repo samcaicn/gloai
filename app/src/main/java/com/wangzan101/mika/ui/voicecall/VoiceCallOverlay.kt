@@ -64,6 +64,12 @@ import com.wangzan101.mika.calls.CallRealtimeSession
 import com.wangzan101.mika.calls.CallVoiceProfile
 import com.wangzan101.mika.calls.CallVoiceProtocol
 import com.wangzan101.mika.calls.VolcRealtimeClient
+import com.wangzan101.mika.calls.VolcRealtimeProtocol
+import com.wangzan101.mika.voice.cascade.CallUse
+import com.wangzan101.mika.voice.cascade.CascadeEngine
+import com.wangzan101.mika.voice.cascade.LlmBrain
+import com.wangzan101.mika.voice.model.CallEngine
+import com.wangzan101.mika.voice.model.VoiceModelError
 import com.wangzan101.mika.calls.VolcRealtimeConfig
 import com.wangzan101.mika.calls.VolcRealtimeCredentials
 import com.wangzan101.mika.calls.VolcRealtimeException
@@ -471,6 +477,10 @@ class VoiceCallController(
 
     /** After migration both entry points resolve the active model through this one controller. */
     private val realtime = VoiceModelEnvironment.get(deps.context).realtime
+    private val cascade = CascadeEngine(deps.context)
+
+    /** Standard calls (listen → think → speak) need no realtime model; their gate is the cascade's readiness. */
+    private fun standard(): Boolean = realtime.migrated && cascade.engine(CallUse.InApp) == CallEngine.Standard
 
     /** The active realtime profile; legacy reads the profile store, migrated reads the catalog. */
     private fun activeProfile(): CallVoiceProfile? {
@@ -495,6 +505,18 @@ class VoiceCallController(
         val current = stage
         if (current is VoiceCallStage.InCall && current.call.session.state.value !is VoiceCallState.Ended) {
             current.call.visible = true
+            return
+        }
+        if (standard()) {
+            if (cascade.blocker(CallUse.InApp) != null) {
+                stage = VoiceCallStage.Gate(VoiceCallGateStage.NeedCredentials)
+                return
+            }
+            when {
+                micGranted() -> openCall()
+                micPermanentlyDenied() -> stage = VoiceCallStage.Gate(VoiceCallGateStage.PermissionDenied)
+                else -> stage = VoiceCallStage.Gate(VoiceCallGateStage.NeedPermission)
+            }
             return
         }
         val profile = activeProfile()
@@ -579,8 +601,9 @@ class VoiceCallController(
 
     private fun openCall() {
         cancelCallScope()
-        val profile = activeProfile()
-        if (profile == null || profile.protocol != CallVoiceProtocol.VOLC_DUPLEX) {
+        val standard = standard()
+        val profile = if (standard) null else activeProfile()
+        if (!standard && (profile == null || profile.protocol != CallVoiceProtocol.VOLC_DUPLEX)) {
             stage = VoiceCallStage.Gate(VoiceCallGateStage.UnsupportedProtocol)
             return
         }
@@ -611,7 +634,20 @@ class VoiceCallController(
             scope = callScope,
             audio = AndroidVoiceCallAudio(deps.context),
             foregroundResumed = deps.foregroundResumed,
-            connect = {
+            connect = connect@{
+                if (standard) {
+                    return@connect try {
+                        cascade.open(
+                            CallUse.InApp,
+                            VolcRealtimeProtocol.AGENT_TOOLS_PROMPT.trim(),
+                            listOf(LlmBrain.toolSpec(VolcRealtimeProtocol.mikaRequestTool())),
+                            language = null,
+                        ).also { currentRealtime = it }
+                    } catch (e: VoiceModelError) {
+                        throw VolcRealtimeException(VolcRealtimeException.Kind.AUTH)
+                    }
+                }
+                val profile = profile!!
                 val credentials = activeCredentials(profile)
                     ?: throw VolcRealtimeException(VolcRealtimeException.Kind.AUTH)
                 VolcRealtimeClient(endpoint = profile.endpoint).connect(

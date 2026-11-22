@@ -29,6 +29,10 @@ import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.calls.instructions.CallInstructionStore
 import com.wangzan101.mika.shell.IMikaShell
+import com.wangzan101.mika.voice.cascade.CallUse
+import com.wangzan101.mika.voice.cascade.CascadeCallProvider
+import com.wangzan101.mika.voice.cascade.CascadeEngine
+import com.wangzan101.mika.voice.model.CallEngine
 import com.wangzan101.mika.voice.model.RealtimeSelectionController
 import com.wangzan101.mika.voice.model.VoiceCatalogSnapshot
 import com.wangzan101.mika.voice.model.VoiceErrorCategory
@@ -116,6 +120,15 @@ class CallRuntime(private val app: MikaApp) {
     val instructions = CallInstructionStore.create(app)
     private val access = CallTelecomAccess(app)
     private val realtimeController by lazy { VoiceModelEnvironment.get(app).realtime }
+    private val cascade by lazy { CascadeEngine(app) }
+
+    /** AI phone calls run listen → think → speak instead of a realtime voice model. */
+    private val standardCalls: Boolean
+        get() = realtimeController.migrated && cascade.engine(CallUse.Phone) == CallEngine.Standard
+
+    /** The model whose per-device audio verification gates auto-answer: the listen model for standard calls. */
+    private fun callVoiceRef(): VoiceModelRef? =
+        if (standardCalls) cascade.listenRef(CallUse.Phone) else realtimeController.callCurrent()
 
     /** True once the legacy realtime profiles have been migrated into the unified voice catalog. */
     val realtimeMigrated: Boolean get() = realtimeController.migrated
@@ -497,6 +510,10 @@ class CallRuntime(private val app: MikaApp) {
 
     fun activeVoiceProfile(): CallVoiceProfile {
         val config = settings.state.value
+        if (standardCalls) {
+            val ready = cascade.blocker(CallUse.Phone) == null
+            return CallVoiceProfile(id = STANDARD_PROFILE_ID, name = STANDARD_PROFILE_ID, credentialsConfigured = ready, connectionTested = ready)
+        }
         if (realtimeController.migrated) {
             val ref = realtimeController.callCurrent()
             if (ref != null) {
@@ -541,11 +558,12 @@ class CallRuntime(private val app: MikaApp) {
 
     /** Mirrors the catalog verification state into [CallSettings] so every gate reads one source. */
     private fun syncRealtimeState(mode: CallAudioMode = settings.state.value.audioMode) {
-        val ref = realtimeController.callCurrent()
+        val ref = callVoiceRef()
         runCatching {
             synchronized(settings) {
                 settings.mirrorRealtimeState(
-                    credentialsConfigured = ref?.let { realtimeController.credentialsConfigured(it) } ?: false,
+                    credentialsConfigured = if (standardCalls) cascade.blocker(CallUse.Phone) == null
+                    else ref?.let { realtimeController.credentialsConfigured(it) } ?: false,
                     audioVerified = ref?.let { realtimeController.isAudioVerified(it, mode) } ?: false,
                 )
             }
@@ -706,7 +724,7 @@ class CallRuntime(private val app: MikaApp) {
         if (work != null || lockedDial != null) return@onMain fail("请先结束当前通话或锁屏拨出安排")
         val config = settings.state.value
         if (realtimeController.migrated) {
-            val ref = realtimeController.callCurrent() ?: return@onMain fail("请先选择实时语音模型")
+            val ref = callVoiceRef() ?: return@onMain fail(if (standardCalls) "请先选择通话的听写模型" else "请先选择实时语音模型")
             realtimeController.markAudioVerified(ref, config.audioMode, verified)
             settings.save(config.copy(audioVerified = verified, autoAnswer = verified && config.autoAnswer))
             publish()
@@ -1281,7 +1299,8 @@ class CallRuntime(private val app: MikaApp) {
             validateTarget(w)
             val helper = shell ?: throw CallProblem("Mika 内置助手未连接")
             val migrated = realtimeController.migrated
-            val provider = if (migrated) {
+            val standard = standardCalls
+            val provider = if (standard) CascadeCallProvider(cascade, CallUse.Phone) else if (migrated) {
                 try {
                     realtimeController.callProvider()
                 } catch (e: VoiceModelError) {
@@ -1294,7 +1313,7 @@ class CallRuntime(private val app: MikaApp) {
                 voiceProfiles.get(w.config.activeVoiceProfileId)
                     ?: throw CallProblem("实时语音配置不可用，请重新选择")
             }
-            val credentials = if (migrated) {
+            val credentials = if (standard) VolcRealtimeCredentials() else if (migrated) {
                 try {
                     realtimeController.credentials()
                 } catch (e: VoiceModelError) {
@@ -1972,6 +1991,7 @@ class CallRuntime(private val app: MikaApp) {
         configuring -> "AI 电话正在配置"
         !armed || !access.hasPhonePermissions() -> "请先准备 AI 电话"
         shell == null -> "Mika 内置助手未连接"
+        standardCalls && cascade.blocker(CallUse.Phone) != null -> "请先在语音设置里选好通话的听写、朗读和思考模型"
         !activeVoiceProfile().credentialsConfigured -> "请先配置实时语音凭据"
         !activeVoiceProfile().connectionTested -> "请先测试实时语音连接"
         !(notificationReady ?: notifications.ready()) -> "请允许 AI 电话通知，以便取消或接管"
@@ -2269,6 +2289,7 @@ class CallRuntime(private val app: MikaApp) {
     private class CallProblem(message: String) : Exception(message)
 
     private companion object {
+        const val STANDARD_PROFILE_ID = "standard"
         const val MAX_MEDIA_DIAGNOSTICS = 4
         const val STANDBY_START_MS = 5_000L
         const val MUTE_ACK_MS = 2_000L
