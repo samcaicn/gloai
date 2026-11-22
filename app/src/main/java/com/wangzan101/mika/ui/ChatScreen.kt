@@ -1185,7 +1185,6 @@ internal fun WorkBlock(ex: Exchange, steers: List<String>, reduceMotion: Boolean
     val elapsed = rememberElapsed(ex.startedAt)
     Column(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
         TurnMeta(elapsed, tokens = null)
-        Spacer(Modifier.height(3.dp))
         Row(
             Modifier.fillMaxWidth().heightIn(min = 24.dp),
             verticalAlignment = Alignment.Top,
@@ -1226,7 +1225,12 @@ internal fun WorkBlock(ex: Exchange, steers: List<String>, reduceMotion: Boolean
 @Composable
 private fun TurnMeta(elapsed: Long?, tokens: Long?) {
     val c = MikaTheme.colors
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+    // 和下面的正文/进展拉开距离:正文行高会把第一行顶到行框上沿,不留空就会贴住这一行
+    Row(
+        Modifier.padding(bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
         Text(ChatCopy.APP_TITLE, style = TurnNameText, color = c.ink)
         if (elapsed != null) {
             Text("·", style = ClockText, color = c.ink3)
