@@ -8,6 +8,7 @@ import com.wangzan101.mika.core.teach.TeachEventKind
 import com.wangzan101.mika.core.teach.TeachObservation
 import com.wangzan101.mika.core.teach.TeachPhase
 import com.wangzan101.mika.core.teach.TeachPublish
+import com.wangzan101.mika.core.teach.TeachRoute
 import com.wangzan101.mika.core.teach.TeachSession
 import com.wangzan101.mika.core.teach.TeachSkill
 import com.wangzan101.mika.core.teach.TeachTrace
@@ -49,7 +50,7 @@ class TeachFilesTest {
         assertTrue(raw.contains("筛选"))
 
         val skills = PersonalSkillFiles(File(tmp.root, "skills-root"))
-        val skill = TeachDraft.draft(session, null, emptySet(), null, emptySet(), { false }, 5L)
+        val skill = TeachDraft.draft(session, TeachRoute.fold(session.steps, emptySet(), emptySet()) { it }, null, emptySet(), null, emptySet(), { false }, 5L)
         assertNotNull(skill)
         skill!!
         assertEquals(SkillStatus.pending, skill.status)

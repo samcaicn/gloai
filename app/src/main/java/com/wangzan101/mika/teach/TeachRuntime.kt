@@ -13,6 +13,7 @@ import com.wangzan101.mika.core.teach.TeachEdit
 import com.wangzan101.mika.core.teach.TeachObservation
 import com.wangzan101.mika.core.teach.TeachPhase
 import com.wangzan101.mika.core.teach.TeachPublish
+import com.wangzan101.mika.core.teach.TeachRoute
 import com.wangzan101.mika.core.teach.TeachSession
 import com.wangzan101.mika.core.teach.TeachSkill
 import com.wangzan101.mika.core.teach.TeachTrace
@@ -252,7 +253,8 @@ class TeachRuntime(
             skills.get(name) != null || skills.pending().any { it.name == name } || bundled.items.any { it.name == name }
         }
         return TeachDraft.draft(
-            snapshot, model, knownToolNames(), knownTools().nameOf(Verb.RunBundledScript), bundled.runnableScripts(), taken,
+            snapshot, TeachRoute.fold(snapshot.steps, emptySet(), emptySet()) { it },
+            model, knownToolNames(), knownTools().nameOf(Verb.RunBundledScript), bundled.runnableScripts(), taken,
             System.currentTimeMillis(),
         )
     }
