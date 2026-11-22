@@ -17,7 +17,10 @@ class FolderFilesTest {
         var bytes = "日语学习：每天练习十分钟。".toByteArray()
         var expected: String? = null
         var writes = 0
-        override fun list(path: String?) = FolderPage(listOf(FolderEntry("/folders/test", "学习笔记", true, true)))
+        override fun list(path: String?) = FolderPage(listOf(
+            FolderEntry("/folders/test", "Mika", true, true, displayLocation = "/storage/emulated/0/Download/Mika"),
+            FolderEntry("/folders/other", "Mika", true, false),
+        ))
         override fun read(path: String) = bytes
         override fun write(path: String, content: ByteArray, expectedHash: String?, append: Boolean): ByteArray {
             writes++; expected = expectedHash; bytes = if (append) bytes + content else content; return bytes
@@ -28,6 +31,16 @@ class FolderFilesTest {
         RunSpec(RunId("test"), "test", "test", provenance = RunProvenance(origin, attendance), readOnly = readOnly)
     private fun dispatcher(spec: RunSpec = spec()) = toolDispatcher(FakeScreen(), web = com.wangzan101.mika.core.cap.web.FakeWebPort(), sandbox = sandbox, runSpec = spec, workspace = { "notes" })
     private fun call(name: String, args: JsonObject) = Part.ToolCall("test", name, args.toString())
+
+    @Test fun locationIdentifiesTheGrantWhileItsToolPathRemainsOpaque() = runTest {
+        val result = dispatcher().execute(call("list_folder_files", buildJsonObject {}), ActionPass()).content
+        val (local, other) = result.getValue("entries").jsonArray.map { it.jsonObject }
+        assertEquals(local["name"], other["name"])
+        assertEquals(JsonPrimitive("/storage/emulated/0/Download/Mika"), local["displayLocation"])
+        assertEquals(JsonPrimitive("/folders/test"), local["path"])
+        assertNull(other["displayLocation"])
+        assertEquals(JsonPrimitive("/folders/other"), other["path"])
+    }
 
     @Test fun folderGuidanceOnlyAppearsWhenItsToolIsOffered() {
         val text = com.wangzan101.mika.core.prompt.Prompts.capability("sandbox")
@@ -70,7 +83,7 @@ class FolderFilesTest {
         val r = dispatcher().execute(call("share_file", buildJsonObject {
             put("path", "/workspace/summary.md"); put("folderPath", "/folders/test/summary.md")
         }), ActionPass()).content
-        assertEquals(JsonPrimitive(true), r["ok"])
+        assertEquals(r.toString(), JsonPrimitive(true), r["ok"])
         assertEquals(JsonPrimitive("/folders/test/summary.md"), r["savedAs"])
         assertTrue(fake.shared.isEmpty())
         assertEquals(1, port.writes)

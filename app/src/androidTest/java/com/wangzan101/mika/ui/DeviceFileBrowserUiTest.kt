@@ -13,11 +13,11 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wangzan101.mika.ChineseUi
-import com.wangzan101.mika.core.cap.devicefiles.DeviceFileEntry
-import com.wangzan101.mika.core.cap.devicefiles.DeviceFileImport
+import com.wangzan101.mika.core.workspace.DeviceFileEntry
+import com.wangzan101.mika.core.workspace.DeviceFileImport
 import com.wangzan101.mika.core.cap.devicefiles.DeviceFilePage
-import com.wangzan101.mika.core.cap.devicefiles.DeviceFileSearchQuery
-import com.wangzan101.mika.core.cap.devicefiles.DeviceFileSearchResult
+import com.wangzan101.mika.core.workspace.DeviceFileSearchQuery
+import com.wangzan101.mika.core.workspace.DeviceFileSearchResult
 import com.wangzan101.mika.core.cap.devicefiles.DeviceFilesPort
 import com.wangzan101.mika.task.DeviceImportRecord
 import com.wangzan101.mika.ui.theme.MikaTheme

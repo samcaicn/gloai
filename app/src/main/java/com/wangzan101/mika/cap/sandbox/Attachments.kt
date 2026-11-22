@@ -91,19 +91,35 @@ object Attachments {
     internal suspend fun importOne(
         workspace: File, gate: WorkspaceFileGate, base: String,
         freeBytes: () -> Long, workspaceBytes: () -> Long, open: () -> InputStream,
+        onCopied: (Pair<String, Long>) -> Unit = {},
         logFailure: (Exception) -> Unit = {},
     ): ImportResult {
-        return try {
+        fun failure(e: Exception): ImportResult {
+            logFailure(e)
+            val reason = (e as? AttachmentLimitException)?.reason ?: AttachmentFailureReason.IO_ERROR
+            return ImportResult(emptyList(), listOf(base), listOf(AttachmentFailure(base, reason)))
+        }
+        val copied = try {
             roomFailure(freeBytes, workspaceBytes)?.let { throw AttachmentLimitException(it) }
-            val entry = copyOne(workspace, gate, base, { roomFailure(freeBytes, workspaceBytes) }, open)
-                .use { it.entry() }
-            ImportResult(listOf(entry), emptyList())
+            copyOne(workspace, gate, base, { roomFailure(freeBytes, workspaceBytes) }, open)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            logFailure(e)
-            val reason = (e as? AttachmentLimitException)?.reason ?: AttachmentFailureReason.IO_ERROR
-            ImportResult(emptyList(), listOf(base), listOf(AttachmentFailure(base, reason)))
+            return failure(e)
+        }
+        return copied.use { file ->
+            try {
+                currentCoroutineContext().ensureActive()
+                val entry = try { file.entry() } catch (e: Exception) {
+                    file.delete()
+                    return@use failure(e)
+                }
+                onCopied(entry)
+                ImportResult(listOf(entry), emptyList())
+            } catch (e: Throwable) {
+                file.delete()
+                throw e
+            }
         }
     }
 

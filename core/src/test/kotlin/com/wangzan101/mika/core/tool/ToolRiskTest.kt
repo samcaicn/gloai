@@ -97,9 +97,9 @@ class ToolRiskTest {
             image = NoImagePort, imageSaveEnabled = true, root = object : com.wangzan101.mika.core.cap.root.RootPort {
             override suspend fun run(command: String, timeoutMs: Long) = com.wangzan101.mika.core.cap.root.RootRun.Unavailable
         }, deviceFiles = object : com.wangzan101.mika.core.cap.devicefiles.DeviceFilesPort {
-            override suspend fun search(query: com.wangzan101.mika.core.cap.devicefiles.DeviceFileSearchQuery): com.wangzan101.mika.core.cap.devicefiles.DeviceFileSearchResult = error("read call reached device files")
+            override suspend fun search(query: com.wangzan101.mika.core.workspace.DeviceFileSearchQuery): com.wangzan101.mika.core.workspace.DeviceFileSearchResult = error("read call reached device files")
             override suspend fun list(path: String?, cursor: String?, limit: Int): com.wangzan101.mika.core.cap.devicefiles.DeviceFilePage = error("read call reached device files")
-            override suspend fun importFile(path: String, workspace: String): com.wangzan101.mika.core.cap.devicefiles.DeviceFileImport = error("read call reached device files")
+            override suspend fun importFile(path: String, workspace: String): com.wangzan101.mika.core.workspace.DeviceFileImport = error("read call reached device files")
         }, phoneCalls = object : PhoneCallPort {
             override suspend fun state() = JsonObject(emptyMap())
             override suspend fun dial(number: String, simId: String?, task: PhoneCallTask?) = JsonObject(emptyMap())

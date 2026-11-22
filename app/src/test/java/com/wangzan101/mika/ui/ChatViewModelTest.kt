@@ -376,7 +376,7 @@ class ChatViewModelTest {
             assertEquals("a", id)
             gate.await()
             if (path.contains("bad")) throw IllegalStateException()
-            com.wangzan101.mika.core.cap.devicefiles.DeviceFileImport("/workspace/inbox/good.pdf", 12)
+            com.wangzan101.mika.core.workspace.DeviceFileImport("/workspace/inbox/good.pdf", 12)
         }
         runCurrent()
         assertTrue(vm.ui.value.importing)
@@ -400,7 +400,7 @@ class ChatViewModelTest {
         val copied = mutableListOf<String>()
         vm.importDeviceAttachments("a", listOf("/one", "/two")) { path, _ ->
             copied += path
-            com.wangzan101.mika.core.cap.devicefiles.DeviceFileImport("/workspace/inbox/one", 1)
+            com.wangzan101.mika.core.workspace.DeviceFileImport("/workspace/inbox/one", 1)
         }
         runCurrent()
         assertEquals(listOf("/one"), copied)
@@ -417,7 +417,7 @@ class ChatViewModelTest {
         vm.openConversation("a")
         vm.importDeviceAttachments("a", listOf("/file")) { _, _ ->
             gate.await()
-            com.wangzan101.mika.core.cap.devicefiles.DeviceFileImport("/workspace/inbox/file", 1)
+            com.wangzan101.mika.core.workspace.DeviceFileImport("/workspace/inbox/file", 1)
         }
         runCurrent()
         vm.deleteConversation("a")

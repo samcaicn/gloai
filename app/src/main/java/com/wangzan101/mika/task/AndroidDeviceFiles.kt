@@ -2,41 +2,35 @@ package com.wangzan101.mika.task
 
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
-import android.system.Os
-import android.system.OsConstants
-import android.util.Log
 import com.wangzan101.mika.cap.phone.shell.HelperHub
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
-import com.wangzan101.mika.cap.sandbox.Attachments
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.settings.DeviceDirectory
 import com.wangzan101.mika.settings.DeviceDirectoryStore
 import com.wangzan101.mika.core.cap.devicefiles.DeviceDirectoryHint
-import com.wangzan101.mika.core.cap.devicefiles.DeviceFileEntry
-import com.wangzan101.mika.core.cap.devicefiles.DeviceFileImport
+import com.wangzan101.mika.core.workspace.DeviceFileEntry
+import com.wangzan101.mika.core.workspace.DeviceFileImport
 import com.wangzan101.mika.core.cap.devicefiles.DeviceFilePage
 import com.wangzan101.mika.core.cap.devicefiles.DeviceFilesPort
-import com.wangzan101.mika.core.cap.devicefiles.DeviceFileSearchQuery
-import com.wangzan101.mika.core.cap.devicefiles.DeviceFileSearchResult
+import com.wangzan101.mika.core.workspace.DeviceFileSearchQuery
+import com.wangzan101.mika.core.workspace.DeviceFileSearchResult
 import com.wangzan101.mika.core.workspace.SandboxError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.io.File
-import java.util.UUID
 
 /** Read device files through the shell helper and copy them into the conversation workspace. */
 internal class AndroidDeviceFiles(
     private val hub: HelperHub,
-    private val dirs: SandboxDirs,
-    private val sandbox: AndroidSandbox,
     private val directoryStore: DeviceDirectoryStore,
-    private val imports: DeviceImportStore,
-    private val resolveWorkspace: (String) -> WorkspaceKey = WorkspaceKey::parse,
-    private val conversationIdFor: (String) -> String = { it },
+    private val copies: DeviceWorkspaceImports,
 ) : DeviceFilesPort {
+    constructor(hub: HelperHub, dirs: SandboxDirs, sandbox: AndroidSandbox, directoryStore: DeviceDirectoryStore,
+        imports: DeviceImportStore, resolveWorkspace: (String) -> WorkspaceKey = WorkspaceKey::parse,
+        conversationIdFor: (String) -> String = { it },
+    ) : this(hub, directoryStore, DeviceWorkspaceImports(dirs, sandbox::freeBytes, imports, resolveWorkspace, conversationIdFor))
+
     private fun hint(directory: DeviceDirectory): DeviceDirectoryHint {
         val status = try { hub.listFiles(directory.path, null, 1).getString("status") ?: "helper_error" }
         catch (_: Exception) { "helper_unavailable" }
@@ -99,81 +93,16 @@ internal class AndroidDeviceFiles(
         DeviceFileSearchResult(entries, response.getInt("visited"), response.getBoolean("truncated"), response.getString("reason"))
     }
 
-    override suspend fun importFile(path: String, workspace: String): DeviceFileImport = dirs.tree.shared {
-        importLock.withLock { withContext(Dispatchers.IO) {
+    override suspend fun importFile(path: String, workspace: String): DeviceFileImport =
+        copies.fromHelper(path, workspace) {
             val response = callHelper { hub.openFile(path) }
             requireOk(response)
             @Suppress("DEPRECATION")
-            val descriptor = response.getParcelable<ParcelFileDescriptor>("fd")
+            response.getParcelable<ParcelFileDescriptor>("fd")
                 ?: throw failure("helper_error", "Phone helper did not return a file.")
-            descriptor.use { fd ->
-                val metadata = metadata(fd)
-                val key = resolveWorkspace(workspace)
-                val convId = conversationIdFor(workspace)
-                val records = try { imports.listByWorkspace(key.wire) } catch (e: Exception) {
-                    throw failure("record_error", "Could not read device import records.")
-                }
-                if (metadata != null) {
-                    val existing = records.asReversed().firstOrNull { record ->
-                        record.sourcePath == path && record.size == metadata.size &&
-                            record.sourceModifiedSeconds == metadata.seconds && record.sourceModifiedNanos == metadata.nanos &&
-                            readableCopy(key, record)
-                    }
-                    if (existing != null) return@withContext DeviceFileImport(existing.workspacePath, existing.size)
-                }
-                val root = dirs.workspace(key)
-                val base = Attachments.safeName(File(path).name)
-                val result = Attachments.importOne(
-                    root,
-                    dirs.gate,
-                    base,
-                    sandbox::freeBytes,
-                    { AndroidSandbox.treeBytes(root.toPath()) },
-                    { ParcelFileDescriptor.AutoCloseInputStream(ParcelFileDescriptor.dup(fd.fileDescriptor)) },
-                    logFailure = { e -> Log.w(TAG, "Device file import failed for \"$base\" (${e.javaClass.simpleName}: ${e.message})") },
-                )
-                val entry = result.added.singleOrNull()
-                if (entry == null) {
-                    val reason = result.failures.firstOrNull()?.reason?.name?.lowercase() ?: "io_error"
-                    throw failure(reason, "Could not copy the device file to the workspace ($reason).")
-                }
-                // Only retain metadata when the open source stayed unchanged throughout the copy.
-                val stable = metadata?.takeIf { it == metadata(fd) && it.size == entry.second }
-                try {
-                    imports.add(DeviceImportRecord(UUID.randomUUID().toString(), convId, path, entry.first, entry.second,
-                        System.currentTimeMillis(), stable?.seconds, stable?.nanos, workspaceId = key.wire))
-                } catch (e: Exception) {
-                    throw failure("record_error", "The file was copied, but its import record could not be saved.")
-                }
-                DeviceFileImport(entry.first, entry.second)
-            }
-        } }
-    }
-
-    private data class SourceMetadata(val size: Long, val seconds: Long, val nanos: Long)
-
-    private fun metadata(fd: ParcelFileDescriptor): SourceMetadata? = try {
-        val stat = Os.fstat(fd.fileDescriptor)
-        if (!OsConstants.S_ISREG(stat.st_mode) || stat.st_size < 0) null
-        else SourceMetadata(stat.st_size, stat.st_mtim.tv_sec, stat.st_mtim.tv_nsec)
-    } catch (_: Exception) { null }
-
-    private fun readableCopy(key: WorkspaceKey, record: DeviceImportRecord): Boolean {
-        val prefix = "/workspace/inbox/"
-        if (!record.workspacePath.startsWith(prefix)) return false
-        val name = record.workspacePath.removePrefix(prefix)
-        if (name.isEmpty() || '/' in name || name == "." || name == "..") return false
-        return try {
-            dirs.gate.openRead(dirs.workspace(key), "inbox/$name").use {
-                it.currentSize() == record.size && (record.size == 0L || it.read(0, 1).size == 1)
-            }
-        } catch (_: Exception) { false }
-    }
+        }
 
     companion object {
-        private const val TAG = "AndroidDeviceFiles"
-        private val importLock = Mutex()
-
         /** Remove any leftover staging directory left by builds that used staged hard links. */
         suspend fun cleanupStaging(dirs: SandboxDirs) = withContext(Dispatchers.IO) {
             File(dirs.root.parentFile, "device-import-staging").takeIf { it.exists() }?.deleteRecursively()

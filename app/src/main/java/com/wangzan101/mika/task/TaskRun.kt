@@ -18,6 +18,7 @@ import com.wangzan101.mika.core.shell.HelperRestart
 import com.wangzan101.mika.ui.StatusCopy
 import com.wangzan101.mika.cap.sandbox.SandboxState
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
+import com.wangzan101.mika.cap.sandbox.GrantedFolderFiles
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.chat.SharedFile
@@ -87,6 +88,8 @@ import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.RunSpec
 import com.wangzan101.mika.core.run.RunProvenance
 import com.wangzan101.mika.core.run.RunOrigin
+import com.wangzan101.mika.core.run.Attendance
+import com.wangzan101.mika.core.cap.sandbox.FolderFileImporter
 import com.wangzan101.mika.core.wechat.explicitWechatOwnerRequest
 import com.wangzan101.mika.wechat.AndroidWechatOwnerPort
 import com.wangzan101.mika.core.child.ChildAgentRunner
@@ -1125,6 +1128,12 @@ class TaskRun(
             val selfPort = if (provenance.origin == RunOrigin.Ui && !conditionCheck) {
                 (service.application as? MikaApp)?.let { app -> com.wangzan101.mika.self.AndroidSelfPort(app, conversationId, key) }
             } else null
+            val deviceImports = if (provenance.origin == RunOrigin.Ui &&
+                provenance.attendance != Attendance.Unattended && !runSpec.readOnly) {
+                DeviceWorkspaceImports(SandboxDirs(service), sandbox::freeBytes, DeviceImportStore.get(service),
+                    resolveWorkspace = { workspaceKey }, conversationIdFor = { conversationId })
+            } else null
+            val folders = sandbox.folderFiles as? GrantedFolderFiles
             val tools = toolDispatcher(privatePhone, model.capabilities.vision, catalog, recordFrames = true,
                 vision = vision?.let {
                     VisionService(it, BitmapImageOps, fallbacks = visionFallbacks, onModelSwitch = { from, to, _ ->
@@ -1163,10 +1172,11 @@ class TaskRun(
                 // 同项目对话共用 p:<projectId>,其余按对话隔离
                 sandbox = sandbox, workspace = { workspaceKey.wire },
                 sandboxBudgetMs = sandboxBudgetMs,
-                deviceFiles = if (provenance.origin == RunOrigin.Ui && !conditionCheck && FeatureFlags.get(service).deviceFiles()) {
-                    AndroidDeviceFiles(phoneServices.hub, com.wangzan101.mika.cap.sandbox.SandboxDirs(service), sandbox,
-                        com.wangzan101.mika.settings.DeviceDirectoryStore.get(service), DeviceImportStore.get(service),
-                        resolveWorkspace = { workspaceKey }, conversationIdFor = { conversationId })
+                deviceFiles = if (deviceImports != null && FeatureFlags.get(service).deviceFiles()) {
+                    AndroidDeviceFiles(phoneServices.hub, com.wangzan101.mika.settings.DeviceDirectoryStore.get(service), deviceImports)
+                } else null,
+                folderFileImporter = if (deviceImports != null && folders != null) {
+                    FolderFileImporter { path, workspace -> deviceImports.fromFolder(path, workspace, folders::openForImport) }
                 } else null,
                 audio = audioPort,
                 image = imagePort,

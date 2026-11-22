@@ -1,13 +1,24 @@
 package com.wangzan101.mika.core.cap.sandbox
 
+import com.wangzan101.mika.core.workspace.DeviceFileImport
+import com.wangzan101.mika.core.workspace.DeviceFileSearchQuery
+import com.wangzan101.mika.core.workspace.DeviceFileSearchResult
 import com.wangzan101.mika.core.workspace.SandboxError
 import java.security.MessageDigest
 
 /** Opaque /folders paths are tool identifiers, never Linux mount points or host paths. */
-data class FolderEntry(val path: String, val name: String, val directory: Boolean, val writable: Boolean, val size: Long? = null)
+data class FolderEntry(val path: String, val name: String, val directory: Boolean, val writable: Boolean,
+                       val size: Long? = null, val displayLocation: String? = null)
 data class FolderPage(val entries: List<FolderEntry>, val truncated: Boolean = false)
+
+fun interface FolderFileImporter {
+    suspend fun importFile(path: String, workspace: String): DeviceFileImport
+}
+
 interface FolderFiles {
     fun list(path: String?): FolderPage
+    suspend fun search(query: DeviceFileSearchQuery): DeviceFileSearchResult =
+        throw SandboxError("unsupported", "This folder provider does not support search.", true)
     fun read(path: String): ByteArray
     /** Null expectedHash creates only; an existing file requires the hash returned by read_file. */
     fun write(path: String, content: ByteArray, expectedHash: String?, append: Boolean): ByteArray

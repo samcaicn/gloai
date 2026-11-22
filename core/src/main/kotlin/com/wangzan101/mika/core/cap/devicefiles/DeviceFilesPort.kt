@@ -1,22 +1,12 @@
 package com.wangzan101.mika.core.cap.devicefiles
 
-/** A device-visible entry. [path] is an opaque identifier understood by this port. */
-data class DeviceFileEntry(val name: String, val path: String, val isDirectory: Boolean, val size: Long? = null, val modifiedAt: Long? = null)
+import com.wangzan101.mika.core.workspace.DeviceFileEntry
+import com.wangzan101.mika.core.workspace.DeviceFileImport
+import com.wangzan101.mika.core.workspace.DeviceFileSearchQuery
+import com.wangzan101.mika.core.workspace.DeviceFileSearchResult
+
 data class DeviceFilePage(val entries: List<DeviceFileEntry>, val nextCursor: String? = null)
-data class DeviceFileImport(val path: String, val size: Long)
 data class DeviceDirectoryHint(val path: String, val name: String, val description: String, val source: String, val status: String)
-data class DeviceFileSearchQuery(
-    val path: String,
-    val name: String?,
-    val extension: String?,
-    val modifiedAfter: Long?,
-    val modifiedBefore: Long?,
-    val maxDepth: Int,
-    val maxEntries: Int,
-    val timeoutMs: Int,
-    val includeDirectories: Boolean = false,
-)
-data class DeviceFileSearchResult(val entries: List<DeviceFileEntry>, val visited: Int, val truncated: Boolean, val reason: String? = null)
 
 /**
  * Platform access to user-visible device files. Null path lists accessible roots.
