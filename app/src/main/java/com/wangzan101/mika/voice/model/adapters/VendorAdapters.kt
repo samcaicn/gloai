@@ -20,7 +20,10 @@ import com.wangzan101.mika.voice.vendors.VendorTts
 import com.wangzan101.mika.voice.vendors.VendorTtsModel
 
 /** Recognition through a vendor's own API: records (or is fed) one utterance, uploads it on release. */
-class VendorSttAdapter(override val protocol: SttProtocol) : SttAdapter {
+class VendorSttAdapter(
+    override val protocol: SttProtocol,
+    private val sessionFactory: SttSessionFactory? = null,
+) : SttAdapter {
     init {
         require(protocol in PROTOCOLS) { "Not a vendor STT protocol" }
     }
@@ -32,9 +35,13 @@ class VendorSttAdapter(override val protocol: SttProtocol) : SttAdapter {
 
     override fun start(context: Context, model: ResolvedVoiceModel, language: String?, hooks: SttHooks): SpeechSession {
         spec(model)
-        val recognizer = recognizer(model)
         val tag = languageTag(context, language)
-        return categorizedSession { ProviderSpeech(hooks.recorder ?: PcmRecorder(), { wav -> recognizer.recognize(wav, tag) }) }
+        return categorizedSession {
+            sessionFactory?.invoke(context, model, tag, hooks) ?: run {
+                val recognizer = recognizer(model)
+                ProviderSpeech(hooks.recorder ?: PcmRecorder(), { wav -> recognizer.recognize(wav, tag) })
+            }
+        }
     }
 
     internal fun recognizer(model: ResolvedVoiceModel): UtteranceRecognizer {
