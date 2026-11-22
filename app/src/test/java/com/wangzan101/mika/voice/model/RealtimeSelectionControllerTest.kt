@@ -238,6 +238,48 @@ class RealtimeSelectionControllerTest {
         assertFalse(controller.connectionTested(volcRef))
         assertFalse(controller.isAudioVerified(volcRef, CallAudioMode.DIRECT, "device-one"))
     }
+
+    @Test
+    fun `calls follow the shared selection until given their own model and voice`() {
+        val catalog = migratedCatalog()
+        val controller = voiceTestEnvironment(catalog).realtime
+        controller.select(volcRef)
+        assertTrue(controller.callFollows)
+        assertEquals(volcRef, controller.callCurrent())
+        assertEquals("speaker_a", controller.callProfile().speaker)
+
+        controller.selectForCalls(volcRef, "speaker_b")
+        assertFalse(controller.callFollows)
+        assertEquals("speaker_b", controller.callProfile().speaker)
+        assertEquals("speaker_a", controller.profile(volcRef).speaker)
+
+        controller.select(openAiRef)
+        assertEquals(volcRef, controller.callCurrent())
+
+        controller.selectForCalls(null, "ignored")
+        assertTrue(controller.callFollows)
+        assertEquals(openAiRef, controller.callCurrent())
+        assertEquals("", catalog.state.value.selections.callSpeaker)
+    }
+
+    @Test
+    fun `deleting the call-only model makes calls follow again`() {
+        val catalog = migratedCatalog()
+        val controller = voiceTestEnvironment(catalog).realtime
+        controller.select(volcRef)
+        controller.selectForCalls(openAiRef, "verse")
+        catalog.deleteModel(openAiRef)
+        assertTrue(controller.callFollows)
+        assertEquals(volcRef, controller.callCurrent())
+    }
+
+    @Test
+    fun `calls cannot pick an unknown model`() {
+        val controller = voiceTestEnvironment(migratedCatalog()).realtime
+        assertThrows(VoiceModelError::class.java) {
+            controller.selectForCalls(VoiceModelRef("nope", "nope", VoiceCapability.REALTIME))
+        }
+    }
 }
 
 /** Counts secret reads so display paths can be pinned to never decrypt. */
@@ -252,4 +294,5 @@ private class DecryptionTrackingOwnedSource : VoiceOwnedAccountSource {
 
     override fun credentialsConfigured(secretId: String): Boolean = true
     override fun configurationToken(secretId: String): String = "ciphertext-revision"
+
 }

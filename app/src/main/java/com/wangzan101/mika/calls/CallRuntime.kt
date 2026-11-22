@@ -498,9 +498,9 @@ class CallRuntime(private val app: MikaApp) {
     fun activeVoiceProfile(): CallVoiceProfile {
         val config = settings.state.value
         if (realtimeController.migrated) {
-            val ref = realtimeController.current()
+            val ref = realtimeController.callCurrent()
             if (ref != null) {
-                return runCatching { realtimeController.profile(ref) }.getOrElse {
+                return runCatching { realtimeController.callProfile() }.getOrElse {
                     CallVoiceProfile(id = ref.modelId, name = ref.modelId, credentialsConfigured = false, connectionTested = false)
                 }
             }
@@ -541,7 +541,7 @@ class CallRuntime(private val app: MikaApp) {
 
     /** Mirrors the catalog verification state into [CallSettings] so every gate reads one source. */
     private fun syncRealtimeState(mode: CallAudioMode = settings.state.value.audioMode) {
-        val ref = realtimeController.current()
+        val ref = realtimeController.callCurrent()
         runCatching {
             synchronized(settings) {
                 settings.mirrorRealtimeState(
@@ -554,7 +554,7 @@ class CallRuntime(private val app: MikaApp) {
 
     /** Legacy connection path uses the plain provider; after migration the catalog creates it. */
     private fun realtimeProvider(): CallRealtimeProvider =
-        if (realtimeController.migrated) realtimeController.provider() else ProfileRealtimeProvider()
+        if (realtimeController.migrated) realtimeController.callProvider() else ProfileRealtimeProvider()
 
     suspend fun selectVoiceProfile(id: String): CallActionResult = onMain {
         if (work != null || lockedDial != null) return@onMain fail("请先结束当前通话或锁屏拨出安排")
@@ -586,30 +586,37 @@ class CallRuntime(private val app: MikaApp) {
     /** 迁移后语音目录的快照:通话设置页从中列出能做实时通话的模型、标出当前选中的那个。 */
     internal val realtimeCatalog: StateFlow<VoiceCatalogSnapshot> get() = realtimeController.catalog.state
 
+    /** 电话是否跟随应用里「语音通话」的选择。 */
+    internal val callVoiceFollows: Boolean get() = realtimeController.callFollows
+
     /**
-     * 迁移后选择通话用的实时语音模型:目录里任何声明了实时能力的模型都能选。
-     * 换模型后自动接听关掉,要用户在新模型上重新确认(和旧版切换配置一致);凭据与验证镜像由目录同步。
+     * 迁移后选电话用的实时语音:[ref] 为 null 跟随「语音通话」,否则电话单独用 [ref](可带电话专用音色 [speaker])。
+     * 实际用的模型变了就关掉自动接听,要用户在新模型上重新确认;凭据与验证镜像由目录同步。
      */
-    suspend fun selectRealtimeModel(ref: VoiceModelRef): CallActionResult = onMain {
+    suspend fun selectCallVoice(ref: VoiceModelRef?, speaker: String = ""): CallActionResult = onMain {
         if (work != null || lockedDial != null) return@onMain fail("请先结束当前通话或锁屏拨出安排")
         if (!realtimeController.migrated) return@onMain fail("实时语音配置尚未迁移")
-        val model = runCatching { realtimeController.model(ref) }.getOrNull()
-            ?: return@onMain fail("实时语音模型不存在")
-        realtimeController.select(ref)
+        val before = realtimeController.callCurrent()
+        try {
+            realtimeController.selectForCalls(ref, speaker)
+        } catch (_: VoiceModelError) {
+            return@onMain fail("实时语音模型不存在")
+        }
+        val now = realtimeController.callCurrent()
         val config = settings.state.value
         settings.save(config.copy(
-            credentialsConfigured = realtimeController.credentialsConfigured(ref),
-            audioVerified = realtimeController.isAudioVerified(ref, config.audioMode),
-            autoAnswer = false,
+            credentialsConfigured = now?.let { realtimeController.credentialsConfigured(it) } ?: false,
+            audioVerified = now?.let { realtimeController.isAudioVerified(it, config.audioMode) } ?: false,
+            autoAnswer = config.autoAnswer && now == before,
         ))
         publish()
-        ok("已选择${model.displayName}，自动接听需要重新开启")
+        ok(if (now == before) "电话语音已保存" else "电话语音已更换，自动接听需要重新开启")
     }
 
     suspend fun saveVoiceProfile(profile: CallVoiceProfile, credentials: VolcRealtimeCredentials? = null): CallActionResult = onMain {
         if (work != null || lockedDial != null) return@onMain fail("请先结束当前通话或锁屏拨出安排")
         if (realtimeController.migrated) {
-            val ref = realtimeController.current() ?: return@onMain fail("请先选择实时语音模型")
+            val ref = realtimeController.callCurrent() ?: return@onMain fail("请先选择实时语音模型")
             val model = runCatching { realtimeController.model(ref) }.getOrNull()
                 ?: return@onMain fail("实时语音模型不存在")
             val binding = model.realtime ?: return@onMain fail("实时语音模型不支持通话")
@@ -659,7 +666,7 @@ class CallRuntime(private val app: MikaApp) {
                 val session = provider.connect(CallVoiceProfile(), VolcRealtimeCredentials(), "连接测试。不要生成语音。")
                 session.close()
                 realtimeController.markConnectionTested(ref, true)
-                if (realtimeController.current() == ref) publish()
+                if (realtimeController.callCurrent() == ref) publish()
                 ok("实时语音服务连接成功；手机双向音频仍需通过测试电话验证")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
@@ -699,7 +706,7 @@ class CallRuntime(private val app: MikaApp) {
         if (work != null || lockedDial != null) return@onMain fail("请先结束当前通话或锁屏拨出安排")
         val config = settings.state.value
         if (realtimeController.migrated) {
-            val ref = realtimeController.current() ?: return@onMain fail("请先选择实时语音模型")
+            val ref = realtimeController.callCurrent() ?: return@onMain fail("请先选择实时语音模型")
             realtimeController.markAudioVerified(ref, config.audioMode, verified)
             settings.save(config.copy(audioVerified = verified, autoAnswer = verified && config.autoAnswer))
             publish()
@@ -1276,7 +1283,7 @@ class CallRuntime(private val app: MikaApp) {
             val migrated = realtimeController.migrated
             val provider = if (migrated) {
                 try {
-                    realtimeController.provider()
+                    realtimeController.callProvider()
                 } catch (e: VoiceModelError) {
                     throw CallProblem("实时语音配置不可用，请检查语音模型")
                 }

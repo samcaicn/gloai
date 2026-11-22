@@ -122,6 +122,14 @@ class VoiceCatalogStore(
         commit { it.copy(selections = it.selections.copy(realtime = ref)) }
     }
 
+    /** Null makes calls follow the shared Realtime selection again and drops the call-only voice. */
+    @Synchronized
+    fun setCallRealtimeSelection(ref: VoiceModelRef?, speaker: String = "") {
+        commit {
+            it.copy(selections = it.selections.copy(callRealtime = ref, callSpeaker = if (ref == null) "" else speaker.trim()))
+        }
+    }
+
     @Synchronized
     fun markVerification(ref: VoiceModelRef, status: VoiceVerification, scope: String = "") {
         commit { current ->
@@ -219,6 +227,7 @@ class VoiceCatalogStore(
         validateSelection(snapshot.selections.stt, snapshot.models)
         validateOptionalSelection(snapshot.selections.tts, VoiceCapability.TTS, snapshot.models)
         validateOptionalSelection(snapshot.selections.realtime, VoiceCapability.REALTIME, snapshot.models)
+        validateOptionalSelection(snapshot.selections.callRealtime, VoiceCapability.REALTIME, snapshot.models)
         require(snapshot.verifications.map { it.ref to it.scope }.distinct().size == snapshot.verifications.size)
         snapshot.verifications.forEach { record -> validateRef(record.ref, record.ref.capability, snapshot.models) }
     }
@@ -245,6 +254,8 @@ class VoiceCatalogStore(
             stt = if (stt == null || stt == SYSTEM_STT_REF || stt.selectable(models)) selections.stt else SttSelection.Off,
             tts = selections.tts?.takeIf { it == SYSTEM_TTS_REF || it.selectable(models) },
             realtime = selections.realtime?.takeIf { it.selectable(models) },
+            callRealtime = selections.callRealtime?.takeIf { it.selectable(models) },
+            callSpeaker = if (selections.callRealtime?.selectable(models) == true) selections.callSpeaker else "",
         )
     }
 

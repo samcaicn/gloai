@@ -18,6 +18,41 @@ class RealtimeSelectionController(private val environment: VoiceModelEnvironment
         environment.catalog.setRealtimeSelection(ref)
     }
 
+    /** True while AI phone calls use the shared Realtime selection. */
+    val callFollows: Boolean get() = environment.catalog.state.value.selections.callRealtime == null
+
+    /** The Realtime model AI phone calls use: their own choice, else the shared one. */
+    fun callCurrent(): VoiceModelRef? = environment.catalog.state.value.selections.let { it.callRealtime ?: it.realtime }
+
+    /** Null follows the shared selection; otherwise calls use [ref], optionally with their own [speaker]. */
+    fun selectForCalls(ref: VoiceModelRef?, speaker: String = "") {
+        if (ref != null) requireBinding(ref)
+        environment.catalog.setCallRealtimeSelection(ref, speaker)
+    }
+
+    /** The voice calls use on [ref]: the call-only voice when calls have their own model, else the model's. */
+    private fun forCalls(model: VoiceModel): VoiceModel {
+        val selections = environment.catalog.state.value.selections
+        val speaker = selections.callSpeaker.takeIf { selections.callRealtime != null && it.isNotBlank() } ?: return model
+        val binding = model.realtime ?: return model
+        return model.copy(realtime = binding.copy(speaker = speaker))
+    }
+
+    fun callProvider(): CallRealtimeProvider {
+        val ref = callCurrent() ?: throw VoiceModelError.IncompleteConfig("No Realtime model is selected")
+        val resolved = requireModel(ref).let { it.copy(model = forCalls(it.model)) }
+        return environment.registry.realtime(resolved).create(resolved)
+    }
+
+    fun callProfile(): CallVoiceProfile {
+        val ref = callCurrent() ?: throw VoiceModelError.IncompleteConfig("No Realtime model is selected")
+        val (service, model) = requireBinding(ref)
+        return forCalls(model).realtimeProfile(
+            credentialsConfigured = environment.accountResolver.credentialsConfigured(service),
+            connectionTested = connectionTested(ref),
+        )
+    }
+
     /** Catalog lookup + capability validation; no account resolution or secret decryption. */
     private fun requireBinding(ref: VoiceModelRef): Pair<VoiceService, VoiceModel> {
         val snapshot = environment.catalog.state.value

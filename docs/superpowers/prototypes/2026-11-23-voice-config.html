@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>语音配置原型</title>
+<style>
+  :root {
+    --bg: #F7F7F8; --surface: #FFFFFF; --fill: rgba(0,0,0,.04);
+    --ink: #1C1C1E; --ink2: #5F6068; --ink3: #9A9BA3; --hair: rgba(0,0,0,.07);
+    --accent: #0A7CFF; --accent-soft: rgba(10,124,255,.10); --on-accent: #fff;
+    --ok: #1F9D55; --ok-soft: rgba(31,157,85,.12);
+    --warn: #B86E00; --warn-soft: rgba(255,159,10,.14);
+    --bad: #E5483D; --bad-soft: rgba(229,72,61,.10);
+    --page: #ECECEF; --frame: #1C1C1E; --note: #FFFFFF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E0E10; --surface: #1A1A1D; --fill: rgba(255,255,255,.06);
+      --ink: #F2F2F4; --ink2: #A4A5AD; --ink3: #6C6D75; --hair: rgba(255,255,255,.08);
+      --accent: #3D97FF; --accent-soft: rgba(61,151,255,.16);
+      --ok: #3CCF7A; --ok-soft: rgba(60,207,122,.14);
+      --warn: #FFB340; --warn-soft: rgba(255,159,10,.16);
+      --bad: #FF6961; --bad-soft: rgba(255,105,97,.14);
+      --page: #050506; --frame: #2A2A2E; --note: #1A1A1D;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E0E10; --surface: #1A1A1D; --fill: rgba(255,255,255,.06);
+    --ink: #F2F2F4; --ink2: #A4A5AD; --ink3: #6C6D75; --hair: rgba(255,255,255,.08);
+    --accent: #3D97FF; --accent-soft: rgba(61,151,255,.16);
+    --ok: #3CCF7A; --ok-soft: rgba(60,207,122,.14);
+    --warn: #FFB340; --warn-soft: rgba(255,159,10,.16);
+    --bad: #FF6961; --bad-soft: rgba(255,105,97,.14);
+    --page: #050506; --frame: #2A2A2E; --note: #1A1A1D;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+  .top h1 { font-size: 22px; margin: 0 0 4px; }
+  .top p { margin: 0 0 18px; color: var(--ink2); font-size: 14px; }
+  .principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 22px; }
+  .pr { background: var(--note); border-radius: 12px; padding: 12px 14px; font-size: 13px; color: var(--ink2); }
+  .pr b { display: block; color: var(--ink); font-size: 14px; margin-bottom: 2px; }
+  .stage { display: flex; gap: 28px; align-items: flex-start; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .tab { border: 0; background: var(--note); color: var(--ink2); border-radius: 20px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  .tab.on { background: var(--ink); color: var(--bg); }
+
+  /* phone */
+  .phone { flex: 0 0 auto; width: 372px; height: 780px; background: var(--frame); border-radius: 44px; padding: 10px; box-shadow: 0 20px 50px rgba(0,0,0,.18); }
+  .screen { width: 100%; height: 100%; background: var(--bg); border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .status { height: 30px; flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font-size: 12px; font-weight: 600; color: var(--ink); }
+  .bar { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 4px 8px 8px; }
+  .back { width: 40px; height: 40px; border: 0; background: transparent; color: var(--ink); border-radius: 20px; cursor: pointer; font-size: 22px; line-height: 1; }
+  .back:hover { background: var(--fill); }
+  .bar h2 { margin: 0; font-size: 18px; font-weight: 650; }
+  .body { flex: 1; overflow-y: auto; padding: 0 16px 28px; }
+  .body::-webkit-scrollbar { width: 0; }
+  .lead { font-size: 13px; color: var(--ink2); margin: 0 4px 12px; }
+  .label { font-size: 12.5px; color: var(--ink3); margin: 18px 6px 6px; font-weight: 600; }
+  .card { background: var(--surface); border-radius: 14px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 56px; cursor: default; position: relative; }
+  .row + .row::before { content: ""; position: absolute; top: 0; left: 52px; right: 0; height: 1px; background: var(--hair); }
+  .row.plain + .row.plain::before { left: 14px; }
+  .row.tap { cursor: pointer; }
+  .row.tap:hover { background: var(--fill); }
+  .ico { flex: 0 0 26px; height: 26px; border-radius: 8px; background: var(--fill); display: grid; place-items: center; color: var(--ink2); }
+  .ico svg { width: 16px; height: 16px; }
+  .txt { flex: 1; min-width: 0; }
+  .t { font-size: 15px; color: var(--ink); }
+  .s { font-size: 12.5px; color: var(--ink2); margin-top: 1px; }
+  .chev { color: var(--ink3); font-size: 18px; }
+  .pill { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .pill.ok { color: var(--ok); background: var(--ok-soft); }
+  .pill.warn { color: var(--warn); background: var(--warn-soft); }
+  .pill.mute { color: var(--ink2); background: var(--fill); }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .tag { font-size: 11px; padding: 1px 7px; border-radius: 6px; background: var(--fill); color: var(--ink2); }
+  .tag.good { background: var(--ok-soft); color: var(--ok); }
+  .radio { flex: 0 0 22px; height: 22px; border-radius: 50%; border: 2px solid var(--ink3); display: grid; place-items: center; }
+  .radio.on { border-color: var(--accent); }
+  .radio.on::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .mini { border: 0; background: var(--accent-soft); color: var(--accent); font-size: 12.5px; font-weight: 600; padding: 5px 10px; border-radius: 14px; cursor: pointer; white-space: nowrap; }
+  .mini:disabled { opacity: .5; cursor: default; }
+  .probe { margin: 0 14px 12px 52px; font-size: 12.5px; border-radius: 10px; padding: 8px 10px; background: var(--fill); color: var(--ink2); display: none; }
+  .probe.show { display: block; }
+  .probe.ok { background: var(--ok-soft); color: var(--ok); }
+  .foot { font-size: 12px; color: var(--ink3); margin: 10px 6px 0; }
+  .btn { display: block; width: 100%; border: 0; border-radius: 14px; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+  .btn.primary { background: var(--accent); color: var(--on-accent); }
+  .btn.ghost { background: var(--surface); color: var(--accent); }
+  .switch { flex: 0 0 44px; height: 26px; border-radius: 13px; background: var(--ink3); position: relative; cursor: pointer; transition: background .15s; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .switch.on { background: var(--ok); }
+  .switch.on::after { left: 21px; }
+  .field { padding: 10px 14px; position: relative; }
+  .field + .field::before { content: ""; position: absolute; top: 0; left: 14px; right: 0; height: 1px; background: var(--hair); }
+  .field label { display: block; font-size: 12.5px; color: var(--ink2); margin-bottom: 4px; }
+  .field input { width: 100%; border: 0; background: transparent; color: var(--ink); font-size: 15px; padding: 2px 0; outline: none; font-family: inherit; }
+  .field input::placeholder { color: var(--ink3); }
+  .seg { display: flex; gap: 6px; margin-top: 2px; }
+  .seg button { flex: 1; border: 1px solid var(--hair); background: transparent; color: var(--ink2); border-radius: 10px; padding: 7px; font-size: 13px; cursor: pointer; }
+  .seg button.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .unlock { display: flex; align-items: center; gap: 8px; padding: 12px 14px 4px; }
+  .unlock b { font-size: 14.5px; }
+  .unlock span { font-size: 12px; color: var(--ink2); }
+  .where { font-size: 12px; color: var(--accent); padding: 0 14px 12px; cursor: pointer; }
+  .preset { display: flex; gap: 12px; align-items: center; }
+  .logo { flex: 0 0 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; }
+  .slider { width: 100%; accent-color: var(--accent); }
+  .empty { background: var(--surface); border-radius: 14px; padding: 18px 16px; text-align: center; }
+  .empty .big { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .empty p { margin: 0; font-size: 13px; color: var(--ink2); }
+  .result { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; position: relative; }
+  .result + .result::before { content: ""; position: absolute; top: 0; left: 14px; right: 0; height: 1px; background: var(--hair); }
+  .mark { flex: 0 0 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+  .mark.ok { background: var(--ok-soft); color: var(--ok); }
+  .mark.no { background: var(--fill); color: var(--ink3); }
+  select.sel { border: 0; background: transparent; color: var(--ink2); font-size: 14px; font-family: inherit; text-align: right; cursor: pointer; }
+  .toast { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--bg); font-size: 13px; padding: 8px 14px; border-radius: 18px; opacity: 0; transition: all .2s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* notes */
+  .notes { flex: 1; min-width: 0; }
+  .note { background: var(--note); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+  .note h3 { margin: 0 0 8px; font-size: 16px; }
+  .note p, .note li { font-size: 13.5px; color: var(--ink2); }
+  .note ul { margin: 6px 0 0; padding-left: 18px; }
+  .note li { margin: 3px 0; }
+  .note b { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  th { color: var(--ink3); font-weight: 600; font-size: 12px; }
+  td:first-child { color: var(--ink); white-space: nowrap; }
+  td { color: var(--ink2); }
+  @media (max-width: 860px) {
+    .stage { flex-direction: column; align-items: center; }
+    .phone { width: 100%; max-width: 372px; height: 760px; }
+    .notes { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>语音配置 · 原型</h1>
+    <p>按「用途」挑选，按「服务账号」配置，用户看不到协议。左边可以点，右边是每一屏的设计说明。</p>
+  </div>
+  <div class="principles">
+    <div class="pr"><b>三个用途，三行</b>语音输入、朗读回答、语音通话。用户只回答「这件事用谁来做」。</div>
+    <div class="pr"><b>账号只填一次</b>已有的聊天账号能做的语音自动出现；其他服务用预设卡片接入，只问这家需要的字段。</div>
+    <div class="pr"><b>协议藏起来</b>协议、接口形态由预设决定。手填协议的表单只在「自定义（高级）」里。</div>
+    <div class="pr"><b>每项就地能试</b>选项旁边直接「试一句 / 试听 / 连接」，用不了时写明原因，并给一步引导。</div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="screen"></div></div>
+    <div class="notes" id="notes"></div>
+  </div>
+</div>
+
+<script>
+const ICON = {
+  mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  speaker: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6.4 5.2a9.1 9.1 0 0 1 12.4 12.4 2.5 2.5 0 0 1-2.5-4.3 4.1 4.1 0 0 0-5.6-5.6 2.5 2.5 0 0 1-4.3-2.5z"/></svg>',
+  key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+  phoneDevice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>',
+};
+
+/* ---------- 演示数据:用户已有的账号,以及它们能提供的语音 ---------- */
+const state = {
+  volcStt: false, volcRt: false, bailian: false,
+  stt: 'system', tts: 'system', rt: null,
+  autoRead: false, streamRead: true, speed: 1.0, voice: '默认',
+  volcPlan: 'duration',
+  rtVoice: '温柔女声',
+  /* AI 接打电话 */
+  callFollow: true, callRt: null, callVoice: '沉稳男声',
+  audioMode: 'auto', audioVerified: false, autoAnswer: false, summary: true,
+  taskRt: 'follow',
+};
+const RT_VOICES = {
+  'volc-rt': ['温柔女声', '沉稳男声', '活泼少女', '播音男声'],
+  'openai-rt': ['marin', 'cedar', 'alloy'],
+};
+/* 电话实际用的实时模型和音色:默认跟随「语音通话」 */
+const callRtId = () => state.callFollow ? state.rt : state.callRt;
+const callVoiceName = () => state.callFollow ? state.rtVoice : state.callVoice;
+
+function sttOptions() {
+  const list = [
+    { id: 'system', name: '手机自带', from: '本机识别服务', tags: [['边说边出字', 'good'], ['免费']], status: '可用' },
+    { id: 'openai-stt', name: 'OpenAI · gpt-4o-transcribe', from: '来自聊天账号「OpenAI」', tags: [['说完再转'], ['按量计费']] },
+    { id: 'gemini-stt', name: 'Gemini · 2.5 Flash', from: '来自聊天账号「Gemini」', tags: [['说完再转'], ['按量计费']] },
+  ];
+  if (state.volcStt) list.push({ id: 'volc-stt', name: '火山引擎 · 流式识别 2.0', from: '语音服务「火山引擎」', tags: [['边说边出字', 'good'], [state.volcPlan === 'duration' ? '小时版' : '并发版']] });
+  if (state.bailian) list.push({ id: 'bailian-stt', name: '阿里云百炼 · 实时识别', from: '语音服务「阿里云百炼」', tags: [['边说边出字', 'good'], ['按时长计费']] });
+  return list;
+}
+function ttsOptions() {
+  const list = [
+    { id: 'system', name: '手机自带语音合成', from: '本机', tags: [['免费'], ['音色较机械']] },
+    { id: 'openai-tts', name: 'OpenAI · gpt-4o-mini-tts', from: '来自聊天账号「OpenAI」', tags: [['边生成边读', 'good'], ['多种音色']] },
+    { id: 'gemini-tts', name: 'Gemini · 2.5 Flash TTS', from: '来自聊天账号「Gemini」', tags: [['整段合成'], ['多种音色']] },
+  ];
+  if (state.bailian) list.push({ id: 'bailian-tts', name: '阿里云百炼 · 千问语音合成', from: '语音服务「阿里云百炼」', tags: [['边生成边读', 'good'], ['中文音色多']] });
+  return list;
+}
+function rtOptions() {
+  const list = [
+    { id: 'openai-rt', name: 'OpenAI · gpt-realtime', from: '来自聊天账号「OpenAI」', tags: [['能打断', 'good'], ['按时长计费']] },
+  ];
+  if (state.volcRt) list.unshift({ id: 'volc-rt', name: '火山引擎 · 豆包实时语音', from: '语音服务「火山引擎」', tags: [['能打断', 'good'], ['中文自然']] });
+  return list;
+}
+const VOICES = {
+  system: ['默认'],
+  'openai-tts': ['alloy', 'nova', 'shimmer', 'verse'],
+  'gemini-tts': ['Kore', 'Puck', 'Charon'],
+  'bailian-tts': ['芊悦', '晨煦', '知性女声'],
+};
+const nameOf = (list, id) => (list.find(o => o.id === id) || {}).name;
+
+/* ---------- 屏幕 ---------- */
+const SCREENS = {
+  home: { title: '模型', back: false, tab: '① 总入口' },
+  stt: { title: '语音输入', tab: '② 语音输入' },
+  tts: { title: '朗读回答', tab: '③ 朗读' },
+  rt: { title: '语音通话', tab: '④ 语音通话' },
+  services: { title: '语音服务', tab: '⑤ 语音服务' },
+  add: { title: '添加语音服务', tab: '⑥ 添加' },
+  volc: { title: '火山引擎', tab: '⑦ 预设表单' },
+  volcDone: { title: '火山引擎', tab: '⑧ 测试结果' },
+  call: { title: 'AI 接打电话', tab: '⑨ 电话设置' },
+  callVoicePick: { title: '电话用的语音', tab: '⑩ 电话语音' },
+  callAudio: { title: '手机通话音频', tab: '⑪ 通话音频' },
+  callTask: { title: '让 Mika 打个电话', tab: '⑫ 单次拨打' },
+};
+let current = 'home';
+const navStack = [];
+
+function go(id, push = true) {
+  if (push && id !== current) navStack.push(current);
+  current = id;
+  render();
+}
+function back() { current = navStack.pop() || 'home'; render(); }
+
+function toast(msg) {
+  const t = document.querySelector('.toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+function row({ icon, title, sub, right = '', tap, cls = '' }) {
+  return `<div class="row ${tap ? 'tap' : ''} ${icon ? '' : 'plain'} ${cls}" ${tap ? `onclick="${tap}"` : ''}>
+    ${icon ? `<div class="ico">${ICON[icon]}</div>` : ''}
+    <div class="txt"><div class="t">${title}</div>${sub ? `<div class="s">${sub}</div>` : ''}</div>${right}</div>`;
+}
+const chev = '<span class="chev">›</span>';
+
+function optionList(kind, options, selected, testLabel) {
+  return options.map(o => `
+    <div class="row tap" onclick="pick('${kind}','${o.id}')">
+      <div class="radio ${o.id === selected ? 'on' : ''}"></div>
+      <div class="txt"><div class="t">${o.name}</div><div class="s">${o.from}</div>
+        <div class="tags">${o.tags.map(([t, c]) => `<span class="tag ${c || ''}">${t}</span>`).join('')}</div></div>
+      <button class="mini" onclick="event.stopPropagation();probe('${kind}','${o.id}')">${testLabel}</button>
+    </div>
+    <div class="probe" id="probe-${kind}-${o.id}"></div>`).join('');
+}
+
+function pick(kind, id) {
+  state[kind] = id;
+  if (kind === 'tts') state.voice = VOICES[id][0];
+  if (kind === 'rt') state.rtVoice = RT_VOICES[id][0];
+  render();
+  toast(kind === 'rt' ? '语音通话已改用 ' + nameOf(rtOptions(), id) : '已选用');
+}
+
+function probe(kind, id) {
+  const el = document.getElementById(`probe-${kind}-${id}`);
+  el.className = 'probe show';
+  if (kind === 'stt') {
+    el.textContent = '正在听，请说一句…';
+    setTimeout(() => { el.className = 'probe show ok'; el.textContent = '✓ 识别到「明天早上八点提醒我开会」· 首字 0.6 秒'; }, 1300);
+  } else if (kind === 'tts') {
+    el.textContent = '▶ 正在播放「你好，我是 Mika。」';
+    setTimeout(() => { el.className = 'probe show ok'; el.textContent = '✓ 播放正常 · 首声 0.4 秒'; }, 1300);
+  } else {
+    el.textContent = '正在连接…';
+    setTimeout(() => { el.className = 'probe show ok'; el.textContent = '✓ 连接成功，能收发语音'; }, 1300);
+  }
+}
+
+function screenHome() {
+  const rt = state.rt ? nameOf(rtOptions(), state.rt) : null;
+  const services = 3 + (state.volcStt || state.volcRt ? 1 : 0) + (state.bailian ? 1 : 0);
+  return `
+    <div class="label">对话模型</div>
+    <div class="card">
+      ${row({ icon: 'chat', title: '主模型', sub: 'Claude Sonnet', right: chev })}
+      ${row({ icon: 'chat', title: '看图', sub: '跟随主模型', right: chev })}
+    </div>
+    <div class="label">语音</div>
+    <div class="card">
+      ${row({ icon: 'mic', title: '语音输入', sub: nameOf(sttOptions(), state.stt), right: '<span class="pill ok">可用</span>' + chev, tap: "go('stt')" })}
+      ${row({ icon: 'speaker', title: '朗读回答', sub: nameOf(ttsOptions(), state.tts) + (state.autoRead ? ' · 自动朗读' : ''), right: '<span class="pill ok">可用</span>' + chev, tap: "go('tts')" })}
+      ${row({ icon: 'phone', title: '语音通话', sub: rt || '还没选实时语音模型', right: (rt ? '<span class="pill ok">可用</span>' : '<span class="pill warn">去设置</span>') + chev, tap: "go('rt')" })}
+    </div>
+    <div class="card" style="margin-top:10px">
+      ${row({ icon: 'key', title: '语音服务', sub: services + ' 个 · 管理账号和凭据', right: chev, tap: "go('services')" })}
+    </div>
+    <div class="foot">上面三项选「用谁来做」，账号在「语音服务」里只填一次。</div>
+    <div class="label">用到语音的功能</div>
+    <div class="card">
+      ${row({ icon: 'phoneDevice', title: 'AI 接打电话', sub: callRtId() ? '电话语音：' + nameOf(rtOptions(), callRtId()) : '需要先选实时语音模型', right: (callRtId() ? '' : '<span class="pill warn">去设置</span>') + chev, tap: "go('call')" })}
+    </div>
+    <div class="foot">电话设置的入口位置不变，这里只为原型方便跳转。</div>`;
+}
+
+function screenStt() {
+  return `
+    <p class="lead">按住输入框旁的话筒说话时，用谁把语音转成文字。</p>
+    <div class="label">可选</div>
+    <div class="card">${optionList('stt', sttOptions(), state.stt, '试一句')}</div>
+    <div class="label">还能接入</div>
+    <div class="card">
+      ${state.volcStt ? '' : row({ icon: 'plus', title: '火山引擎 · 流式识别', sub: '边说边出字 · 填 App ID 和 Token', right: chev, tap: "go('volc')" })}
+      ${state.bailian ? '' : row({ icon: 'plus', title: '阿里云百炼 · 实时识别', sub: '边说边出字 · 填 1 个 API Key', right: chev, tap: "addBailian()" })}
+      ${row({ icon: 'plus', title: '更多语音服务', right: chev, tap: "go('add')" })}
+    </div>
+    <div class="label">使用偏好</div>
+    <div class="card">
+      ${row({ title: '识别语言', right: '<select class="sel"><option>跟随界面语言</option><option>中文</option><option>English</option><option>粤语</option></select>' })}
+    </div>
+    <div class="foot">「边说边出字」的按着时就能看到文字；「说完再转」的松手后才上传整段。</div>`;
+}
+
+function screenTts() {
+  const voices = VOICES[state.tts];
+  const streamable = ['openai-tts', 'bailian-tts'].includes(state.tts);
+  return `
+    <p class="lead">点回答下面的「朗读」，或者开了自动朗读时，用谁来读。</p>
+    <div class="label">可选</div>
+    <div class="card">${optionList('tts', ttsOptions(), state.tts, '试听')}</div>
+    <div class="label">${nameOf(ttsOptions(), state.tts)} 的设置</div>
+    <div class="card">
+      ${row({ title: '音色', right: `<select class="sel" onchange="state.voice=this.value">${voices.map(v => `<option ${v === state.voice ? 'selected' : ''}>${v}</option>`).join('')}</select>` })}
+      ${row({ title: '语速', sub: state.speed.toFixed(1) + '×', right: `<input class="slider" style="width:130px" type="range" min="0.5" max="2" step="0.1" value="${state.speed}" oninput="state.speed=+this.value;this.closest('.row').querySelector('.s').textContent=(+this.value).toFixed(1)+'×'">` })}
+      ${streamable ? row({ title: '边生成边读', sub: '回答还在写就开始读，首声更快', right: `<div class="switch ${state.streamRead ? 'on' : ''}" onclick="state.streamRead=!state.streamRead;render()"></div>` }) : ''}
+    </div>
+    <div class="label">什么时候读</div>
+    <div class="card">
+      ${row({ title: '自动朗读回答', sub: '每条回答完成后自动读', right: `<div class="switch ${state.autoRead ? 'on' : ''}" onclick="state.autoRead=!state.autoRead;render()"></div>` })}
+    </div>
+    <div class="foot">音色、语速跟着所选模型变化，不用记哪家支持什么。</div>`;
+}
+
+function screenRt() {
+  const opts = rtOptions();
+  return `
+    <p class="lead">语音通话和 AI 接打电话，需要一个能「边听边说、可以打断」的实时语音模型。</p>
+    ${state.rt ? '' : `<div class="empty"><div class="big">还没选实时语音模型</div><p>下面任选一个即可开始语音通话。</p></div>`}
+    <div class="label">可选</div>
+    <div class="card">${optionList('rt', opts, state.rt, '连接')}</div>
+    ${state.volcRt ? '' : `<div class="label">还能接入</div>
+    <div class="card">${row({ icon: 'plus', title: '火山引擎 · 豆包实时语音', sub: '中文对话自然 · 填方舟 API Key', right: chev, tap: "go('volc')" })}</div>`}
+    ${state.rt ? `<div class="label">${nameOf(opts, state.rt)} 的设置</div>
+    <div class="card">
+      ${row({ title: '音色', right: `<select class="sel" onchange="state.rtVoice=this.value">${RT_VOICES[state.rt].map(v => `<option ${v === state.rtVoice ? 'selected' : ''}>${v}</option>`).join('')}</select>` })}
+    </div>` : ''}
+    <div class="label">也在用这个选择</div>
+    <div class="card">
+      ${row({ icon: 'phoneDevice', title: 'AI 接打电话', sub: state.callFollow ? '跟随这里' : '单独指定了 ' + (nameOf(opts, state.callRt) || '—'), right: chev, tap: "go('call')" })}
+    </div>
+    <div class="foot">音色从所选模型支持的列表里挑，不再手填音色编号。</div>`;
+}
+
+function screenServices() {
+  const volcLine = state.volcStt || state.volcRt
+    ? [state.volcStt ? '语音识别 ✓' : '语音识别 未填', state.volcRt ? '实时语音 ✓' : '实时语音 未填'].join(' · ')
+    : null;
+  return `
+    <p class="lead">语音用到的账号都在这里。聊天账号能做的语音会自动带出，不用再填一遍。</p>
+    <div class="label">来自聊天账号</div>
+    <div class="card">
+      ${row({ icon: 'chat', title: 'OpenAI', sub: '识别 · 朗读 · 实时语音 —— 复用聊天账号', right: '<span class="pill mute">自动</span>' })}
+      ${row({ icon: 'chat', title: 'Gemini', sub: '识别 · 朗读 —— 复用聊天账号', right: '<span class="pill mute">自动</span>' })}
+      ${row({ icon: 'chat', title: 'Claude', sub: '不提供语音', right: '' })}
+    </div>
+    <div class="label">语音专用</div>
+    <div class="card">
+      ${row({ icon: 'phoneDevice', title: '手机自带', sub: '识别 · 朗读', right: '<span class="pill mute">内置</span>' })}
+      ${volcLine ? row({ icon: 'key', title: '火山引擎', sub: volcLine, right: chev, tap: "go('volc')" }) : ''}
+      ${state.bailian ? row({ icon: 'key', title: '阿里云百炼', sub: '识别 · 朗读 · 实时语音 ✓', right: chev }) : ''}
+      ${row({ icon: 'plus', title: '添加语音服务', right: chev, tap: "go('add')" })}
+    </div>
+    <div class="foot">删除聊天账号时，会先说明哪些语音用途会受影响。</div>`;
+}
+
+function preset(color, mark, title, sub, tap) {
+  return `<div class="row tap" onclick="${tap}"><div class="preset"><div class="logo" style="background:${color}">${mark}</div></div>
+    <div class="txt"><div class="t">${title}</div><div class="s">${sub}</div></div>${chev}</div>`;
+}
+function screenAdd() {
+  return `
+    <p class="lead">选一家服务。每家只问它需要的东西，填完自动测试能用哪些语音。</p>
+    <div class="label">常用</div>
+    <div class="card">
+      ${preset('#3370FF', '火', '火山引擎', '流式识别 · 豆包实时语音', "go('volc')")}
+      ${preset('#FF6A00', '阿', '阿里云百炼', '实时识别 · 千问合成 · 实时语音 · 1 个 Key', "addBailian()")}
+      ${preset('#10A37F', 'AI', 'OpenAI 兼容服务', '识别 · 合成 · 实时语音 · 地址 + Key', "toast('原型里未展开')")}
+    </div>
+    <div class="label">自己部署</div>
+    <div class="card">
+      ${preset('#5F6068', 'ws', '自建识别服务', '局域网实时识别，填地址即可', "toast('原型里未展开')")}
+    </div>
+    <div class="label">高级</div>
+    <div class="card">
+      ${row({ title: '自定义', sub: '手动填写模型 ID、协议和接口地址', right: chev, tap: "toast('即现在的目录表单，挪到这里')" })}
+    </div>`;
+}
+
+function screenVolc() {
+  return `
+    <p class="lead">火山引擎的语音识别和实时语音是两个产品，凭据不同。只填你要用的那部分即可。</p>
+    <div class="card">
+      <div class="unlock"><div class="ico">${ICON.mic}</div><div><b>语音识别</b><br><span>解锁：语音输入「边说边出字」</span></div></div>
+      <div class="field"><label>App ID</label><input placeholder="语音应用的 App ID" value="${state.volcStt ? '6273••••' : ''}"></div>
+      <div class="field"><label>Access Token</label><input type="password" placeholder="同一个应用下的 Access Token" value="${state.volcStt ? 'xxxxxxxx' : ''}"></div>
+      <div class="field"><label>计费方式</label>
+        <div class="seg"><button class="${state.volcPlan === 'duration' ? 'on' : ''}" onclick="state.volcPlan='duration';render()">小时版</button><button class="${state.volcPlan === 'concurrent' ? 'on' : ''}" onclick="state.volcPlan='concurrent';render()">并发版</button></div></div>
+      <div class="where">在哪找？控制台 → 语音技术 → 应用管理</div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="unlock"><div class="ico">${ICON.phone}</div><div><b>实时语音</b><br><span>解锁：语音通话、AI 接打电话</span></div></div>
+      <div class="field"><label>方舟 API Key</label><input type="password" placeholder="方舟平台的 API Key" value="${state.volcRt ? 'xxxxxxxx' : ''}"></div>
+      <div class="where">和上面的不是同一套凭据 · 在方舟控制台 → API Key 管理</div>
+    </div>
+    <button class="btn primary" onclick="saveVolc()">保存并测试</button>
+    <div class="foot">凭据加密存在本机。测试只连一次服务，不会上传录音。</div>`;
+}
+
+function screenVolcDone() {
+  return `
+    <p class="lead">测试完成，下面是这个账号现在能做的事。</p>
+    <div class="card">
+      <div class="result"><div class="mark ok">✓</div><div class="txt"><div class="t">语音识别可用</div><div class="s">连接正常 · 小时版</div></div>
+        <button class="mini" onclick="state.stt='volc-stt';toast('语音输入已改用火山引擎');render()" ${state.stt === 'volc-stt' ? 'disabled' : ''}>${state.stt === 'volc-stt' ? '已用于语音输入' : '用于语音输入'}</button></div>
+      <div class="result"><div class="mark ok">✓</div><div class="txt"><div class="t">实时语音可用</div><div class="s">能收发语音</div></div>
+        <button class="mini" onclick="state.rt='volc-rt';state.rtVoice=RT_VOICES['volc-rt'][0];toast('语音通话已改用豆包实时语音');render()" ${state.rt === 'volc-rt' ? 'disabled' : ''}>${state.rt === 'volc-rt' ? '已用于语音通话' : '用于语音通话'}</button></div>
+    </div>
+    <button class="btn ghost" onclick="navStack.length=0;go('home',false)">完成</button>
+    <div class="foot">测试没通过时，这里写明是哪一项、什么原因（Key 不对 / 没开通 / 地域不符），并给出处理办法。</div>`;
+}
+
+/* ---------- AI 接打电话 ---------- */
+function callVoicePill() {
+  if (!callRtId()) return '<span class="pill warn">去设置</span>';
+  return '<span class="pill ok">可用</span>';
+}
+function screenCall() {
+  const rt = callRtId();
+  const audioSub = { auto: '自动选择', direct: '直连电话音频', redirect: '重定向电话音频' }[state.audioMode];
+  return `
+    <p class="lead">Mika 替你接听或拨出电话。这一页只管电话自己的事；模型和账号用「语音」里配好的。</p>
+    <div class="card">
+      ${row({ icon: 'phone', title: '启用 AI 接打电话', right: '<div class="switch on"></div>' })}
+    </div>
+    <div class="label">用谁来说</div>
+    <div class="card">
+      ${row({ icon: 'mic', title: '电话语音', sub: rt ? `${nameOf(rtOptions(), rt)} · ${callVoiceName()}${state.callFollow ? ' · 跟随语音通话' : ''}` : '还没有实时语音模型', right: callVoicePill() + chev, tap: rt || rtOptions().length ? "go('callVoicePick')" : "go('rt')" })}
+    </div>
+    <div class="label">电话里说什么</div>
+    <div class="card">
+      ${row({ title: '开场白', sub: '您好，我是机主的助理 Mika，请问有什么事？', right: chev })}
+      ${row({ title: '接听时的默认说明', sub: '问清来意，记下要点，不替机主做决定', right: chev })}
+      ${row({ title: '单通最长时长', right: '<select class="sel"><option>3 分钟</option><option>5 分钟</option><option>10 分钟</option><option>不限</option></select>' })}
+    </div>
+    <div class="label">这台手机</div>
+    <div class="card">
+      ${row({ icon: 'phoneDevice', title: '手机通话音频', sub: audioSub + ' · ' + (state.audioVerified ? '双向声音已实测 ✓' : '还没实测双向声音'), right: (state.audioVerified ? '<span class="pill ok">已实测</span>' : '<span class="pill warn">待实测</span>') + chev, tap: "go('callAudio')" })}
+      ${row({ title: '自动接听', sub: state.audioVerified ? '来电时 Mika 先接' : '先完成一次双向声音实测才能开', right: `<div class="switch ${state.autoAnswer ? 'on' : ''}" style="${state.audioVerified ? '' : 'opacity:.4'}" onclick="if(!state.audioVerified){toast('先实测一次双向声音');go('callAudio')}else{state.autoAnswer=!state.autoAnswer;render()}"></div>` })}
+      ${row({ title: '默认 SIM 卡', sub: '每次询问', right: chev })}
+      ${row({ title: '后台待命与通知', right: chev })}
+    </div>
+    <div class="label">通话之后</div>
+    <div class="card">
+      ${row({ title: '通话摘要', sub: '挂断后用主模型整理要点（会把转写文字发给模型）', right: `<div class="switch ${state.summary ? 'on' : ''}" onclick="state.summary=!state.summary;render()"></div>` })}
+      ${row({ title: '通话记录', right: chev })}
+    </div>
+    <button class="btn ghost" onclick="go('callTask')">试试：让 Mika 打个电话</button>`;
+}
+function screenCallVoicePick() {
+  const opts = rtOptions();
+  const followName = state.rt ? `${nameOf(opts, state.rt)} · ${state.rtVoice}` : '语音通话还没选模型';
+  const sel = state.callRt || (opts[0] && opts[0].id);
+  return `
+    <p class="lead">电话里 Mika 用的实时语音。默认和应用里的语音通话一样，想让电话里换个更正式的声音时再单独指定。</p>
+    <div class="card">
+      <div class="row tap" onclick="state.callFollow=true;render()"><div class="radio ${state.callFollow ? 'on' : ''}"></div>
+        <div class="txt"><div class="t">跟随「语音通话」</div><div class="s">${followName}</div></div>
+        <button class="mini" onclick="event.stopPropagation();go('rt')">去修改</button></div>
+      <div class="row tap" onclick="state.callFollow=false;state.callRt=state.callRt||'${sel || ''}';state.callVoice=RT_VOICES[state.callRt][0];render()"><div class="radio ${state.callFollow ? '' : 'on'}"></div>
+        <div class="txt"><div class="t">电话单独指定</div><div class="s">只影响 AI 接打电话</div></div></div>
+    </div>
+    ${state.callFollow ? '' : `
+    <div class="label">模型</div>
+    <div class="card">${opts.map(o => `<div class="row tap" onclick="state.callRt='${o.id}';state.callVoice=RT_VOICES['${o.id}'][0];render()">
+      <div class="radio ${o.id === state.callRt ? 'on' : ''}"></div><div class="txt"><div class="t">${o.name}</div><div class="s">${o.from}</div></div></div>`).join('')}</div>
+    <div class="label">音色</div>
+    <div class="card">${row({ title: '电话音色', right: `<select class="sel" onchange="state.callVoice=this.value">${RT_VOICES[state.callRt].map(v => `<option ${v === state.callVoice ? 'selected' : ''}>${v}</option>`).join('')}</select>` })}</div>`}
+    <div class="foot">这里只能从「语音」里已有的实时语音模型挑；没有想要的，去「语音服务」接入。换了模型后，自动接听会关掉，等你重新实测。</div>`;
+}
+function screenCallAudio() {
+  const m = (id, t, sub) => `<div class="row tap" onclick="state.audioMode='${id}';state.audioVerified=false;state.autoAnswer=false;render()">
+    <div class="radio ${state.audioMode === id ? 'on' : ''}"></div><div class="txt"><div class="t">${t}</div><div class="s">${sub}</div></div></div>`;
+  return `
+    <p class="lead">这一项和选哪个模型无关，是这台手机能不能把电话里的声音交给 Mika、再把 Mika 的声音送进电话。</p>
+    <div class="label">音频通道</div>
+    <div class="card">
+      ${m('auto', '自动选择（推荐）', '按这台手机的系统能力检测，选能用的那种')}
+      ${m('direct', '直连电话音频', '系统允许应用直接读写通话音频时用')}
+      ${m('redirect', '重定向电话音频', '直连不可用时，经扬声器/麦克风转接')}
+    </div>
+    <div class="label">双向声音实测</div>
+    <div class="card">
+      <div class="result"><div class="mark ${state.audioVerified ? 'ok' : ''}" style="${state.audioVerified ? '' : 'background:var(--warn-soft);color:var(--warn)'}">${state.audioVerified ? '✓' : '!'}</div>
+        <div class="txt"><div class="t">${state.audioVerified ? '对方能听到 Mika，Mika 能听到对方' : '还没实测'}</div>
+        <div class="s">打一通真实电话（比如打给自己的另一部手机），通话结束后确认两边都听得到。</div></div></div>
+      <div style="padding:0 14px 12px"><button class="mini" onclick="state.audioVerified=true;toast('原型：假设测试通话两边都听得到');render()">${state.audioVerified ? '重新实测' : '打一通测试电话'}</button></div>
+    </div>
+    <div class="foot">「连接测试」只说明模型账号能用；这里的实测才说明这台手机的电话音频能用。换通道后需要重新实测，自动接听会先关掉。</div>`;
+}
+function screenCallTask() {
+  const opts = rtOptions();
+  const cur = state.taskRt === 'follow' ? null : state.taskRt;
+  return `
+    <p class="lead">单次拨打：说清打给谁、要办什么。语音默认用电话设置里的，这一通可以临时换。</p>
+    <div class="card">
+      ${row({ title: '打给', sub: '138 •••• 2046 · 王师傅（装修）', right: chev })}
+      ${row({ title: '要办的事', sub: '确认周六上午能不能来量尺寸，能来就约 10 点', right: chev })}
+      ${row({ title: 'SIM 卡', sub: '卡 1', right: chev })}
+      ${row({ title: '这一通的语音', right: `<select class="sel" onchange="state.taskRt=this.value;render()"><option value="follow" ${cur ? '' : 'selected'}>默认（${callRtId() ? nameOf(opts, callRtId()) + ' · ' + callVoiceName() : '未设置'}）</option>${opts.map(o => `<option value="${o.id}" ${cur === o.id ? 'selected' : ''}>${o.name}</option>`).join('')}</select>` })}
+    </div>
+    <button class="btn ghost" onclick="toast('用同一个实时语音模型，先跟你口头对一遍要办的事')">先用语音跟 Mika 说一遍</button>
+    <button class="btn primary" style="margin-top:10px" onclick="toast('原型：开始拨打')">核对后拨打</button>
+    <div class="foot">临时换的语音只用于这一通，不改设置。</div>`;
+}
+
+function saveVolc() { state.volcStt = true; state.volcRt = true; go('volcDone'); }
+function addBailian() { state.bailian = true; toast('原型：假设已填好百炼 Key 并测试通过'); render(); }
+
+const RENDER = { home: screenHome, stt: screenStt, tts: screenTts, rt: screenRt, services: screenServices, add: screenAdd, volc: screenVolc, volcDone: screenVolcDone,
+  call: screenCall, callVoicePick: screenCallVoicePick, callAudio: screenCallAudio, callTask: screenCallTask };
+
+/* ---------- 右侧说明 ---------- */
+const NOTES = {
+  home: `<div class="note"><h3>① 总入口：模型页里的「语音」组</h3>
+    <ul><li>语音只占一组，<b>三行对应三个用途</b>，每行直接写当前用的是谁、能不能用。</li>
+    <li>用不了的那一行显示「去设置」，点进去就是解决办法，不会只是灰掉。</li>
+    <li>「语音服务」单独一行，只管账号。用户的思路是先选用途、需要时再去补账号，不用先学会怎么配。</li></ul></div>
+    <div class="note"><h3>和现在的对比</h3><table>
+      <tr><th>方面</th><th>现在</th><th>原型</th></tr>
+      <tr><td>入口</td><td>语音转文字、声音模型、语音模型目录、电话设置里的实时语音，共 4 处</td><td>1 组 3 行 + 语音服务</td></tr>
+      <tr><td>加模型</td><td>选账号来源、手填服务商 ID、勾能力、选协议、填地址</td><td>选一家服务，填它要的 Key</td></tr>
+      <tr><td>聊天账号</td><td>要在目录里再手动登记一遍</td><td>能做语音的自动出现</td></tr>
+      <tr><td>协议</td><td>用户要选「音频转写 / 聊天语音输入 / Gemini 内联…」</td><td>不出现，由预设决定</td></tr>
+      <tr><td>火山的两套凭据</td><td>分在语音输入页和电话页</td><td>同一张卡片分两栏，写明各自解锁什么</td></tr>
+      <tr><td>测试</td><td>只在目录页能测</td><td>每个选项旁边直接试</td></tr></table></div>`,
+  stt: `<div class="note"><h3>② 语音输入</h3>
+    <ul><li>选项来自三处：<b>手机自带</b>、<b>聊天账号自动带出</b>（比如 OpenAI 账号带出它的转写模型）、<b>已接入的语音服务</b>。</li>
+    <li>每项用标签说清用户在意的差别：<b>边说边出字 / 说完再转</b>、免费 / 计费，不写协议名。</li>
+    <li>「试一句」就地验证，显示识别到的字和首字延迟。</li>
+    <li>「还能接入」列出没接的常用服务，点进去就是预设表单，不用先绕去别的页面。</li>
+    <li>识别语言是使用偏好，跟模型选择分开放。</li></ul>
+    <p>可以点「阿里云百炼 · 实时识别」，看它接入后自动出现在可选列表里。</p></div>`,
+  tts: `<div class="note"><h3>③ 朗读回答</h3>
+    <ul><li>选模型 → 下面立刻出现<b>这个模型自己的</b>音色列表和能力（能不能边生成边读）。现在是一个通用的「音色」文本框，要用户自己知道填什么。</li>
+    <li>「自动朗读」放在单独的「什么时候读」组，和「用谁读」分开。</li>
+    <li>聊天账号上不再有「仅用于朗读」这类全局标记，不会影响聊天和备援。</li></ul></div>`,
+  rt: `<div class="note"><h3>④ 语音通话</h3>
+    <ul><li>补上现在<b>缺的选择入口</b>：目录里任何能做实时语音的模型都能在这里选。</li>
+    <li>没有可用模型时，用一句话说明「为什么需要」，并直接列出能接的服务，而不是一个门禁页。</li>
+    <li>应用内语音通话和 AI 接打电话<b>共用这一个选择</b>，单次拨打可以临时换。</li>
+    <li>通话里 Mika 怎么回答（同一会话、闲聊不起任务）是功能设计问题，不在这个原型里。</li></ul></div>`,
+  services: `<div class="note"><h3>⑤ 语音服务（账号）</h3>
+    <ul><li>按来源分两组：<b>来自聊天账号</b>（只读、自动，标出能提供哪些语音）和<b>语音专用</b>（手机自带 + 用户接入的）。</li>
+    <li>每个服务一行写清提供哪几种能力、哪部分已填。</li>
+    <li>删除聊天账号时，先说明会影响哪些语音用途（现在已有这个逻辑，保留）。</li>
+    <li>聊天账号怎么判断能做什么语音：按服务商地址和类型匹配内置的能力表（OpenAI 官方、Gemini、阿里 DashScope 等），匹配不上就不自动带出，用户可以走「自定义」。</li></ul></div>`,
+  add: `<div class="note"><h3>⑥ 添加语音服务：预设卡片</h3>
+    <ul><li>和刚做完的 MCP 服务目录同一个模式：<b>选一家 → 只填这家要的东西 → 自动测试</b>。</li>
+    <li>每张卡片副标题写「能提供什么 + 要填几样东西」，用户进去之前就知道成本。</li>
+    <li>现在的目录表单（账号来源 / 服务商 ID / 协议 / 地址）不删，挪到<b>高级 → 自定义</b>，给懂行的人接非标准服务。</li>
+    <li>底层仍用今天做好的语音目录数据结构；预设只是生成目录条目的模板。</li></ul></div>`,
+  volc: `<div class="note"><h3>⑦ 预设表单：火山引擎</h3>
+    <ul><li>火山的语音识别和实时语音确实是<b>两套凭据</b>，合不掉，那就在一张卡片里分两栏，每栏写明<b>解锁什么</b>、在控制台哪里找。</li>
+    <li>两栏都可选填：只要语音输入就只填上半。</li>
+    <li>计费方式（现在目录表单里根本没有这个字段）作为预设字段出现。</li>
+    <li>阿里云百炼的预设只要 1 个 API Key + 地域：识别、合成、实时用的是同一个 Key，现在却要分开存。</li></ul>
+    <p>点「保存并测试」看结果页。</p></div>`,
+  volcDone: `<div class="note"><h3>⑧ 测试结果 → 直接用上</h3>
+    <ul><li>测试按能力逐项出结果，每项旁边直接「用于语音输入 / 用于语音通话」，<b>配完当场就能用</b>，不用再回到别的页面去选。</li>
+    <li>失败时写明是哪一项、什么原因（Key 不对、没开通、地域不符），给出下一步。</li>
+    <li>点「完成」回到总入口，看三行状态的变化。</li></ul></div>`,
+  call: `<div class="note"><h3>⑨ AI 接打电话：只管电话自己的事</h3>
+    <ul><li>现在电话页的「语音与模型」组里有<b>两行</b>：「语音服务」（选一套实时语音配置）和「通话配置」（副标题写的是模型名，点开却是开场白 + 目的 + 时长 + <b>音色编号</b> + <b>音频通道</b>）。音频通道在「高级」里又出现一次，打开的还是同一个对话框。</li>
+    <li>原型把它拆成按用户问题分的四组：
+      <br><b>用谁来说</b>：一行，指向「语音」里的实时语音选择，默认跟随；
+      <br><b>电话里说什么</b>：开场白、默认说明、时长；
+      <br><b>这台手机</b>：音频通道 + 双向实测 + 自动接听 + SIM + 后台；
+      <br><b>通话之后</b>：摘要、记录。</li>
+    <li>电话页<b>不再有</b>密钥对话框、模型名、音色编号文本框。凭据只在「语音服务」里填一次。</li>
+    <li>自动接听开关被双向实测挡住时，不是灰掉，点它直接去实测。</li></ul></div>
+    <div class="note"><h3>现在 → 原型</h3><table>
+      <tr><th>项</th><th>现在在哪</th><th>原型</th></tr>
+      <tr><td>实时模型</td><td>电话页「语音服务」→ 多套配置列表；和语音目录各存一份</td><td>语音 → 语音通话；电话默认跟随，可单独指定</td></tr>
+      <tr><td>方舟 Key</td><td>电话页单独的密钥对话框</td><td>语音服务 → 火山引擎「实时语音」栏</td></tr>
+      <tr><td>音色</td><td>「通话配置」里手填音色编号，和模型里的音色双向同步</td><td>从模型支持的音色里选，存一处</td></tr>
+      <tr><td>音频通道</td><td>「通话配置」+「高级」两处</td><td>这台手机 → 手机通话音频</td></tr>
+      <tr><td>音频实测</td><td>折叠在「设备与权限」里</td><td>和音频通道同一页，挡自动接听时可直达</td></tr>
+      <tr><td>开场白/说明/时长</td><td>「通话配置」对话框，和音色、通道混在一起</td><td>电话里说什么</td></tr></table></div>`,
+  callVoicePick: `<div class="note"><h3>⑩ 电话语音：跟随 or 单独指定</h3>
+    <ul><li>默认<b>跟随「语音通话」</b>：用户配一次，应用内通话和电话都能用。</li>
+    <li>确实有人想要电话里换个正式的声音，所以保留「电话单独指定」，但只能从已有的实时语音模型里挑，<b>不在这里接新账号</b>。</li>
+    <li>这替代现在的「多套实时语音配置」列表：那套列表本质就是「模型 + 音色 + 凭据」，模型和凭据已经归语音目录管，剩下的只有音色。</li>
+    <li>换模型会关掉自动接听（今天修的 bug 里已经是这个行为），提示用户重新实测。</li></ul></div>`,
+  callAudio: `<div class="note"><h3>⑪ 手机通话音频</h3>
+    <ul><li>把「这台手机行不行」和「模型账号行不行」<b>明确分开</b>：现在两个都叫「测试」，状态混在一起。</li>
+    <li>音频通道加一个<b>自动选择</b>：按系统公开能力检测，检测不到退回重定向；直连/重定向留给手动兜底。</li>
+    <li>换通道 → 实测作废 → 自动接听关闭，和现在的规则一致，只是写在同一页上。</li></ul></div>`,
+  callTask: `<div class="note"><h3>⑫ 单次拨打</h3>
+    <ul><li>「这一通的语音」默认显示电话设置里的选择，临时换只影响这一通。</li>
+    <li>「先用语音跟 Mika 说一遍」就是现在的通话前语音口述，用的是同一个实时模型，不另配。</li>
+    <li>电话里 Mika 具体怎么说、怎么判断挂断，是功能设计，不在这个原型里。</li></ul></div>`,
+};
+
+function render() {
+  const s = SCREENS[current];
+  document.getElementById('screen').innerHTML = `
+    <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+    <div class="bar">${current === 'home' ? '<span style="width:8px"></span>' : '<button class="back" onclick="back()" aria-label="返回">‹</button>'}<h2>${s.title}</h2></div>
+    <div class="body">${RENDER[current]()}</div>
+    <div class="toast"></div>`;
+  document.getElementById('notes').innerHTML = NOTES[current];
+  document.getElementById('tabs').innerHTML = Object.entries(SCREENS).map(([id, v]) =>
+    `<button class="tab ${id === current ? 'on' : ''}" onclick="navStack.length=0;go('${id}',false)">${v.tab}</button>`).join('');
+}
+render();
+</script>
+</body>
+</html>

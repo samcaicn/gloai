@@ -260,7 +260,7 @@ internal fun RealtimeModelPickerScreen(runtime: CallRuntime, onBack: () -> Unit,
                             feedback = null
                             scope.launch {
                                 try {
-                                    feedback = runtime.selectRealtimeModel(ref)
+                                    feedback = runtime.selectCallVoice(ref)
                                 } catch (e: CancellationException) {
                                     throw e
                                 } catch (e: Exception) {

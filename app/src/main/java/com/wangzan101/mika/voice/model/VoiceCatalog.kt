@@ -119,6 +119,10 @@ data class VoiceSelections(
     val stt: SttSelection = SttSelection.Auto,
     val tts: VoiceModelRef? = null,
     val realtime: VoiceModelRef? = null,
+    /** AI phone calls' own Realtime model; null follows [realtime]. */
+    val callRealtime: VoiceModelRef? = null,
+    /** Voice for [callRealtime]; blank uses that model's own voice. Ignored while calls follow [realtime]. */
+    val callSpeaker: String = "",
 )
 
 @Serializable
