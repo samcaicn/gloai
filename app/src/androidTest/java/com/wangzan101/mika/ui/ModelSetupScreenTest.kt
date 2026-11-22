@@ -161,6 +161,29 @@ class ModelSetupScreenTest {
         assertEquals(listOf("voice"), calls)
     }
 
+    @Test fun liveMigratedCatalogShowsVoiceGroupWithoutViewModelCatalog() {
+        // 设置页的 vm 不带语音控制器(sttCatalog 为空),只靠页面收集的目录判断是否迁移
+        val snapshot = com.wangzan101.mika.voice.model.VoiceCatalogSnapshot(
+            services = listOf(com.wangzan101.mika.voice.model.SttSelectionController.SYSTEM_STT_SERVICE),
+            models = listOf(com.wangzan101.mika.voice.model.SttSelectionController.SYSTEM_STT_MODEL),
+            legacyMigrationComplete = true,
+        )
+        compose.setContent {
+            MikaTheme {
+                ModelSetupContent(
+                    connected(), onboarding = false,
+                    actions = ModelSetupActions(
+                        openSpeech = {}, openVoice = {}, openRealtimeVoice = {}, openVoiceCatalog = {},
+                    ),
+                    liveVoiceCatalog = snapshot,
+                    onBack = {},
+                )
+            }
+        }
+        compose.onNodeWithTag("role-voice").assertDoesNotExist()
+        compose.onNodeWithTag("voice-hub-realtime").performScrollTo().assertExists()
+    }
+
     @Test fun migratedCatalogShowsOneVoiceGroupWithThreeUses() {
         val snapshot = com.wangzan101.mika.voice.model.VoiceCatalogSnapshot(
             services = listOf(com.wangzan101.mika.voice.model.SttSelectionController.SYSTEM_STT_SERVICE),

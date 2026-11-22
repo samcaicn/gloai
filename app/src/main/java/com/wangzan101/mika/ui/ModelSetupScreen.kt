@@ -508,7 +508,8 @@ fun ModelSetupContent(
                     // 存下服务商、推荐的模型没试通过时的说明和「选主模型」(上手时在服务商一组下面)
                     ProbeNote(ui, actions)
                     // 迁移到语音目录后,三种用途和来源账号收成一组「语音」;迁移前仍是旧的分散入口
-                    val voiceCatalog = ui.sttCatalog?.let { liveVoiceCatalog ?: it }
+                    // 设置页的 vm 不带语音控制器,迁移与否直接看目录本身
+                    val voiceCatalog = liveVoiceCatalog?.takeIf { it.legacyMigrationComplete } ?: ui.sttCatalog
                     val hubOpen = voiceCatalog != null && actions.openSpeech != null && actions.openVoice != null &&
                         actions.openRealtimeVoice != null && actions.openVoiceCatalog != null
                     if (voiceCatalog != null && hubOpen) {

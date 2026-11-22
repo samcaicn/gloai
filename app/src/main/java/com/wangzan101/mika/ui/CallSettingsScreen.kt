@@ -62,6 +62,11 @@ fun CallSettingsScreen(runtime: CallRuntime, onInstructions: (() -> Unit)? = nul
             handledFocusRequest = focusRequest
         }
     }
+    // 这里的子页都不是导航路由,系统返回键要先关子页,不能直接退出整个电话页
+    BackHandler(enabled = voiceProfilesOpen || instructionsOpen) {
+        voiceProfilesOpen = false
+        instructionsOpen = false
+    }
     when {
         // 迁移后旧的配置页不再用:在这里从语音目录里选通话用的实时模型,新增/编辑去目录
         voiceProfilesOpen && runtime.realtimeMigrated -> CallVoiceScreen(
