@@ -167,6 +167,7 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                     override fun close() = process.close()
                 }
             },
+            catalog = com.wangzan101.mika.settings.McpCatalogAssets.load(this),
             packageProvisioner = com.wangzan101.mika.mcp.McpPackageManager(AndroidSandbox(this, SandboxState.get(this))),
         )
     }
