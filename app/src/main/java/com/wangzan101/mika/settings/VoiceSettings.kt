@@ -73,6 +73,9 @@ class VoiceSettings(private val prefs: SharedPreferences) {
     private val _state = MutableStateFlow(read())
     val state: StateFlow<VoiceSettingsState> = _state.asStateFlow()
 
+    /** Usage preferences remain in this store; migration reads but never rewrites them. */
+    internal fun legacySnapshot(): VoiceSettingsState = state.value
+
     /** 旧版在声音页直接填写模型。首次升级时保留这个选择及其音色和协议。 */
     internal fun reconcileTtsChoice(store: ProviderStore) {
         val choice = state.value.choice

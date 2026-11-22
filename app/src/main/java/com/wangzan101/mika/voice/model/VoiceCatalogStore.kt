@@ -91,18 +91,18 @@ class VoiceCatalogStore(
     }
 
     @Synchronized
-    fun markVerification(ref: VoiceModelRef, status: VoiceVerification) {
+    fun markVerification(ref: VoiceModelRef, status: VoiceVerification, scope: String = "") {
         commit { current ->
-            val others = current.verifications.filterNot { it.ref == ref }
+            val others = current.verifications.filterNot { it.ref == ref && it.scope == scope }
             current.copy(
                 verifications = if (status == VoiceVerification.Unverified) others
-                else others + VoiceVerificationRecord(ref, status),
+                else others + VoiceVerificationRecord(ref, status, scope),
             )
         }
     }
 
-    fun verification(ref: VoiceModelRef): VoiceVerification =
-        state.value.verifications.firstOrNull { it.ref == ref }?.status ?: VoiceVerification.Unverified
+    fun verification(ref: VoiceModelRef, scope: String = ""): VoiceVerification =
+        state.value.verifications.firstOrNull { it.ref == ref && it.scope == scope }?.status ?: VoiceVerification.Unverified
 
     fun requireModel(ref: VoiceModelRef): VoiceModel {
         val model = state.value.models.firstOrNull { it.sameIdentity(ref.serviceId, ref.modelId) }
@@ -175,7 +175,7 @@ class VoiceCatalogStore(
         validateSelection(snapshot.selections.stt, snapshot.models)
         validateOptionalSelection(snapshot.selections.tts, VoiceCapability.TTS, snapshot.models)
         validateOptionalSelection(snapshot.selections.realtime, VoiceCapability.REALTIME, snapshot.models)
-        require(snapshot.verifications.map { it.ref }.distinct().size == snapshot.verifications.size)
+        require(snapshot.verifications.map { it.ref to it.scope }.distinct().size == snapshot.verifications.size)
         snapshot.verifications.forEach { record -> validateRef(record.ref, record.ref.capability, snapshot.models) }
     }
 

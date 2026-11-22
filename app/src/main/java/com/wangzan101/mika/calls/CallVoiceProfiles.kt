@@ -5,6 +5,9 @@ import android.os.Build
 import com.wangzan101.mika.settings.KeyCipher
 import java.util.Base64
 import com.wangzan101.mika.settings.KeystoreKeyCipher
+import com.wangzan101.mika.voice.model.LegacyRealtimeProfileSnapshot
+import com.wangzan101.mika.voice.model.LegacyRealtimeSnapshot
+import com.wangzan101.mika.voice.model.VoiceCredentials
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
@@ -157,6 +160,27 @@ class CallVoiceProfileStore internal constructor(
         if (!load()) return null
         val storedCredentials = stored.credentials[id] ?: return null
         return VolcRealtimeCredentials(storedCredentials.apiKey, storedCredentials.appId, storedCredentials.accessKey).takeIf { it.valid }
+    }
+
+    /** Decrypts only for the immediate migration handoff; no plaintext enters StateFlow or persistence. */
+    @Synchronized
+    internal fun legacySnapshot(activeProfileId: String?): LegacyRealtimeSnapshot {
+        check(load()) { "Legacy realtime voice configuration is unreadable" }
+        return LegacyRealtimeSnapshot(
+            profiles = stored.profiles.map { profile ->
+                val storedCredentials = stored.credentials[profile.id]
+                val credentials = storedCredentials?.let {
+                    VolcRealtimeCredentials(it.apiKey, it.appId, it.accessKey).takeIf { it.valid }
+                }
+                check(storedCredentials == null || credentials != null) { "Legacy realtime credentials are incomplete" }
+                check(!profile.credentialsConfigured || credentials != null) { "Legacy realtime credentials are missing" }
+                LegacyRealtimeProfileSnapshot(
+                    profile = profile,
+                    credentials = credentials?.let { VoiceCredentials(it.apiKey, it.appId, it.accessKey) },
+                )
+            },
+            activeProfileId = activeProfileId,
+        )
     }
 
     @Synchronized

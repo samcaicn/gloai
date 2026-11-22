@@ -65,6 +65,8 @@ data class SttBinding(
     val businessSpace: String = "",
     val chatInputData: ChatInputAudioData = ChatInputAudioData.Base64,
     val includeTranscriptionInstruction: Boolean = true,
+    /** Empty means automatic; otherwise this is the explicit legacy ASR language code. */
+    val language: String = "",
 )
 
 @Serializable
@@ -126,6 +128,8 @@ enum class VoiceVerification { Unverified, Verified }
 data class VoiceVerificationRecord(
     val ref: VoiceModelRef,
     val status: VoiceVerification,
+    /** Empty is connection/capability verification; Realtime audio keys retain their original scope. */
+    val scope: String = "",
 )
 
 sealed interface VoiceCatalogError {
