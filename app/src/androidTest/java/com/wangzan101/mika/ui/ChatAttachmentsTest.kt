@@ -255,6 +255,39 @@ class ChatAttachmentsTest {
         compose.onNodeWithText(AttachCopy.CHANGE).assertIsDisplayed()
     }
 
+    @Test fun plusSheetOmitsRedundantSubtitlesAndShortensBrowser() {
+        // 避免「首次打开弹照片权限」打断断言
+        RecentPhotos.markAsked(compose.activity)
+        compose.setContent {
+            MikaTheme {
+                ChatPlusSheet(
+                    selected = emptyList(),
+                    onDismiss = {},
+                    onPicked = {},
+                    onToggle = { false },
+                    onFull = {},
+                    onDeviceFiles = null,
+                    onPaste = {},
+                    onTeach = {},
+                    onChecklists = {},
+                    onWorkflows = {},
+                    onBrowser = {},
+                    tasks = emptyList(),
+                    onPickTask = {},
+                    onPickSkill = {},
+                )
+            }
+        }
+        // 冗余副标题删掉
+        compose.onAllNodesWithText("现在拍一张").assertCountEquals(0)
+        compose.onAllNodesWithText("存一份待办清单").assertCountEquals(0)
+        compose.onAllNodesWithText("跑一条已存的多步骤任务").assertCountEquals(0)
+        // 保留的副标题还在
+        compose.onNodeWithText("从相册选,可多选").assertExists()
+        // 浏览器副标题精简成「内置浏览器」
+        compose.onNodeWithText("内置浏览器").assertExists()
+    }
+
     private fun bubble(text: String) = compose.setContent {
         MikaTheme {
             CompositionLocalProvider(LocalAttachImages provides images) {

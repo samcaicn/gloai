@@ -298,7 +298,6 @@
     <string name="chat_audio">Audio</string>
     <string name="chat_audio_play">Play</string>
     <string name="chat_audio_stop">Stop</string>
-    <string name="plus_sub_camera">지금 촬영</string>
     <string name="plus_sub_album">사진에서 선택, 여러 장 가능</string>
     <string name="plus_sub_files">문서, PDF, 압축 파일</string>
     <string name="plus_sub_device">이 휴대폰의 폴더 둘러보기</string>
@@ -306,10 +305,8 @@
     <string name="plus_sub_clipboard">방금 복사한 내용 붙여넣기</string>
     <string name="plus_sub_teach">한 번 보여 주면 Mika가 배웁니다</string>
     <string name="plus_sub_skills">이번 차례에 쓸 스킬 선택</string>
-    <string name="plus_sub_checklists">할 일 목록 저장</string>
-    <string name="plus_sub_workflows">저장한 다단계 작업 실행</string>
     <string name="plus_sub_tasks">저장한 작업을 입력창에 채우기</string>
-    <string name="plus_sub_browser">내장 브라우저에서 열기</string>
+    <string name="plus_sub_browser">내장 브라우저</string>
     <string name="plus_skills_empty">아직 개인 스킬이 없습니다. 완료한 작업에서 Mika가 배운 스킬이 여기에 표시됩니다.</string>
     <string name="plus_clipboard_empty">클립보드에 붙여넣을 텍스트가 없습니다</string>
     <string name="plus_skill_directive">"%1$s" 스킬 사용:</string>

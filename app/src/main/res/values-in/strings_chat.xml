@@ -298,7 +298,6 @@
     <string name="chat_audio">Audio</string>
     <string name="chat_audio_play">Play</string>
     <string name="chat_audio_stop">Stop</string>
-    <string name="plus_sub_camera">Ambil foto sekarang</string>
     <string name="plus_sub_album">Pilih dari foto, boleh beberapa</string>
     <string name="plus_sub_files">Dokumen, PDF, arsip</string>
     <string name="plus_sub_device">Jelajahi folder di ponsel ini</string>
@@ -306,10 +305,8 @@
     <string name="plus_sub_clipboard">Tempel yang baru saja disalin</string>
     <string name="plus_sub_teach">Tunjukkan sekali, Mika akan belajar</string>
     <string name="plus_sub_skills">Pilih skill untuk giliran ini</string>
-    <string name="plus_sub_checklists">Simpan daftar tugas</string>
-    <string name="plus_sub_workflows">Jalankan tugas bertahap yang tersimpan</string>
     <string name="plus_sub_tasks">Isi tugas tersimpan ke kolom input</string>
-    <string name="plus_sub_browser">Buka browser bawaan</string>
+    <string name="plus_sub_browser">Browser bawaan</string>
     <string name="plus_skills_empty">Belum ada skill pribadi. Skill yang dipelajari Mika dari tugas yang selesai akan muncul di sini.</string>
     <string name="plus_clipboard_empty">Tidak ada teks untuk ditempel dari papan klip</string>
     <string name="plus_skill_directive">Gunakan skill “%1$s”: </string>

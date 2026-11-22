@@ -298,7 +298,6 @@
     <string name="chat_audio">Audio</string>
     <string name="chat_audio_play">Play</string>
     <string name="chat_audio_stop">Stop</string>
-    <string name="plus_sub_camera">現在拍一張</string>
     <string name="plus_sub_album">從相冊選,可多選</string>
     <string name="plus_sub_files">文件、PDF、壓縮包</string>
     <string name="plus_sub_device">瀏覽手機裡的資料夾</string>
@@ -306,10 +305,8 @@
     <string name="plus_sub_clipboard">貼上剛剛複製的內容</string>
     <string name="plus_sub_teach">做一遍,讓它學會</string>
     <string name="plus_sub_skills">選一個技能用在這一輪</string>
-    <string name="plus_sub_checklists">存一份待辦清單</string>
-    <string name="plus_sub_workflows">跑一條已存的多步驟任務</string>
     <string name="plus_sub_tasks">把常用的說法填進輸入框</string>
-    <string name="plus_sub_browser">在內建瀏覽器裡開啟網頁</string>
+    <string name="plus_sub_browser">內建瀏覽器</string>
     <string name="plus_skills_empty">還沒有個人技能。Mika 從做成的任務裡學會的技能會出現在這裡。</string>
     <string name="plus_clipboard_empty">剪貼簿裡沒有可貼上的文字</string>
     <string name="plus_skill_directive">用「%1$s」技能：</string>

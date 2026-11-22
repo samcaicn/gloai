@@ -134,7 +134,7 @@ internal fun ChatPlusSheet(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         MikaCard {
-                            PlusRow(MikaIcons.PhotoCamera, AttachCopy.CAMERA, stringResource(R.string.plus_sub_camera), first = true, onClick = attach.camera)
+                            PlusRow(MikaIcons.PhotoCamera, AttachCopy.CAMERA, null, first = true, onClick = attach.camera)
                             PlusRow(MikaIcons.Photo, AttachCopy.ALBUM, stringResource(R.string.plus_sub_album), onClick = { view = PlusView.Photos }, trailing = { RowChevron() })
                             PlusRow(MikaIcons.Paperclip, AttachCopy.FILES, stringResource(R.string.plus_sub_files), onClick = attach.files, trailing = { RowChevron() })
                             attach.deviceFiles?.let { open ->
@@ -147,8 +147,8 @@ internal fun ChatPlusSheet(
                                 PlusRow(MikaIcons.Hand, stringResource(R.string.teach_menu), stringResource(R.string.plus_sub_teach), first = true, onClick = teach)
                             }
                             PlusRow(MikaIcons.Book, stringResource(R.string.memory_skills), stringResource(R.string.plus_sub_skills), first = onTeach == null, onClick = { view = PlusView.Skills }, trailing = { RowChevron() })
-                            PlusRow(MikaIcons.ListChecks, stringResource(R.string.checklists_title), stringResource(R.string.plus_sub_checklists), onClick = onChecklists)
-                            PlusRow(MikaIcons.Route, stringResource(R.string.workflows_title), stringResource(R.string.plus_sub_workflows), onClick = onWorkflows)
+                            PlusRow(MikaIcons.ListChecks, stringResource(R.string.checklists_title), null, onClick = onChecklists)
+                            PlusRow(MikaIcons.Route, stringResource(R.string.workflows_title), null, onClick = onWorkflows)
                             PlusRow(MikaIcons.Star, stringResource(R.string.recommendations_title), stringResource(R.string.plus_sub_tasks), onClick = { view = PlusView.Tasks }, trailing = { RowChevron() })
                             PlusRow(MikaIcons.Globe, stringResource(R.string.drawer_browser), stringResource(R.string.plus_sub_browser), onClick = onBrowser, trailing = { RowChevron() })
                         }

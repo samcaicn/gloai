@@ -298,7 +298,6 @@
     <string name="chat_audio">Ses</string>
     <string name="chat_audio_play">Oynat</string>
     <string name="chat_audio_stop">Durdur</string>
-    <string name="plus_sub_camera">Şimdi fotoğraf çek</string>
     <string name="plus_sub_album">Fotoğraflarından seç, birden fazla olabilir</string>
     <string name="plus_sub_files">Belgeler, PDF dosyaları, arşivler</string>
     <string name="plus_sub_device">Bu telefondaki klasörlere göz at</string>
@@ -306,10 +305,8 @@
     <string name="plus_sub_clipboard">Kopyaladığın şeyi yapıştır</string>
     <string name="plus_sub_teach">Bir kez göster, Mika öğrensin</string>
     <string name="plus_sub_skills">Bu tur için bir beceri seç</string>
-    <string name="plus_sub_checklists">Yapılacaklar listesi kaydet</string>
-    <string name="plus_sub_workflows">Kayıtlı çok adımlı görevi çalıştır</string>
     <string name="plus_sub_tasks">Kayıtlı görevi giriş alanına doldur</string>
-    <string name="plus_sub_browser">Yerleşik tarayıcıda aç</string>
+    <string name="plus_sub_browser">Yerleşik tarayıcı</string>
     <string name="plus_skills_empty">Henüz kişisel beceri yok. Mika\'nın tamamlanan görevlerden öğrendiği beceriler burada görünür.</string>
     <string name="plus_clipboard_empty">Panodan yapıştırılacak metin yok</string>
     <string name="plus_skill_directive">“%1$s” becerisini kullan: </string>
