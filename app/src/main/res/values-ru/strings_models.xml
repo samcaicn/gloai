@@ -85,6 +85,7 @@
     <string name="models_delete_body">"Его ключ API тоже будет удалён. "</string>
     <string name="models_delete_unused">Он не используется ни в одной роли.</string>
     <string name="models_delete_used">Его использует: %1$s. После удаления нужно будет выбрать заново.</string>
+    <string name="models_delete_voice">Голосовые модели %1$s тоже будут удалены.</string>
     <plurals name="models_more">
         <item quantity="one">Ещё %1$d, введите название для фильтра</item>
         <item quantity="few">Ещё %1$d, введите название для фильтра</item>

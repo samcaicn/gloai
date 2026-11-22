@@ -109,8 +109,38 @@ class VoiceAccountResolver(
             service = service,
             model = model,
             account = account,
-            configurationFingerprint = VoiceFingerprints.model(account, model),
+            configurationFingerprint = configurationFingerprint(service, model),
         )
+    }
+
+    /**
+     * Non-decrypting configuration fingerprint for [model] under [service]. Used by probe gating and UI probe
+     * state so that no secret plaintext is ever read just to display or compare progress; decryption stays at
+     * connection time only. For provider accounts it keys on the provider's public fields and key revision, and
+     * for owned accounts on the secret id and the ciphertext token, never the decrypted credentials.
+     */
+    fun configurationFingerprint(service: VoiceService, model: VoiceModel): String {
+        val accountFingerprint: String
+        val providerBaseUrl: String?
+        when (val source = service.account) {
+            is VoiceAccount.ExistingProvider -> {
+                val provider = providers.provider(source.providerId)
+                    ?: throw VoiceModelError.MissingAccount(source.providerId)
+                accountFingerprint = VoiceFingerprints.account(
+                    "provider:${provider.id}|${provider.kind}|${provider.baseUrl}|${provider.sessionHeader.orEmpty()}|${providers.keyRevision(provider.id)}",
+                )
+                providerBaseUrl = provider.baseUrl
+            }
+            is VoiceAccount.VoiceOwned -> {
+                accountFingerprint = VoiceFingerprints.account("owned:${source.secretId}|${owned.configurationToken(source.secretId)}")
+                providerBaseUrl = null
+            }
+            VoiceAccount.None -> {
+                accountFingerprint = VoiceFingerprints.account("none")
+                providerBaseUrl = null
+            }
+        }
+        return VoiceFingerprints.model(accountFingerprint, providerBaseUrl, model)
     }
 
     /** Non-decrypting credential-presence check for UI/profile display; never reads secret plaintext. */
@@ -126,12 +156,10 @@ private object VoiceFingerprints {
 
     fun account(value: String): String = sha256(value)
 
-    fun model(account: ResolvedAccount, model: VoiceModel): String {
-        val accountEndpoint = when (account) {
-            is ResolvedAccount.ExistingProvider -> account.provider.baseUrl
-            else -> listOfNotNull(model.stt?.endpoint, model.tts?.endpoint, model.realtime?.endpoint).joinToString("|")
-        }
-        return sha256(account.configurationFingerprint + "|" + accountEndpoint + "|" + json.encodeToString(model))
+    fun model(accountFingerprint: String, providerBaseUrl: String?, model: VoiceModel): String {
+        val accountEndpoint = providerBaseUrl
+            ?: listOfNotNull(model.stt?.endpoint, model.tts?.endpoint, model.realtime?.endpoint).joinToString("|")
+        return sha256(accountFingerprint + "|" + accountEndpoint + "|" + json.encodeToString(model))
     }
 
     private fun sha256(value: String): String =

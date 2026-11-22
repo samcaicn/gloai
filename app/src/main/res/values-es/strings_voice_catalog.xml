@@ -40,4 +40,18 @@
     <string name="voice_catalog_unverified">Sin verificar</string>
     <string name="voice_catalog_testing">Probando…</string>
     <string name="voice_catalog_listening">Escuchando, di algo…</string>
+    <string name="voice_catalog_incomplete">Completa primero los datos de la cuenta.</string>
+    <string name="voice_catalog_protocol_stt_android_system">Sistema de Android</string>
+    <string name="voice_catalog_protocol_stt_audio_transcriptions">Transcripciones de audio</string>
+    <string name="voice_catalog_protocol_stt_chat_input_audio">Audio de entrada de chat</string>
+    <string name="voice_catalog_protocol_stt_gemini_inline">Gemini en línea</string>
+    <string name="voice_catalog_protocol_stt_doubao_streaming">Doubao en streaming</string>
+    <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR en streaming</string>
+    <string name="voice_catalog_protocol_stt_bailian_streaming">Bailian en streaming</string>
+    <string name="voice_catalog_protocol_tts_android_system">Sistema de Android</string>
+    <string name="voice_catalog_protocol_tts_openai_speech">Voz de OpenAI</string>
+    <string name="voice_catalog_protocol_tts_gemini_tts">TTS de Gemini</string>
+    <string name="voice_catalog_protocol_realtime_volc_duplex">Volc dúplex</string>
+    <string name="voice_catalog_protocol_realtime_openai_realtime">OpenAI en tiempo real</string>
+    <string name="voice_catalog_tts_sample">Hola, esta es una prueba de voz.</string>
 </resources>

@@ -40,4 +40,18 @@
     <string name="voice_catalog_unverified">Doğrulanmadı</string>
     <string name="voice_catalog_testing">Test ediliyor…</string>
     <string name="voice_catalog_listening">Dinliyorum, bir şey söyleyin…</string>
+    <string name="voice_catalog_incomplete">Önce gerekli hesap bilgilerini doldurun.</string>
+    <string name="voice_catalog_protocol_stt_android_system">Android sistemi</string>
+    <string name="voice_catalog_protocol_stt_audio_transcriptions">Ses transkripsiyonu</string>
+    <string name="voice_catalog_protocol_stt_chat_input_audio">Sohbet ses girişi</string>
+    <string name="voice_catalog_protocol_stt_gemini_inline">Gemini inline</string>
+    <string name="voice_catalog_protocol_stt_doubao_streaming">Doubao akışı</string>
+    <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR akışı</string>
+    <string name="voice_catalog_protocol_stt_bailian_streaming">Bailian akışı</string>
+    <string name="voice_catalog_protocol_tts_android_system">Android sistemi</string>
+    <string name="voice_catalog_protocol_tts_openai_speech">OpenAI sesi</string>
+    <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
+    <string name="voice_catalog_protocol_realtime_volc_duplex">Volc çift yönlü</string>
+    <string name="voice_catalog_protocol_realtime_openai_realtime">OpenAI gerçek zamanlı</string>
+    <string name="voice_catalog_tts_sample">Merhaba, bu bir ses testidir.</string>
 </resources>

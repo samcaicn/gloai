@@ -40,4 +40,18 @@
     <string name="voice_catalog_unverified">未驗證</string>
     <string name="voice_catalog_testing">測試中…</string>
     <string name="voice_catalog_listening">正在聽，請說一句…</string>
+    <string name="voice_catalog_incomplete">請先填寫帳號資訊</string>
+    <string name="voice_catalog_protocol_stt_android_system">Android 系統</string>
+    <string name="voice_catalog_protocol_stt_audio_transcriptions">音訊轉錄</string>
+    <string name="voice_catalog_protocol_stt_chat_input_audio">聊天語音輸入</string>
+    <string name="voice_catalog_protocol_stt_gemini_inline">Gemini 內嵌</string>
+    <string name="voice_catalog_protocol_stt_doubao_streaming">豆包串流</string>
+    <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR 串流</string>
+    <string name="voice_catalog_protocol_stt_bailian_streaming">百煉串流</string>
+    <string name="voice_catalog_protocol_tts_android_system">Android 系統</string>
+    <string name="voice_catalog_protocol_tts_openai_speech">OpenAI 語音</string>
+    <string name="voice_catalog_protocol_tts_gemini_tts">Gemini 語音合成</string>
+    <string name="voice_catalog_protocol_realtime_volc_duplex">火山雙工</string>
+    <string name="voice_catalog_protocol_realtime_openai_realtime">OpenAI 即時</string>
+    <string name="voice_catalog_tts_sample">你好，這是一次語音測試。</string>
 </resources>

@@ -40,4 +40,18 @@
     <string name="voice_catalog_unverified">검증 안 됨</string>
     <string name="voice_catalog_testing">테스트 중…</string>
     <string name="voice_catalog_listening">듣는 중입니다. 말씀해 주세요…</string>
+    <string name="voice_catalog_incomplete">먼저 계정 정보를 입력하세요</string>
+    <string name="voice_catalog_protocol_stt_android_system">Android 시스템</string>
+    <string name="voice_catalog_protocol_stt_audio_transcriptions">오디오 전사</string>
+    <string name="voice_catalog_protocol_stt_chat_input_audio">채팅 음성 입력</string>
+    <string name="voice_catalog_protocol_stt_gemini_inline">Gemini 인라인</string>
+    <string name="voice_catalog_protocol_stt_doubao_streaming">Doubao 스트리밍</string>
+    <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR 스트리밍</string>
+    <string name="voice_catalog_protocol_stt_bailian_streaming">Bailian 스트리밍</string>
+    <string name="voice_catalog_protocol_tts_android_system">Android 시스템</string>
+    <string name="voice_catalog_protocol_tts_openai_speech">OpenAI 음성</string>
+    <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
+    <string name="voice_catalog_protocol_realtime_volc_duplex">Volc 듀플렉스</string>
+    <string name="voice_catalog_protocol_realtime_openai_realtime">OpenAI 실시간</string>
+    <string name="voice_catalog_tts_sample">안녕하세요, 음성 테스트입니다.</string>
 </resources>

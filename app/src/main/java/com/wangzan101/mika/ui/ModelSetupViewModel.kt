@@ -1379,6 +1379,10 @@ class ModelSetupViewModel(
         }
     }
 
+    /** 删服务商前预览它名下的语音模型能力引用;删除面板靠它说清影响。 */
+    fun providerVoiceUsage(providerId: String): List<com.wangzan101.mika.voice.model.VoiceModelRef> =
+        voiceAccounts?.providerVoiceUsage(providerId) ?: emptyList()
+
     /** 删掉服务商和它的 Key;用着它的用途退回默认,依赖它的语音模型一并清掉。 */
     fun removeProvider(providerId: String) {
         scope.launch {

@@ -40,4 +40,18 @@
     <string name="voice_catalog_unverified">غير مُتحقق</string>
     <string name="voice_catalog_testing">جارٍ الاختبار…</string>
     <string name="voice_catalog_listening">أستمع، قُل شيئًا…</string>
+    <string name="voice_catalog_incomplete">املأ تفاصيل الحساب المطلوبة أولاً</string>
+    <string name="voice_catalog_protocol_stt_android_system">نظام Android</string>
+    <string name="voice_catalog_protocol_stt_audio_transcriptions">تفريغ الصوت</string>
+    <string name="voice_catalog_protocol_stt_chat_input_audio">صوت إدخال الدردشة</string>
+    <string name="voice_catalog_protocol_stt_gemini_inline">Gemini مضمّن</string>
+    <string name="voice_catalog_protocol_stt_doubao_streaming">بث Doubao</string>
+    <string name="voice_catalog_protocol_stt_funasr_streaming">بث FunASR</string>
+    <string name="voice_catalog_protocol_stt_bailian_streaming">بث Bailian</string>
+    <string name="voice_catalog_protocol_tts_android_system">نظام Android</string>
+    <string name="voice_catalog_protocol_tts_openai_speech">كلام OpenAI</string>
+    <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
+    <string name="voice_catalog_protocol_realtime_volc_duplex">Volc ثنائي</string>
+    <string name="voice_catalog_protocol_realtime_openai_realtime">OpenAI في الوقت الفعلي</string>
+    <string name="voice_catalog_tts_sample">مرحبًا، هذا اختبار صوتي.</string>
 </resources>

@@ -40,4 +40,18 @@
     <string name="voice_catalog_unverified">تأیید نشده</string>
     <string name="voice_catalog_testing">در حال آزمایش…</string>
     <string name="voice_catalog_listening">گوش می‌دهم، چیزی بگویید…</string>
+    <string name="voice_catalog_incomplete">ابتدا جزئیات حساب مورد نیاز را وارد کنید.</string>
+    <string name="voice_catalog_protocol_stt_android_system">سیستم Android</string>
+    <string name="voice_catalog_protocol_stt_audio_transcriptions">رونوشت صدا</string>
+    <string name="voice_catalog_protocol_stt_chat_input_audio">صدای ورودی چت</string>
+    <string name="voice_catalog_protocol_stt_gemini_inline">Gemini داخلی</string>
+    <string name="voice_catalog_protocol_stt_doubao_streaming">استریم Doubao</string>
+    <string name="voice_catalog_protocol_stt_funasr_streaming">استریم FunASR</string>
+    <string name="voice_catalog_protocol_stt_bailian_streaming">استریم Bailian</string>
+    <string name="voice_catalog_protocol_tts_android_system">سیستم Android</string>
+    <string name="voice_catalog_protocol_tts_openai_speech">گفتار OpenAI</string>
+    <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
+    <string name="voice_catalog_protocol_realtime_volc_duplex">Volc دوطرفه</string>
+    <string name="voice_catalog_protocol_realtime_openai_realtime">OpenAI بلادرنگ</string>
+    <string name="voice_catalog_tts_sample">سلام، این یک آزمایش صوتی است.</string>
 </resources>

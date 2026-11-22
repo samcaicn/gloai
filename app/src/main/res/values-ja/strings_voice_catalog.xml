@@ -40,4 +40,18 @@
     <string name="voice_catalog_unverified">未検証</string>
     <string name="voice_catalog_testing">テスト中…</string>
     <string name="voice_catalog_listening">聞き取り中です。話しかけてください…</string>
+    <string name="voice_catalog_incomplete">先にアカウント情報を入力してください</string>
+    <string name="voice_catalog_protocol_stt_android_system">Android システム</string>
+    <string name="voice_catalog_protocol_stt_audio_transcriptions">音声文字起こし</string>
+    <string name="voice_catalog_protocol_stt_chat_input_audio">チャット音声入力</string>
+    <string name="voice_catalog_protocol_stt_gemini_inline">Gemini インライン</string>
+    <string name="voice_catalog_protocol_stt_doubao_streaming">Doubao ストリーミング</string>
+    <string name="voice_catalog_protocol_stt_funasr_streaming">FunASR ストリーミング</string>
+    <string name="voice_catalog_protocol_stt_bailian_streaming">Bailian ストリーミング</string>
+    <string name="voice_catalog_protocol_tts_android_system">Android システム</string>
+    <string name="voice_catalog_protocol_tts_openai_speech">OpenAI 音声</string>
+    <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
+    <string name="voice_catalog_protocol_realtime_volc_duplex">Volc 双方向</string>
+    <string name="voice_catalog_protocol_realtime_openai_realtime">OpenAI リアルタイム</string>
+    <string name="voice_catalog_tts_sample">こんにちは、これは音声テストです。</string>
 </resources>

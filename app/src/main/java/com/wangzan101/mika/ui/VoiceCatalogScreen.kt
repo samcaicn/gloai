@@ -111,6 +111,7 @@ fun VoiceCatalogScreen(voiceModels: VoiceModelEnvironment, onBack: () -> Unit) {
 @Composable
 internal fun VoiceCatalogContent(viewModel: VoiceCatalogViewModel, onBack: () -> Unit) {
     val snapshot by viewModel.snapshot.collectAsState()
+    val probes by viewModel.probes.collectAsState()
     val scope = rememberCoroutineScope()
     var sheetOpen by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<VoiceModel?>(null) }
@@ -159,7 +160,7 @@ internal fun VoiceCatalogContent(viewModel: VoiceCatalogViewModel, onBack: () ->
                 },
                 onDelete = { model -> deleting = model },
                 onTest = { ref, request -> viewModel.test(ref, request) },
-                probeState = { ref -> viewModel.probeState(ref) },
+                probeState = { ref -> viewModel.probeFingerprint(ref)?.let { probes[it] } ?: VoiceProbeUi.Idle },
             )
         }
     }
@@ -194,7 +195,7 @@ internal fun VoiceCatalogContent(viewModel: VoiceCatalogViewModel, onBack: () ->
 private fun VoiceCatalogViewModel.test(ref: VoiceModelRef, request: TtsRequest?) {
     when (ref.capability) {
         VoiceCapability.STT -> verifyStt(ref)
-        VoiceCapability.TTS -> verifyTts(ref, request ?: TtsRequest(TTS_SAMPLE_TEXT))
+        VoiceCapability.TTS -> verifyTts(ref, requireNotNull(request) { "TTS test requires sample text" })
         VoiceCapability.REALTIME -> verifyRealtime(ref)
     }
 }
@@ -252,6 +253,7 @@ private fun ModelRow(
     probeState: (VoiceModelRef) -> VoiceProbeUi,
 ) {
     val c = MikaTheme.colors
+    val ttsSampleText = stringResource(R.string.voice_catalog_tts_sample)
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp).testTag("voice-model-${model.id}"),
     ) {
@@ -292,7 +294,7 @@ private fun ModelRow(
                     verified = snapshot.verified(VoiceModelRef(model.serviceId, model.id, VoiceCapability.TTS)),
                     testLabel = stringResource(R.string.voice_catalog_try_tts),
                     tag = "voice-cap-tts-${model.id}",
-                    onTest = { onTest(VoiceModelRef(model.serviceId, model.id, VoiceCapability.TTS), TtsRequest(TTS_SAMPLE_TEXT)) },
+                    onTest = { onTest(VoiceModelRef(model.serviceId, model.id, VoiceCapability.TTS), TtsRequest(ttsSampleText)) },
                 )
             }
             model.realtime?.let { binding ->
@@ -372,6 +374,7 @@ private fun accountLabel(account: VoiceAccount): String = when (account) {
 private enum class AccountSource { Existing, Owned, None }
 
 private class CatalogForm {
+    var error by mutableStateOf(false)
     var accountSource by mutableStateOf(AccountSource.None)
     var serviceName by mutableStateOf("")
     var providerId by mutableStateOf("")
@@ -431,6 +434,7 @@ private fun VoiceCatalogSheet(
         }
     }
     val c = MikaTheme.colors
+    val ttsSampleText = stringResource(R.string.voice_catalog_tts_sample)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -533,6 +537,14 @@ private fun VoiceCatalogSheet(
             }
 
             Spacer(Modifier.height(20.dp))
+            if (form.error) {
+                Text(
+                    stringResource(R.string.voice_catalog_incomplete),
+                    style = MikaType.Hint, color = c.bad,
+                    modifier = Modifier.testTag("voice-catalog-incomplete"),
+                )
+                Spacer(Modifier.height(8.dp))
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 MikaButton(
                     stringResource(R.string.cancel), onDismiss, Modifier.weight(1f),
@@ -540,14 +552,14 @@ private fun VoiceCatalogSheet(
                 )
                 MikaButton(
                     stringResource(R.string.voice_catalog_save_unverified),
-                    { save(form, editing, existingService, viewModel, test = false); onDismiss() },
+                    { if (save(form, editing, existingService, viewModel, test = false, sampleText = ttsSampleText)) onDismiss() },
                     Modifier.weight(1f).testTag("voice-catalog-save-unverified"),
                 )
             }
             Spacer(Modifier.height(8.dp))
             MikaButton(
                 stringResource(R.string.voice_catalog_save_test),
-                { save(form, editing, existingService, viewModel, test = true); onDismiss() },
+                { if (save(form, editing, existingService, viewModel, test = true, sampleText = ttsSampleText)) onDismiss() },
                 Modifier.fillMaxWidth().testTag("voice-catalog-save-test"),
                 kind = ButtonKind.Tonal,
             )
@@ -584,7 +596,20 @@ private fun save(
     existingService: VoiceService?,
     viewModel: VoiceCatalogViewModel,
     test: Boolean,
-) {
+    sampleText: String,
+): Boolean {
+    form.error = false
+    if (editing == null) {
+        val accountBlank = when (form.accountSource) {
+            AccountSource.Existing -> form.providerId.isBlank()
+            AccountSource.Owned -> form.secretId.isBlank()
+            AccountSource.None -> form.serviceName.isBlank()
+        }
+        if (accountBlank) {
+            form.error = true
+            return false
+        }
+    }
     val service = existingService ?: when (form.accountSource) {
         AccountSource.Existing -> VoiceService(
             "provider:${form.providerId.trim()}", form.providerId.trim(), VoiceAccount.ExistingProvider(form.providerId.trim()),
@@ -608,15 +633,19 @@ private fun save(
         tts = if (form.ttsOn) TtsBinding(form.ttsProtocol, endpoint = form.ttsEndpoint.trim()) else null,
         realtime = if (form.realtimeOn) RealtimeBinding(form.realtimeProtocol, endpoint = form.realtimeEndpoint.trim()) else null,
     )
-    if (model.displayName.isBlank() || model.id.isBlank()) return
+    if (model.displayName.isBlank() || model.id.isBlank()) {
+        form.error = true
+        return false
+    }
     viewModel.saveService(service, credentials)
     viewModel.saveUnverified(model)
     if (test) {
         model.capabilities.forEach { capability ->
             val ref = VoiceModelRef(service.id, model.id, capability)
-            viewModel.test(ref, if (capability == VoiceCapability.TTS) TtsRequest(TTS_SAMPLE_TEXT) else null)
+            viewModel.test(ref, if (capability == VoiceCapability.TTS) TtsRequest(sampleText) else null)
         }
     }
+    return true
 }
 
 @Composable
@@ -646,27 +675,34 @@ private fun SheetField(
     }
 }
 
-// ---------- protocol display labels (technical identifiers, not localized UI copy) ----------
+// ---------- protocol display labels ----------
 
-private fun sttProtocolLabel(protocol: SttProtocol): String = when (protocol) {
-    SttProtocol.AndroidSystem -> "Android system"
-    SttProtocol.AudioTranscriptions -> "Audio transcriptions"
-    SttProtocol.ChatInputAudio -> "Chat input audio"
-    SttProtocol.GeminiInline -> "Gemini inline"
-    SttProtocol.DoubaoStreaming -> "Doubao streaming"
-    SttProtocol.FunAsrStreaming -> "FunASR streaming"
-    SttProtocol.BailianStreaming -> "Bailian streaming"
-}
+@Composable
+private fun sttProtocolLabel(protocol: SttProtocol): String = stringResource(
+    when (protocol) {
+        SttProtocol.AndroidSystem -> R.string.voice_catalog_protocol_stt_android_system
+        SttProtocol.AudioTranscriptions -> R.string.voice_catalog_protocol_stt_audio_transcriptions
+        SttProtocol.ChatInputAudio -> R.string.voice_catalog_protocol_stt_chat_input_audio
+        SttProtocol.GeminiInline -> R.string.voice_catalog_protocol_stt_gemini_inline
+        SttProtocol.DoubaoStreaming -> R.string.voice_catalog_protocol_stt_doubao_streaming
+        SttProtocol.FunAsrStreaming -> R.string.voice_catalog_protocol_stt_funasr_streaming
+        SttProtocol.BailianStreaming -> R.string.voice_catalog_protocol_stt_bailian_streaming
+    },
+)
 
-private fun ttsProtocolLabel(protocol: TtsProtocol): String = when (protocol) {
-    TtsProtocol.AndroidSystem -> "Android system"
-    TtsProtocol.OpenAiSpeech -> "OpenAI Speech"
-    TtsProtocol.GeminiTts -> "Gemini TTS"
-}
+@Composable
+private fun ttsProtocolLabel(protocol: TtsProtocol): String = stringResource(
+    when (protocol) {
+        TtsProtocol.AndroidSystem -> R.string.voice_catalog_protocol_tts_android_system
+        TtsProtocol.OpenAiSpeech -> R.string.voice_catalog_protocol_tts_openai_speech
+        TtsProtocol.GeminiTts -> R.string.voice_catalog_protocol_tts_gemini_tts
+    },
+)
 
-private fun realtimeProtocolLabel(protocol: RealtimeProtocol): String = when (protocol) {
-    RealtimeProtocol.VolcDuplex -> "Volc duplex"
-    RealtimeProtocol.OpenAiRealtime -> "OpenAI Realtime"
-}
-
-private const val TTS_SAMPLE_TEXT = "Hello, this is a voice test."
+@Composable
+private fun realtimeProtocolLabel(protocol: RealtimeProtocol): String = stringResource(
+    when (protocol) {
+        RealtimeProtocol.VolcDuplex -> R.string.voice_catalog_protocol_realtime_volc_duplex
+        RealtimeProtocol.OpenAiRealtime -> R.string.voice_catalog_protocol_realtime_openai_realtime
+    },
+)

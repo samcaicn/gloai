@@ -87,6 +87,7 @@
     <string name="models_delete_body">"سيُحذف مفتاح API الخاص به أيضًا. "</string>
     <string name="models_delete_unused">لا يُستخدم لأي دور.</string>
     <string name="models_delete_used">يستخدمه %1$s؛ وستحتاج إلى الاختيار مجددًا بعد الحذف.</string>
+    <string name="models_delete_voice">ستُحذف نماذج الصوت %1$s أيضًا.</string>
     <plurals name="models_more">
         <item quantity="zero">لا توجد نماذج أخرى؛ اكتب اسمًا للتصفية (%1$d)</item>
         <item quantity="one">نموذج آخر؛ اكتب اسمًا للتصفية (%1$d)</item>

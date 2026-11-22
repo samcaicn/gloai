@@ -247,6 +247,7 @@ fun ModelSetupScreen(
                     setTts = { model, enabled -> vm.setTtsModel(p.id, model, enabled) },
                     showAll = { allModels = true },
                     retestModel = { model -> vm.retestModel(p.id, model) },
+                    voiceUsage = vm::providerVoiceUsage,
                     // ChatGPT 照旧直接去浏览器登录;xAI、OpenRouter 先打开说明面板
                     signIn = { if (accountKind != null) signInSheet = accountKind else vm.signInWithChatGpt() },
                     signOut = { if (accountKind != null) vm.signOutAccount(p.id) else vm.signOutChatGpt(p.id) },

@@ -37,7 +37,7 @@ class VoiceModelProbe(
         if (ref.capability !in model.capabilities) throw VoiceModelError.Unsupported(ref.capability)
         val service = snapshot.services.firstOrNull { it.id == ref.serviceId }
             ?: throw VoiceModelError.IncompleteConfig("Voice service is not registered")
-        return environment.accountResolver.resolve(service, model).configurationFingerprint
+        return environment.accountResolver.configurationFingerprint(service, model)
     }
 
     fun verifyStt(ref: VoiceModelRef): Flow<VoiceProbeState> = flow {

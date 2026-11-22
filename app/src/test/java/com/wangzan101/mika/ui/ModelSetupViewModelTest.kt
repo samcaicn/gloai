@@ -18,6 +18,7 @@ import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.ClientSetup
 import com.wangzan101.mika.settings.FeatureFlagsCapsuleTest.MemoryPrefs
+import com.wangzan101.mika.settings.KeyCipher
 import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
@@ -30,8 +31,11 @@ import com.wangzan101.mika.voice.model.SttProtocol
 import com.wangzan101.mika.voice.model.SttSelection
 import com.wangzan101.mika.voice.model.SttSelectionController
 import com.wangzan101.mika.voice.model.VoiceAccount
+import com.wangzan101.mika.voice.model.VoiceAccountManager
 import com.wangzan101.mika.voice.model.VoiceCapability
 import com.wangzan101.mika.voice.model.VoiceCatalogStore
+import com.wangzan101.mika.voice.model.VoiceCredentialBackend
+import com.wangzan101.mika.voice.model.VoiceCredentialStore
 import com.wangzan101.mika.voice.model.VoiceModel
 import com.wangzan101.mika.voice.model.VoiceModelRef
 import com.wangzan101.mika.voice.model.VoiceService
@@ -1214,4 +1218,42 @@ class ModelSetupViewModelTest {
         assertFalse(failed.message.contains("Bearer"))
         assertEquals("sk", store.providerKey(id))
     }
+
+    /** 删服务商前预览依赖它的语音模型:能力引用照实返回,确认面板靠它说清影响。 */
+    @Test fun providerDeletionPreviewsDependentVoiceModels() = runTest {
+        val catalog = VoiceCatalogStore(MemoryVoiceCatalogBackend(), migrated = true)
+        catalog.upsertService(VoiceService("provider:p1", "One", VoiceAccount.ExistingProvider("p1")))
+        catalog.upsertService(VoiceService("local", "Local", VoiceAccount.None))
+        catalog.upsertModel(VoiceModel("provider:p1", "m1", "M1", stt = SttBinding(SttProtocol.AudioTranscriptions)))
+        catalog.upsertModel(VoiceModel("provider:p1", "m2", "M2", tts = com.wangzan101.mika.voice.model.TtsBinding(com.wangzan101.mika.voice.model.TtsProtocol.OpenAiSpeech)))
+        catalog.upsertModel(VoiceModel("local", "m3", "M3", stt = SttBinding(SttProtocol.FunAsrStreaming)))
+        val store = store()
+        val manager = VoiceAccountManager(catalog, voiceCredentialStore())
+        val vm = ModelSetupViewModel(
+            store, backgroundScope, io = StandardTestDispatcher(testScheduler), voiceAccounts = manager,
+        )
+
+        val usage = vm.providerVoiceUsage("p1")
+
+        assertEquals(
+            setOf(
+                VoiceModelRef("provider:p1", "m1", VoiceCapability.STT),
+                VoiceModelRef("provider:p1", "m2", VoiceCapability.TTS),
+            ),
+            usage.toSet(),
+        )
+        assertEquals("本地服务商的模型不算进来", emptyList<VoiceModelRef>(), vm.providerVoiceUsage("local"))
+    }
+
+    private fun voiceCredentialStore(): VoiceCredentialStore = VoiceCredentialStore(
+        object : VoiceCredentialBackend {
+            override fun read(secretId: String): String? = null
+            override fun write(secretId: String, value: String): Boolean = true
+            override fun delete(secretId: String) {}
+        },
+        object : KeyCipher {
+            override fun encrypt(plain: ByteArray): ByteArray = plain.reversedArray()
+            override fun decrypt(data: ByteArray): ByteArray = data.reversedArray()
+        },
+    )
 }

@@ -88,6 +88,7 @@
     <string name="models_delete_body">這家的 API Key 會一起刪掉。</string>
     <string name="models_delete_unused">它沒在給任何用途幹活。</string>
     <string name="models_delete_used">%1$s正在用它，刪除後要重新選。</string>
+    <string name="models_delete_voice">語音模型 %1$s 也會被刪除。</string>
     <plurals name="models_more">
         <item quantity="other">還有 %1$d 個，輸入名字篩選</item>
     </plurals>

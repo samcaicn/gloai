@@ -3,6 +3,18 @@ package com.wangzan101.mika.voice.model
 import android.content.Context
 import com.wangzan101.mika.settings.ProviderStore
 
+/**
+ * Durable marker that the one-time legacy migration has completed. It lives outside the catalog JSON so a
+ * corrupt already-migrated snapshot is surfaced as [VoiceCatalogError.ReadFailed] and never silently reset.
+ */
+interface MigrationMarker {
+    fun markComplete()
+
+    object None : MigrationMarker {
+        override fun markComplete() {}
+    }
+}
+
 /** Process-owned catalog, account resolver and adapter registry shared by every voice capability and page. */
 class VoiceModelEnvironment(
     val catalog: VoiceCatalogStore,
@@ -11,6 +23,7 @@ class VoiceModelEnvironment(
     val credentials: VoiceOwnedAccountSource,
     /** Writable voice-owned credential store; null in tests that never persist owned accounts. */
     val credentialStore: VoiceCredentialStore? = null,
+    private val migrationMarker: MigrationMarker = MigrationMarker.None,
 ) {
     /** Set when the one-time legacy migration failed; the catalog page surfaces it while legacy behavior is retained. */
     @Volatile
@@ -39,7 +52,11 @@ class VoiceModelEnvironment(
     fun migrateLegacy(source: LegacyVoiceSnapshotSource) {
         val store = credentialStore ?: return
         val result = LegacyVoiceMigration(source, catalog, store).migrateIfNeeded()
-        if (result is MigrationResult.Failed) migrationError = result.error
+        when (result) {
+            is MigrationResult.Migrated -> migrationMarker.markComplete()
+            is MigrationResult.Failed -> migrationError = result.error
+            else -> Unit
+        }
     }
 
     val stt: SttSelectionController by lazy { SttSelectionController(this) }
@@ -63,12 +80,18 @@ class VoiceModelEnvironment(
                 override fun write(value: String): Boolean = prefs.edit().putString("snapshot", value).commit()
             }
             val credentials = VoiceCredentialStore.create(context)
+            val marker = object : MigrationMarker {
+                override fun markComplete() {
+                    prefs.edit().putBoolean("migration_complete", true).commit()
+                }
+            }
             return VoiceModelEnvironment(
-                catalog = VoiceCatalogStore(backend),
+                catalog = VoiceCatalogStore(backend, migrated = prefs.getBoolean("migration_complete", false)),
                 accountResolver = VoiceAccountResolver(ProviderStore.get(context), credentials),
                 registry = VoiceAdapterRegistry(),
                 credentials = credentials,
                 credentialStore = credentials,
+                migrationMarker = marker,
             )
         }
     }

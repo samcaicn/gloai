@@ -105,9 +105,12 @@ class VoiceCatalogViewModel(
         catalog.upsertModel(updated)
     }
 
+    /** The current (non-decrypting) configuration fingerprint for [ref], or null while the catalog is unreadable. */
+    fun probeFingerprint(ref: VoiceModelRef): String? = runCatching { probe.connection(ref) }.getOrNull()
+
     /** Current probe progress for [ref], looked up by its configuration fingerprint. */
     fun probeState(ref: VoiceModelRef): VoiceProbeUi {
-        val fingerprint = runCatching { probe.connection(ref) }.getOrNull() ?: return VoiceProbeUi.Idle
+        val fingerprint = probeFingerprint(ref) ?: return VoiceProbeUi.Idle
         return _probes.value[fingerprint] ?: VoiceProbeUi.Idle
     }
 

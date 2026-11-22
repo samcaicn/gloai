@@ -103,6 +103,7 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.voice.SpeechChoice
 import com.wangzan101.mika.voice.SpeechOptions
+import com.wangzan101.mika.voice.model.VoiceModelRef
 
 /** 设置 › 模型:和上手时的配置模型是同一页([ModelSetupScreen]),不在引导流程里。 */
 @Composable
@@ -396,6 +397,8 @@ class ProviderDetailActions(
     val showAll: () -> Unit = {},
     /** 测试用户确认的模型。 */
     val retestModel: (String) -> Unit = {},
+    /** 这家服务商名下的语音模型能力引用;删除前预览哪些语音模型会一并删掉。 */
+    val voiceUsage: (String) -> List<VoiceModelRef> = { emptyList() },
     /** 用账号登录的服务商(ChatGPT、xAI、OpenRouter):再登录、退出登录、打开对方的用量或账号页。 */
     val signIn: () -> Unit = {},
     val signOut: () -> Unit = {},
@@ -764,7 +767,7 @@ fun ProviderDetailContent(ui: ModelSetupUi, p: Provider, actions: ProviderDetail
         MikaDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text(ModelsCopy.deleteTitle(ModelsCopy.providerName(p))) },
-            text = { Text(ModelsCopy.deleteBody(ui.rolesOf(p))) },
+            text = { Text(ModelsCopy.deleteBody(ui.rolesOf(p), actions.voiceUsage(p.id))) },
             confirmButton = {
                 TextButton({
                     confirmDelete = false
@@ -1422,9 +1425,14 @@ object ModelsCopy {
 
     fun deleteTitle(name: String) = tr(R.string.models_delete_title, name)
 
-    /** 删除前说清会影响哪些用途。 */
-    fun deleteBody(roles: List<ModelRole>) =
-        tr(R.string.models_delete_body) + if (roles.isEmpty()) tr(R.string.models_delete_unused) else tr(R.string.models_delete_used, roleNames(roles))
+    /** 删除前说清会影响哪些用途、哪些语音模型。 */
+    fun deleteBody(roles: List<ModelRole>, voiceModels: List<VoiceModelRef> = emptyList()) =
+        tr(R.string.models_delete_body) +
+            if (roles.isEmpty()) tr(R.string.models_delete_unused) else tr(R.string.models_delete_used, roleNames(roles)) +
+            if (voiceModels.isEmpty()) "" else tr(R.string.models_delete_voice, voiceModelNames(voiceModels))
+
+    private fun voiceModelNames(refs: List<VoiceModelRef>) =
+        refs.map { it.modelId }.distinct().joinToString(tr(R.string.list_sep))
 
     fun more(n: Int) = trPlural(R.plurals.models_more, n)
 

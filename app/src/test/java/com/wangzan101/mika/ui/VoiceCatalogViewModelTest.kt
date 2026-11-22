@@ -159,6 +159,23 @@ class VoiceCatalogViewModelTest {
         assertEquals(VoiceProbeUi.Verified, viewModel.probeState(ref))
     }
 
+    @Test fun `probes flow publishes running and verified probe states`() = runTest {
+        val env = environment()
+        val session = FakeSession(flowOf(SpeechEvent.Partial(stable = "hel", tail = "lo"), SpeechEvent.Final("hello")))
+        val probe = VoiceModelProbe(
+            env,
+            startStt = { session },
+            synthesize = { _, _ -> TtsResponse(byteArrayOf(), "audio/wav") },
+            connectRealtime = {},
+        )
+        val viewModel = viewModel(env, backgroundScope, StandardTestDispatcher(testScheduler), probe)
+        val fingerprint = viewModel.probeFingerprint(ref)!!
+        viewModel.verifyStt(ref)
+        assertEquals(VoiceProbeUi.Running, viewModel.probes.value[fingerprint])
+        runCurrent()
+        assertEquals(VoiceProbeUi.Verified, viewModel.probes.value[fingerprint])
+    }
+
     @Test fun `saveService and saveUnverified upsert while system entries are protected`() = runTest {
         val env = environment()
         val viewModel = viewModel(env, backgroundScope, StandardTestDispatcher(testScheduler))

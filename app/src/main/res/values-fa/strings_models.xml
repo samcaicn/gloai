@@ -83,6 +83,7 @@
     <string name="models_delete_body">"کلید API آن نیز حذف می‌شود. "</string>
     <string name="models_delete_unused">برای هیچ نقشی استفاده نمی‌شود.</string>
     <string name="models_delete_used">%1$s از آن استفاده می‌کند؛ پس از حذف باید دوباره انتخاب کنید.</string>
+    <string name="models_delete_voice">مدل‌های صوتی %1$s نیز حذف خواهند شد.</string>
     <plurals name="models_more">
         <item quantity="one">%1$d مورد دیگر؛ برای فیلتر کردن نامی بنویسید</item>
         <item quantity="other">%1$d مورد دیگر؛ برای فیلتر کردن نامی بنویسید</item>

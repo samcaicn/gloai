@@ -40,4 +40,18 @@
     <string name="voice_catalog_unverified">Belum diverifikasi</string>
     <string name="voice_catalog_testing">Menguji…</string>
     <string name="voice_catalog_listening">Mendengarkan, katakan sesuatu…</string>
+    <string name="voice_catalog_incomplete">Isi detail akun yang diperlukan terlebih dahulu.</string>
+    <string name="voice_catalog_protocol_stt_android_system">Sistem Android</string>
+    <string name="voice_catalog_protocol_stt_audio_transcriptions">Transkripsi audio</string>
+    <string name="voice_catalog_protocol_stt_chat_input_audio">Audio input chat</string>
+    <string name="voice_catalog_protocol_stt_gemini_inline">Gemini inline</string>
+    <string name="voice_catalog_protocol_stt_doubao_streaming">Streaming Doubao</string>
+    <string name="voice_catalog_protocol_stt_funasr_streaming">Streaming FunASR</string>
+    <string name="voice_catalog_protocol_stt_bailian_streaming">Streaming Bailian</string>
+    <string name="voice_catalog_protocol_tts_android_system">Sistem Android</string>
+    <string name="voice_catalog_protocol_tts_openai_speech">Suara OpenAI</string>
+    <string name="voice_catalog_protocol_tts_gemini_tts">Gemini TTS</string>
+    <string name="voice_catalog_protocol_realtime_volc_duplex">Volc duplex</string>
+    <string name="voice_catalog_protocol_realtime_openai_realtime">OpenAI realtime</string>
+    <string name="voice_catalog_tts_sample">Halo, ini uji coba suara.</string>
 </resources>
