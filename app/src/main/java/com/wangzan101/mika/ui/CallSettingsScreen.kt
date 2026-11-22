@@ -109,11 +109,11 @@ private fun CallSettingsWorkspace(
     var handledFocusRequest by rememberSaveable { mutableIntStateOf(0) }
     var taskNavigation by rememberSaveable { mutableIntStateOf(0) }
     var handledTaskNavigation by rememberSaveable { mutableIntStateOf(0) }
-    var deviceNavigation by rememberSaveable { mutableIntStateOf(0) }
-    var handledDeviceNavigation by rememberSaveable { mutableIntStateOf(0) }
     var pendingReuse by remember { mutableStateOf<Pair<String, CallTaskBrief>?>(null) }
     var dialog by rememberSaveable { mutableStateOf<CallDialog?>(null) }
     var audioOpen by rememberSaveable { mutableStateOf(false) }
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    var checklistOpen by rememberSaveable { mutableStateOf(false) }
     val idle = state.phase == CallPhase.IDLE
     val pendingLockedDial = state.lockedDialRequestId
     val failureText = stringResource(R.string.calls_action_failed)
@@ -184,11 +184,12 @@ private fun CallSettingsWorkspace(
     }
 
     fun openDeviceSettings() {
-        tab = CallWorkspaceTab.Settings
-        deviceNavigation++
+        checklistOpen = true
     }
 
     val canConfigure = idle && pendingLockedDial == null && !busy && !controlBusy && !settingsBusy
+    val voiceSummary = callVoiceSummary(runtime)
+    val missing = callSetupMissing(config, state, device.readiness, runtime.activeVoiceProfile().credentialsConfigured)
     if (audioOpen) {
         BackHandler { audioOpen = false }
         CallAudioScreen(
@@ -199,15 +200,41 @@ private fun CallSettingsWorkspace(
         )
         return
     }
-    val voiceSummary = callVoiceSummary(runtime)
+    if (checklistOpen) {
+        BackHandler { checklistOpen = false }
+        CallChecklistPage(
+            missing, config, state, device, voiceSummary, canConfigure, canStartStandby,
+            onBack = { checklistOpen = false }, onVoice = onVoiceProfiles, onPrepare = prepare,
+            onHelper = onHelperSetup, onAudio = { audioOpen = true }, onStartStandby = startStandby,
+        )
+        return
+    }
+    if (settingsOpen) {
+        BackHandler { settingsOpen = false }
+        Page(stringResource(R.string.calls_settings_title), onBack = { settingsOpen = false }) {
+            feedback?.takeIf { idle }?.let { CallFeedback(it) }
+            CallPreferencesPage(
+                config, state, missing, voiceNeedsChange = CallSetupStep.Voice in missing,
+                canConfigure = canConfigure, voiceSummary = voiceSummary,
+                stopBusy = controlBusy || settingsBusy,
+                onStop = { perform(priority = true) { runtime.stop() } },
+                onVoiceProfiles = onVoiceProfiles, onChecklist = { checklistOpen = true }, onAudio = { audioOpen = true },
+                onDefaultSim = { id -> scope.launch { save { it.copy(defaultOutgoingSimId = id) } } },
+                onSummaryEnabled = { enabled -> scope.launch { save { it.copy(summaryEnabled = enabled) } } },
+            )
+        }
+        return
+    }
 
     PageBackground(Modifier.testTag("call-settings")) {
         Column(Modifier.fillMaxSize().navigationBarsPadding().imePadding()) {
-            if (standalone) TopBar(stringResource(R.string.app_name), MikaIcons.Gear, ::openDeviceSettings,
-                stringResource(R.string.calls_tab_settings), right = {
+            if (standalone) TopBar(stringResource(R.string.app_name), MikaIcons.Gear, { settingsOpen = true },
+                stringResource(R.string.calls_settings_title), right = {
                     BarIconButton(MikaIcons.Info, stringResource(R.string.about_check), onAbout, badge = updateAvailable)
                 })
-            else TopBar(stringResource(R.string.calls_title), MikaIcons.Back, onBack, stringResource(R.string.back))
+            else TopBar(stringResource(R.string.calls_title), MikaIcons.Back, onBack, stringResource(R.string.back), right = {
+                BarIconButton(MikaIcons.Gear, stringResource(R.string.calls_settings_title), { settingsOpen = true })
+            })
             if (!idle) {
                 val callId = state.callId
                 CurrentCallCard(
@@ -242,7 +269,7 @@ private fun CallSettingsWorkspace(
             CallWorkspaceTabs(tab) { tab = it }
             tabStates.SaveableStateProvider(tab.name) {
                 val scroll = rememberScrollState()
-                LaunchedEffect(tab, liveNavigation, taskNavigation, deviceNavigation) {
+                LaunchedEffect(tab, liveNavigation, taskNavigation) {
                     when (tab) {
                         CallWorkspaceTab.Receive -> if (liveNavigation != handledLiveNavigation) {
                             scroll.scrollTo(0)
@@ -251,10 +278,6 @@ private fun CallSettingsWorkspace(
                         CallWorkspaceTab.Task -> if (taskNavigation != handledTaskNavigation) {
                             scroll.scrollTo(0)
                             handledTaskNavigation = taskNavigation
-                        }
-                        CallWorkspaceTab.Settings -> if (deviceNavigation != handledDeviceNavigation) {
-                            scroll.scrollTo(0)
-                            handledDeviceNavigation = deviceNavigation
                         }
                         CallWorkspaceTab.History -> Unit
                     }
@@ -273,7 +296,7 @@ private fun CallSettingsWorkspace(
                     if (tab != CallWorkspaceTab.Task) visibleFeedback?.let { CallFeedback(it) }
                     when (tab) {
                         CallWorkspaceTab.Receive -> CallReceivePage(
-                            config, state, ready,
+                            config, state, ready, missing,
                             controlsEnabled = !settingsBusy && !controlBusy && (!busy || config.autoAnswer),
                             canStartStandby = canStartStandby,
                             standbyNeedsSetup = ready && !device.readiness.standbyNotificationsAllowed,
@@ -287,16 +310,19 @@ private fun CallSettingsWorkspace(
                             onStartStandby = startStandby,
                             onRules = { dialog = CallDialog.Rules },
                             onBypass = { dialog = CallDialog.Bypass },
+                            onProfile = { dialog = CallDialog.Profile }.takeIf { canConfigure },
                             onPause = { minutes -> perform(priority = true) { runtime.pauseAutoAnswer(minutes) } },
                             onResume = { perform(priority = true) { runtime.resumeAutoAnswer() } },
                             onInstructions = onInstructions,
                         )
-                        CallWorkspaceTab.Task -> CallTaskScreen(
+                        CallWorkspaceTab.Task -> {
+                            if (missing.isNotEmpty()) CallReadyCard(missing, config, false, ::openDeviceSettings)
+                            CallTaskScreen(
                             taskDraft, config, state, ready,
                             editable = pendingLockedDial == null && !busy && !controlBusy,
                             canDial = idle && pendingLockedDial == null && !busy && !controlBusy,
                             feedback = visibleFeedback, onSetup = ::openDeviceSettings,
-                            voiceProfile = runtime.activeVoiceProfile(), onVoiceProfiles = onVoiceProfiles,
+                            voiceSummary = voiceSummary, onVoiceProfiles = onVoiceProfiles,
                             voiceBriefing = rememberCallVoiceBriefing(
                                 runtime, taskDraft,
                                 allowed = ready && idle && pendingLockedDial == null && !busy && !controlBusy,
@@ -314,11 +340,9 @@ private fun CallSettingsWorkspace(
                                     runtime.queueLockedDial(submission.number, simId = submission.simId, task = submission.brief)
                                 }
                             },
-                        )
+                            )
+                        }
                         CallWorkspaceTab.History -> {
-                            TextButton(onClick = { tab = CallWorkspaceTab.Settings }, modifier = Modifier.fillMaxWidth()) {
-                                Text(stringResource(R.string.calls_back_settings))
-                            }
                             CallHistorySection(
                                 history, state.historyWriteFailed, onMark = runtime::setHistoryHandled, onDelete = runtime::deleteHistory,
                                 onRetrySummary = runtime::retrySummary,
@@ -330,19 +354,6 @@ private fun CallSettingsWorkspace(
                                 },
                             )
                         }
-                        CallWorkspaceTab.Settings -> CallPreferencesPage(
-                            config, state, ready, deviceNavigation,
-                            profile = runtime.activeVoiceProfile(),
-                            canConfigure = canConfigure, voiceSummary = voiceSummary,
-                            stopBusy = controlBusy || settingsBusy, device = device, canStartStandby = canStartStandby,
-                            onPrepare = prepare, onStop = { perform(priority = true) { runtime.stop() } },
-                            onHelperSetup = onHelperSetup, onStartStandby = startStandby,
-                            onCredentials = onVoiceProfiles, onProfile = { dialog = CallDialog.Profile },
-                            onVoiceProfiles = onVoiceProfiles, onAudio = { audioOpen = true },
-                            onRecords = { tab = CallWorkspaceTab.History },
-                            onDefaultSim = { id -> scope.launch { save { it.copy(defaultOutgoingSimId = id) } } },
-                            onSummaryEnabled = { enabled -> scope.launch { save { it.copy(summaryEnabled = enabled) } } },
-                        )
                     }
                 }
             }
@@ -385,21 +396,19 @@ private fun CallSettingsWorkspace(
 private enum class CallDialog { Rules, Bypass, Profile }
 
 private enum class CallWorkspaceTab(val label: Int) {
-    Receive(R.string.calls_nav_receive), Task(R.string.calls_nav_task),
-    Settings(R.string.calls_tab_settings), History(R.string.calls_tab_history),
+    Receive(R.string.calls_nav_receive), Task(R.string.calls_nav_task), History(R.string.calls_tab_history),
 }
 
 @Composable
 private fun CallWorkspaceTabs(selected: CallWorkspaceTab, onSelect: (CallWorkspaceTab) -> Unit) {
     // 页面底有背景图片时标签栏透出它,不留一条纯色
     val tabBg = if (LocalSkinBackdrop.current != null) Color.Transparent else MikaTheme.colors.bg
-    val visibleTabs = CallWorkspaceTab.entries.filterNot { it == CallWorkspaceTab.History }
-    TabRow(selectedTabIndex = if (selected == CallWorkspaceTab.History) visibleTabs.indexOf(CallWorkspaceTab.Settings) else selected.ordinal,
-        containerColor = tabBg, contentColor = MikaTheme.colors.accent) {
-        visibleTabs.forEach { tab ->
+    TabRow(selectedTabIndex = selected.ordinal, containerColor = tabBg, contentColor = MikaTheme.colors.accent) {
+        CallWorkspaceTab.entries.forEach { tab ->
             Tab(
-                selected = tab == selected || selected == CallWorkspaceTab.History && tab == CallWorkspaceTab.Settings,
+                selected = tab == selected,
                 onClick = { onSelect(tab) },
+                selectedContentColor = MikaTheme.colors.accent, unselectedContentColor = MikaTheme.colors.ink3,
                 modifier = Modifier.heightIn(min = 48.dp).testTag("call-tab-" + tab.name.lowercase()),
             ) {
                 Text(stringResource(tab.label), Modifier.padding(horizontal = 3.dp, vertical = 6.dp),
@@ -492,6 +501,7 @@ internal fun CurrentCallCard(
                     }
                 }
             }
+            if (state.aiActive) state.voiceStage?.let { CallVoiceStageRow(it, Modifier.padding(start = 46.dp)) }
             state.liveTranscript.lastOrNull { it.text.isNotBlank() }?.let { latest ->
                 Row(Modifier.fillMaxWidth().testTag("call-current-latest"),
                     horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -566,12 +576,13 @@ internal fun LiveCallTranscript(callId: String?, lines: List<CallTranscriptLine>
 
 @Composable
 internal fun CallReceivePage(
-    config: CallConfig, state: CallRuntimeState, ready: Boolean, controlsEnabled: Boolean,
+    config: CallConfig, state: CallRuntimeState, ready: Boolean, missing: List<CallSetupStep>, controlsEnabled: Boolean,
     canStartStandby: Boolean, standbyNeedsSetup: Boolean,
     onSetup: () -> Unit, onToggle: (Boolean) -> Unit, onRules: () -> Unit, onBypass: () -> Unit,
+    onProfile: (() -> Unit)?,
     onPause: (Int) -> Unit, onResume: () -> Unit, onInstructions: () -> Unit, onStartStandby: () -> Unit,
 ) {
-    var pauseOpen by rememberSaveable { mutableStateOf(false) }
+    CallReadyCard(missing, config, standby = state.autoAnswerStage == CallAutoAnswerStage.STANDBY, onOpen = onSetup)
     if (state.aiActive || state.liveTranscript.isNotEmpty()) {
         GroupCard {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -582,6 +593,7 @@ internal fun CallReceivePage(
     val autoLabel = stringResource(R.string.calls_auto_answer)
     val canTurnOn = ready && config.audioVerified && state.phase == CallPhase.IDLE &&
         config.hasIncomingSelection
+    val paused = state.autoAnswerStage == CallAutoAnswerStage.PAUSED
     GroupCard {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
@@ -602,13 +614,25 @@ internal fun CallReceivePage(
                 enabled = controlsEnabled && (config.autoAnswer || canTurnOn),
             )
         }
-        if (!ready || !config.audioVerified) {
-            HorizontalDivider()
-            ListRow(MikaIcons.Gear, stringResource(R.string.calls_device_and_permissions),
-                stringResource(if (!ready) R.string.calls_needs_setup else R.string.calls_verify_note),
-                onClick = onSetup) { RowChevron() }
+        // 开着或暂停中才有暂停/恢复;按钮直接放在开关下面,不再藏进折叠行
+        if (config.autoAnswer || paused) {
+            Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (paused) {
+                    TextButton(onClick = onResume, enabled = controlsEnabled, modifier = Modifier.testTag("call-resume-auto")) {
+                        Text(stringResource(R.string.calls_auto_resume))
+                    }
+                } else {
+                    TextButton(onClick = { onPause(30) }, enabled = controlsEnabled, modifier = Modifier.testTag("call-pause-30")) {
+                        Text(stringResource(R.string.calls_auto_pause_30))
+                    }
+                    TextButton(onClick = { onPause(120) }, enabled = controlsEnabled, modifier = Modifier.testTag("call-pause-120")) {
+                        Text(stringResource(R.string.calls_auto_pause_120))
+                    }
+                }
+            }
         }
-        if (config.autoAnswer) {
+        if (config.autoAnswer && (state.backgroundStandbyRunning || state.backgroundStandbyStarting || canStartStandby || standbyNeedsSetup)) {
             CallBackgroundStandbyRow(config, state, canStartStandby, onStartStandby, onSetup.takeIf { standbyNeedsSetup })
         }
     }
@@ -622,137 +646,48 @@ internal fun CallReceivePage(
             subtitle = if (config.bypassIncomingNumbers.isEmpty()) stringResource(R.string.calls_bypass_empty)
                 else stringResource(R.string.calls_bypass_count, config.bypassIncomingNumbers.size),
             onClick = onBypass, modifier = Modifier.testTag("call-rules-important")) { RowChevron() }
-        HorizontalDivider(Modifier.padding(start = 60.dp), color = MikaTheme.colors.hair)
-        val paused = state.autoAnswerStage == CallAutoAnswerStage.PAUSED
-        CallFoldRow(MikaIcons.Clock, stringResource(R.string.calls_rule_pause), pauseOpen,
-            "call-rules-pause", subtitle = if (paused) autoAnswerSummary(config, state) else null) { pauseOpen = !pauseOpen }
-        if (pauseOpen) {
-            if (!config.autoAnswer && !paused) {
-                FooterNote(stringResource(R.string.calls_pause_enable_first))
-            } else Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (paused) {
-                    TextButton(onClick = onResume, enabled = controlsEnabled,
-                        modifier = Modifier.weight(1f).testTag("call-resume-auto")) {
-                        Text(stringResource(R.string.calls_auto_resume))
-                    }
-                } else {
-                    TextButton(onClick = { onPause(30) }, enabled = controlsEnabled,
-                        modifier = Modifier.weight(1f).testTag("call-pause-30")) {
-                        Text(stringResource(R.string.calls_auto_pause_30))
-                    }
-                    TextButton(onClick = { onPause(120) }, enabled = controlsEnabled,
-                        modifier = Modifier.weight(1f).testTag("call-pause-120")) {
-                        Text(stringResource(R.string.calls_auto_pause_120))
-                    }
-                }
-            }
-        }
     }
+
+    GroupLabel(stringResource(R.string.calls_how_to_talk))
     GroupCard {
-        ListRow(MikaIcons.Doc, stringResource(R.string.calls_instructions_entry), first = true, onClick = onInstructions) {
-            RowChevron()
-        }
+        ListRow(MikaIcons.Message, stringResource(R.string.calls_greeting),
+            config.greeting.ifBlank { stringResource(R.string.calls_greeting_empty) }, first = true,
+            onClick = onProfile, modifier = Modifier.testTag("call-settings-profile")) { RowChevron() }
+        ListRow(MikaIcons.Doc, stringResource(R.string.calls_instructions_entry),
+            stringResource(R.string.calls_talk_settings_sub), onClick = onInstructions,
+            modifier = Modifier.testTag("call-instructions")) { RowChevron() }
     }
     FooterNote(stringResource(R.string.calls_privacy_note))
 }
 
+/** ⑭: the settings that rarely change — voice, this phone's setup, records, and turning AI calls off. */
 @Composable
 private fun CallPreferencesPage(
-    config: CallConfig, state: CallRuntimeState, ready: Boolean, openDeviceRequest: Int,
-    profile: CallVoiceProfile,
-    canConfigure: Boolean, voiceSummary: String, stopBusy: Boolean, device: CallDeviceControls, canStartStandby: Boolean,
-    onPrepare: () -> Unit, onStop: () -> Unit, onCredentials: () -> Unit, onProfile: () -> Unit,
-    onVoiceProfiles: () -> Unit, onAudio: () -> Unit, onRecords: () -> Unit,
+    config: CallConfig, state: CallRuntimeState, missing: List<CallSetupStep>, voiceNeedsChange: Boolean,
+    canConfigure: Boolean, voiceSummary: String, stopBusy: Boolean,
+    onStop: () -> Unit, onVoiceProfiles: () -> Unit, onChecklist: () -> Unit, onAudio: () -> Unit,
     onDefaultSim: (String?) -> Unit,
     onSummaryEnabled: (Boolean) -> Unit,
-    onHelperSetup: () -> Unit, onStartStandby: () -> Unit,
 ) {
-    var deviceOpen by rememberSaveable { mutableStateOf(!ready || !config.audioVerified) }
-    var backgroundOpen by rememberSaveable { mutableStateOf(false) }
     var simOpen by rememberSaveable { mutableStateOf(false) }
-    var lastDeviceRequest by rememberSaveable { mutableIntStateOf(0) }
-    LaunchedEffect(openDeviceRequest) {
-        if (openDeviceRequest != lastDeviceRequest) {
-            deviceOpen = true
-            lastDeviceRequest = openDeviceRequest
-        }
-    }
+    GroupLabel(stringResource(R.string.calls_settings_sound))
     GroupCard {
-        ListRow(MikaIcons.Phone, stringResource(R.string.calls_enable),
-            stringResource(if (config.enabled) R.string.calls_enabled_summary else R.string.calls_system_default), first = true) {
-            MikaSwitch(config.enabled, { checked -> if (checked) onPrepare() else onStop() },
-                enabled = canConfigure || config.enabled, modifier = Modifier.testTag("call-enabled"))
+        ListRow(MikaIcons.Mic, stringResource(R.string.calls_voice_title), voiceSummary, first = true,
+            onClick = onVoiceProfiles.takeIf { canConfigure }, modifier = Modifier.testTag("call-settings-voice")) {
+            if (voiceNeedsChange) StatusPill(stringResource(R.string.calls_voice_needs_change), PillTone.Warn)
+            RowChevron()
         }
     }
 
-    GroupLabel(stringResource(R.string.calls_who_speaks))
+    GroupLabel(stringResource(R.string.calls_settings_this_phone))
     GroupCard {
-        ListRow(MikaIcons.Handset, stringResource(R.string.calls_voice_title),
-            "$voiceSummary · " + stringResource(when {
-                !profile.credentialsConfigured -> R.string.calls_key_missing
-                !profile.connectionTested -> R.string.calls_voice_status_untested
-                else -> R.string.calls_voice_status_tested
-            }), first = true, onClick = onVoiceProfiles.takeIf { canConfigure },
-            modifier = Modifier.testTag("call-settings-voice")) { RowChevron() }
-    }
-
-    GroupLabel(stringResource(R.string.calls_what_to_say))
-    GroupCard {
-        ListRow(MikaIcons.Message, stringResource(R.string.calls_profile),
-            config.greeting.ifBlank { stringResource(R.string.calls_profile_summary) }, first = true,
-            onClick = onProfile.takeIf { canConfigure }, modifier = Modifier.testTag("call-settings-profile")) { RowChevron() }
-    }
-
-    GroupLabel(stringResource(R.string.calls_settings_device_group))
-    GroupCard {
-        CallFoldRow(MikaIcons.Gear, stringResource(R.string.calls_device_and_permissions), deviceOpen, "call-settings-device",
-            subtitle = stringResource(readinessSummary(config, ready))) { deviceOpen = !deviceOpen }
-        if (deviceOpen) {
-            CallPermissionRows(device, state.shellConnected, canConfigure, onHelperSetup)
-            CallReadinessActions(config, state, ready, profile, canConfigure, stopBusy, device.readiness,
-                onPrepare, onStop, onCredentials)
-        }
-        ListRow(MikaIcons.Mic, stringResource(R.string.calls_audio_title), callAudioSummary(config),
+        ListRow(MikaIcons.Check, stringResource(R.string.calls_checklist_title),
+            if (missing.isEmpty()) stringResource(R.string.calls_checklist_done)
+            else stringResource(R.string.calls_checklist_left, missing.size),
+            first = true, tone = if (missing.isEmpty()) TileTone.Ok else TileTone.Warn,
+            onClick = onChecklist, modifier = Modifier.testTag("call-settings-checklist")) { RowChevron() }
+        ListRow(MikaIcons.Sound, stringResource(R.string.calls_audio_title), callAudioSummary(config),
             onClick = onAudio, modifier = Modifier.testTag("call-settings-audio")) { RowChevron() }
-    }
-
-    GroupCard {
-        CallFoldRow(MikaIcons.Bell, stringResource(R.string.calls_background_settings), backgroundOpen, "call-settings-background",
-            subtitle = stringResource(backgroundStandbyStatus(config, state))) { backgroundOpen = !backgroundOpen }
-        if (backgroundOpen) {
-            if (config.autoAnswer) {
-                CallBackgroundStandbyRow(config, state, canStartStandby, onStartStandby)
-                if (!state.backgroundStandbyStarting) {
-                    state.backgroundStandbyBlockedReason?.let { FooterNote(it) }
-                }
-            }
-            CallBatterySettingsRow(device, canConfigure)
-            FooterNote(stringResource(R.string.calls_background_lock_screen_note))
-            if (device.readiness.callNotificationsAllowed) {
-                TextButton(onClick = device.callChannelAction, enabled = canConfigure, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.calls_notification_settings))
-                }
-            }
-        }
-    }
-
-    GroupCard {
-        Row(
-            Modifier.fillMaxWidth().toggleable(config.summaryEnabled, enabled = canConfigure, role = Role.Switch,
-                onValueChange = onSummaryEnabled).padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(stringResource(R.string.calls_summary_enable), style = MaterialTheme.typography.bodyMedium)
-                Text(stringResource(R.string.calls_summary_cloud_consent), style = MaterialTheme.typography.bodySmall,
-                    color = MikaTheme.colors.ink3)
-            }
-            Switch(config.summaryEnabled, onCheckedChange = null, enabled = canConfigure,
-                modifier = Modifier.testTag("call-summary-enabled"))
-        }
-    }
-
-    GroupCard {
         val preferred = config.defaultOutgoingSimId
         val selected = state.simOptions.firstOrNull { it.id == preferred }
         val summary = when {
@@ -773,56 +708,34 @@ private fun CallPreferencesPage(
         }
     }
 
-    GroupLabel(stringResource(R.string.calls_settings_data_group))
+    GroupLabel(stringResource(R.string.calls_settings_records))
     GroupCard {
-        ListRow(MikaIcons.Clock, stringResource(R.string.calls_tab_history),
-            stringResource(R.string.calls_history_entry_summary), first = true, onClick = onRecords) { RowChevron() }
-    }
-}
-
-@Composable
-private fun CallReadinessActions(
-    config: CallConfig, state: CallRuntimeState, ready: Boolean, profile: CallVoiceProfile, enabled: Boolean, stopBusy: Boolean,
-    device: CallDeviceReadiness,
-    onPrepare: () -> Unit, onStop: () -> Unit, onCredentials: () -> Unit,
-) {
-    val canPrepare = state.shellConnected && device.phoneAllowed && device.callNotificationsAllowed
-    Column(Modifier.fillMaxWidth().testTag("call-readiness").padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            when {
-                !config.enabled -> stringResource(R.string.calls_system_default)
-                ready -> if (config.maxCallSeconds > 0) stringResource(R.string.calls_limits, config.maxCallSeconds)
-                    else stringResource(R.string.calls_limits_unlimited)
-                else -> stringResource(R.string.calls_needs_setup)
-            },
-            style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3,
-        )
-        if (canPrepare && state.prepared && (!profile.credentialsConfigured || !profile.connectionTested)) {
-            CallPrimaryButton(stringResource(R.string.calls_voice_setup), enabled, onCredentials)
-        } else if (canPrepare && !ready) {
-            CallPrimaryButton(stringResource(if (config.enabled) R.string.calls_prepare else R.string.calls_enable),
-                enabled, onPrepare, Modifier.testTag("call-enable"))
-        }
-        if (config.enabled) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (ready) TextButton(onClick = onPrepare, enabled = enabled, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.calls_prepare))
-                }
-                TextButton(onClick = onStop, enabled = !stopBusy, modifier = Modifier.weight(1f).testTag("call-disable")) {
-                    Text(stringResource(R.string.calls_disable_short))
-                }
+        Row(
+            Modifier.fillMaxWidth().toggleable(config.summaryEnabled, enabled = canConfigure, role = Role.Switch,
+                onValueChange = onSummaryEnabled).padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(R.string.calls_summary_enable), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.calls_summary_cloud_consent), style = MaterialTheme.typography.bodySmall,
+                    color = MikaTheme.colors.ink3)
             }
+            Switch(config.summaryEnabled, onCheckedChange = null, enabled = canConfigure,
+                modifier = Modifier.testTag("call-summary-enabled"))
+        }
+    }
+
+    // 不再有「启用」大开关:做完准备清单就是启用,不想用了在这里停用
+    if (config.enabled) {
+        Spacer(Modifier.height(16.dp))
+        GroupCard {
+            ListRow(null, stringResource(R.string.calls_disable_short), stringResource(R.string.calls_disable_sub), first = true,
+                titleColor = MaterialTheme.colorScheme.error, onClick = onStop.takeIf { !stopBusy },
+                modifier = Modifier.testTag("call-disable"))
         }
     }
 }
 
-private fun readinessSummary(config: CallConfig, ready: Boolean): Int = when {
-    !config.enabled -> R.string.calls_disabled
-    !ready -> R.string.calls_needs_setup
-    !config.audioVerified -> R.string.calls_device_ready_to_test
-    else -> R.string.calls_ready
-}
 
 @Composable
 private fun autoAnswerSummary(config: CallConfig, state: CallRuntimeState): String = when (state.autoAnswerStage) {

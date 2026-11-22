@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_ready_title">Listo</string>
+    <string name="calls_ready_standby">Respuesta automática en espera · las llamadas que cumplan las reglas se atienden tras %1$d s</string>
+    <string name="calls_ready_manual">Puedes pedir a la IA que conteste o llame</string>
+    <string name="calls_ready_missing">Faltan %1$d pasos para usarlo</string>
+    <string name="calls_ready_view">Ver</string>
+    <string name="calls_ready_finish">Completar</string>
+    <string name="calls_step_voice">Escuchar y hablar</string>
+    <string name="calls_step_voice_missing">Elige un modelo de reconocimiento en línea y uno de voz para llamadas</string>
+    <string name="calls_step_phone">Permiso de teléfono y notificaciones</string>
+    <string name="calls_step_phone_sub">Leer el estado de llamadas, llamar y avisos de llamadas</string>
+    <string name="calls_step_helper_sub">La IA lo necesita para escuchar y hablar en llamadas</string>
+    <string name="calls_step_audio">Probar una llamada</string>
+    <string name="calls_step_audio_sub">Haz una llamada de prueba y comprueba que ambos lados se oyen</string>
+    <string name="calls_step_standby">Espera en segundo plano</string>
+    <string name="calls_step_standby_sub">Contesta solo con la pantalla bloqueada o en segundo plano</string>
+    <string name="calls_step_go">Configurar</string>
+    <string name="calls_step_test">Probar</string>
+    <string name="calls_step_change">Cambiar</string>
+    <string name="calls_checklist_title">Lista de preparación</string>
+    <string name="calls_checklist_lead">Todo lo que necesitan las llamadas con IA está aquí. Completa la lista y estará listo.</string>
+    <string name="calls_checklist_note">Cambiar el modo de audio borra la prueba; la respuesta automática no se activa hasta probar una llamada.</string>
+    <string name="calls_checklist_left">Faltan %1$d pasos</string>
+    <string name="calls_checklist_done">Todo listo</string>
+    <string name="calls_settings_title">Ajustes del teléfono</string>
+    <string name="calls_settings_sound">Voz</string>
+    <string name="calls_settings_this_phone">Este teléfono</string>
+    <string name="calls_settings_records">Registros</string>
+    <string name="calls_voice_needs_change">Cambiar</string>
+    <string name="calls_disable_sub">Las llamadas entrantes y salientes vuelven a la app de teléfono del sistema</string>
+    <string name="calls_how_to_talk">Al contestar</string>
+    <string name="calls_greeting_empty">Vacío · espera a que hable quien llama</string>
+    <string name="calls_talk_settings_sub">Instrucciones y cuánto puede hablar la IA como máximo</string>
+    <string name="calls_stage_listen">Escucha</string>
+    <string name="calls_stage_think">Piensa</string>
+    <string name="calls_stage_speak">Habla</string>
+    <string name="calls_stage_now">Ahora: %1$s</string>
+</resources>

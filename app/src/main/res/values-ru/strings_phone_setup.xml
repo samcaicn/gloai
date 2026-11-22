@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_ready_title">Готово</string>
+    <string name="calls_ready_standby">Автоответ ждёт · подходящие звонки принимаются через %1$d с</string>
+    <string name="calls_ready_manual">Можно вручную поручить ИИ ответить или позвонить</string>
+    <string name="calls_ready_missing">Осталось шагов: %1$d</string>
+    <string name="calls_ready_view">Открыть</string>
+    <string name="calls_ready_finish">Завершить</string>
+    <string name="calls_step_voice">Слушать и говорить</string>
+    <string name="calls_step_voice_missing">Выберите онлайн-модели распознавания и синтеза для звонков</string>
+    <string name="calls_step_phone">Доступ к телефону и уведомления</string>
+    <string name="calls_step_phone_sub">Состояние звонков, набор номера, уведомления о вызовах</string>
+    <string name="calls_step_helper_sub">Нужен ИИ, чтобы слышать и говорить в звонке</string>
+    <string name="calls_step_audio">Проверить одним звонком</string>
+    <string name="calls_step_audio_sub">Позвоните для проверки и убедитесь, что обе стороны слышат друг друга</string>
+    <string name="calls_step_standby">Ожидание в фоне</string>
+    <string name="calls_step_standby_sub">Автоответ работает на заблокированном экране и в фоне</string>
+    <string name="calls_step_go">Настроить</string>
+    <string name="calls_step_test">Проверить</string>
+    <string name="calls_step_change">Изменить</string>
+    <string name="calls_checklist_title">Подготовка</string>
+    <string name="calls_checklist_lead">Всё, что нужно для звонков с ИИ, на этой странице. Пройдите по списку — и готово.</string>
+    <string name="calls_checklist_note">Смена режима звука сбрасывает проверку; автоответ не включится, пока звонок не проверен.</string>
+    <string name="calls_checklist_left">Осталось: %1$d</string>
+    <string name="calls_checklist_done">Всё готово</string>
+    <string name="calls_settings_title">Настройки телефона</string>
+    <string name="calls_settings_sound">Голос</string>
+    <string name="calls_settings_this_phone">Этот телефон</string>
+    <string name="calls_settings_records">Записи</string>
+    <string name="calls_voice_needs_change">Сменить</string>
+    <string name="calls_disable_sub">Входящие и исходящие снова обрабатывает системный телефон</string>
+    <string name="calls_how_to_talk">Когда ответит</string>
+    <string name="calls_greeting_empty">Пусто · ждать, пока собеседник заговорит</string>
+    <string name="calls_talk_settings_sub">Указания и сколько ИИ может говорить</string>
+    <string name="calls_stage_listen">Слушает</string>
+    <string name="calls_stage_think">Думает</string>
+    <string name="calls_stage_speak">Говорит</string>
+    <string name="calls_stage_now">Сейчас: %1$s</string>
+</resources>

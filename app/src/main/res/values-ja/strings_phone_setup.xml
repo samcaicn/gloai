@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_ready_title">準備完了</string>
+    <string name="calls_ready_standby">自動応答待機中 · 条件に合う着信は %1$d 秒後に応答</string>
+    <string name="calls_ready_manual">手動で AI に応答・発信させられます</string>
+    <string name="calls_ready_missing">使えるまであと %1$d 手順</string>
+    <string name="calls_ready_view">表示</string>
+    <string name="calls_ready_finish">続ける</string>
+    <string name="calls_step_voice">聞く・話す</string>
+    <string name="calls_step_voice_missing">電話用にオンライン認識と合成のモデルを選ぶ</string>
+    <string name="calls_step_phone">電話の権限と通知</string>
+    <string name="calls_step_phone_sub">通話状態の読み取り、発信、着信通知</string>
+    <string name="calls_step_helper_sub">AI が電話で聞いて話すのに必要です</string>
+    <string name="calls_step_audio">1 回テスト通話</string>
+    <string name="calls_step_audio_sub">テスト通話で双方の声が聞こえるか確認</string>
+    <string name="calls_step_standby">バックグラウンド待機</string>
+    <string name="calls_step_standby_sub">画面ロック中やバックグラウンドでも自動応答</string>
+    <string name="calls_step_go">設定する</string>
+    <string name="calls_step_test">テストする</string>
+    <string name="calls_step_change">変更</string>
+    <string name="calls_checklist_title">準備チェックリスト</string>
+    <string name="calls_checklist_lead">AI 電話に必要なものはこのページにまとまっています。上から順に済ませれば使えます。</string>
+    <string name="calls_checklist_note">通話音声の方式を変えたらテストし直してください。テスト前は自動応答をオンにできません。</string>
+    <string name="calls_checklist_left">あと %1$d 手順</string>
+    <string name="calls_checklist_done">すべて完了</string>
+    <string name="calls_settings_title">電話の設定</string>
+    <string name="calls_settings_sound">音声</string>
+    <string name="calls_settings_this_phone">この端末</string>
+    <string name="calls_settings_records">記録</string>
+    <string name="calls_voice_needs_change">要変更</string>
+    <string name="calls_disable_sub">着信と発信をすべてシステムの電話に戻します</string>
+    <string name="calls_how_to_talk">応答したら</string>
+    <string name="calls_greeting_empty">空欄 · 相手が先に話すのを待つ</string>
+    <string name="calls_talk_settings_sub">通話の説明と AI の最長通話時間</string>
+    <string name="calls_stage_listen">聞く</string>
+    <string name="calls_stage_think">考える</string>
+    <string name="calls_stage_speak">話す</string>
+    <string name="calls_stage_now">現在：%1$s</string>
+</resources>

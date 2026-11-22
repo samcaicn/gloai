@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_ready_title">جاهز</string>
+    <string name="calls_ready_standby">الرد التلقائي جاهز · تُجاب المكالمات المطابقة بعد %1$d ث</string>
+    <string name="calls_ready_manual">يمكنك جعل الذكاء الاصطناعي يرد أو يتصل يدويًا</string>
+    <string name="calls_ready_missing">بقيت %1$d خطوات لتعمل</string>
+    <string name="calls_ready_view">عرض</string>
+    <string name="calls_ready_finish">إكمال</string>
+    <string name="calls_step_voice">الاستماع والكلام</string>
+    <string name="calls_step_voice_missing">اختر نموذج تعرّف عبر الإنترنت ونموذج نطق للمكالمات</string>
+    <string name="calls_step_phone">إذن الهاتف والإشعارات</string>
+    <string name="calls_step_phone_sub">قراءة حالة المكالمة والاتصال وإشعارات المكالمات الواردة</string>
+    <string name="calls_step_helper_sub">يحتاجه الذكاء الاصطناعي ليسمع ويتكلم في المكالمات</string>
+    <string name="calls_step_audio">اختبار مكالمة واحدة</string>
+    <string name="calls_step_audio_sub">أجرِ مكالمة اختبار وتأكد أن الطرفين يسمعان</string>
+    <string name="calls_step_standby">الاستعداد في الخلفية</string>
+    <string name="calls_step_standby_sub">الرد التلقائي يعمل والشاشة مقفلة أو في الخلفية</string>
+    <string name="calls_step_go">إعداد</string>
+    <string name="calls_step_test">اختبار</string>
+    <string name="calls_step_change">تغيير</string>
+    <string name="calls_checklist_title">قائمة التجهيز</string>
+    <string name="calls_checklist_lead">كل ما تحتاجه مكالمات الذكاء الاصطناعي في هذه الصفحة. أكمل القائمة بالترتيب وستكون جاهزة.</string>
+    <string name="calls_checklist_note">تغيير وضع صوت المكالمة يمسح الاختبار؛ لا يعمل الرد التلقائي حتى تُختبر مكالمة.</string>
+    <string name="calls_checklist_left">بقيت %1$d خطوات</string>
+    <string name="calls_checklist_done">اكتمل الكل</string>
+    <string name="calls_settings_title">إعدادات الهاتف</string>
+    <string name="calls_settings_sound">الصوت</string>
+    <string name="calls_settings_this_phone">هذا الهاتف</string>
+    <string name="calls_settings_records">السجلات</string>
+    <string name="calls_voice_needs_change">يلزم التغيير</string>
+    <string name="calls_disable_sub">تعود المكالمات الواردة والصادرة إلى هاتف النظام</string>
+    <string name="calls_how_to_talk">عند الرد</string>
+    <string name="calls_greeting_empty">فارغ · انتظر حتى يتكلم المتصل أولًا</string>
+    <string name="calls_talk_settings_sub">التعليمات وأقصى مدة يتكلم فيها الذكاء الاصطناعي</string>
+    <string name="calls_stage_listen">يستمع</string>
+    <string name="calls_stage_think">يفكر</string>
+    <string name="calls_stage_speak">يتكلم</string>
+    <string name="calls_stage_now">الآن: %1$s</string>
+</resources>

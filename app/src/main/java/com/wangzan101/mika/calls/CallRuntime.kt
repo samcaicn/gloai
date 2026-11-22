@@ -74,6 +74,8 @@ data class CallRuntimeState(
     val callId: String? = null,
     val number: String? = null,
     val aiActive: Boolean = false,
+    /** While the AI is on the call: hearing, thinking or speaking. */
+    val voiceStage: CallVoiceStage? = null,
     val detail: String? = null,
     val pendingAutoAnswer: Boolean = false,
     val autoAnswerStage: CallAutoAnswerStage = CallAutoAnswerStage.OFF,
@@ -1716,6 +1718,12 @@ class CallRuntime(private val app: MikaApp) {
                     channel.run(
                         session, greeting, counters = w.mediaCounters,
                         onTranscript = { role, text -> appendTranscript(w.transcript, role, text) },
+                        onStage = { stage ->
+                            if (work === w && w.voiceStage != stage) {
+                                w.voiceStage = stage
+                                publish()
+                            }
+                        },
                         sendDtmf = { digits -> onMain { sendCallDtmf(target, digits, owner = w) } },
                         onFinalTranscript = { role, text ->
                             if (work === w && w.stopReason.value == null && target.phase == CallPhase.ACTIVE &&
@@ -2103,6 +2111,7 @@ class CallRuntime(private val app: MikaApp) {
             callId = calls.singleOrNull()?.id,
             number = current?.number ?: active?.requestedNumber,
             aiActive = active?.aiActive == true,
+            voiceStage = active?.takeIf { it.aiActive }?.voiceStage,
             detail = if (enabled && unobservedManagedCall && current == null) "Android 正在通话，但 Mika 尚未收到该通话的回调" else detail,
             pendingAutoAnswer = pending,
             autoAnswerStage = autoStage,
@@ -2288,6 +2297,7 @@ class CallRuntime(private val app: MikaApp) {
         var telecomActionIssued = false
         var bridging = false
         var aiActive = false
+        var voiceStage = CallVoiceStage.Listening
         var activeAt: Long? = null
         var activeElapsed: Long = 0L
         val stopReason = CallStopReason()

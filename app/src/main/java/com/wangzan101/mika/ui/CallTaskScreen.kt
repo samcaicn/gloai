@@ -86,7 +86,7 @@ internal fun CallTaskScreen(
     editable: Boolean, canDial: Boolean, feedback: CallActionResult?,
     onSetup: () -> Unit, onConfirm: (CallTaskSubmission) -> Unit,
     onConfirmLocked: (CallTaskSubmission) -> Unit,
-    voiceProfile: com.wangzan101.mika.calls.CallVoiceProfile,
+    voiceSummary: String,
     onVoiceProfiles: () -> Unit,
     voiceBriefing: VoiceBriefingLauncher? = null,
 ) {
@@ -136,7 +136,7 @@ internal fun CallTaskScreen(
     }
     Spacer(Modifier.height(8.dp))
     GroupCard {
-        ListRow(MikaIcons.Mic, stringResource(R.string.calls_voice_service), voiceProfile.name, first = true,
+        ListRow(MikaIcons.Mic, stringResource(R.string.calls_voice_title), voiceSummary, first = true,
             onClick = onVoiceProfiles.takeIf { editable }) { RowChevron() }
         HorizontalDivider()
         val simSummary = when {
@@ -197,7 +197,7 @@ internal fun CallTaskScreen(
         stringResource(R.string.calls_task_review), editable && number != null && brief != null,
         {
             if (number != null && brief != null) {
-                review = CallTaskSubmission(number, sim?.id, sim?.label ?: missingSim, voiceProfile.name, brief)
+                review = CallTaskSubmission(number, sim?.id, sim?.label ?: missingSim, voiceSummary, brief)
             }
         },
         Modifier.testTag("call-task-review"),
@@ -286,7 +286,7 @@ private fun CallTaskReviewDialog(submission: CallTaskSubmission, canDial: Boolea
                 verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 TaskReviewField(stringResource(R.string.calls_number), "\u2066${submission.number}\u2069")
                 TaskReviewField(stringResource(R.string.calls_sim), submission.simLabel)
-                TaskReviewField(stringResource(R.string.calls_voice_service), submission.voiceName)
+                TaskReviewField(stringResource(R.string.calls_voice_title), submission.voiceName)
                 TaskReviewField(stringResource(R.string.calls_task_goal), submission.brief.goal)
                 if (submission.brief.questions.isNotEmpty()) {
                     TaskReviewField(stringResource(R.string.calls_task_questions),

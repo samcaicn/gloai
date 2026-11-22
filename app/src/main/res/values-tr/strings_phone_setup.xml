@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_ready_title">Hazır</string>
+    <string name="calls_ready_standby">Otomatik yanıt beklemede · kurala uyan aramalar %1$d sn sonra açılır</string>
+    <string name="calls_ready_manual">Yapay zekâya elle yanıtlatıp arama yaptırabilirsiniz</string>
+    <string name="calls_ready_missing">Kullanmak için %1$d adım kaldı</string>
+    <string name="calls_ready_view">Görüntüle</string>
+    <string name="calls_ready_finish">Tamamla</string>
+    <string name="calls_step_voice">Dinleme ve konuşma</string>
+    <string name="calls_step_voice_missing">Aramalar için çevrimiçi tanıma ve ses modeli seçin</string>
+    <string name="calls_step_phone">Telefon izni ve bildirimler</string>
+    <string name="calls_step_phone_sub">Arama durumunu okuma, arama yapma, gelen arama bildirimleri</string>
+    <string name="calls_step_helper_sub">Yapay zekânın aramada dinleyip konuşması için gerekir</string>
+    <string name="calls_step_audio">Bir arama ile test et</string>
+    <string name="calls_step_audio_sub">Test araması yapın ve iki tarafın da duyduğunu doğrulayın</string>
+    <string name="calls_step_standby">Arka planda bekleme</string>
+    <string name="calls_step_standby_sub">Ekran kilitliyken veya arka planda da otomatik yanıt</string>
+    <string name="calls_step_go">Ayarla</string>
+    <string name="calls_step_test">Test et</string>
+    <string name="calls_step_change">Değiştir</string>
+    <string name="calls_checklist_title">Hazırlık listesi</string>
+    <string name="calls_checklist_lead">Yapay zekâ aramalarının ihtiyacı olan her şey bu sayfada. Listeyi sırayla bitirin, hazır.</string>
+    <string name="calls_checklist_note">Arama sesi modunu değiştirmek testi siler; test edilene kadar otomatik yanıt açılamaz.</string>
+    <string name="calls_checklist_left">%1$d adım kaldı</string>
+    <string name="calls_checklist_done">Hepsi tamam</string>
+    <string name="calls_settings_title">Telefon ayarları</string>
+    <string name="calls_settings_sound">Ses</string>
+    <string name="calls_settings_this_phone">Bu telefon</string>
+    <string name="calls_settings_records">Kayıtlar</string>
+    <string name="calls_voice_needs_change">Değiştirin</string>
+    <string name="calls_disable_sub">Gelen aramalar ve aramalar sistem telefonuna geri döner</string>
+    <string name="calls_how_to_talk">Yanıtlayınca</string>
+    <string name="calls_greeting_empty">Boş · arayanın önce konuşmasını bekle</string>
+    <string name="calls_talk_settings_sub">Talimatlar ve yapay zekânın en uzun konuşma süresi</string>
+    <string name="calls_stage_listen">Dinler</string>
+    <string name="calls_stage_think">Düşünür</string>
+    <string name="calls_stage_speak">Konuşur</string>
+    <string name="calls_stage_now">Şimdi: %1$s</string>
+</resources>

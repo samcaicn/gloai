@@ -36,7 +36,9 @@ internal class CallPcmBridge(
         awaitFarewellDrain: suspend (CallFarewellFence) -> Boolean = { false },
         commitFarewell: () -> Boolean = { false },
         sendDtmf: suspend (String) -> CallDtmfResult = { CallDtmfResult.rejected("unavailable", it.length) },
+        onStage: (CallVoiceStage) -> Unit = {},
     ): Unit = coroutineScope {
+        var stage = CallVoiceStage.Listening
         val playbackQueue = CallPlaybackQueue()
         val writerLock = Mutex()
         val assistantText = StringBuilder()
@@ -102,6 +104,7 @@ internal class CallPcmBridge(
                 try {
                     session.events.collect { event ->
                         counters?.eventReceived(event)
+                        CallVoiceStage.after(stage, event).takeIf { it != stage }?.let { stage = it; onStage(it) }
                         when (event) {
                             is VolcRealtimeEvent.Audio -> {
                                 val queuedBytes = playbackQueue.offer(event.pcm)

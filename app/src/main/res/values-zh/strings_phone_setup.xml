@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_ready_title">已就绪</string>
+    <string name="calls_ready_standby">自动接听待命中 · 符合规则的来电等 %1$d 秒接</string>
+    <string name="calls_ready_manual">可以手动让 AI 接听或拨打</string>
+    <string name="calls_ready_missing">还差 %1$d 步就能用</string>
+    <string name="calls_ready_view">查看</string>
+    <string name="calls_ready_finish">去完成</string>
+    <string name="calls_step_voice">听和说</string>
+    <string name="calls_step_voice_missing">给电话选好在线识别和合成模型</string>
+    <string name="calls_step_phone">电话权限和通知</string>
+    <string name="calls_step_phone_sub">读取通话状态、拨号、来电通知</string>
+    <string name="calls_step_helper_sub">AI 在电话里听和说要靠它</string>
+    <string name="calls_step_audio">实测一通电话</string>
+    <string name="calls_step_audio_sub">打一通测试电话，确认两边都听得见</string>
+    <string name="calls_step_standby">后台待命</string>
+    <string name="calls_step_standby_sub">锁屏、后台时也能自动接听</string>
+    <string name="calls_step_go">去设置</string>
+    <string name="calls_step_test">去实测</string>
+    <string name="calls_step_change">改</string>
+    <string name="calls_checklist_title">准备清单</string>
+    <string name="calls_checklist_lead">AI 接打电话要的东西都在这一页，按顺序做完就能用。</string>
+    <string name="calls_checklist_note">改了通话音频方式要重新实测；没实测时不能开自动接听。</string>
+    <string name="calls_checklist_left">还差 %1$d 步</string>
+    <string name="calls_checklist_done">全部完成</string>
+    <string name="calls_settings_title">电话设置</string>
+    <string name="calls_settings_sound">声音</string>
+    <string name="calls_settings_this_phone">这台手机</string>
+    <string name="calls_settings_records">记录</string>
+    <string name="calls_voice_needs_change">要换</string>
+    <string name="calls_disable_sub">来电和拨号全部交回系统电话</string>
+    <string name="calls_how_to_talk">接起来怎么说</string>
+    <string name="calls_greeting_empty">留空 · 等对方先开口</string>
+    <string name="calls_talk_settings_sub">通话说明和 AI 最长说多久</string>
+    <string name="calls_stage_listen">听</string>
+    <string name="calls_stage_think">想</string>
+    <string name="calls_stage_speak">说</string>
+    <string name="calls_stage_now">现在：%1$s</string>
+</resources>

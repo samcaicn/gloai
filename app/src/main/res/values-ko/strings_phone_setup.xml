@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_ready_title">준비 완료</string>
+    <string name="calls_ready_standby">자동 응답 대기 중 · 조건에 맞는 전화는 %1$d초 후 응답</string>
+    <string name="calls_ready_manual">직접 AI에게 받거나 걸게 할 수 있습니다</string>
+    <string name="calls_ready_missing">사용까지 %1$d단계 남음</string>
+    <string name="calls_ready_view">보기</string>
+    <string name="calls_ready_finish">마저 하기</string>
+    <string name="calls_step_voice">듣기와 말하기</string>
+    <string name="calls_step_voice_missing">전화용 온라인 인식·합성 모델 고르기</string>
+    <string name="calls_step_phone">전화 권한과 알림</string>
+    <string name="calls_step_phone_sub">통화 상태 읽기, 전화 걸기, 수신 알림</string>
+    <string name="calls_step_helper_sub">AI가 통화 중 듣고 말하려면 필요합니다</string>
+    <string name="calls_step_audio">통화 한 번 테스트</string>
+    <string name="calls_step_audio_sub">테스트 통화로 양쪽이 모두 들리는지 확인</string>
+    <string name="calls_step_standby">백그라운드 대기</string>
+    <string name="calls_step_standby_sub">화면이 잠기거나 백그라운드여도 자동 응답</string>
+    <string name="calls_step_go">설정</string>
+    <string name="calls_step_test">테스트</string>
+    <string name="calls_step_change">변경</string>
+    <string name="calls_checklist_title">준비 목록</string>
+    <string name="calls_checklist_lead">AI 전화에 필요한 것은 모두 이 페이지에 있습니다. 순서대로 마치면 사용할 수 있습니다.</string>
+    <string name="calls_checklist_note">통화 오디오 방식을 바꾸면 다시 테스트해야 합니다. 테스트 전에는 자동 응답을 켤 수 없습니다.</string>
+    <string name="calls_checklist_left">%1$d단계 남음</string>
+    <string name="calls_checklist_done">모두 완료</string>
+    <string name="calls_settings_title">전화 설정</string>
+    <string name="calls_settings_sound">음성</string>
+    <string name="calls_settings_this_phone">이 휴대전화</string>
+    <string name="calls_settings_records">기록</string>
+    <string name="calls_voice_needs_change">변경 필요</string>
+    <string name="calls_disable_sub">수신과 발신을 모두 시스템 전화로 돌립니다</string>
+    <string name="calls_how_to_talk">받으면 이렇게</string>
+    <string name="calls_greeting_empty">비워 둠 · 상대가 먼저 말하길 기다림</string>
+    <string name="calls_talk_settings_sub">통화 안내와 AI 최대 통화 시간</string>
+    <string name="calls_stage_listen">듣기</string>
+    <string name="calls_stage_think">생각</string>
+    <string name="calls_stage_speak">말하기</string>
+    <string name="calls_stage_now">지금: %1$s</string>
+</resources>

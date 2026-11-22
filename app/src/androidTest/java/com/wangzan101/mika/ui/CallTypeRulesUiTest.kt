@@ -26,8 +26,8 @@ class CallTypeRulesUiTest {
             MikaTheme(dark = false) {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     CallReceivePage(CallConfig(incomingScope = IncomingScope.STRANGERS), CallRuntimeState(),
-                        ready = true, controlsEnabled = true, canStartStandby = false, standbyNeedsSetup = false,
-                        onSetup = {}, onToggle = {}, onRules = { opened += "scope" }, onBypass = { opened += "bypass" },
+                        ready = true, missing = emptyList(), controlsEnabled = true, canStartStandby = false, standbyNeedsSetup = false,
+                        onSetup = {}, onToggle = {}, onRules = { opened += "scope" }, onBypass = { opened += "bypass" }, onProfile = null,
                         onPause = {}, onResume = {}, onInstructions = {}, onStartStandby = {})
                 }
             }

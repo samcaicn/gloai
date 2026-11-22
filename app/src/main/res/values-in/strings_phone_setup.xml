@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_ready_title">Siap</string>
+    <string name="calls_ready_standby">Jawab otomatis siaga · panggilan yang sesuai dijawab setelah %1$d dtk</string>
+    <string name="calls_ready_manual">Anda bisa menyuruh AI menjawab atau menelepon secara manual</string>
+    <string name="calls_ready_missing">Tinggal %1$d langkah lagi</string>
+    <string name="calls_ready_view">Lihat</string>
+    <string name="calls_ready_finish">Selesaikan</string>
+    <string name="calls_step_voice">Dengar dan bicara</string>
+    <string name="calls_step_voice_missing">Pilih model pengenalan online dan model suara untuk panggilan</string>
+    <string name="calls_step_phone">Izin telepon dan notifikasi</string>
+    <string name="calls_step_phone_sub">Membaca status panggilan, menelepon, notifikasi panggilan masuk</string>
+    <string name="calls_step_helper_sub">AI membutuhkannya untuk mendengar dan bicara saat panggilan</string>
+    <string name="calls_step_audio">Uji satu panggilan</string>
+    <string name="calls_step_audio_sub">Lakukan panggilan uji dan pastikan kedua pihak saling dengar</string>
+    <string name="calls_step_standby">Siaga di latar belakang</string>
+    <string name="calls_step_standby_sub">Jawab otomatis tetap jalan saat layar terkunci atau di latar belakang</string>
+    <string name="calls_step_go">Atur</string>
+    <string name="calls_step_test">Uji</string>
+    <string name="calls_step_change">Ubah</string>
+    <string name="calls_checklist_title">Daftar persiapan</string>
+    <string name="calls_checklist_lead">Semua yang dibutuhkan panggilan AI ada di halaman ini. Selesaikan daftar berurutan dan siap dipakai.</string>
+    <string name="calls_checklist_note">Mengubah mode audio panggilan menghapus hasil uji; jawab otomatis tidak bisa aktif sebelum diuji.</string>
+    <string name="calls_checklist_left">Tinggal %1$d langkah</string>
+    <string name="calls_checklist_done">Semua selesai</string>
+    <string name="calls_settings_title">Pengaturan telepon</string>
+    <string name="calls_settings_sound">Suara</string>
+    <string name="calls_settings_this_phone">Ponsel ini</string>
+    <string name="calls_settings_records">Catatan</string>
+    <string name="calls_voice_needs_change">Perlu diganti</string>
+    <string name="calls_disable_sub">Panggilan masuk dan keluar kembali ke telepon sistem</string>
+    <string name="calls_how_to_talk">Saat menjawab</string>
+    <string name="calls_greeting_empty">Kosong · tunggu penelepon bicara dulu</string>
+    <string name="calls_talk_settings_sub">Instruksi dan durasi maksimal AI berbicara</string>
+    <string name="calls_stage_listen">Dengar</string>
+    <string name="calls_stage_think">Pikir</string>
+    <string name="calls_stage_speak">Bicara</string>
+    <string name="calls_stage_now">Sekarang: %1$s</string>
+</resources>

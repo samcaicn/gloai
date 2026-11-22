@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_ready_title">آماده</string>
+    <string name="calls_ready_standby">پاسخ خودکار آماده · تماس‌های مطابق پس از %1$d ثانیه پاسخ داده می‌شوند</string>
+    <string name="calls_ready_manual">می‌توانید دستی از هوش مصنوعی بخواهید پاسخ دهد یا تماس بگیرد</string>
+    <string name="calls_ready_missing">%1$d مرحله تا آماده شدن مانده</string>
+    <string name="calls_ready_view">مشاهده</string>
+    <string name="calls_ready_finish">تکمیل</string>
+    <string name="calls_step_voice">شنیدن و گفتن</string>
+    <string name="calls_step_voice_missing">برای تماس مدل تشخیص آنلاین و مدل گفتار انتخاب کنید</string>
+    <string name="calls_step_phone">مجوز تلفن و اعلان‌ها</string>
+    <string name="calls_step_phone_sub">خواندن وضعیت تماس، شماره‌گیری، اعلان تماس ورودی</string>
+    <string name="calls_step_helper_sub">هوش مصنوعی برای شنیدن و گفتن در تماس به آن نیاز دارد</string>
+    <string name="calls_step_audio">آزمایش یک تماس</string>
+    <string name="calls_step_audio_sub">یک تماس آزمایشی بگیرید و مطمئن شوید هر دو طرف می‌شنوند</string>
+    <string name="calls_step_standby">آماده‌باش در پس‌زمینه</string>
+    <string name="calls_step_standby_sub">پاسخ خودکار با صفحهٔ قفل یا در پس‌زمینه هم کار می‌کند</string>
+    <string name="calls_step_go">تنظیم</string>
+    <string name="calls_step_test">آزمایش</string>
+    <string name="calls_step_change">تغییر</string>
+    <string name="calls_checklist_title">فهرست آماده‌سازی</string>
+    <string name="calls_checklist_lead">هر چه تماس‌های هوش مصنوعی لازم دارند در این صفحه است. فهرست را به ترتیب انجام دهید و آماده است.</string>
+    <string name="calls_checklist_note">تغییر روش صدای تماس آزمایش را پاک می‌کند؛ تا تماسی آزمایش نشود پاسخ خودکار روشن نمی‌شود.</string>
+    <string name="calls_checklist_left">%1$d مرحله مانده</string>
+    <string name="calls_checklist_done">همه انجام شد</string>
+    <string name="calls_settings_title">تنظیمات تلفن</string>
+    <string name="calls_settings_sound">صدا</string>
+    <string name="calls_settings_this_phone">این گوشی</string>
+    <string name="calls_settings_records">سوابق</string>
+    <string name="calls_voice_needs_change">باید عوض شود</string>
+    <string name="calls_disable_sub">تماس‌های ورودی و شماره‌گیری به تلفن سیستم برمی‌گردد</string>
+    <string name="calls_how_to_talk">وقتی جواب داد</string>
+    <string name="calls_greeting_empty">خالی · صبر تا تماس‌گیرنده اول حرف بزند</string>
+    <string name="calls_talk_settings_sub">دستورها و بیشترین مدت صحبت هوش مصنوعی</string>
+    <string name="calls_stage_listen">می‌شنود</string>
+    <string name="calls_stage_think">فکر</string>
+    <string name="calls_stage_speak">می‌گوید</string>
+    <string name="calls_stage_now">اکنون: %1$s</string>
+</resources>

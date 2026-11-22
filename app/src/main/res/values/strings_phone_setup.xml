@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_ready_title">Ready</string>
+    <string name="calls_ready_standby">Auto-answer on standby · matching calls answered after %1$d s</string>
+    <string name="calls_ready_manual">You can have the AI answer or call by hand</string>
+    <string name="calls_ready_missing">%1$d steps left before it works</string>
+    <string name="calls_ready_view">View</string>
+    <string name="calls_ready_finish">Finish</string>
+    <string name="calls_step_voice">Listen and speak</string>
+    <string name="calls_step_voice_missing">Choose an online listen model and a speak model for calls</string>
+    <string name="calls_step_phone">Phone permission and notifications</string>
+    <string name="calls_step_phone_sub">Read call state, place calls, incoming call notices</string>
+    <string name="calls_step_helper_sub">The AI needs it to listen and speak in calls</string>
+    <string name="calls_step_audio">Test one call</string>
+    <string name="calls_step_audio_sub">Make a test call and check both sides hear each other</string>
+    <string name="calls_step_standby">Background standby</string>
+    <string name="calls_step_standby_sub">Auto-answer works with the screen locked or the app in the background</string>
+    <string name="calls_step_go">Set up</string>
+    <string name="calls_step_test">Test</string>
+    <string name="calls_step_change">Change</string>
+    <string name="calls_checklist_title">Setup checklist</string>
+    <string name="calls_checklist_lead">Everything AI calls need is on this page. Work down the list and it is ready.</string>
+    <string name="calls_checklist_note">Changing the call audio mode clears the test; auto-answer stays off until a call is tested.</string>
+    <string name="calls_checklist_left">%1$d steps left</string>
+    <string name="calls_checklist_done">All done</string>
+    <string name="calls_settings_title">Phone settings</string>
+    <string name="calls_settings_sound">Voice</string>
+    <string name="calls_settings_this_phone">This phone</string>
+    <string name="calls_settings_records">Records</string>
+    <string name="calls_voice_needs_change">Change</string>
+    <string name="calls_disable_sub">Incoming calls and dialing all go back to the system phone</string>
+    <string name="calls_how_to_talk">When it answers</string>
+    <string name="calls_greeting_empty">Empty · wait for the caller to speak first</string>
+    <string name="calls_talk_settings_sub">Instructions and the longest the AI talks</string>
+    <string name="calls_stage_listen">Listen</string>
+    <string name="calls_stage_think">Think</string>
+    <string name="calls_stage_speak">Speak</string>
+    <string name="calls_stage_now">Now: %1$s</string>
+</resources>
