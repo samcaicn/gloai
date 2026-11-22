@@ -112,6 +112,13 @@ class VoiceAccountResolver(
             configurationFingerprint = VoiceFingerprints.model(account, model),
         )
     }
+
+    /** Non-decrypting credential-presence check for UI/profile display; never reads secret plaintext. */
+    fun credentialsConfigured(service: VoiceService): Boolean = when (val source = service.account) {
+        is VoiceAccount.ExistingProvider -> providers.hasKey(source.providerId)
+        is VoiceAccount.VoiceOwned -> owned.configurationToken(source.secretId).isNotBlank()
+        VoiceAccount.None -> true
+    }
 }
 
 private object VoiceFingerprints {

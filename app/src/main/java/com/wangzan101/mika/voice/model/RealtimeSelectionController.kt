@@ -18,7 +18,8 @@ class RealtimeSelectionController(private val environment: VoiceModelEnvironment
         environment.catalog.setRealtimeSelection(ref)
     }
 
-    fun requireModel(ref: VoiceModelRef): ResolvedVoiceModel {
+    /** Catalog lookup + capability validation; no account resolution or secret decryption. */
+    private fun requireBinding(ref: VoiceModelRef): Pair<VoiceService, VoiceModel> {
         val snapshot = environment.catalog.state.value
         if (snapshot.error != null) throw VoiceModelError.IncompleteConfig("Voice catalog is not readable")
         if (ref.capability != VoiceCapability.REALTIME) throw VoiceModelError.Unsupported(VoiceCapability.REALTIME)
@@ -27,8 +28,17 @@ class RealtimeSelectionController(private val environment: VoiceModelEnvironment
         if (model.realtime == null) throw VoiceModelError.Unsupported(VoiceCapability.REALTIME)
         val service = snapshot.services.firstOrNull { it.id == model.serviceId }
             ?: throw VoiceModelError.IncompleteConfig("Selected Realtime service is not registered")
+        return service to model
+    }
+
+    /** Full account resolution (decrypts owned secrets); connection-time only. */
+    fun requireModel(ref: VoiceModelRef): ResolvedVoiceModel {
+        val (service, model) = requireBinding(ref)
         return environment.accountResolver.resolve(service, model)
     }
+
+    /** Catalog model without account resolution; for profile display and speaker edits. */
+    fun model(ref: VoiceModelRef): VoiceModel = requireBinding(ref).second
 
     fun provider(ref: VoiceModelRef): CallRealtimeProvider {
         val model = requireModel(ref)
@@ -41,9 +51,9 @@ class RealtimeSelectionController(private val environment: VoiceModelEnvironment
     }
 
     fun profile(ref: VoiceModelRef): CallVoiceProfile {
-        val model = requireModel(ref)
+        val (service, model) = requireBinding(ref)
         return model.realtimeProfile(
-            credentialsConfigured = model.account.credentialsConfigured,
+            credentialsConfigured = environment.accountResolver.credentialsConfigured(service),
             connectionTested = connectionTested(ref),
         )
     }
@@ -65,7 +75,7 @@ class RealtimeSelectionController(private val environment: VoiceModelEnvironment
     }
 
     fun credentialsConfigured(ref: VoiceModelRef): Boolean = runCatching {
-        requireModel(ref).account.credentialsConfigured
+        environment.accountResolver.credentialsConfigured(requireBinding(ref).first)
     }.getOrDefault(false)
 
     fun connectionTested(ref: VoiceModelRef): Boolean =

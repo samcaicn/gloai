@@ -17,7 +17,6 @@ import com.wangzan101.mika.voice.model.voiceTestEnvironment
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -126,24 +125,28 @@ class CallRealtimeUnifiedTest {
     }
 
     @Test
-    fun `in-app and carrier entry points receive the same provider for the same ref`() {
+    fun `carrier connect and in-app resolution agree on the active profile and credentials`() = kotlinx.coroutines.test.runTest {
         val (controller, recording) = controller(RecordingRealtimeProvider())
         controller.select(volcRef)
 
-        // The carrier entry point (CallRuntime) and the in-app entry point (VoiceCallController)
-        // both resolve their connection provider from the same controller for the active ref.
-        val carrier = controller.provider()
-        val inApp = controller.provider()
-        carrier.validate(CallVoiceProfile(), "carrier prompt", enablePhoneDtmf = true)
-        inApp.validate(CallVoiceProfile(), "in-app prompt", enablePhoneDtmf = false)
+        // Carrier entry point (CallRuntime) connects through the catalog-backed provider.
+        controller.provider().connect(CallVoiceProfile(), VolcRealtimeCredentials(), "carrier", enablePhoneDtmf = true)
 
-        assertEquals(2, recording.validated.size)
-        val carrierSeen = recording.validated[0]
-        val inAppSeen = recording.validated[1]
-        assertSame(carrierSeen.endpoint, inAppSeen.endpoint)
-        assertSame(carrierSeen.model, inAppSeen.model)
-        assertSame(carrierSeen.speaker, inAppSeen.speaker)
-        assertEquals(carrierSeen, inAppSeen)
+        // In-app entry point (VoiceCallController) resolves profile + credentials through the same
+        // controller: activeProfile() -> profile(), activeCredentials() -> credentials(). It keeps
+        // VolcRealtimeClient for the connection, so the shared invariant is that both entry points
+        // read identical endpoint/model/speaker and credentials for the active ref.
+        val inAppProfile = controller.profile()
+        val inAppCredentials = controller.credentials()
+
+        val (carrierProfile, carrierCredentials) = recording.connected.single()
+        assertEquals(inAppProfile.protocol, carrierProfile.protocol)
+        assertEquals(inAppProfile.endpoint, carrierProfile.endpoint)
+        assertEquals(inAppProfile.model, carrierProfile.model)
+        assertEquals(inAppProfile.speaker, carrierProfile.speaker)
+        assertEquals(inAppCredentials.apiKey, carrierCredentials.apiKey)
+        assertEquals(inAppCredentials.appId, carrierCredentials.appId)
+        assertEquals(inAppCredentials.accessKey, carrierCredentials.accessKey)
     }
 
     @Test

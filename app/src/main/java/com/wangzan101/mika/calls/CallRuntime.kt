@@ -581,7 +581,7 @@ class CallRuntime(private val app: MikaApp) {
         if (work != null || lockedDial != null) return@onMain fail("请先结束当前通话或锁屏拨出安排")
         if (realtimeController.migrated) {
             val ref = realtimeController.current() ?: return@onMain fail("请先选择实时语音模型")
-            val model = runCatching { realtimeController.requireModel(ref).model }.getOrNull()
+            val model = runCatching { realtimeController.model(ref) }.getOrNull()
                 ?: return@onMain fail("实时语音模型不存在")
             val binding = model.realtime ?: return@onMain fail("实时语音模型不支持通话")
             if (binding.speaker != profile.speaker) {

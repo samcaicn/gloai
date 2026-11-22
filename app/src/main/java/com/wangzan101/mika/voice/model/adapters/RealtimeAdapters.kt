@@ -14,6 +14,7 @@ import com.wangzan101.mika.voice.model.RealtimeBinding
 import com.wangzan101.mika.voice.model.RealtimeProtocol
 import com.wangzan101.mika.voice.model.ResolvedVoiceModel
 import com.wangzan101.mika.voice.model.VoiceCapability
+import com.wangzan101.mika.voice.model.VoiceModel
 import com.wangzan101.mika.voice.model.VoiceModelError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -68,18 +69,18 @@ internal fun RealtimeBinding.defaultSpeaker(): String = when (protocol) {
     RealtimeProtocol.OpenAiRealtime -> OpenAiCallProtocol.VOICE
 }
 
-/** The display/connection profile for a resolved Realtime model; secrets never pass through it. */
-internal fun ResolvedVoiceModel.realtimeProfile(
+/** The display/connection profile for a Realtime model; secrets never pass through it. */
+internal fun VoiceModel.realtimeProfile(
     credentialsConfigured: Boolean,
     connectionTested: Boolean = false,
 ): CallVoiceProfile {
-    val binding = model.realtime ?: throw VoiceModelError.Unsupported(VoiceCapability.REALTIME)
+    val binding = realtime ?: throw VoiceModelError.Unsupported(VoiceCapability.REALTIME)
     return CallVoiceProfile(
-        id = model.id,
-        name = model.displayName,
+        id = id,
+        name = displayName,
         protocol = binding.callProtocol(),
         endpoint = binding.endpoint.ifBlank { binding.defaultEndpoint() },
-        model = model.id,
+        model = id,
         speaker = binding.speaker.ifBlank { binding.defaultSpeaker() },
         credentialsConfigured = credentialsConfigured,
         connectionTested = connectionTested,
@@ -91,7 +92,7 @@ private class ConfiguredRealtimeProvider(
     private val binding: RealtimeBinding,
     private val delegate: CallRealtimeProvider,
 ) : CallRealtimeProvider {
-    private val profile = resolved.realtimeProfile(credentialsConfigured = true)
+    private val profile = resolved.model.realtimeProfile(credentialsConfigured = true)
     private val credentials = resolved.account.credentials.let {
         VolcRealtimeCredentials(it.apiKey, it.appId, it.accessKey)
     }

@@ -190,4 +190,66 @@ class RealtimeSelectionControllerTest {
 
         assertThrows(VoiceModelError.IncompleteConfig::class.java) { controller.provider() }
     }
+
+    @Test
+    fun `profile and credentialsConfigured resolve display state without decrypting owned secrets`() {
+        val catalog = migratedCatalog()
+        val owned = DecryptionTrackingOwnedSource()
+        val controller = voiceTestEnvironment(catalog, owned = owned).realtime
+
+        val profile = controller.profile(volcRef)
+        assertTrue(profile.credentialsConfigured)
+        assertTrue(controller.credentialsConfigured(volcRef))
+        assertEquals(0, owned.readCount)
+
+        // Connection-time resolution still decrypts exactly once.
+        assertTrue(controller.credentials(volcRef).valid)
+        assertEquals(1, owned.readCount)
+    }
+
+    @Test
+    fun `speaker-only edit preserves connection and audio verification records`() {
+        val catalog = migratedCatalog()
+        val controller = voiceTestEnvironment(catalog).realtime
+        controller.select(volcRef)
+        controller.markConnectionTested(volcRef, true)
+        controller.markAudioVerified(volcRef, CallAudioMode.DIRECT, true, "device-one")
+        assertTrue(controller.connectionTested(volcRef))
+        assertTrue(controller.isAudioVerified(volcRef, CallAudioMode.DIRECT, "device-one"))
+
+        val model = controller.model(volcRef)
+        catalog.upsertModel(model.copy(realtime = model.realtime!!.copy(speaker = "speaker_b")))
+
+        assertTrue(controller.connectionTested(volcRef))
+        assertTrue(controller.isAudioVerified(volcRef, CallAudioMode.DIRECT, "device-one"))
+    }
+
+    @Test
+    fun `endpoint change invalidates connection and audio verification records`() {
+        val catalog = migratedCatalog()
+        val controller = voiceTestEnvironment(catalog).realtime
+        controller.select(volcRef)
+        controller.markConnectionTested(volcRef, true)
+        controller.markAudioVerified(volcRef, CallAudioMode.DIRECT, true, "device-one")
+
+        val model = controller.model(volcRef)
+        catalog.upsertModel(model.copy(realtime = model.realtime!!.copy(endpoint = "wss://volc.example/other")))
+
+        assertFalse(controller.connectionTested(volcRef))
+        assertFalse(controller.isAudioVerified(volcRef, CallAudioMode.DIRECT, "device-one"))
+    }
+}
+
+/** Counts secret reads so display paths can be pinned to never decrypt. */
+private class DecryptionTrackingOwnedSource : VoiceOwnedAccountSource {
+    var readCount = 0
+        private set
+
+    override fun read(secretId: String): VoiceCredentials {
+        readCount++
+        return VoiceCredentials(apiKey = "owned-test-key")
+    }
+
+    override fun credentialsConfigured(secretId: String): Boolean = true
+    override fun configurationToken(secretId: String): String = "ciphertext-revision"
 }

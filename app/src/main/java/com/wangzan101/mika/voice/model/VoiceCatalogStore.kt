@@ -55,7 +55,7 @@ class VoiceCatalogStore(
                 selections = pruneSelections(current.selections, models),
                 verifications = current.verifications.filter { record ->
                     if (record.ref.serviceId != model.serviceId || record.ref.modelId != model.id) true
-                    else existing?.binding(record.ref.capability) == model.binding(record.ref.capability)
+                    else verificationIdentity(existing?.binding(record.ref.capability)) == verificationIdentity(model.binding(record.ref.capability))
                 },
             )
         }
@@ -214,6 +214,12 @@ class VoiceCatalogStore(
         VoiceCapability.STT -> stt
         VoiceCapability.TTS -> tts
         VoiceCapability.REALTIME -> realtime
+    }
+
+    /** Binding fields that determine connection identity; cosmetic fields (Realtime speaker) are ignored. */
+    private fun verificationIdentity(binding: Any?): Any? = when (binding) {
+        is RealtimeBinding -> RealtimeBinding(binding.protocol, binding.endpoint, speaker = "")
+        else -> binding
     }
 
     private fun hasUnsupportedSchema(root: JsonObject): Boolean {
