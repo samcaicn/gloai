@@ -38,4 +38,7 @@
     <string name="teach_watch_lost">「正在学习」的浮层不见了，示范已停下，不再记录。</string>
     <string name="teach_shelf_expand">展开教 Mika</string>
     <string name="teach_shelf_collapse">收起教 Mika</string>
+    <string name="teach_summarizing">正在整理成技能…</string>
+    <string name="teach_accept">收下这个技能</string>
+    <string name="teach_retry">再整理一次</string>
 </resources>

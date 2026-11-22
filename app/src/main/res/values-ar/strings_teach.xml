@@ -38,4 +38,7 @@
     <string name="teach_watch_lost">اختفى شريط التعلم، لذلك توقف العرض. لم يعد يُسجل شيء.</string>
     <string name="teach_shelf_expand">إظهار علّم Mika</string>
     <string name="teach_shelf_collapse">إخفاء علّم Mika</string>
+    <string name="teach_summarizing">يجري ترتيب هذا كمهارة…</string>
+    <string name="teach_accept">قبول هذه المهارة</string>
+    <string name="teach_retry">إعادة الترتيب</string>
 </resources>

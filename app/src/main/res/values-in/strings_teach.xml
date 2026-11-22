@@ -38,4 +38,7 @@
     <string name="teach_watch_lost">Bilah Sedang belajar hilang, jadi demonstrasi dihentikan. Tidak ada yang direkam lagi.</string>
     <string name="teach_shelf_expand">Tampilkan Ajari Mika</string>
     <string name="teach_shelf_collapse">Sembunyikan Ajari Mika</string>
+    <string name="teach_summarizing">Menyiapkan keterampilan…</string>
+    <string name="teach_accept">Simpan keterampilan ini</string>
+    <string name="teach_retry">Siapkan ulang</string>
 </resources>

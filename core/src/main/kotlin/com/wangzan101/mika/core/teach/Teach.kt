@@ -77,6 +77,8 @@ data class TeachSession(
     val truncated: Boolean = false,
     val draftId: String? = null,
     val updatedAt: Long = 0L,
+    /** 收下后展示给用户的技能名。旧会话没有这个字段。 */
+    val acceptedName: String? = null,
 ) {
     fun step(id: Int): TeachStep? = steps.find { it.id == id }
 }

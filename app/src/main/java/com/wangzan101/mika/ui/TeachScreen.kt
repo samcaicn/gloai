@@ -24,12 +24,12 @@ import androidx.compose.runtime.collectAsState
 import android.app.Activity
 import androidx.compose.ui.platform.LocalContext
 import com.wangzan101.mika.R
+import com.wangzan101.mika.core.knowledge.FrontMatter
 import com.wangzan101.mika.core.teach.TeachPhase
-import com.wangzan101.mika.core.teach.TeachStep
 import com.wangzan101.mika.core.teach.teachGoalAccepted
-import com.wangzan101.mika.core.teach.teachLine
 import com.wangzan101.mika.teach.TeachNotice
 import com.wangzan101.mika.teach.TeachRuntime
+import com.wangzan101.mika.teach.TeachUi
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize
 import com.wangzan101.mika.ui.components.MikaButton
@@ -49,7 +49,7 @@ fun TeachScreen(runtime: TeachRuntime, onBack: () -> Unit, onOpenDrafts: () -> U
             null, TeachPhase.Idle, TeachPhase.Ready -> GoalForm(runtime, ui.hint)
             TeachPhase.Recording, TeachPhase.Paused -> Live(runtime, session.phase, session.steps.size)
             TeachPhase.Interrupted -> Interrupted(runtime)
-            TeachPhase.Reviewing, TeachPhase.Drafting -> Review(runtime, session.steps, session.phase == TeachPhase.Drafting)
+            TeachPhase.Reviewing, TeachPhase.Drafting -> Review(runtime, ui)
             TeachPhase.Saved -> Saved(runtime, onOpenDrafts)
         }
     }
@@ -147,59 +147,43 @@ private fun Interrupted(runtime: TeachRuntime) {
 }
 
 @Composable
-private fun Review(runtime: TeachRuntime, steps: List<TeachStep>, drafting: Boolean) {
+private fun Review(runtime: TeachRuntime, ui: TeachUi) {
     var confirm by remember { mutableStateOf(false) }
+    val draft = ui.draft
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(stringResource(R.string.teach_review), style = MikaType.Title, color = MikaTheme.colors.ink)
-        if (steps.isEmpty()) Text(stringResource(R.string.teach_no_steps), color = MikaTheme.colors.ink2)
-        steps.forEach { step -> StepEditor(runtime, step) }
-        MikaButton(
-            stringResource(R.string.teach_generate),
-            runtime::generate,
-            enabled = steps.isNotEmpty() && !drafting,
-            kind = ButtonKind.Primary,
-            size = ButtonSize.Medium,
-            modifier = Modifier.testTag("teach-generate"),
-        )
+        if (draft == null) {
+            Text(stringResource(R.string.teach_summarizing), style = MikaType.Title, color = MikaTheme.colors.ink)
+            if (ui.session?.phase == TeachPhase.Reviewing) {
+                Text(stringResource(R.string.teach_draft_failed), style = MikaType.Body, color = MikaTheme.colors.ink2)
+                MikaButton(
+                    stringResource(R.string.teach_retry),
+                    runtime::retry,
+                    kind = ButtonKind.Primary,
+                    size = ButtonSize.Medium,
+                    modifier = Modifier.testTag("teach-retry"),
+                )
+            }
+        } else {
+            (FrontMatter.parse(draft.markdown).first["display"] as? String)
+                ?.takeIf { it.isNotBlank() }
+                ?.let { Text(it, style = MikaType.Title, color = MikaTheme.colors.ink) }
+            SkillReadingView(skillPreviewBody(draft.markdown))
+            MikaButton(
+                stringResource(R.string.teach_accept),
+                { runtime.accept() },
+                kind = ButtonKind.Primary,
+                size = ButtonSize.Medium,
+                modifier = Modifier.testTag("teach-accept"),
+            )
+        }
         if (confirm) {
             Text(stringResource(R.string.teach_discard_body), color = MikaTheme.colors.warn)
             MikaButton(stringResource(R.string.teach_discard), runtime::discard, kind = ButtonKind.Tonal, size = ButtonSize.Medium)
         } else {
             MikaButton(stringResource(R.string.teach_discard), { confirm = true }, kind = ButtonKind.Tonal, size = ButtonSize.Medium)
-        }
-    }
-}
-
-@Composable
-private fun StepEditor(runtime: TeachRuntime, step: TeachStep) {
-    var correction by remember(step.id, step.correction) { mutableStateOf(step.correction.orEmpty()) }
-    var explanation by remember(step.id, step.explanation) { mutableStateOf(step.explanation.orEmpty()) }
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(teachLine(step), style = MikaType.Body, color = MikaTheme.colors.ink)
-        if (step.insufficient) Text(stringResource(R.string.teach_insufficient_note), style = MikaType.Hint, color = MikaTheme.colors.ink3)
-        if (step.sensitiveOmitted) Text(stringResource(R.string.teach_sensitive_note), style = MikaType.Hint, color = MikaTheme.colors.ink3)
-        OutlinedTextField(
-            correction,
-            {
-                correction = it
-                runtime.annotate(step.id, it, explanation)?.let { }
-            },
-            Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.teach_correct)) },
-        )
-        if (step.needsClarification) {
-            OutlinedTextField(
-                explanation,
-                { explanation = it; runtime.annotate(step.id, correction, it) },
-                Modifier.fillMaxWidth().testTag("teach-clarify"),
-                label = { Text(stringResource(R.string.teach_clarify)) },
-            )
-        }
-        Row {
-            MikaButton(stringResource(R.string.teach_remove), { runtime.remove(step.id) }, kind = ButtonKind.Tonal, size = ButtonSize.Small)
         }
     }
 }

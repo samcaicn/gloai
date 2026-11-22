@@ -38,4 +38,7 @@
     <string name="teach_watch_lost">A barra Aprendendo sumiu, então a demonstração parou. Nada mais está sendo gravado.</string>
     <string name="teach_shelf_expand">Mostrar Ensinar a Mika</string>
     <string name="teach_shelf_collapse">Ocultar Ensinar a Mika</string>
+    <string name="teach_summarizing">Preparando a habilidade…</string>
+    <string name="teach_accept">Guardar esta habilidade</string>
+    <string name="teach_retry">Preparar de novo</string>
 </resources>

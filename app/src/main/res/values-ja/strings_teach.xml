@@ -38,4 +38,7 @@
     <string name="teach_watch_lost">「学習中」バーが消えたので、示範を止めました。これ以上は記録しません。</string>
     <string name="teach_shelf_expand">Mika に教えるを表示</string>
     <string name="teach_shelf_collapse">Mika に教えるを隠す</string>
+    <string name="teach_summarizing">スキルに整理しています…</string>
+    <string name="teach_accept">このスキルを受け取る</string>
+    <string name="teach_retry">もう一度整理する</string>
 </resources>

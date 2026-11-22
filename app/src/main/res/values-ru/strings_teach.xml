@@ -38,4 +38,7 @@
     <string name="teach_watch_lost">Полоса «Учится» исчезла, поэтому показ остановлен. Больше ничего не записывается.</string>
     <string name="teach_shelf_expand">Показать Научить Mika</string>
     <string name="teach_shelf_collapse">Скрыть Научить Mika</string>
+    <string name="teach_summarizing">Готовлю навык…</string>
+    <string name="teach_accept">Сохранить навык</string>
+    <string name="teach_retry">Подготовить ещё раз</string>
 </resources>

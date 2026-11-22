@@ -38,4 +38,7 @@
     <string name="teach_watch_lost">Öğrenme çubuğu kayboldu, bu yüzden gösterim durdu. Daha fazla bir şey kaydedilmiyor.</string>
     <string name="teach_shelf_expand">Mika\'ya öğret\'i göster</string>
     <string name="teach_shelf_collapse">Mika\'ya öğret\'i gizle</string>
+    <string name="teach_summarizing">Beceri hâline getiriliyor…</string>
+    <string name="teach_accept">Bu beceriyi al</string>
+    <string name="teach_retry">Yeniden hazırla</string>
 </resources>

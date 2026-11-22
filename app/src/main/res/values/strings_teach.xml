@@ -38,4 +38,7 @@
     <string name="teach_watch_lost">The Learning bar disappeared, so the demonstration stopped. Nothing more is being recorded.</string>
     <string name="teach_shelf_expand">Show Teach Mika</string>
     <string name="teach_shelf_collapse">Hide Teach Mika</string>
+    <string name="teach_summarizing">Writing this into a skill…</string>
+    <string name="teach_accept">Keep this skill</string>
+    <string name="teach_retry">Try writing it again</string>
 </resources>

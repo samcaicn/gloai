@@ -38,4 +38,7 @@
     <string name="teach_watch_lost">학습 중 막대가 사라져 시범을 멈췄습니다. 더 이상 기록하지 않습니다.</string>
     <string name="teach_shelf_expand">Mika에게 가르치기 펼치기</string>
     <string name="teach_shelf_collapse">Mika에게 가르치기 접기</string>
+    <string name="teach_summarizing">스킬로 정리하는 중…</string>
+    <string name="teach_accept">이 스킬 받기</string>
+    <string name="teach_retry">다시 정리하기</string>
 </resources>

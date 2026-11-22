@@ -38,4 +38,7 @@
     <string name="teach_watch_lost">نوار یادگیری ناپدید شد، بنابراین نمایش متوقف شد. دیگر چیزی ثبت نمی‌شود.</string>
     <string name="teach_shelf_expand">نمایش آموزش به میکا</string>
     <string name="teach_shelf_collapse">پنهان کردن آموزش به میکا</string>
+    <string name="teach_summarizing">در حال تبدیل به مهارت…</string>
+    <string name="teach_accept">پذیرفتن این مهارت</string>
+    <string name="teach_retry">دوباره مرتب کن</string>
 </resources>
