@@ -122,6 +122,7 @@ fun McpCatalogScreen(
 ) {
     val context = LocalContext.current
     val langTag = remember(context) { AppLanguage.resolved(context).tag ?: "en" }
+    val logos = remember(context) { McpLogos.load(context) }
     var query by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable { mutableStateOf(McpCategory.ALL) }
     val c = MikaTheme.colors
@@ -163,13 +164,15 @@ fun McpCatalogScreen(
                     }
                 } else {
                     itemsIndexed(filtered, key = { _, p -> p.id }) { i, p ->
+                        val logo = logos.logo(p.id)
                         Box(
                             Modifier.fillMaxWidth().clip(rowShape(i, filtered.size)).background(c.surface),
                         ) {
                             ListRow(
-                                McpCategory.icon(McpCategory.of(p)), p.name,
+                                logo ?: McpCategory.icon(McpCategory.of(p)), p.name,
                                 subtitle = p.summary.resolve(langTag),
                                 first = i == 0,
+                                brand = logo != null,
                                 onClick = { onOpenPreset(p.id) },
                                 modifier = Modifier.testTag("mcp-preset-${p.id}"),
                             ) { RowChevron() }

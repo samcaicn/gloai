@@ -59,6 +59,7 @@ fun McpServerManageScreen(
 ) {
     val context = LocalContext.current
     val langTag = remember(context) { AppLanguage.resolved(context).tag ?: "en" }
+    val logos = remember(context) { McpLogos.load(context) }
     val servers by store.servers.collectAsState()
     val health by store.health.collectAsState()
     val current = servers.firstOrNull { it.id == config.id } ?: config
@@ -77,6 +78,7 @@ fun McpServerManageScreen(
     val isOAuth = current.auth == "oauth"
     val secretFields = current.presetSnapshot?.fields?.filter { it.secret }.orEmpty()
     val address = if (current.transport == "stdio") current.command else current.url
+    val logo = current.presetId?.let { logos.logo(it) }
     var secretValues by remember(current.id) { mutableStateOf(secretFields.associate { it.id to "" }) }
     var token by remember(current.id) { mutableStateOf("") }
 
@@ -91,8 +93,9 @@ fun McpServerManageScreen(
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
                 GroupCard(Modifier.padding(top = 8.dp)) {
                     ListRow(
-                        MikaIcons.Link, statusTitle, subtitle = address, first = true,
+                        logo ?: MikaIcons.Link, statusTitle, subtitle = address, first = true,
                         tone = if (state?.ok == true) TileTone.Ok else TileTone.Neutral,
+                        brand = logo != null,
                     ) {
                         MikaSwitch(current.enabled, { on -> store.setEnabled(current.id, on) })
                     }

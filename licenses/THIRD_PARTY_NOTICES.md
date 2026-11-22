@@ -307,3 +307,8 @@ THE SOFTWARE.
 - Artifacts: `dev.rikka.shizuku:api:13.1.5`, `dev.rikka.shizuku:provider:13.1.5`
 - License: Apache-2.0
 - Usage: Library dependency used to optionally bind a local privileged user service when Shizuku is already installed, running, and authorized by the user.
+## MCP 服务品牌 logo（mcp/mcp-logos.json）
+
+- Source: https://www.npmjs.com/package/simple-icons（Simple Icons, 钉死版本 16.38.1 + 14.11.0）
+- License: CC0 1.0（图标字形本体）;各品牌标志（GitHub、Slack、OpenAI、Google、Notion 等）仍归各自品牌所有,仅在此用于「可连接的服务」标识。
+- Usage: `app/src/main/assets/mcp/mcp-logos.json` 里的品牌轮廓 path 与官方品牌色,由 `tools/mcp/build_logos.py` 生成,供 `McpLogos` 在服务目录/列表/管理页渲染为自着色矢量图标。

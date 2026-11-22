@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
@@ -89,6 +90,8 @@ private fun McpServerList(
     val health by store.health.collectAsState()
     var refreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val logos = remember(context) { McpLogos.load(context) }
 
     PageScaffold(stringResource(R.string.mcp_servers_title), onBack) {
         if (servers.isEmpty()) {
@@ -107,14 +110,16 @@ private fun McpServerList(
                 servers.forEachIndexed { i, server ->
                     val state = health[server.id]
                     val address = if (server.transport == "stdio") server.command else server.url
+                    val logo = server.presetId?.let { logos.logo(it) }
                     ListRow(
-                        MikaIcons.Link, server.name,
+                        logo ?: MikaIcons.Link, server.name,
                         subtitle = (state?.let {
                             if (it.ok) stringResource(R.string.mcp_servers_status_ok, it.tools.size)
                             else stringResource(R.string.mcp_servers_status_fail, it.message.orEmpty())
                         } ?: address),
                         detail = state?.let { address },
                         first = i == 0,
+                        brand = logo != null,
                         onClick = { onEdit(server) },
                     ) {
                         MikaSwitch(server.enabled, { on -> store.setEnabled(server.id, on) })

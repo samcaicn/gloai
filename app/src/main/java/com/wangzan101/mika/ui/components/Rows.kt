@@ -110,12 +110,15 @@ enum class TileTone {
 
 /** 行左边的图标块:30dp、圆角 9,里面图形 18dp。 */
 @Composable
-fun IconTile(icon: ImageVector, tone: TileTone = TileTone.Neutral) {
-    val (bg, fg) = tone.colors(MikaTheme.colors)
+fun IconTile(icon: ImageVector, tone: TileTone = TileTone.Neutral, brand: Boolean = false) {
+    val (bg, fg) = if (brand) (BrandTileBg to Color.Unspecified) else tone.colors(MikaTheme.colors)
     Box(Modifier.size(MikaSize.Tile).background(bg, MikaShapes.Tile), contentAlignment = Alignment.Center) {
         Icon(icon, null, Modifier.size(MikaSize.TileIcon), tint = fg)
     }
 }
+
+/** 品牌 logo 的固定浅色底(两种模式都浅色),让深色品牌标在深色模式下仍可读。 */
+private val BrandTileBg = Color(0xFFF4F4F5)
 
 /** 行与行之间的分隔线,从 [start] 画到右边;分组首行([first])不画。 */
 private fun Modifier.topHairline(first: Boolean, start: Dp, color: Color): Modifier =
@@ -142,6 +145,7 @@ fun ListRow(
     first: Boolean = false,
     titleColor: Color = Color.Unspecified,
     tone: TileTone = TileTone.Neutral,
+    brand: Boolean = false,
     detail: String? = null,
     detailColor: Color = Color.Unspecified,
     onClick: (() -> Unit)? = null,
@@ -158,7 +162,7 @@ fun ListRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        if (icon != null) IconTile(icon, tone)
+        if (icon != null) IconTile(icon, tone, brand)
         Column(Modifier.weight(1f).padding(vertical = 11.dp)) {
             Text(title, style = MikaType.Body, color = titleColor.takeOrElse { c.ink })
             if (!subtitle.isNullOrEmpty()) Text(subtitle, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink3)
