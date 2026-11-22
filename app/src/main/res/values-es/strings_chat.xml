@@ -326,4 +326,19 @@
     <string name="chat_audio">Audio</string>
     <string name="chat_audio_play">Play</string>
     <string name="chat_audio_stop">Stop</string>
+    <string name="plus_sub_camera">Haz una foto ahora</string>
+    <string name="plus_sub_album">Elegir de tus fotos, varias permitidas</string>
+    <string name="plus_sub_files">Documentos, PDF, archivos</string>
+    <string name="plus_sub_device">Explorar carpetas del teléfono</string>
+    <string name="plus_clipboard">Portapapeles</string>
+    <string name="plus_sub_clipboard">Pegar lo que acabas de copiar</string>
+    <string name="plus_sub_teach">Muéstraselo una vez y Mika lo aprende</string>
+    <string name="plus_sub_skills">Usar una habilidad en este turno</string>
+    <string name="plus_sub_checklists">Guardar una lista de tareas</string>
+    <string name="plus_sub_workflows">Ejecutar una tarea guardada de varios pasos</string>
+    <string name="plus_sub_tasks">Rellenar una tarea guardada en la entrada</string>
+    <string name="plus_sub_browser">Abrir el navegador integrado</string>
+    <string name="plus_skills_empty">Aún no hay habilidades personales. Las que Mika aprenda de tareas completadas aparecerán aquí.</string>
+    <string name="plus_clipboard_empty">No hay texto que pegar del portapapeles</string>
+    <string name="plus_skill_directive">Usar la habilidad «%1$s»: </string>
 </resources>

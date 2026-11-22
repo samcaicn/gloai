@@ -17,7 +17,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -91,7 +90,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -103,7 +101,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -120,7 +117,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -131,6 +127,7 @@ import com.wangzan101.mika.chat.ChecklistSource
 import com.wangzan101.mika.chat.SavedChecklistStore
 import com.wangzan101.mika.chat.SharedFile
 import com.wangzan101.mika.confirm.ConfirmationCopy
+import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.Prerequisites
 import com.wangzan101.mika.settings.RecommendedTask
 import com.wangzan101.mika.settings.TaskTemplate
@@ -174,9 +171,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalTime
 
 /**
@@ -201,6 +196,8 @@ fun ChatScreen(
     onOpenDrawer: () -> Unit,
     /** 被拦下的提示里的「去设置」。 */
     openSettings: () -> Unit,
+    /** 「＋」面板里的「浏览器」:打开内置浏览器。 */
+    onOpenBrowser: () -> Unit = {},
     openRun: (String) -> Unit = {},
     /** 任务要用手机而手机操作没准备好:在那轮问答下面放一行去设置(配不上具体轮次时挂在最后)。 */
     phoneSetupNeed: com.wangzan101.mika.cap.phone.setup.PhoneSetupPrompt.Need? = null,
@@ -276,6 +273,10 @@ fun ChatScreen(
     var checklistIncoming by remember(ui.conversationId) { mutableStateOf<ChecklistSource?>(null) }
     var pendingChecklistDraft by remember(ui.conversationId) { mutableStateOf<String?>(null) }
     var showWorkflows by rememberSaveable { mutableStateOf(false) }
+    // 面板开着时选照片会把首页的草稿提升成对话(id 从 null 变成新值),所以不跟对话 id 绑;换对话时用户本来就会先关掉
+    var showPlus by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     var saveTaskPrompt by remember(ui.conversationId) { mutableStateOf<String?>(null) }
     var fillTaskPrompt by rememberSaveable(ui.conversationId) { mutableStateOf<String?>(null) }
     var fillTaskTitle by rememberSaveable(ui.conversationId) { mutableStateOf("") }
@@ -554,7 +555,6 @@ fun ChatScreen(
             mode = ui.composer,
             hasHistory = ui.exchanges.isNotEmpty(),
             onSend = { vm.send(input, check) },
-            onTeach = if (ui.composer == ComposerMode.Idle) ({ onOpenTeach(input.trim()) }) else null,
             onStop = vm::cancel,
             queued = ui.queued,
             onGuideQueued = { id ->
@@ -566,13 +566,10 @@ fun ChatScreen(
             },
             onEditQueued = { id -> vm.editQueued(id)?.let { editRequest++ } },
             onStartQueued = vm::startQueued,
-            attachPanel = if (ui.attachEnabled) ({
-                androidx.compose.runtime.key(ui.conversationId) {
-                    AttachPanelHost(ui.attachments, onPicked = { vm.attach(it, ui.conversationId) }, onToggle = vm::toggleAttachment,
-                        onDeviceFiles = if (com.wangzan101.mika.settings.FeatureFlags.get(context).deviceFiles()) ({
-                            deviceBrowserConversation = vm.libraryTargetConversation()
-                        }) else null)
-                }
+            onPlus = if (ui.attachEnabled) ({
+                focusManager.clearFocus()
+                keyboardController?.hide()
+                showPlus = true
             }) else null,
             attachBlocked = ui.attachEnabled && !ui.importing && ui.composer != ComposerMode.Idle && ui.followUpMode == FollowUpMode.Steer,
             attachments = ui.attachments,
@@ -628,6 +625,49 @@ fun ChatScreen(
             backdrop = backdrop,
             reduceMotion = reduceMotion,
         )
+
+        if (showPlus) {
+            ChatPlusSheet(
+                selected = ui.attachments,
+                onDismiss = { showPlus = false },
+                onPicked = { uris ->
+                    vm.attach(uris, ui.conversationId)
+                    showPlus = false
+                },
+                onToggle = vm::toggleAttachment,
+                onFull = { Toast.makeText(context, AttachCopy.FULL, Toast.LENGTH_SHORT).show() },
+                onDeviceFiles = if (FeatureFlags.get(context).deviceFiles()) ({
+                    showPlus = false
+                    deviceBrowserConversation = vm.libraryTargetConversation()
+                }) else null,
+                onPaste = {
+                    val pasted = readClipboardText(context)
+                    if (pasted.isNullOrBlank()) {
+                        Toast.makeText(context, context.getString(R.string.plus_clipboard_empty), Toast.LENGTH_SHORT).show()
+                    } else {
+                        showPlus = false
+                        val now = vm.ui.value.input
+                        vm.input(if (now.isEmpty()) pasted else now.trimEnd() + "\n" + pasted)
+                        editRequest++
+                    }
+                },
+                onTeach = if (ui.composer == ComposerMode.Idle) ({
+                    showPlus = false
+                    onOpenTeach(vm.ui.value.input.trim())
+                }) else null,
+                onChecklists = { showPlus = false; showChecklists = true },
+                onWorkflows = { showPlus = false; showWorkflows = true },
+                onBrowser = { showPlus = false; onOpenBrowser() },
+                tasks = recommendedTasks,
+                onPickTask = { showPlus = false; pickTask(it) },
+                onPickSkill = { skill ->
+                    showPlus = false
+                    val prefix = context.getString(R.string.plus_skill_directive, skill.display)
+                    vm.input(prefix + vm.ui.value.input)
+                    editRequest++
+                },
+            )
+        }
 
         if (showUsage) ConversationUsageSheet(ui.conversationId) { showUsage = false }
 
@@ -1743,13 +1783,9 @@ private fun openShared(context: Context, f: SharedFile) = FileViewer.open(contex
 
 // ---------- 输入栏 ----------
 
-/** 「＋」面板:关着、开着、正让给键盘(点了输入框:键盘升起来时面板跟着矮下去,键盘到位再关)。 */
-private enum class Panel { Closed, Open, Yielding }
-
 /**
  * 玻璃胶囊输入栏:左边「＋」,右边发送(没内容时灰);任务在跑时多一个停止,补充消息先排在输入栏上方。
- * 「＋」点开的附件面板([attachPanel])在输入栏下面、占键盘那块位置,和键盘互换:开面板收键盘,
- * 再点「＋」(这时是 ×)或点输入框就收起面板、换成键盘;返回先收面板。待发的附件在输入栏上方一排([PendingTray])。
+ * 「＋」打开功能面板([onPlus],对话页里是从底部升起的列表)。待发的附件在输入栏上方一排([PendingTray])。
  */
 @Composable
 internal fun Composer(
@@ -1767,12 +1803,10 @@ internal fun Composer(
     onCancelQueued: (String) -> Unit = {},
     onEditQueued: (String) -> Unit = {},
     onStartQueued: () -> Unit = {},
-    /** 沙箱就绪时就有「＋」;点开是这块面板。 */
-    attachPanel: (@Composable () -> Unit)? = null,
+    /** 沙箱就绪时就有「＋」;点开是功能面板。 */
+    onPlus: (() -> Unit)? = null,
     /** 附件已启用但此刻不能加:「＋」还在,点了只给提示。 */
     attachBlocked: Boolean = false,
-    /** 「＋」面板里的「教 Mika」。点了先收起面板。 */
-    onTeach: (() -> Unit)? = null,
     attachments: List<PendingAttachment> = emptyList(),
     importing: Boolean = false,
     rejected: List<AttachmentFailure> = emptyList(),
@@ -1808,30 +1842,23 @@ internal fun Composer(
     val busy = mode == ComposerMode.Busy
     val context = LocalContext.current
     // 附件功能开着就保留「＋」;此刻不能加时只提示,不展开面板
-    val showAttach = attachPanel != null || attachBlocked
+    val showAttach = onPlus != null || attachBlocked
     val density = LocalDensity.current
     val focus = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
     val field = remember { FocusRequester() }
     val ime = WindowInsets.ime
     val nav = WindowInsets.navigationBars
-    var panel by rememberSaveable { mutableStateOf(Panel.Closed) }
-    // 「松开 发送」和发送键一样先收起附件面板
-    val vh = androidx.compose.runtime.key(draftKey) { rememberVoiceHold(voice, onVoiceText, onVoiceSend?.let { send -> { text -> panel = Panel.Closed; send(text) } }) }
+    // 「松开 发送」和发送键一样直接发出
+    val vh = androidx.compose.runtime.key(draftKey) { rememberVoiceHold(voice, onVoiceText, onVoiceSend?.let { send -> { text -> send(text) } }) }
     val vState = voiceState(vh)
     val voiceHolding = vh?.holding == true
     LaunchedEffect(voiceHolding) { onVoiceHolding(voiceHolding) }
     LaunchedEffect(editRequest) {
         if (editRequest > 0) {
-            panel = Panel.Closed
             field.requestFocus()
             keyboard?.show()
         }
-    }
-    // 面板和键盘一样高:记下见过的键盘高度(在导航栏之上的那段),没见过时用默认高度
-    var keyboardPx by rememberSaveable { mutableIntStateOf(0) }
-    LaunchedEffect(ime, nav, density) {
-        snapshotFlow { ime.getBottom(density) - nav.getBottom(density) }.collect { if (it > keyboardPx) keyboardPx = it }
     }
     // 输入框聚焦时长按留给系统的选字、粘贴(悬浮、分体、实体键盘也一样);没聚焦时输入框上盖一层按住说话的手势
     val voiceGesture = vh != null && (!fieldFocused || voiceHolding)
@@ -1847,31 +1874,6 @@ internal fun Composer(
     // 输入框外面的字一变(说完填进来、点了示例),光标放到末尾,接着说或接着打都在后面
     var fieldValue by remember { mutableStateOf(TextFieldValue(text, TextRange(text.length))) }
     val shownValue = if (fieldValue.text == text) fieldValue else TextFieldValue(text, TextRange(text.length))
-    val panelPx = with(density) {
-        if (keyboardPx > 0) keyboardPx.coerceIn(PanelMin.roundToPx(), PanelMax.roundToPx()) else PanelDefault.roundToPx()
-    }
-    LaunchedEffect(attachPanel == null) { if (attachPanel == null) panel = Panel.Closed }
-    BackHandler(enabled = panel == Panel.Open) { panel = Panel.Closed }
-    // 让给键盘:等键盘升到差不多面板高(没有键盘弹出来时最多等一会儿)再关
-    LaunchedEffect(panel, panelPx) {
-        if (panel != Panel.Yielding) return@LaunchedEffect
-        withTimeoutOrNull(YIELD_MS) {
-            snapshotFlow { ime.getBottom(density) - nav.getBottom(density) }.first { it >= panelPx * 9 / 10 }
-        }
-        panel = Panel.Closed
-    }
-    val togglePanel: () -> Unit = {
-        if (panel == Panel.Open) {
-            panel = Panel.Yielding
-            field.requestFocus()
-            keyboard?.show()
-        } else {
-            focus.clearFocus()
-            keyboard?.hide()
-            panel = Panel.Open
-        }
-    }
-    val turn by animateFloatAsState(if (panel == Panel.Open) 45f else 0f, if (reduceMotion) snap() else tween(200), label = "plus")
     Box(
         modifier.fillMaxWidth()
             .pageBackground(c.bg, fade)
@@ -1931,11 +1933,7 @@ internal fun Composer(
                             { v -> fieldValue = v; if (v.text != text) onText(v.text) },
                             Modifier.fillMaxWidth().testTag("composer-field").focusRequester(field)
                                 .alpha(if (converting) 0f else 1f)
-                                // 面板开着时点输入框:面板让给键盘
-                                .onFocusChanged {
-                                    fieldFocused = it.isFocused
-                                    if (it.isFocused && panel == Panel.Open) panel = Panel.Yielding
-                                },
+                                .onFocusChanged { fieldFocused = it.isFocused },
                             textStyle = MikaType.Body.copy(color = c.ink, textDirection = TextDirection.Content),
                             cursorBrush = SolidColor(c.accent),
                             maxLines = 5,
@@ -1952,18 +1950,18 @@ internal fun Composer(
                     }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         if (showAttach) {
-                            val label = if (panel == Panel.Open) AttachCopy.CLOSE else AttachCopy.ADD
+                            val label = AttachCopy.ADD
                             val blockedHint = stringResource(R.string.attach_blocked_running)
                             Box(
                                 Modifier.size(MikaSize.IconButton).clip(CircleShape)
                                     .clickable(enabled = !importing, onClickLabel = label, onClick = {
                                         if (attachBlocked) {
                                             Toast.makeText(context, blockedHint, Toast.LENGTH_SHORT).show()
-                                        } else togglePanel()
+                                        } else onPlus?.invoke()
                                     }),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Icon(MikaIcons.Plus, label, Modifier.size(20.dp).graphicsLayer { rotationZ = turn }, tint = c.ink)
+                                Icon(MikaIcons.Plus, label, Modifier.size(20.dp), tint = c.ink)
                             }
                         }
                         Spacer(Modifier.weight(1f))
@@ -1993,7 +1991,7 @@ internal fun Composer(
                                 Modifier.size(MikaSize.IconButton)
                                     .clip(CircleShape)
                                     .background(if (canSend) c.ink else c.neutralSoft)
-                                    .clickable(enabled = canSend, onClickLabel = stringResource(R.string.chat_send)) { panel = Panel.Closed; onSend() },
+                                    .clickable(enabled = canSend, onClickLabel = stringResource(R.string.chat_send)) { onSend() },
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(MikaIcons.Up, stringResource(R.string.chat_send), Modifier.size(20.dp), tint = if (canSend) c.bg else c.ink3)
@@ -2005,40 +2003,9 @@ internal fun Composer(
             if (vh != null) VoiceBarCover(vh, vState, reduceMotion, Modifier.matchParentSize())
             }
             if (vh != null) VoiceSheetHost(vh, onPickSpeech)
-            if (panel != Panel.Closed && attachPanel != null) {
-                // 键盘还在(刚开面板时正在收、让给键盘时正在升)的那一段从面板里扣掉:输入栏不跟着上下跳
-                Box(
-                    Modifier.fillMaxWidth().clipToBounds().layout { m, cons ->
-                        val keyboardNow = (ime.getBottom(this) - nav.getBottom(this)).coerceAtLeast(0)
-                        val shown = (panelPx - keyboardNow).coerceAtLeast(0)
-                        val p = m.measure(Constraints.fixed(cons.maxWidth, panelPx))
-                        layout(cons.maxWidth, shown) { p.place(0, 0) }
-                    },
-                ) {
-                    Column(Modifier.fillMaxSize().padding(top = 4.dp)) {
-                        if (onTeach != null && panel == Panel.Open) {
-                            Text(
-                                stringResource(R.string.teach_menu),
-                                Modifier.fillMaxWidth().clickable { panel = Panel.Closed; onTeach() }
-                                    .padding(horizontal = 16.dp, vertical = 10.dp).testTag("teach-mika"),
-                                color = c.accent, style = MikaType.Body,
-                            )
-                        }
-                        Box(Modifier.weight(1f)) { attachPanel() }
-                    }
-                }
-            }
         }
     }
 }
-
-/** 面板高度:没见过键盘时的默认值,以及跟着键盘时的上下限。 */
-private val PanelDefault = 320.dp
-private val PanelMin = 280.dp
-private val PanelMax = 420.dp
-/** 让给键盘时最多等这么久(毫秒)。 */
-private const val YIELD_MS = 700L
-
 /** 跳转目标行高亮停留多久(毫秒)。 */
 private const val JUMP_HIGHLIGHT_MS = 1_800L
 

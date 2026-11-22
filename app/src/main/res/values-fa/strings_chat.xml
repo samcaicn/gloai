@@ -312,4 +312,19 @@
     <string name="chat_audio">Audio</string>
     <string name="chat_audio_play">Play</string>
     <string name="chat_audio_stop">Stop</string>
+    <string name="plus_sub_camera">همین حالا عکس بگیر</string>
+    <string name="plus_sub_album">از عکس‌ها انتخاب کن، چندتا هم می‌شود</string>
+    <string name="plus_sub_files">سند، PDF، آرشیو</string>
+    <string name="plus_sub_device">پوشه‌های این گوشی را بگرد</string>
+    <string name="plus_clipboard">تخته‌شمار</string>
+    <string name="plus_sub_clipboard">آنچه تازه کپی کردی را بچسبان</string>
+    <string name="plus_sub_teach">یک بار نشان بده تا Mika یاد بگیرد</string>
+    <string name="plus_sub_skills">یک مهارت برای این نوبت انتخاب کن</string>
+    <string name="plus_sub_checklists">یک فهرست کار ذخیره کن</string>
+    <string name="plus_sub_workflows">یک کار ذخیره‌شدهٔ چندمرحله‌ای را اجرا کن</string>
+    <string name="plus_sub_tasks">کار ذخیره‌شده را در کادر ورودی پر کن</string>
+    <string name="plus_sub_browser">مرورگر داخلی را باز کن</string>
+    <string name="plus_skills_empty">هنوز مهارت شخصی نداری. مهارت‌هایی که Mika از کارهای انجام‌شده یاد می‌گیرد اینجا نمایش داده می‌شوند.</string>
+    <string name="plus_clipboard_empty">متنی برای چسباندن از تخته‌شمار نیست</string>
+    <string name="plus_skill_directive">از مهارت «%1$s» استفاده کن: </string>
 </resources>

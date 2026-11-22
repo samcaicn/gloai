@@ -340,4 +340,19 @@
     <string name="chat_audio">Audio</string>
     <string name="chat_audio_play">Play</string>
     <string name="chat_audio_stop">Stop</string>
+    <string name="plus_sub_camera">Сделать фото сейчас</string>
+    <string name="plus_sub_album">Выбрать из своих фото, можно несколько</string>
+    <string name="plus_sub_files">Документы, PDF, архивы</string>
+    <string name="plus_sub_device">Просмотреть папки на телефоне</string>
+    <string name="plus_clipboard">Буфер обмена</string>
+    <string name="plus_sub_clipboard">Вставить только что скопированное</string>
+    <string name="plus_sub_teach">Покажите один раз — Mika запомнит</string>
+    <string name="plus_sub_skills">Использовать навык в этом ходе</string>
+    <string name="plus_sub_checklists">Сохранить список дел</string>
+    <string name="plus_sub_workflows">Запустить сохранённую задачу из нескольких шагов</string>
+    <string name="plus_sub_tasks">Подставить сохранённую задачу в поле ввода</string>
+    <string name="plus_sub_browser">Открыть встроенный браузер</string>
+    <string name="plus_skills_empty">Личных навыков пока нет. Навыки, которым Mika научится на выполненных задачах, появятся здесь.</string>
+    <string name="plus_clipboard_empty">В буфере обмена нет текста для вставки</string>
+    <string name="plus_skill_directive">Использовать навык «%1$s»: </string>
 </resources>

@@ -298,4 +298,19 @@
     <string name="chat_audio">音频</string>
     <string name="chat_audio_play">播放</string>
     <string name="chat_audio_stop">停止</string>
+    <string name="plus_sub_camera">现在拍一张</string>
+    <string name="plus_sub_album">从相册选,可多选</string>
+    <string name="plus_sub_files">文档、PDF、压缩包</string>
+    <string name="plus_sub_device">浏览手机里的文件夹</string>
+    <string name="plus_clipboard">剪贴板</string>
+    <string name="plus_sub_clipboard">粘贴刚复制的内容</string>
+    <string name="plus_sub_teach">做一遍,让它学会</string>
+    <string name="plus_sub_skills">选一个技能用在这一轮</string>
+    <string name="plus_sub_checklists">存一份待办清单</string>
+    <string name="plus_sub_workflows">跑一条已存的多步骤任务</string>
+    <string name="plus_sub_tasks">把常用的说法填进输入框</string>
+    <string name="plus_sub_browser">在内置浏览器里打开网页</string>
+    <string name="plus_skills_empty">还没有个人技能。Mika 从做成的任务里学会的技能会出现在这里。</string>
+    <string name="plus_clipboard_empty">剪贴板里没有可粘贴的文字</string>
+    <string name="plus_skill_directive">用「%1$s」技能：</string>
 </resources>

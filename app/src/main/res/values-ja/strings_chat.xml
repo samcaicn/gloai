@@ -298,4 +298,19 @@
     <string name="chat_audio">Audio</string>
     <string name="chat_audio_play">Play</string>
     <string name="chat_audio_stop">Stop</string>
+    <string name="plus_sub_camera">今すぐ撮影</string>
+    <string name="plus_sub_album">写真から選択、複数可</string>
+    <string name="plus_sub_files">文書、PDF、圧縮ファイル</string>
+    <string name="plus_sub_device">このスマホのフォルダーを参照</string>
+    <string name="plus_clipboard">クリップボード</string>
+    <string name="plus_sub_clipboard">コピーした内容を貼り付け</string>
+    <string name="plus_sub_teach">一度見せれば Mika が覚えます</string>
+    <string name="plus_sub_skills">このターンで使うスキルを選ぶ</string>
+    <string name="plus_sub_checklists">やることリストを保存</string>
+    <string name="plus_sub_workflows">保存した多段階タスクを実行</string>
+    <string name="plus_sub_tasks">保存したタスクを入力欄に入れる</string>
+    <string name="plus_sub_browser">内蔵ブラウザーで開く</string>
+    <string name="plus_skills_empty">個人スキルはまだありません。やり遂げたタスクから Mika が覚えたスキルがここに表示されます。</string>
+    <string name="plus_clipboard_empty">クリップボードに貼り付けられる文字がありません</string>
+    <string name="plus_skill_directive">「%1$s」スキルを使う：</string>
 </resources>

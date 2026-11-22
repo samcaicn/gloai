@@ -312,4 +312,19 @@
     <string name="chat_audio">Audio</string>
     <string name="chat_audio_play">Play</string>
     <string name="chat_audio_stop">Stop</string>
+    <string name="plus_sub_camera">Take a photo now</string>
+    <string name="plus_sub_album">Pick from your photos, several allowed</string>
+    <string name="plus_sub_files">Documents, PDFs, archives</string>
+    <string name="plus_sub_device">Browse folders on this phone</string>
+    <string name="plus_clipboard">Clipboard</string>
+    <string name="plus_sub_clipboard">Paste what you just copied</string>
+    <string name="plus_sub_teach">Show it once and Mika learns</string>
+    <string name="plus_sub_skills">Use a skill for this turn</string>
+    <string name="plus_sub_checklists">Save a to-do checklist</string>
+    <string name="plus_sub_workflows">Run a saved multi-step task</string>
+    <string name="plus_sub_tasks">Fill a saved task into the input</string>
+    <string name="plus_sub_browser">Open the built-in browser</string>
+    <string name="plus_skills_empty">No personal skills yet. Skills Mika learns from finished tasks appear here.</string>
+    <string name="plus_clipboard_empty">Nothing to paste from the clipboard</string>
+    <string name="plus_skill_directive">Use the “%1$s” skill: </string>
 </resources>
