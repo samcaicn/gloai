@@ -347,32 +347,32 @@ git commit -m "feat(teach): show an auto-written skill instead of raw steps"
 - Consumes: 前五任务全部产物。
 - Produces: 设备验证结论;发现的 bug 回到对应任务修。
 
-- [ ] **Step 1: 安装并跑真机示范**
+- [x] **Step 1: 安装并跑真机示范**
 
 `./gradlew :app:installDebug`;在 A94VUT2C28001694 上从教 Mika 开始,示范「打开小红书 → 搜索装修 → 打开第一条 → 收藏 → 做完了」。截图确认:总结第一步为「启动 小红书」,不含「桌面/图标」;折叠提示数量合理;正文五节齐全。
 
-- [ ] **Step 2: 收下与可用性**
+- [x] **Step 2: 收下与可用性**
 
 点「收下这个技能」→ 已学会页;进 设置 › 记忆 › 技能,确认它以试用状态存在;回到对话说「用刚才学的技能再搜一次」,确认技能能被检索/读到。
 
-- [ ] **Step 3: 网页示例**
+- [x] **Step 3: 网页示例**
 
 再示范一次网页操作(默认浏览器搜索),确认总结写成「打开/搜索」,不含地址栏步骤;若模型未改写,记录 prompt 证据并修 Task 3。
 
-- [ ] **Step 4: 失败与恢复**
+- [x] **Step 4: 失败与恢复**
 
 - 0 步:开始后立刻结束 → 显示「没看到操作」,可重来。
 - 整理中被杀:整理中按返回/强杀 Mika,重进教 Mika → 自动继续整理或显示重试,轨迹不丢。
 - 无模型:临时切到一个未配置模型的资料?若成本高,直接用 Task 3 的本机整理单测 + 代码审阅代替,并在真机只看有模型路径。
 
-- [ ] **Step 5: 回归**
+- [x] **Step 5: 回归**
 
 Run: `./gradlew :core:test :app:testDebugUnitTest` → PASS。
 Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.ui.TeachScreenTest,com.wangzan101.mika.ui.ChatAttachmentsTest` → PASS。
 Run: `./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin` → PASS。
 不做全量 connectedAndroidTest。
 
-- [ ] **Step 6: 提交(如有小修)**
+- [x] **Step 6: 提交(如有小修)**
 
 ```bash
 git add -A
