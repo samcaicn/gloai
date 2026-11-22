@@ -355,9 +355,11 @@ git commit -m "feat(teach): show an auto-written skill instead of raw steps"
 
 点「收下这个技能」→ 已学会页;进 设置 › 记忆 › 技能,确认它以试用状态存在;回到对话说「用刚才学的技能再搜一次」,确认技能能被检索/读到。
 
-- [x] **Step 3: 网页示例**
+- [ ] **Step 3: 网页示例(本机受限,未能在真机完成)**
 
 再示范一次网页操作(默认浏览器搜索),确认总结写成「打开/搜索」,不含地址栏步骤;若模型未改写,记录 prompt 证据并修 Task 3。
+
+本机实测:Edge/WebView 页面里的点按不产生 TYPE_VIEW_CLICKED,只演示浏览器时采集到的全是 Window 步骤,折叠后没有真实操作、页面报「没有留下步骤」(已加窗口-only 的单测锁住这一行为)。浏览器改写规则目前只由 `TeachDraftTest` 覆盖;等采集层能收到 WebView 事件后再补真机这一条。
 
 - [x] **Step 4: 失败与恢复**
 

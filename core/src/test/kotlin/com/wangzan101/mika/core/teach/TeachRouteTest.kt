@@ -116,4 +116,17 @@ class TeachRouteTest {
         val route = fold(steps, browsers = setOf("com.browser"))
         assertTrue(route.apps.single().browser)
     }
+
+    /** 只有窗口、没有点按的示范(浏览器整段收不到点击)折完没有任何真实操作,也不能凭空造出 App 入口。 */
+    @Test fun aWindowOnlyDemoFoldsToNoRealAction() {
+        val steps = listOf(
+            step(0, launcher, TeachKind.Window, title = "桌面"),
+            step(1, "com.android.edge", TeachKind.Window, title = "新标签页"),
+            step(2, "com.android.edge", TeachKind.Window, title = "搜索结果"),
+        )
+        val route = fold(steps)
+        assertTrue(route.steps.none { it.kind != null })
+        assertTrue(route.apps.isEmpty())
+        assertTrue(route.folded.isNotEmpty())
+    }
 }

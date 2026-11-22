@@ -70,7 +70,7 @@ fun TeachScreen(runtime: TeachRuntime, onBack: () -> Unit) {
             }
             TeachPhase.Recording, TeachPhase.Paused -> Live(runtime, session.phase, session.steps.size)
             TeachPhase.Interrupted -> Interrupted(runtime)
-            TeachPhase.Drafting -> Summarizing(runtime, failed = false, notice = ui.notice)
+            TeachPhase.Drafting -> Summarizing(failed = false, notice = ui.notice, onRetry = runtime::retry, onDiscard = runtime::discard)
             TeachPhase.Reviewing -> if (draft != null) {
                 TeachSummaryPage(
                     view = summaryView(draft, ui),
@@ -79,7 +79,7 @@ fun TeachScreen(runtime: TeachRuntime, onBack: () -> Unit) {
                     onDiscard = runtime::discard,
                 )
             } else {
-                Summarizing(runtime, failed = true, notice = ui.notice)
+                Summarizing(failed = true, notice = ui.notice, onRetry = runtime::retry, onDiscard = runtime::discard)
             }
             TeachPhase.Saved -> TeachDonePage(
                 name = ui.acceptedName ?: metaValue(draft, "display") ?: session.goal,
@@ -173,7 +173,7 @@ private fun Interrupted(runtime: TeachRuntime) {
 }
 
 @Composable
-private fun Summarizing(runtime: TeachRuntime, failed: Boolean, notice: TeachNotice?) {
+internal fun Summarizing(failed: Boolean, notice: TeachNotice?, onRetry: () -> Unit, onDiscard: () -> Unit) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -184,7 +184,7 @@ private fun Summarizing(runtime: TeachRuntime, failed: Boolean, notice: TeachNot
                 style = MikaType.Title, color = MikaTheme.colors.ink,
             )
             MikaButton(
-                stringResource(R.string.teach_retry), runtime::retry,
+                stringResource(R.string.teach_retry), onRetry,
                 kind = ButtonKind.Primary, size = ButtonSize.Medium,
                 modifier = Modifier.testTag("teach-retry"),
             )
@@ -192,7 +192,10 @@ private fun Summarizing(runtime: TeachRuntime, failed: Boolean, notice: TeachNot
             Text(stringResource(R.string.teach_summarizing), style = MikaType.Title, color = MikaTheme.colors.ink)
             Text(stringResource(R.string.teach_summary_head), style = MikaType.Body, color = MikaTheme.colors.ink2)
         }
-        MikaButton(stringResource(R.string.teach_discard), runtime::discard, kind = ButtonKind.Tonal, size = ButtonSize.Medium)
+        MikaButton(
+            stringResource(R.string.teach_discard), onDiscard, kind = ButtonKind.Tonal, size = ButtonSize.Medium,
+            modifier = Modifier.testTag("teach-discard"),
+        )
     }
 }
 

@@ -12,6 +12,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.ChineseUi
 import com.wangzan101.mika.R
+import com.wangzan101.mika.teach.TeachNotice
 import com.wangzan101.mika.ui.theme.MikaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -88,5 +89,21 @@ class TeachScreenTest {
         compose.onNodeWithTag("teach-done").assertIsDisplayed()
         compose.onNodeWithTag("teach-back-chat").assertHasClickAction()
         compose.onNodeWithTag("teach-again").assertHasClickAction()
+    }
+
+    /** 没看到操作的总结页:说清是哪一种失败,并留出「再整理一次」和「放弃」两条路。 */
+    @Test fun failedSummaryExplainsItselfAndOffersRetryAndDiscard() {
+        var retried = 0
+        var discarded = 0
+        compose.setContent {
+            MikaTheme {
+                Summarizing(failed = true, notice = TeachNotice.NoSteps, onRetry = { retried++ }, onDiscard = { discarded++ })
+            }
+        }
+        compose.onNodeWithText(str(R.string.teach_no_steps_again)).assertIsDisplayed()
+        compose.onNodeWithTag("teach-retry").assertHasClickAction().performClick()
+        compose.onNodeWithTag("teach-discard").assertHasClickAction().performClick()
+        assertEquals(1, retried)
+        assertEquals(1, discarded)
     }
 }
