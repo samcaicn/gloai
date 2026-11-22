@@ -31,4 +31,11 @@ class TeachRecoveryTest {
         assertEquals(TeachPhase.Saved, TeachRecovery.afterLoad(session(TeachPhase.Saved)).phase)
         assertEquals(TeachPhase.Idle, TeachRecovery.afterLoad(session(TeachPhase.Idle)).phase)
     }
+
+    /** 重启以后仍然知道正文是不是模型写的：「这次没接模型」的说明不能靠重启后的配置去猜。 */
+    @Test fun theModelUseFlagSurvivesASaveAndLoad() {
+        val session = session(TeachPhase.Reviewing, draftId = "d1").copy(byModel = true)
+        assertEquals(true, TeachCodec.decode(TeachCodec.encode(session)).byModel)
+        assertEquals(false, TeachCodec.decode(TeachCodec.encode(session.copy(byModel = false))).byModel)
+    }
 }

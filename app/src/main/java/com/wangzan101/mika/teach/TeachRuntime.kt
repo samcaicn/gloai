@@ -144,6 +144,8 @@ class TeachRuntime(
             files.save(session!!)
             publish(null)
         }
+        // 提示只作预填:这次的目标已经开始了,别再拿它去猜下一次的入口
+        _ui.value = _ui.value.copy(hint = null)
         TeachNotifier.tryShow(app, TeachPhase.Recording)
         (app.applicationContext as? MikaApp)?.capsule?.yieldToTeaching()
         return null

@@ -31,6 +31,7 @@ import com.wangzan101.mika.R
 import com.wangzan101.mika.core.knowledge.FrontMatter
 import com.wangzan101.mika.core.skills.PersonalSkill
 import com.wangzan101.mika.core.teach.TeachPhase
+import com.wangzan101.mika.core.teach.TeachSession
 import com.wangzan101.mika.teach.TeachNotice
 import com.wangzan101.mika.teach.TeachRuntime
 import com.wangzan101.mika.teach.TeachUi
@@ -61,13 +62,7 @@ fun TeachScreen(runtime: TeachRuntime, onBack: () -> Unit) {
         Notice(ui.notice)
         val draft = ui.draft
         when (session?.phase) {
-            null, TeachPhase.Idle, TeachPhase.Ready -> {
-                val context = LocalContext.current
-                TeachIntroPage(ui.hint.orEmpty()) { goal ->
-                    val problem = runtime.start(goal)
-                    if (problem == null) (context as? Activity)?.moveTaskToBack(true)
-                }
-            }
+            null, TeachPhase.Idle, TeachPhase.Ready -> Intro(ui.hint.orEmpty(), runtime)
             TeachPhase.Recording, TeachPhase.Paused -> Live(runtime, session.phase, session.steps.size)
             TeachPhase.Interrupted -> Interrupted(runtime)
             TeachPhase.Drafting -> Summarizing(failed = false, notice = ui.notice, onRetry = runtime::retry, onDiscard = runtime::discard)
@@ -81,13 +76,27 @@ fun TeachScreen(runtime: TeachRuntime, onBack: () -> Unit) {
             } else {
                 Summarizing(failed = true, notice = ui.notice, onRetry = runtime::retry, onDiscard = runtime::discard)
             }
-            TeachPhase.Saved -> TeachDonePage(
+            // 收下以后带着新目标再进来:问的是新目标,不该停在上一份的「已学会」
+            TeachPhase.Saved -> if (showDone(session, ui.hint)) TeachDonePage(
                 name = ui.acceptedName ?: metaValue(draft, "display") ?: session.goal,
                 description = metaValue(draft, "description").orEmpty(),
                 onBackToChat = onBack,
                 onTeachAgain = { teachAgain(runtime, session.goal) },
-            )
+            ) else Intro(ui.hint.orEmpty(), runtime)
         }
+    }
+}
+
+/** 已经收下、且没有带着新目标进来时，才停在「已学会」页。 */
+internal fun showDone(session: TeachSession?, hint: String?): Boolean =
+    session?.phase == TeachPhase.Saved && (hint.isNullOrBlank() || hint == session.goal)
+
+@Composable
+private fun Intro(hint: String, runtime: TeachRuntime) {
+    val context = LocalContext.current
+    TeachIntroPage(hint) { goal ->
+        val problem = runtime.start(goal)
+        if (problem == null) (context as? Activity)?.moveTaskToBack(true)
     }
 }
 
