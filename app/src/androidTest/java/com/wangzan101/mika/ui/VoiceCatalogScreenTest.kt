@@ -71,7 +71,8 @@ class VoiceCatalogScreenTest {
 
         // Edit
         compose.onNodeWithTag("voice-model-edit-$modelId").performClick()
-        compose.onNodeWithTag("voice-catalog-display-name").performTextInput("X")
+        compose.onNodeWithTag("voice-catalog-display-name").performTextClearance()
+        compose.onNodeWithTag("voice-catalog-display-name").performTextInput("测试模型X")
         compose.onNodeWithTag("voice-catalog-save-unverified").performClick()
         compose.onNodeWithText("测试模型X").assertExists()
 
