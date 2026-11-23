@@ -47,6 +47,8 @@ data class Turn(
     val remoteTaskId: String? = null,
     /** Source of runtime-owned outcome text; absent for summaries and legacy turns. */
     val outcomeSystemType: String? = null,
+    /** 前台这一轮派出去的后台任务(各自子对话的编号);没派或旧记录为空。只给前台和界面用,不进给模型的上文。 */
+    val deskTasks: List<String> = emptyList(),
 )
 
 object Conversation {

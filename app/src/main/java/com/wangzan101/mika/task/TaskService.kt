@@ -171,7 +171,7 @@ class TaskService : Service() {
         val run = if (intent?.hasExtra(EXTRA_RUN) == true) intent.getStringExtra(EXTRA_RUN)?.let(center::byKey) else taskState.shownRun
         when (intent?.action) {
             ACTION_START -> begin(intent.getStringExtra(EXTRA_GOAL).orEmpty(), intent.getStringExtra(EXTRA_CONVERSATION),
-                messageId = intent.getStringExtra(EXTRA_MESSAGE_ID))
+                messageId = intent.getStringExtra(EXTRA_MESSAGE_ID), brief = intent.getStringExtra(EXTRA_BRIEF))
             ACTION_ENQUEUE_FOLLOWUP -> {
                 val thread = intent.getStringExtra(EXTRA_CONVERSATION)
                 val text = intent.getStringExtra(EXTRA_GOAL).orEmpty()
@@ -373,6 +373,7 @@ class TaskService : Service() {
         internal const val FAILURE_STREAK_NOTICE = 3
         internal const val EXTRA_GOAL = "goal"
         internal const val EXTRA_MESSAGE_ID = "message_id"
+        internal const val EXTRA_BRIEF = "brief"
         internal const val EXTRA_SOURCE = "source"
         internal const val EXTRA_CONVERSATION = "conversation"
         internal const val EXTRA_TRIGGER_KEY = "trigger_key"
@@ -435,15 +436,22 @@ class TaskService : Service() {
                 .putExtra(EXTRA_WORKFLOW_ATTEMPT, attemptId))
         }
 
-        /** 开始任务;其他对话忙时排队。messageId 非空时按插话处理。 */
-        fun start(context: Context, goal: String, conversationId: String? = null, messageId: String? = null) {
+        /**
+         * 开始任务;其他对话忙时排队。messageId 非空时按插话处理。
+         * [goal] 是用户的原话;[brief] 是前台派活时附的补充说明,以 Mika 的说明进任务上下文,不当用户原话。
+         */
+        fun start(context: Context, goal: String, conversationId: String? = null, messageId: String? = null, brief: String? = null) {
             if (FeatureFlags.get(context).quitRequested()) return
             context.startForegroundService(
-                Intent(context, TaskService::class.java).setAction(ACTION_START).putExtra(EXTRA_GOAL, goal)
-                    .apply { if (conversationId != null) putExtra(EXTRA_CONVERSATION, conversationId) }
-                    .apply { if (messageId != null) putExtra(EXTRA_MESSAGE_ID, messageId) },
+                Intent(context, TaskService::class.java).setAction(ACTION_START)
+                    .apply { startExtras(goal, conversationId, messageId, brief).forEach { (k, v) -> putExtra(k, v) } },
             )
         }
+
+        /** [start] 发出的请求带的几项;没有的不带。 */
+        internal fun startExtras(goal: String, conversationId: String?, messageId: String?, brief: String?): List<Pair<String, String>> =
+            listOfNotNull(EXTRA_GOAL to goal, conversationId?.let { EXTRA_CONVERSATION to it },
+                messageId?.let { EXTRA_MESSAGE_ID to it }, brief?.let { EXTRA_BRIEF to it })
 
         /**
          * 用户明确选了「排队」:先在调用方把原话写进持久账本,再让服务认领。

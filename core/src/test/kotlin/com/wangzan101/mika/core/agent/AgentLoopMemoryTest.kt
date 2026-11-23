@@ -486,6 +486,17 @@ class AgentLoopMemoryTest {
         assertEquals(listOf("帮我点个外卖"), plain.requests.first().withoutRuntime().map { it.text() })
     }
 
+    // 前台的补充说明进任务上下文,但不是用户的话:用户原话的记录里只有任务原话
+    @Test fun deskNoteNeverEntersUserUtterances() {
+        val model = FakeModel(finishReply)
+        val said = UserUtterances()
+        runBlocking { AgentLoop(model, toolDispatcher(FakeScreen(), utterances = said), "B", deskNote = "前台整理:用户要靠窗的座位").run("帮我订明早的票") }
+        val first = model.requests.first().withoutRuntime()
+        assertEquals(listOf(ContextKind.DeskNote, null), first.map { ContextBuilder.kindOf(it) })
+        assertEquals(listOf("帮我订明早的票"), said.all)
+        assertTrue(said.all.none { "靠窗" in it })
+    }
+
     // 任务带着「从通知里得来的」那一段时,「上一轮确认」的例外不开:上一轮的建议可能就是照着那一段说的
     @Test fun previousConfirmationIsNotUsedWhenObservedContextIsCarried() {
         val prior = listOf(

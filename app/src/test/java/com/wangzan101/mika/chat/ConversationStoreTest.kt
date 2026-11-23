@@ -27,6 +27,36 @@ import java.io.IOException
 class ConversationStoreTest {
     @get:Rule val tmp = TemporaryFolder()
 
+    // 前台派出去的后台任务编号随那一轮存下,读回来不变;没有这一项的旧记录读成空
+    @Test fun turnTasksRoundTrip() {
+        val dir = tmp.newFolder()
+        val store = ConversationStore(dir)
+        val turn = Turn("帮我订票", "好的,在办", "succeeded", atMs = 1, deskTasks = listOf("c1", "c2"))
+        store.append("p", turn)
+        assertEquals(listOf(turn), ConversationStore(dir).turns("p"))
+        File(dir, "old.json").writeText("""[{"userText":"问题","outcome":"结果","status":"succeeded"}]""")
+        assertEquals(emptyList<String>(), ConversationStore(dir).turns("old").single().deskTasks)
+        // 没有任务编号就不写这一项
+        store.append("plain", Turn("问题", "结果", "succeeded"))
+        assertFalse("deskTasks" in File(dir, "plain.json").readText())
+    }
+
+    // 前台派活开的子对话记着它的前台对话,不出现在对话列表里;删掉子对话连同这条关联一起删
+    @Test fun deskChildrenHiddenFromList() {
+        val dir = tmp.newFolder()
+        val store = ConversationStore(dir)
+        store.append("p", Turn("帮我订票", "在办", "succeeded"))
+        store.append("c1", Turn("订明早的票", "订好了", "succeeded"))
+        assertNull(store.deskParent("c1"))
+        store.setDeskParent("c1", "p")
+        assertEquals("p", store.deskParent("c1"))
+        assertEquals("p", ConversationStore(dir).deskParent("c1"))
+        assertEquals(listOf("p"), ConversationStore(dir).list(includeArchived = true).map { it.id })
+        assertNull(store.deskParent("p"))
+        store.delete("c1")
+        assertFalse(File(dir, "c1.desk_parent").exists())
+    }
+
     @Test fun failedFileDeletionKeepsHistoryAndAllowsRetry() {
         val dir = tmp.newFolder()
         val store = ConversationStore(dir)

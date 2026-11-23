@@ -62,7 +62,8 @@ internal fun TaskService.finishRejectedStart(triggerKey: String?, mcpExternalId:
 internal fun TaskService.begin(newGoal: String, requestedConversation: String?,
     provenance: RunProvenance = RunProvenance(), triggerKey: String? = null,
     triggerActionGoal: String? = null, triggerThreadId: String? = null, mcpExternalId: String? = null, messageId: String? = null,
-    channelPeer: ChannelPeer? = null, channelMessageId: String? = null, triggerCondition: String? = null, workflowAttemptId: String? = null) {
+    channelPeer: ChannelPeer? = null, channelMessageId: String? = null, triggerCondition: String? = null, workflowAttemptId: String? = null,
+    brief: String? = null) {
     if (teachingBlocks()) {
         finishRejectedStart(triggerKey, mcpExternalId)
         if (provenance.origin == RunOrigin.Ui) {
@@ -94,7 +95,8 @@ internal fun TaskService.begin(newGoal: String, requestedConversation: String?,
         return
     }
     startNew(newGoal, requestedConversation, provenance, triggerKey, triggerActionGoal, triggerThreadId, mcpExternalId,
-        triggerCondition = triggerCondition, channelPeer = channelPeer, channelMessageId = channelMessageId, workflowAttemptId = workflowAttemptId)
+        triggerCondition = triggerCondition, channelPeer = channelPeer, channelMessageId = channelMessageId, workflowAttemptId = workflowAttemptId,
+        brief = brief)
 }
 
 /**
@@ -105,7 +107,8 @@ internal fun TaskService.startNew(newGoal: String, requestedConversation: String
     provenance: RunProvenance = RunProvenance(), triggerKey: String? = null,
     triggerActionGoal: String? = null, triggerThreadId: String? = null, mcpExternalId: String? = null,
     followUp: QueuedFollowUp? = null, triggerCondition: String? = null,
-    channelPeer: ChannelPeer? = null, channelMessageId: String? = null, workflowAttemptId: String? = null) {
+    channelPeer: ChannelPeer? = null, channelMessageId: String? = null, workflowAttemptId: String? = null,
+    brief: String? = null) {
     if (teachingBlocks()) {
         finishRejectedStart(triggerKey, mcpExternalId)
         if (followUp != null) center.followUps.add(followUp)
@@ -138,6 +141,7 @@ internal fun TaskService.startNew(newGoal: String, requestedConversation: String
             }
             r.run.mcpExternalId = mcpExternalId
             r.run.workflowAttemptId = workflowAttemptId
+            r.run.brief = brief
             r.run.channelPeer = channelPeer
             r.run.channelMessageId = channelMessageId
             acceptChannel(r.run)
@@ -167,6 +171,7 @@ internal fun TaskService.startNew(newGoal: String, requestedConversation: String
             }
             run.mcpExternalId = mcpExternalId
             run.workflowAttemptId = workflowAttemptId
+            run.brief = brief
             run.channelPeer = channelPeer
             run.channelMessageId = channelMessageId
             acceptChannel(run)

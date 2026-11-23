@@ -168,6 +168,8 @@ class AgentLoop(
     internal val autonomous: Boolean = false,
     /** 主动能力从通知里攒下、够格带进这次任务的那一段(见 [com.wangzan101.mika.core.proactive.ObservedContext]);没有为 null。 */
     internal val observed: String? = null,
+    /** 前台派活时附的补充说明(背景和整理);以 Mika 的说明进上下文,不进用户原话([utterances])。没有为 null。 */
+    internal val deskNote: String? = null,
     /** 交互界面开启可见文字流；评测和后台调用保持原请求格式。 */
     internal val streamReplies: Boolean = false,
     /** 这个对话里用户发来的屏幕(见 [UserScreenTurns]);没有时带屏幕的那一行原样给模型。 */

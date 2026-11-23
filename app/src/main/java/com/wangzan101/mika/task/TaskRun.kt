@@ -212,6 +212,8 @@ class TaskRun(
     internal var triggerThreadId: String? = null
     internal var mcpExternalId: String? = null
     internal var workflowAttemptId: String? = null
+    /** 前台派活时附的补充说明;进任务上下文时是 Mika 的说明,不是用户原话。没有为 null。 */
+    internal var brief: String? = null
     internal var channelPeer: ChannelPeer? = null
     internal var channelMessageId: String? = null
     /** 主循环已经给出结局的时间；与结果实际发出之间的耗时用于定位渠道回传延迟。 */

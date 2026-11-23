@@ -45,7 +45,7 @@ data class RequestComposition(
                         when (kind) {
                             ContextKind.Memory, ContextKind.AppKnowledge, ContextKind.SiteKnowledge, ContextKind.SkillsIndex, ContextKind.ScreenMap -> references += size
                             ContextKind.UserScreen -> toolsAndMedia += size
-                            ContextKind.Notice, ContextKind.Channel, ContextKind.RuntimeState, ContextKind.Observed -> runtime += size
+                            ContextKind.Notice, ContextKind.Channel, ContextKind.RuntimeState, ContextKind.Observed, ContextKind.DeskNote -> runtime += size
                             ContextKind.PriorTurns -> dialogue += size
                             null -> when (message.role) {
                                 Role.System -> instructions += size

@@ -118,6 +118,7 @@ internal suspend fun TaskRun.assembleAgent(a: RunAssembly, m: RunModels, ph: Run
         approvals = runApproval,
         autonomous = runApproval.startedAutonomous,
         observed = observed,
+        deskNote = brief,
         confirmTimeoutMs = TaskService.CONFIRM_TIMEOUT_MS,
         selfPackage = service.packageName,
         flags = speed,

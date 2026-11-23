@@ -44,6 +44,8 @@ enum class ContextKind(val wire: String, val layer: ContextLayer, val trust: Tru
     Memory("memory", ContextLayer.Task, Trust.UserMemory, pinned = true),
     /** 从通知里得来的那一段(见 [com.wangzan101.mika.core.proactive.ObservedContext]):和用户的记忆分开放,各有各的可信度说明。 */
     Observed("observed", ContextLayer.Task, Trust.Observed, pinned = true),
+    /** 前台派活时写的背景和整理(前台补充):是 Mika 写给模型的说明,不是用户原话;压缩时保留。 */
+    DeskNote("desk_note", ContextLayer.Task, Trust.Mika, pinned = true),
     AppKnowledge("app_knowledge", ContextLayer.Knowledge, Trust.Reference, pinned = true),
     SiteKnowledge("site_knowledge", ContextLayer.Knowledge, Trust.Reference, pinned = true),
     /** 某 App 的屏图(页面结构,见 [com.wangzan101.mika.core.screenmap]);和 APP.md 一样是参考资料,折叠时保留。 */
@@ -109,6 +111,8 @@ class ContextBuilder(
         memory: String? = null,
         /** 主动能力从通知里攒下、够格带进任务的那一段(已经限过长);没有就不带。 */
         observed: String? = null,
+        /** 前台派活时附的补充说明;不是用户原话,套 Mika 的外壳。没有就不带。 */
+        deskNote: String? = null,
         channel: String? = null,
         knowledge: List<KnowledgeEntry> = emptyList(),
         knowledgeNote: String = "",
@@ -123,14 +127,16 @@ class ContextBuilder(
         // 不给 clip:这一段自己已经限过长(ObservedContext.MAX_TOKENS),而且里面是一对对不可信标记,从中间截会丢掉结束标记。
         // 任务层的东西不丢,所以它整段进;代价是记忆和之前几轮很多时,后面的 App 知识最多少 600 token 的额度
         observed?.let { pieces += Piece(ContextKind.Observed, "notifications", body = it) }
+        // 前台的说明和任务原话一起是这次要办的事,任务层整段进,不截
+        deskNote?.let { pieces += Piece(ContextKind.DeskNote, "front desk", body = it) }
         channel?.let { pieces += Piece(ContextKind.Channel, "installed apps and websites", body = it) }
         val fresh = knowledge.filter { it.body != null && injected.size < budget.maxKnowledge && injected.add(it.name to it.surface) }
         fresh.forEach { pieces += knowledgePiece(it, knowledgeNote, withLinks) }
         skillsIndex?.let { pieces += Piece(ContextKind.SkillsIndex, "knowledge and skills index", body = it) }
 
         val kept = fit(pieces)
-        // 任务原话是用户说的,不进外壳;放在之前几轮与记忆之后、其余上下文之前
-        val at = kept.indexOfFirst { it.kind != ContextKind.PriorTurns && it.kind != ContextKind.Memory && it.kind != ContextKind.Observed }
+        // 任务原话是用户说的,不进外壳;放在之前几轮、记忆、通知、前台说明之后,其余上下文之前
+        val at = kept.indexOfFirst { it.kind !in BEFORE_TASK }
             .let { if (it < 0) kept.size else it }
         val messages = kept.map { it.message() }.toMutableList()
         messages.add(at, Message(Role.User, listOf(Part.Text(task)) + taskImages, Author.User))
@@ -252,7 +258,8 @@ class ContextBuilder(
         private const val OPEN = "<context kind=\""
         private const val CLOSE = "</context>"
         private val PRIORITY = listOf(ContextLayer.Task, ContextLayer.Knowledge, ContextLayer.Skills)
-        private val RANK = listOf(ContextKind.Memory, ContextKind.PriorTurns, ContextKind.Observed,
+        private val BEFORE_TASK = setOf(ContextKind.PriorTurns, ContextKind.Memory, ContextKind.Observed, ContextKind.DeskNote)
+        private val RANK = listOf(ContextKind.Memory, ContextKind.PriorTurns, ContextKind.Observed, ContextKind.DeskNote,
             ContextKind.AppKnowledge, ContextKind.SiteKnowledge, ContextKind.SkillsIndex)
         private val TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
         private const val EXCERPT_CHARS = 60

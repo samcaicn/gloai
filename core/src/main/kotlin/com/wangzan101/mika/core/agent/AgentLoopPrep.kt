@@ -80,6 +80,7 @@ internal suspend fun AgentLoop.prepareHistory(opening: LoopOpening): LoopHistory
         },
         memory = listOfNotNull(ProfileContext.render(profileSnapshot), opening.memoryMessage).takeIf { it.isNotEmpty() }?.joinToString("\n\n"),
         observed = observed,
+        deskNote = deskNote,
         channel = if (knowledge != null) channelLine(matched) else null,
         knowledge = matched, knowledgeNote = toolsNote(tools.scriptsOffered()), withLinks = flags.deepLinks,
         skillsIndex = index,

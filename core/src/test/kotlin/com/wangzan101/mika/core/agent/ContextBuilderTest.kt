@@ -175,6 +175,30 @@ class ContextBuilderTest {
         assertEquals(observed, ContextBuilder.bodyOf(piece))
         assertTrue(ContextBuilder.bodyOf(piece)!!.endsWith("</untrusted>"))
     }
+
+    // 前台的补充说明:Mika 写的、套着自己的外壳(不是用户原话),排在通知那一段之后、用户的话之前;压缩折叠旧步骤时留着
+    @Test fun deskNoteIsPinnedMikaPieceNotUserWords() {
+        val b = ContextBuilder(zone = utc)
+        val s = b.start("帮我订明早的票", memory = "记忆", observed = "Today so far:\n- x", deskNote = "用户刚才说要靠窗", channel = "可用渠道:…")
+        assertEquals(listOf(ContextKind.Memory, ContextKind.Observed, ContextKind.DeskNote, null, ContextKind.Channel), s.messages.map { ContextBuilder.kindOf(it) })
+        val note = s.messages[2]
+        assertTrue(text(note).startsWith("<context kind=\"desk_note\""))
+        assertTrue(Trust.Mika.label in text(note))
+        assertEquals(Author.Mika, note.author)
+        assertEquals("用户刚才说要靠窗", ContextBuilder.bodyOf(note))
+        assertEquals("帮我订明早的票", text(s.messages[3]))
+        assertTrue(ContextKind.DeskNote.pinned)
+        // 没给就不带
+        assertTrue(ContextBuilder().start("帮我订票").messages.none { ContextBuilder.kindOf(it) == ContextKind.DeskNote })
+        // 压缩:旧步骤折叠了,这一段还在
+        fun round(i: Int) = listOf(
+            Message(Role.Assistant, listOf(Part.ToolCall("c$i", "phone_tap", """{"target":"按钮$i"}""")), Author.Mika),
+            Message(Role.Tool, listOf(Part.ToolResult("c$i", """{"ok":true,"changed":true,"pad":"${"x".repeat(400)}"}""", false)), Author.Mika),
+        )
+        val c = ContextCompressor(TOOLS).compress(s.messages + (1..30).flatMap(::round), contextTokens = 1000)
+        assertTrue(c.foldedSteps > 0)
+        assertTrue(note in c.messages)
+    }
 }
 
 /**
