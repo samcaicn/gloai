@@ -26,4 +26,8 @@
     <string name="calls_owner_ask_reply">Ответить</string>
     <string name="calls_owner_ask_hint">Ваш ответ</string>
     <string name="calls_transcript_owner_unrelayed">Ответ владельца (не передан)</string>
+    <string name="calls_owner_ask_channel">Вопросы из звонков</string>
+    <string name="calls_owner_ask_line">Собеседник спрашивает: %1$s\nОтветьте здесь, и я передам.</string>
+    <string name="calls_owner_ask_notify_off">Уведомления о вопросах из звонков выключены, вы можете их пропустить. Включите их в системных настройках → Уведомления.</string>
+    <string name="calls_owner_ask_answered">Передано в звонок.</string>
 </resources>

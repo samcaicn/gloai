@@ -296,6 +296,24 @@ class ChatViewModelTest {
         assertTrue(calls.none { it.startsWith("start:") || it.startsWith("steer:") || it.startsWith("queue:") })
     }
 
+    @Test fun aPendingCallQuestionTakesTheNextMessageInItsConversation() = runTest {
+        val answered = mutableListOf<Pair<String, String>>()
+        var waiting = true
+        val vm = ChatViewModel(backgroundScope, state, stage, actions, ConversationStore(tmp.newFolder()),
+            ownerAnswer = { id, text -> if (waiting && id == "a") { waiting = false; answered += id to text; true } else false },
+            activities = acts, steers = steerFlow, followUps = followUpFlow).also { runCurrent() }
+        vm.openConversation("a")
+        vm.input("周日也行")
+        // 电话在等主人回话:这句交给通话,不开任务,输入框清空
+        assertTrue(vm.send(vm.ui.value.input, ok))
+        assertEquals(listOf("a" to "周日也行"), answered)
+        assertTrue(calls.none { it.startsWith("start:") })
+        assertEquals("", vm.ui.value.input)
+        // 回过了:下一句照常开任务
+        assertTrue(vm.send("帮我订个闹钟", ok))
+        assertTrue("start:帮我订个闹钟" in calls)
+    }
+
     @Test fun failedSendKeepsDraftAndSuccessfulSendOnlyClearsItsConversation() = runTest {
         val vm = vm()
         vm.openConversation("a")

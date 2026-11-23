@@ -38,6 +38,22 @@ internal class CallNotifications(private val context: Context) {
             notificationManager.getNotificationChannel(CHANNEL)?.importance != NotificationManager.IMPORTANCE_NONE
     }.getOrDefault(false)
 
+    /**
+     * 电话里请示主人用的频道:对方在电话那头等,要弹出来(高重要性)。
+     * 用户关了这个频道或整个通知时返回 false,调用方改成只写进会话,并在会话里提醒去打开。
+     */
+    fun ownerAskReady(): Boolean = runCatching {
+        val notificationManager = manager ?: return false
+        notificationManager.createNotificationChannel(
+            NotificationChannel(OWNER_ASK_CHANNEL, context.getString(R.string.calls_owner_ask_channel), NotificationManager.IMPORTANCE_HIGH).apply {
+                setShowBadge(true)
+                lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+            },
+        )
+        notificationManager.areNotificationsEnabled() &&
+            notificationManager.getNotificationChannel(OWNER_ASK_CHANNEL)?.importance != NotificationManager.IMPORTANCE_NONE
+    }.getOrDefault(false)
+
     fun show(callId: String, message: String, ringing: Boolean): Boolean = runCatching {
         if (!ready()) return false
         val takeOverIntent = Intent(context, CallNotificationAction::class.java)
@@ -137,6 +153,7 @@ internal class CallNotifications(private val context: Context) {
         const val LOCKED_DIAL_SCHEME = "mika-locked-dial"
         const val CHANNEL = "mika_ai_calls"
         const val COMPLETED_CHANNEL = "mika_ai_call_completed"
+        const val OWNER_ASK_CHANNEL = "mika_ai_call_owner_ask"
         private const val ID = 90_117
         private fun completedId(callId: String) = 91_000 + (callId.hashCode() and 0x7fffffff) % 8_000
     }

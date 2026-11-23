@@ -264,6 +264,9 @@ class VolcRealtimeAgentToolsTest {
             peer().send(functionFrame(item("dispatch", DeskTools.DISPATCH, """{"words":"帮我订个位","title":"x"}""")))
             assertTrue(nextMessage().toString().contains("unsupported_tool"))
             assertFalse(events.tryReceive().isSuccess)
+            // 这套协议能交给模型的文字只有照念的 speech_text_buffer:没有提示输入,说不了就返回 false,什么也不发
+            assertFalse(session.sendCue("[提示] 主人回复：七点"))
+            assertFalse(session.sendContext("[提示] 任务已完成"))
             finish(session)
             withTimeout(3_000) { collector.await() }
         }

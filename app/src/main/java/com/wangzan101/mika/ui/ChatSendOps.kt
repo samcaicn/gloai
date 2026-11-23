@@ -96,6 +96,8 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
         // 只有引用、没写话时不发
         if (words.isEmpty()) return false
         val goal = QuoteMessage.compose(ui.quote, words)
+        // 通话里在等主人回话:这句就是回话,交给通话(它会记进这个对话)
+        if (ui.conversationId?.let { vm.ownerAnswer(it, goal) } == true) return true
         when (ui.composer) {
             ComposerMode.Answer -> {
                 act({ actions.answer(goal) }) { actions.answerIn(it, goal) }

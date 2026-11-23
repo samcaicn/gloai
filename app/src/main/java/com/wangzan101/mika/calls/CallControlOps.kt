@@ -42,7 +42,10 @@ suspend fun CallRuntime.dial(
         })
     val sim = sims.single { it.info.id == picked.id }
     val ownerTask = ownerConversationId?.let { app.taskState.run(it)?.state }
-    val attempt = Work(CallDirection.OUTGOING, config, requestedNumber = normalized, sim = sim, task = taskSnapshot, ownerTask = ownerTask)
+    // 前台派出的任务跑在藏起来的子会话里,主人看的是它的前台会话
+    val ownerConversation = ownerConversationId?.let { app.conversations.deskParent(it) ?: it }
+    val attempt = Work(CallDirection.OUTGOING, config, requestedNumber = normalized, sim = sim, task = taskSnapshot,
+        ownerTask = ownerTask, ownerConversationId = ownerConversation)
     startWork(attempt)
     awaitResult(attempt)
 }

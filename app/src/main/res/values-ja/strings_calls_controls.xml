@@ -26,4 +26,8 @@
     <string name="calls_owner_ask_reply">返信</string>
     <string name="calls_owner_ask_hint">返信内容</string>
     <string name="calls_transcript_owner_unrelayed">オーナーの返事（未伝達）</string>
+    <string name="calls_owner_ask_channel">通話中の確認</string>
+    <string name="calls_owner_ask_line">通話相手からの質問：%1$s\nここで返信すれば相手に伝えます。</string>
+    <string name="calls_owner_ask_notify_off">「通話中の確認」通知がオフのため、見逃すおそれがあります。システム設定 → 通知でオンにできます。</string>
+    <string name="calls_owner_ask_answered">通話に伝えました。</string>
 </resources>

@@ -260,6 +260,23 @@ class VolcRealtimeSession internal constructor(
         return sent
     }
 
+    /**
+     * 给模型的提示,由它转述:OpenAI 实时协议用一条 system 文字项再请它回话,说没说完和汇报一样跟踪。
+     * 火山双工对话这套协议能交给模型的文字只有照念的 speech_text_buffer,没有让模型接着回话的文字输入:返回 false。
+     */
+    @Synchronized override fun sendCue(text: String, ended: (spoken: Boolean) -> Unit): Boolean {
+        if (!openAi || phase != Phase.ACTIVE || text.isBlank() || text.length > VolcRealtimeProtocol.MAX_TOOL_RESULT_CHARS) return false
+        if (!send(OpenAiCallProtocol.systemNote(text)) || !send(OpenAiCallProtocol.respond())) return false
+        notices.addLast(PendingNotice(ended))
+        return true
+    }
+
+    /** 只当背景的提示:OpenAI 加一条 system 文字项,不请它开口;火山这套协议没有这种输入,返回 false。 */
+    @Synchronized override fun sendContext(text: String): Boolean {
+        if (!openAi || phase != Phase.ACTIVE || text.isBlank() || text.length > VolcRealtimeProtocol.MAX_TOOL_RESULT_CHARS) return false
+        return send(OpenAiCallProtocol.systemNote(text))
+    }
+
     /** 交出去还没说完的汇报;[playing] 表示交出去之后已经有一段新回复开播,它播完这条就算说完。 */
     private class PendingNotice(val ended: (Boolean) -> Unit, var playing: Boolean = false)
     private val notices = ArrayDeque<PendingNotice>()

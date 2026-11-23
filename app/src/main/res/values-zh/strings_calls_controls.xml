@@ -26,4 +26,8 @@
     <string name="calls_owner_ask_reply">回复</string>
     <string name="calls_owner_ask_hint">回复内容</string>
     <string name="calls_transcript_owner_unrelayed">主人回复（未转告）</string>
+    <string name="calls_owner_ask_channel">通话请示</string>
+    <string name="calls_owner_ask_line">通话对方在问：%1$s\n直接在这里回复，我会转告对方。</string>
+    <string name="calls_owner_ask_notify_off">「通话请示」通知已关闭，可能看不到这类提醒。可以在系统设置 → 通知里打开。</string>
+    <string name="calls_owner_ask_answered">已交给通话转告。</string>
 </resources>

@@ -26,4 +26,8 @@
     <string name="calls_owner_ask_reply">Responder</string>
     <string name="calls_owner_ask_hint">Sua resposta</string>
     <string name="calls_transcript_owner_unrelayed">Resposta do dono (não repassada)</string>
+    <string name="calls_owner_ask_channel">Perguntas de chamadas</string>
+    <string name="calls_owner_ask_line">A outra pessoa na chamada pergunta: %1$s\nResponda aqui e eu repasso.</string>
+    <string name="calls_owner_ask_notify_off">As notificações de perguntas de chamadas estão desativadas e você pode não vê-las. Ative-as em Configurações do sistema → Notificações.</string>
+    <string name="calls_owner_ask_answered">Repassado à chamada.</string>
 </resources>

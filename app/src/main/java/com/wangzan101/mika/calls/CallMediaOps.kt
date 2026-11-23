@@ -107,12 +107,14 @@ internal suspend fun CallRuntime.runAudio(w: Work, helper: IMikaShell, session: 
     val remaining = w.config.maxCallSeconds.takeIf { it > 0 }
         ?.let { (it * 1_000L - (SystemClock.elapsedRealtime() - w.activeElapsed)).coerceAtLeast(1) }
     w.mediaStage = MediaStage.PCM_BRIDGE
-    // 电话前台:只能请示主人;主人的回复转进通话,实在没说出去就记进通话记录(回调可能来自别的线程,回主线程写)
+    // 电话前台:只能请示主人;主人的回复和任务状态只当提示交给模型转述,不原样念给对方;
+    // 到挂断还没交给模型的回复记进通话记录(回调可能来自别的线程,回主线程写)
     val desk = PhoneDesk(
         ownerTask = { w.ownerTask },
-        ask = OwnerAskNotifier(app),
-        notice = { text, ended -> session.sendNotice(text, ended) },
+        ask = OwnerAskNotifier(app, app.ownerQuestions, w.ownerConversationId),
+        cue = { text, ended -> session.sendCue(text, ended) },
         unrelayed = { reply -> scope.launch { appendTranscript(w.transcript, CallTranscriptLine.OWNER_UNRELAYED, reply) } },
+        context = { text -> session.sendContext(text) },
     )
     try {
         withTimeoutOrNull(remaining ?: Long.MAX_VALUE) {

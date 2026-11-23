@@ -281,6 +281,21 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
     /** 对话记录:整个进程一份,任务服务、聊天界面、结果卡片的按钮共用。 */
     val conversations: ConversationStore by lazy { ConversationStore(this) }
 
+    /**
+     * 电话里还没回的请示:问题写进所属会话,主人在会话里或通知里回,先到的算数。
+     * 写会话放在一条单独的 IO 线上,问题和回答按先后落盘。
+     */
+    val ownerQuestions: com.wangzan101.mika.calls.OwnerQuestions by lazy {
+        val io = kotlinx.coroutines.Dispatchers.IO.limitedParallelism(1)
+        com.wangzan101.mika.calls.OwnerQuestions(
+            write = { id, turn -> scope.launch(io) { runCatching { conversations.append(id, turn) } } },
+            askedLine = { question, notified ->
+                tr(R.string.calls_owner_ask_line, question) + if (notified) "" else "\n" + tr(R.string.calls_owner_ask_notify_off)
+            },
+            answeredLine = { tr(R.string.calls_owner_ask_answered) },
+        )
+    }
+
     /** 项目定义:整个进程一份。 */
     val projects: ProjectStore by lazy { ProjectStore(this) }
 
@@ -500,6 +515,8 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                 override fun togglePipSoundIn(conversationId: String) { taskState.run(conversationId)?.togglePipSound() }
             },
             conversations,
+            // 通话里在等主人回话时,这个对话里的下一句就是回话
+            ownerAnswer = { id, text -> ownerQuestions.answerIn(id, text) },
             followUps = followUpQueue.changes,
             serviceBusy = taskState.busy,
             appLabel = { ConfirmationNotifier.appLabel(app, it) },

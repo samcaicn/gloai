@@ -166,6 +166,9 @@ class CascadeVoiceSession internal constructor(
         return true
     }
 
+    /** 标准通话的汇报本来就是记进模型历史、由模型自己回的一轮(见 [DeskBrain.notice]),不是照念:提示走同一条路。 */
+    override fun sendCue(text: String, ended: (spoken: Boolean) -> Unit): Boolean = sendNotice(text, ended)
+
     override fun sendUserText(text: String): Boolean {
         if (closed || text.isBlank()) return false
         startReply { brain.reply(text, it) }

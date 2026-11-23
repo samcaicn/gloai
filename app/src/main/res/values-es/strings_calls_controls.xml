@@ -26,4 +26,8 @@
     <string name="calls_owner_ask_reply">Responder</string>
     <string name="calls_owner_ask_hint">Tu respuesta</string>
     <string name="calls_transcript_owner_unrelayed">Respuesta del dueño (no transmitida)</string>
+    <string name="calls_owner_ask_channel">Preguntas de llamadas</string>
+    <string name="calls_owner_ask_line">La otra persona de la llamada pregunta: %1$s\nResponde aquí y se lo transmito.</string>
+    <string name="calls_owner_ask_notify_off">Las notificaciones de preguntas de llamadas están desactivadas y podrías no verlas. Actívalas en Ajustes del sistema → Notificaciones.</string>
+    <string name="calls_owner_ask_answered">Transmitido a la llamada.</string>
 </resources>

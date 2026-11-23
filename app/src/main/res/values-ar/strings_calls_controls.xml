@@ -26,4 +26,8 @@
     <string name="calls_owner_ask_reply">رد</string>
     <string name="calls_owner_ask_hint">ردّك</string>
     <string name="calls_transcript_owner_unrelayed">رد المالك (لم يُنقل)</string>
+    <string name="calls_owner_ask_channel">أسئلة المكالمات</string>
+    <string name="calls_owner_ask_line">يسأل الطرف الآخر في المكالمة: %1$s\nردّ هنا وسأنقله إليه.</string>
+    <string name="calls_owner_ask_notify_off">إشعارات أسئلة المكالمات متوقفة، فقد تفوتك. فعّلها من إعدادات النظام ← الإشعارات.</string>
+    <string name="calls_owner_ask_answered">تم نقله إلى المكالمة.</string>
 </resources>

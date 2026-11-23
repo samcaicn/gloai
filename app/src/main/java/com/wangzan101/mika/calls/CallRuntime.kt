@@ -449,6 +449,8 @@ class CallRuntime(internal val app: MikaApp) {
         val lockedDialTicket: LockedDialGate.Ticket? = null,
         /** 这通电话所属的后台任务(由任务拨出时才有);电话前台把它的状态放进上下文。 */
         val ownerTask: StateFlow<TaskState>? = null,
+        /** 主人看得到的那条会话(请示写在这里、也能在这里回);没有所属任务的电话为 null,只能从通知里回。 */
+        val ownerConversationId: String? = null,
     ) {
         val id = UUID.randomUUID().toString()
         val result = CompletableDeferred<CallActionResult>()

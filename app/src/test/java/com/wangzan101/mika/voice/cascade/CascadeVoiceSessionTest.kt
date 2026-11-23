@@ -248,6 +248,17 @@ class CascadeVoiceSessionTest {
     }
 
     @Test
+    fun `a cue goes to the brain as a note and is answered in its own words`() = runTest {
+        val brain = ScriptBrain { _, _ -> }
+        val (session, events) = session(brain, FakeListen())
+        assertTrue(session.sendCue("Owner replied seven."))
+        advanceUntilIdle()
+        assertEquals(listOf("Owner replied seven."), brain.notices)
+        assertEquals("Update: Owner replied seven.", events.filterIsInstance<VolcRealtimeEvent.AssistantTranscript>().joinToString("") { it.delta }.trim())
+        session.close()
+    }
+
+    @Test
     fun `a notice with nothing being said starts right away`() = runTest {
         val brain = ScriptBrain { _, _ -> }
         val (session, events) = session(brain, FakeListen())

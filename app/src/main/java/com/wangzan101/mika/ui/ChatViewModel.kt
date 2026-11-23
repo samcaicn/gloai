@@ -123,6 +123,8 @@ class ChatViewModel(
     internal val activities: StateFlow<List<RunEvent.Activity>> = MutableStateFlow(emptyList()),
     /** 显示中的任务收到的插话和去向。 */
     internal val steers: StateFlow<List<SteerNote>> = MutableStateFlow(emptyList()),
+    /** 通话里在等主人回话时,这个对话里发的下一句交给通话(返回 true,不开任务也不插话);没在等就返回 false。 */
+    internal val ownerAnswer: (conversationId: String, text: String) -> Boolean = { _, _ -> false },
     /** 整个进程的排队队列;这里只取当前对话、还没被服务取走的项。 */
     private val followUps: StateFlow<List<QueuedFollowUp>> = MutableStateFlow(emptyList()),
     /** 停止之后正在写交代的那几次运行(运行编号);那一轮下面显示「正在整理已做的事…」。 */

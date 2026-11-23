@@ -26,4 +26,8 @@
     <string name="calls_owner_ask_reply">답장</string>
     <string name="calls_owner_ask_hint">답장 내용</string>
     <string name="calls_transcript_owner_unrelayed">주인 답장(전달 안 됨)</string>
+    <string name="calls_owner_ask_channel">통화 중 질문</string>
+    <string name="calls_owner_ask_line">통화 상대의 질문: %1$s\n여기에 답하면 상대에게 전해 드릴게요.</string>
+    <string name="calls_owner_ask_notify_off">「통화 중 질문」 알림이 꺼져 있어 놓칠 수 있어요. 시스템 설정 → 알림에서 켤 수 있어요.</string>
+    <string name="calls_owner_ask_answered">통화에 전달했어요.</string>
 </resources>

@@ -19,17 +19,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PhoneDeskTest {
-    /** 记下问过什么、撤过几次;[reply] 模拟主人在通知里回了一句。 */
-    private class FakeAsk(var available: Boolean = true) : OwnerAsk {
+    /** 记下问过什么、撤过几次;[reply] 模拟主人回了一句(通知里或会话里)。 */
+    private class FakeAsk(var reach: OwnerReach = OwnerReach.Notified) : OwnerAsk {
         val questions = mutableListOf<String>()
         var cancels = 0
         private var onReply: ((String) -> Unit)? = null
 
-        override fun ask(question: String, onReply: (String) -> Unit): Boolean {
-            if (!available) return false
+        override fun ask(question: String, onReply: (String) -> Unit): OwnerReach {
+            if (reach == OwnerReach.Unreachable) return reach
             questions += question
             this.onReply = onReply
-            return true
+            return reach
         }
 
         override fun cancel() {
@@ -40,20 +40,27 @@ class PhoneDeskTest {
         fun reply(text: String) = onReply!!.invoke(text)
     }
 
-    /** 收下的通知;[ended] 留着由测试决定说没说完。 */
-    private class FakeNotices(var accept: Boolean = true) {
+    /** 交给模型的提示;[ended] 留着由测试决定说没说完。 */
+    private class FakeCues(var accept: Boolean = true) {
         val sent = mutableListOf<String>()
         val ended = mutableListOf<(Boolean) -> Unit>()
-        fun send(text: String, end: (Boolean) -> Unit): Boolean {
+        val context = mutableListOf<String>()
+        fun cue(text: String, end: (Boolean) -> Unit): Boolean {
             if (!accept) return false
             sent += text
             ended += end
+            return true
+        }
+        fun context(text: String): Boolean {
+            if (!accept) return false
+            context += text
             return true
         }
     }
 
     private fun args(question: String) = buildJsonObject { put("question", question) }
     private fun JsonObject.status() = getValue("status").jsonPrimitive.content
+    private fun JsonObject.text(key: String) = getValue(key).jsonPrimitive.content
 
     @Test fun phoneHasOnlyAskOwner() = runBlocking {
         assertEquals(setOf(DeskTools.ASK_OWNER), DeskTools.specs(DeskToolSet.Phone).map { it.getValue("name").jsonPrimitive.content }.toSet())
@@ -65,22 +72,25 @@ class PhoneDeskTest {
         assertTrue(ask.questions.isEmpty())
     }
 
-    @Test fun askOwnerReturnsImmediatelyAndRelaysReply() = runBlocking {
+    @Test fun askOwnerReturnsImmediatelyAndRelaysReplyAsACueNotVerbatim() = runBlocking {
         val ask = FakeAsk()
-        val notices = FakeNotices()
-        val desk = PhoneDesk({ null }, ask, notices::send)
+        val cues = FakeCues()
+        val desk = PhoneDesk({ null }, ask, cues::cue)
         val result = withTimeout(1_000) { desk.execute(DeskTools.ASK_OWNER, args("对方问能不能改到周日")) }
         assertEquals("asked", result.status())
-        assertEquals("Tell the caller you are checking and will reply shortly.", result.getValue("next").jsonPrimitive.content)
+        assertTrue(result.text("next").startsWith("Tell the caller you are checking"))
         assertEquals(listOf("对方问能不能改到周日"), ask.questions)
-        assertTrue(notices.sent.isEmpty())
+        assertTrue(cues.sent.isEmpty())
         ask.reply("周日也行，下午两点以后")
-        assertEquals(listOf("主人回复：周日也行，下午两点以后"), notices.sent)
+        // 交给模型的是一条提示:带着主人原话,标明不是对方说的、不要照念,由模型转述
+        val cue = cues.sent.single()
+        assertTrue(cue.contains("周日也行，下午两点以后"))
+        assertTrue(cue.startsWith(PhoneDesk.CUE_MARK))
     }
 
     @Test fun secondAskWhilePendingIsBusy() = runBlocking {
         val ask = FakeAsk()
-        val desk = PhoneDesk({ null }, ask, FakeNotices()::send)
+        val desk = PhoneDesk({ null }, ask, FakeCues()::cue)
         assertEquals("asked", desk.execute(DeskTools.ASK_OWNER, args("第一个问题")).status())
         assertEquals("busy", desk.execute(DeskTools.ASK_OWNER, args("第二个问题")).status())
         assertEquals(listOf("第一个问题"), ask.questions)
@@ -99,78 +109,106 @@ class PhoneDeskTest {
 
     @Test fun callEndCancelsOwnerAsk() = runBlocking {
         val ask = FakeAsk()
-        val notices = FakeNotices()
+        val cues = FakeCues()
         val unrelayed = mutableListOf<String>()
-        val desk = PhoneDesk({ null }, ask, notices::send) { unrelayed += it }
+        val desk = PhoneDesk({ null }, ask, cues::cue) { unrelayed += it }
         desk.execute(DeskTools.ASK_OWNER, args("要不要加一个人"))
         desk.close()
         assertEquals(1, ask.cancels)
         ask.reply("加")
-        assertTrue(notices.sent.isEmpty())
+        assertTrue(cues.sent.isEmpty())
         assertTrue(unrelayed.isEmpty())
         assertEquals("unavailable", desk.execute(DeskTools.ASK_OWNER, args("还在吗")).status())
         assertEquals(listOf("要不要加一个人"), ask.questions)
     }
 
     @Test fun askWithoutAReachableOwnerSaysSoAndFreesTheSlot() = runBlocking {
-        val ask = FakeAsk(available = false)
+        val ask = FakeAsk(OwnerReach.Unreachable)
         val desk = PhoneDesk({ null }, ask)
         assertEquals("unavailable", desk.execute(DeskTools.ASK_OWNER, args("能不能付定金")).status())
-        ask.available = true
+        ask.reach = OwnerReach.Notified
         assertEquals("asked", desk.execute(DeskTools.ASK_OWNER, args("能不能付定金")).status())
         assertEquals("invalid_arguments", PhoneDesk({ null }, FakeAsk()).execute(DeskTools.ASK_OWNER, args("  ")).status())
     }
 
-    @Test fun cutReplyIsResentOnceThenKeptInTheTranscript() = runBlocking {
-        val ask = FakeAsk()
-        val notices = FakeNotices()
-        val unrelayed = mutableListOf<String>()
-        val desk = PhoneDesk({ null }, ask, notices::send) { unrelayed += it }
-        desk.execute(DeskTools.ASK_OWNER, args("几点到"))
-        ask.reply("七点")
-        notices.ended.single().invoke(false)
-        assertEquals(listOf("主人回复：七点", "主人回复：七点"), notices.sent)
-        notices.ended[1].invoke(false)
-        assertEquals(2, notices.sent.size)
-        assertEquals(listOf("七点"), unrelayed)
-
-        // 说出去了就不记
-        desk.execute(DeskTools.ASK_OWNER, args("几个人"))
-        ask.reply("四个")
-        notices.ended.last().invoke(true)
-        assertEquals(listOf("七点"), unrelayed)
-
-        // 一次也收不下:重试一次,再记下来
-        notices.accept = false
-        desk.execute(DeskTools.ASK_OWNER, args("要包间吗"))
-        ask.reply("不要")
-        assertEquals(listOf("七点", "不要"), unrelayed)
+    @Test fun aQuestionThatOnlyReachedTheConversationTellsTheCallerToExpectAFollowUp() = runBlocking {
+        // 通知发不出去(请示频道被关了)时问题照样进会话:还是 asked,但让模型跟对方说回头再答复
+        val desk = PhoneDesk({ null }, FakeAsk(OwnerReach.InConversation))
+        val result = desk.execute(DeskTools.ASK_OWNER, args("几点到"))
+        assertEquals("asked", result.status())
+        assertTrue(result.text("next").contains("get back to them"))
     }
 
-    @Test fun ownerTaskStateIsRenderedForTheDeskContext() {
+    @Test fun cutReplyIsResentOnceThenHeldForTheNextAskAndLoggedIfNeverRelayed() = runBlocking {
+        val ask = FakeAsk()
+        val cues = FakeCues()
+        val unrelayed = mutableListOf<String>()
+        val desk = PhoneDesk({ null }, ask, cues::cue) { unrelayed += it }
+        desk.execute(DeskTools.ASK_OWNER, args("几点到"))
+        ask.reply("七点")
+        cues.ended.single().invoke(false)
+        assertEquals(2, cues.sent.size)
+        cues.ended[1].invoke(false)
+        assertEquals(2, cues.sent.size)
+        // 两次都没说出去:留着,模型下次请示时作为结果拿到,由它转述
+        val held = desk.execute(DeskTools.ASK_OWNER, args("主人回了吗"))
+        assertEquals("owner_replied", held.status())
+        assertEquals("七点", held.text("reply"))
+        assertEquals(listOf("几点到"), ask.questions)
+        assertTrue(unrelayed.isEmpty())
+
+        // 说出去了就不留
+        desk.execute(DeskTools.ASK_OWNER, args("几个人"))
+        ask.reply("四个")
+        cues.ended.last().invoke(true)
+        desk.close()
+        assertTrue(unrelayed.isEmpty())
+    }
+
+    @Test fun withoutACueInputTheReplyWaitsForTheNextAskOrGoesToTheTranscript() = runBlocking {
+        // 协议没有能让模型接着回话的文字输入(cue 返回 false):不重试,留给下一次请示;到挂断还没取走就记进通话记录
+        val ask = FakeAsk()
+        val cues = FakeCues(accept = false)
+        val unrelayed = mutableListOf<String>()
+        val desk = PhoneDesk({ null }, ask, cues::cue) { unrelayed += it }
+        desk.execute(DeskTools.ASK_OWNER, args("要包间吗"))
+        ask.reply("不要")
+        assertTrue(cues.sent.isEmpty())
+        assertTrue(unrelayed.isEmpty())
+        desk.close()
+        assertEquals(listOf("不要"), unrelayed)
+    }
+
+    @Test fun ownerTaskStateIsRenderedForTheDeskContext() = runBlocking {
         val state = MutableStateFlow<TaskState>(TaskState.Running(step = 3, note = "phone_call_dial"))
         val desk = PhoneDesk({ state }, FakeAsk())
         assertEquals(PhoneDesk.OWNER_TASK_PREFIX + "进行中", desk.ownerTaskLine())
         state.value = TaskState.WaitingInput("哪天?")
         assertEquals(PhoneDesk.OWNER_TASK_PREFIX + "等主人处理", desk.ownerTaskLine())
+        // 请示的结果里也带着,协议推不了状态时模型照样知道
+        assertEquals(PhoneDesk.OWNER_TASK_PREFIX + "等主人处理", desk.execute(DeskTools.ASK_OWNER, args("x")).text("owner_task"))
         state.value = TaskState.Cancelled
         assertEquals(PhoneDesk.OWNER_TASK_PREFIX + "已取消", desk.ownerTaskLine())
         assertNull(PhoneDesk({ null }, FakeAsk()).ownerTaskLine())
     }
 
-    @Test fun realtimePushesOnlyOwnerTaskChanges() = runBlocking {
+    @Test fun realtimePushesOnlyOwnerTaskChangesAsSilentContext() = runBlocking {
         val state = MutableStateFlow<TaskState>(TaskState.Running(step = 1, note = "a"))
-        val notices = FakeNotices()
-        val desk = PhoneDesk({ state }, FakeAsk(), notices::send)
+        val cues = FakeCues()
+        val desk = PhoneDesk({ state }, FakeAsk(), cues::cue, context = cues::context)
         val pushing = async { desk.pushOwnerTaskChanges() }
         yield()
         // 开场的状态已经在提示词里;同一种状态里的步数变化不推
         state.value = TaskState.Running(step = 2, note = "b")
         yield()
-        assertTrue(notices.sent.isEmpty())
+        assertTrue(cues.context.isEmpty())
         state.value = TaskState.Succeeded("已经订好")
-        withTimeout(1_000) { while (notices.sent.isEmpty()) yield() }
-        assertEquals(listOf(PhoneDesk.OWNER_TASK_PREFIX + "已完成"), notices.sent)
+        withTimeout(1_000) { while (cues.context.isEmpty()) yield() }
+        val line = cues.context.single()
+        assertTrue(line.startsWith(PhoneDesk.CUE_MARK))
+        assertTrue(line.contains(PhoneDesk.OWNER_TASK_PREFIX + "已完成"))
+        // 状态只当背景,不触发模型开口
+        assertTrue(cues.sent.isEmpty())
         desk.close()
         withTimeout(1_000) { pushing.await() }
         assertFalse(pushing.isCancelled)

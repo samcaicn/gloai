@@ -26,4 +26,8 @@
     <string name="calls_owner_ask_reply">پاسخ</string>
     <string name="calls_owner_ask_hint">پاسخ شما</string>
     <string name="calls_transcript_owner_unrelayed">پاسخ مالک (منتقل نشد)</string>
+    <string name="calls_owner_ask_channel">پرسش‌های تماس</string>
+    <string name="calls_owner_ask_line">طرف مقابل در تماس می‌پرسد: %1$s\nهمین‌جا پاسخ دهید تا به او برسانم.</string>
+    <string name="calls_owner_ask_notify_off">اعلان‌های پرسش تماس خاموش است و ممکن است آن‌ها را نبینید. از تنظیمات سیستم ← اعلان‌ها روشنش کنید.</string>
+    <string name="calls_owner_ask_answered">به تماس منتقل شد.</string>
 </resources>

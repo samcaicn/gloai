@@ -26,4 +26,8 @@
     <string name="calls_owner_ask_reply">Balas</string>
     <string name="calls_owner_ask_hint">Balasan Anda</string>
     <string name="calls_transcript_owner_unrelayed">Balasan pemilik (tidak disampaikan)</string>
+    <string name="calls_owner_ask_channel">Pertanyaan dari panggilan</string>
+    <string name="calls_owner_ask_line">Lawan bicara di panggilan bertanya: %1$s\nBalas di sini dan akan saya sampaikan.</string>
+    <string name="calls_owner_ask_notify_off">Notifikasi pertanyaan panggilan nonaktif, jadi Anda mungkin melewatkannya. Aktifkan di Setelan sistem → Notifikasi.</string>
+    <string name="calls_owner_ask_answered">Sudah diteruskan ke panggilan.</string>
 </resources>

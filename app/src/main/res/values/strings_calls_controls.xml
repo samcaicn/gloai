@@ -26,4 +26,8 @@
     <string name="calls_owner_ask_reply">Reply</string>
     <string name="calls_owner_ask_hint">Your reply</string>
     <string name="calls_transcript_owner_unrelayed">Owner\'s reply (not relayed)</string>
+    <string name="calls_owner_ask_channel">Questions from calls</string>
+    <string name="calls_owner_ask_line">The other party on the call asks: %1$s\nReply here and I\'ll pass it on.</string>
+    <string name="calls_owner_ask_notify_off">Call question notifications are off, so you may miss these. Turn them on in system Settings → Notifications.</string>
+    <string name="calls_owner_ask_answered">Passed on to the call.</string>
 </resources>
