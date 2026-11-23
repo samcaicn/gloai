@@ -163,16 +163,15 @@ internal class ScreenSession(
         while (recentSnapshots.size > RECENT_SNAPSHOTS) recentSnapshots.removeFirst().snapshotId.let { id -> readAt.remove(id) }
     }
 
-    /** 这一屏的树里一个带名字的元素都没有,或窗口整个读不到:多半是刚切走/正在重绘,值得再读一次。 */
+    /** 这一屏的树里一个带名字的元素都没有:多半是刚切走/正在重绘/节点还没吐出来,值得再读一次。 */
     private fun blankTree(s: ScreenSnapshot): Boolean {
         if (s.protected) return false
+        // 窗口读不到(unreadableApp)不重试:那是无障碍服务或权限层面的持续状态,不是节点还没吐出来,重读也读不到;
+        // 把它当瞬时问题会在这个 App 的每一次读屏上白等一次重读。
+        if (s.unreadableApp != null) return false
+        if (!s.hasWindow) return false
         val named = s.elements.count { it.name.isNotBlank() }
-        return when {
-            s.unreadableApp != null && named == 0 -> true
-            !s.hasWindow -> false
-            s.elements.isEmpty() -> true
-            else -> named == 0 && s.elements.size <= 1
-        }
+        return s.elements.isEmpty() || (named == 0 && s.elements.size <= 1)
     }
 
     /** 此刻重新读一屏,不登记编号、不改模型手里的读屏;读不到为 null。 */
