@@ -1,7 +1,6 @@
 # Files that were over 800 lines when the size guard arrived, with the most lines each may have.
 # Ceilings only go down: split a file, then run `python3 tools/size/size_guard.py tighten`.
 2355 app/src/main/java/com/wangzan101/mika/calls/CallRuntime.kt
-2144 app/src/main/java/com/wangzan101/mika/ui/ChatViewModel.kt
 2038 app/src/main/java/com/wangzan101/mika/settings/ProviderStore.kt
 1943 app/src/main/java/com/wangzan101/mika/cap/phone/shell/ShellService.kt
 1855 app/src/main/java/com/wangzan101/mika/proactive/LearnRunner.kt
