@@ -1,0 +1,30 @@
+# Files that were over 800 lines when the size guard arrived, with the most lines each may have.
+# Ceilings only go down: split a file, then run `python3 tools/size/size_guard.py tighten`.
+2665 app/src/main/java/com/wangzan101/mika/ui/ChatViewModel.kt
+2355 app/src/main/java/com/wangzan101/mika/calls/CallRuntime.kt
+2063 app/src/main/java/com/wangzan101/mika/ui/ChatScreen.kt
+2038 app/src/main/java/com/wangzan101/mika/settings/ProviderStore.kt
+1943 app/src/main/java/com/wangzan101/mika/cap/phone/shell/ShellService.kt
+1877 app/src/main/java/com/wangzan101/mika/ui/ChatDrawer.kt
+1855 app/src/main/java/com/wangzan101/mika/proactive/LearnRunner.kt
+1587 app/src/main/java/com/wangzan101/mika/capsule/CapsuleController.kt
+1561 app/src/main/java/com/wangzan101/mika/task/TaskRun.kt
+1516 app/src/main/java/com/wangzan101/mika/task/TaskService.kt
+1489 app/src/main/java/com/wangzan101/mika/cap/web/WebScreen.kt
+1458 app/src/main/java/com/wangzan101/mika/ui/ModelSetupScreen.kt
+1394 app/src/main/java/com/wangzan101/mika/ui/ModelsScreen.kt
+1319 app/src/main/java/com/wangzan101/mika/ui/ModelSetupViewModel.kt
+1281 core/src/main/kotlin/com/wangzan101/mika/core/agent/AgentLoop.kt
+1144 app/src/main/java/com/wangzan101/mika/cap/phone/a11y/AndroidScreen.kt
+1102 app/src/main/java/com/wangzan101/mika/capsule/CapsuleCardContent.kt
+1093 app/src/main/java/com/wangzan101/mika/ui/SettingsSubPages.kt
+1048 app/src/main/java/com/wangzan101/mika/ui/FileLibraryScreen.kt
+971 app/src/main/java/com/wangzan101/mika/proactive/ProactiveLearnScreen.kt
+923 app/src/main/java/com/wangzan101/mika/cap/phone/shell/ShellCallAudio.kt
+905 app/src/main/java/com/wangzan101/mika/selfcheck/AndroidSelfCheck.kt
+896 app/src/main/java/com/wangzan101/mika/ui/MainActivity.kt
+870 app/src/main/java/com/wangzan101/mika/ui/CallSettingsScreen.kt
+859 app/src/main/java/com/wangzan101/mika/browser/UserBrowser.kt
+839 app/src/main/java/com/wangzan101/mika/ui/DeviceFileBrowser.kt
+832 app/src/main/java/com/wangzan101/mika/chat/ConversationStore.kt
+803 app/src/main/java/com/wangzan101/mika/ui/VoiceHold.kt
