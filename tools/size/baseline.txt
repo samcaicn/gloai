@@ -18,7 +18,7 @@
 971 app/src/main/java/com/wangzan101/mika/proactive/ProactiveLearnScreen.kt
 923 app/src/main/java/com/wangzan101/mika/cap/phone/shell/ShellCallAudio.kt
 905 app/src/main/java/com/wangzan101/mika/selfcheck/AndroidSelfCheck.kt
-896 app/src/main/java/com/wangzan101/mika/ui/MainActivity.kt
+883 app/src/main/java/com/wangzan101/mika/ui/MainActivity.kt
 870 app/src/main/java/com/wangzan101/mika/ui/CallSettingsScreen.kt
 859 app/src/main/java/com/wangzan101/mika/browser/UserBrowser.kt
 839 app/src/main/java/com/wangzan101/mika/ui/DeviceFileBrowser.kt
