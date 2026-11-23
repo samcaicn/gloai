@@ -1,10 +1,12 @@
 package com.wangzan101.mika.cap.web
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import com.wangzan101.mika.core.cap.web.DownloadAddressPolicy
 import com.wangzan101.mika.cap.sandbox.JVM_GATE
 import okhttp3.Dns
@@ -50,6 +52,9 @@ class WebDownloadsTest {
 
     @After
     fun tearDown() {
+        // 有的用例只看登记、不等下载跑完:先等在途下载收尾再关服务器,
+        // 否则下载撞上断开的连接走出错分支(android.util.Log 在 JVM 里会抛),异常漏到同进程后面的测试里。
+        runBlocking { withTimeoutOrNull(10_000) { scope.coroutineContext[Job]!!.children.forEach { it.join() } } }
         scope.cancel()
         server.shutdown()
     }
