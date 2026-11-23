@@ -133,6 +133,7 @@ internal suspend fun CallRuntime.runWork(w: Work) {
             CallPolicy.prompt(w.config.systemPrompt, w.direction, ownerRules, task = w.task) + PHONE_DTMF_PROMPT,
             task = w.task.takeIf { w.direction == CallDirection.OUTGOING },
             openingOwnerTask = if (standard) null else PhoneDesk.renderOwnerTask(w.ownerTask?.value),
+            canCue = PhoneDesk.canCue(standard, profile.protocol),
         )
         try {
             provider.validate(profile, systemPrompt, enablePhoneDtmf = true)
@@ -229,7 +230,7 @@ internal suspend fun CallRuntime.runWork(w: Work) {
                 publish()
             },
         )
-        runAudio(w, helper, session, pushOwnerTask = !standard)
+        runAudio(w, helper, session, pushOwnerTask = !standard, canCue = PhoneDesk.canCue(standard, profile.protocol))
     } catch (e: CancellationException) {
         // Coroutine cancellation may carry a secondary descriptor-close exception.
         if (BuildConfig.DEBUG) e.suppressed.take(MAX_MEDIA_DIAGNOSTICS).forEach { debugMediaException(w, it) }

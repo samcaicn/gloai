@@ -262,7 +262,8 @@ class VolcRealtimeSession internal constructor(
 
     /**
      * 给模型的提示,由它转述:OpenAI 实时协议用一条 system 文字项再请它回话,说没说完和汇报一样跟踪。
-     * 火山双工对话这套协议能交给模型的文字只有照念的 speech_text_buffer,没有让模型接着回话的文字输入:返回 false。
+     * 火山双工对话这套协议能交给模型的文字只有照念的 speech_text_buffer,没有让模型接着回话的文字输入:返回 false
+     * (电话前台据此改让模型再请示去取回复,见 [PhoneDesk.canCue])。
      */
     @Synchronized override fun sendCue(text: String, ended: (spoken: Boolean) -> Unit): Boolean {
         if (!openAi || phase != Phase.ACTIVE || text.isBlank() || text.length > VolcRealtimeProtocol.MAX_TOOL_RESULT_CHARS) return false

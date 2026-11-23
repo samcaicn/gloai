@@ -40,8 +40,9 @@ internal suspend fun CallRuntime.probeAudio(): Boolean {
     return ready
 }
 
-/** [pushOwnerTask]:实时通话里所属任务的状态变了要推一句(标准通话每轮附注里就有,不用推)。 */
-internal suspend fun CallRuntime.runAudio(w: Work, helper: IMikaShell, session: CallRealtimeSession, pushOwnerTask: Boolean = false) {
+/** [pushOwnerTask]:实时通话里所属任务的状态变了要推一句(标准通话每轮附注里就有,不用推);[canCue]:见 [PhoneDesk.canCue]。 */
+internal suspend fun CallRuntime.runAudio(w: Work, helper: IMikaShell, session: CallRealtimeSession, pushOwnerTask: Boolean = false,
+                                         canCue: Boolean = true) {
     val greeting = CallPolicy.spokenGreeting(w.config.greeting, hasTask = w.task != null)
     val notification = app.getString(
         if (greeting.isBlank()) R.string.calls_notification_connected_waiting else R.string.calls_notification_connected,
@@ -115,6 +116,7 @@ internal suspend fun CallRuntime.runAudio(w: Work, helper: IMikaShell, session: 
         cue = { text, ended -> session.sendCue(text, ended) },
         unrelayed = { reply -> scope.launch { appendTranscript(w.transcript, CallTranscriptLine.OWNER_UNRELAYED, reply) } },
         context = { text -> session.sendContext(text) },
+        canCue = canCue,
     )
     try {
         withTimeoutOrNull(remaining ?: Long.MAX_VALUE) {

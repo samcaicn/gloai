@@ -179,6 +179,57 @@ class PhoneDeskTest {
         assertEquals(listOf("不要"), unrelayed)
     }
 
+    @Test fun withoutCuesTheModelIsToldToCollectTheReplyAndReAskingCollectsIt() = runBlocking {
+        // 收不到提示的协议:回复不会自己到,请示结果和提示词都让模型再请示一次去取
+        val ask = FakeAsk()
+        val desk = PhoneDesk({ null }, ask, canCue = false)
+        val asked = desk.execute(DeskTools.ASK_OWNER, args("能不能改到周日"))
+        assertEquals("asked", asked.status())
+        assertTrue(asked.text("next").contains("will NOT arrive by itself"))
+        assertTrue(asked.text("next").contains("call ask_owner again"))
+        // 还没回:再请示不算忙,告诉它还在等,也不再发新问题
+        val waiting = desk.execute(DeskTools.ASK_OWNER, args("能不能改到周日"))
+        assertEquals("still_waiting", waiting.status())
+        assertEquals(listOf("能不能改到周日"), ask.questions)
+        // 回了:再请示就拿到原话,由模型转述
+        ask.reply("周日也行")
+        val replied = desk.execute(DeskTools.ASK_OWNER, args("能不能改到周日"))
+        assertEquals("owner_replied", replied.status())
+        assertEquals("周日也行", replied.text("reply"))
+        // 取走以后再问就是新问题
+        assertEquals("asked", desk.execute(DeskTools.ASK_OWNER, args("几个人")).status())
+        assertEquals(listOf("能不能改到周日", "几个人"), ask.questions)
+    }
+
+    @Test fun withoutCuesAQuietQuestionAlsoSaysToCollectTheReply() = runBlocking {
+        val next = PhoneDesk({ null }, FakeAsk(OwnerReach.InConversation), canCue = false)
+            .execute(DeskTools.ASK_OWNER, args("几点到")).text("next")
+        assertTrue(next.contains("get back to them"))
+        assertTrue(next.contains("call ask_owner again"))
+    }
+
+    @Test fun cueCapableCallsKeepTheNoteWordingAndBusy() = runBlocking {
+        val ask = FakeAsk()
+        val desk = PhoneDesk({ null }, ask, FakeCues()::cue)
+        val next = desk.execute(DeskTools.ASK_OWNER, args("几点到")).text("next")
+        assertTrue(next.contains("will reach you as a note"))
+        assertFalse(next.contains("call ask_owner again"))
+        assertEquals("busy", desk.execute(DeskTools.ASK_OWNER, args("几点到")).status())
+    }
+
+    @Test fun thePromptsRelayRuleFollowsWhetherTheProtocolCanCue() {
+        val cue = PhoneDesk.systemPrompt("电话规则", null, null, canCue = true)
+        val noCue = PhoneDesk.systemPrompt("电话规则", null, null, canCue = false)
+        assertTrue(cue.contains(PhoneDesk.RELAY_BY_CUE))
+        assertFalse(cue.contains(PhoneDesk.RELAY_BY_ASKING))
+        assertTrue(noCue.contains(PhoneDesk.RELAY_BY_ASKING))
+        assertFalse(noCue.contains(PhoneDesk.RELAY_BY_CUE))
+        // 哪些协议能收提示:标准通话、OpenAI 实时能;火山双工只有照念的文字输入,不能
+        assertTrue(PhoneDesk.canCue(standard = true, protocol = CallVoiceProtocol.VOLC_DUPLEX))
+        assertTrue(PhoneDesk.canCue(standard = false, protocol = CallVoiceProtocol.OPENAI_REALTIME))
+        assertFalse(PhoneDesk.canCue(standard = false, protocol = CallVoiceProtocol.VOLC_DUPLEX))
+    }
+
     @Test fun ownerTaskStateIsRenderedForTheDeskContext() = runBlocking {
         val state = MutableStateFlow<TaskState>(TaskState.Running(step = 3, note = "phone_call_dial"))
         val desk = PhoneDesk({ state }, FakeAsk())
