@@ -172,33 +172,33 @@ class ProviderStore(
     }
 
     companion object {
-        const val CONFIG_FILE = "providers.json"
-        const val KEY_FILE = "provider-keys.json"
-        const val CHATGPT_HOST_FILE = "chatgpt-host.json"
+        internal const val CONFIG_FILE = "providers.json"
+        internal const val KEY_FILE = "provider-keys.json"
+        internal const val CHATGPT_HOST_FILE = "chatgpt-host.json"
 
         /** 各家预设沿用的旧上下文默认值;预设改了默认后,存着这个值的配置由 [repairStaleContextDefaults] 跟上去。 */
-        const val LEGACY_DEFAULT_CONTEXT_TOKENS = 64_000
+        internal const val LEGACY_DEFAULT_CONTEXT_TOKENS = 64_000
 
         /** `uses` 里每个用途的 `use`:具体模型(另记 `config`)、模型组(另记 `group`)、用主模型、不用。旧版本的文件里只有 `roles`。 */
-        const val USE_MODEL = "model"
-        const val USE_GROUP = "group"
-        const val USE_MAIN = "main"
-        const val USE_NONE = "none"
+        internal const val USE_MODEL = "model"
+        internal const val USE_GROUP = "group"
+        internal const val USE_MAIN = "main"
+        internal const val USE_NONE = "none"
 
         // 连服务商的客户端都经 NetProxy 建:走设置 › 网络代理,本机、局域网地址(本地模型)直连
-        val http by lazy { NetProxy.shared.client(OkHttpClient.Builder().readTimeout(120, TimeUnit.SECONDS)) }
+        internal val http by lazy { NetProxy.shared.client(OkHttpClient.Builder().readTimeout(120, TimeUnit.SECONDS)) }
 
         /** 和对话模型共用的连接池;同一服务商的其他请求(如语音转写)也用它。 */
         val modelHttp: OkHttpClient get() = http
 
         /** 列模型、账号登录换令牌用的:读超时短一些,同样走网络代理。 */
-        val shortHttp by lazy { NetProxy.shared.client(OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS)) }
+        internal val shortHttp by lazy { NetProxy.shared.client(OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS)) }
 
-        val catalog by lazy { ModelCatalog(shortHttp) }
+        internal val catalog by lazy { ModelCatalog(shortHttp) }
 
-        val defaultChatGptAuth by lazy { ChatGptAuth(shortHttp) }
-        val defaultOpenRouterAuth by lazy { OpenRouterAuth(shortHttp) }
-        val defaultXaiAuth by lazy { XaiAuth(shortHttp) }
+        internal val defaultChatGptAuth by lazy { ChatGptAuth(shortHttp) }
+        internal val defaultOpenRouterAuth by lazy { OpenRouterAuth(shortHttp) }
+        internal val defaultXaiAuth by lazy { XaiAuth(shortHttp) }
 
         /** ChatGPT 服务商的名字(品牌名,不随界面语言变)。 */
         const val CHATGPT_NAME = "ChatGPT"
@@ -208,17 +208,17 @@ class ProviderStore(
         const val OPENROUTER_NAME = "OpenRouter"
         const val OPENROUTER_SIGN_IN = "openrouter"
         /** 出错说明里怎么称呼这家的登录。 */
-        const val XAI_ACCOUNT = "xAI"
+        internal const val XAI_ACCOUNT = "xAI"
 
         /**
          * 试调用:临时配置的 id、系统提示、那句话、试用的工具、回复上限。
          * 上限留得够一次工具调用,连同必须先想一想的模型的思考(Messages、generateContent 把思考也算在上限里)。
          */
-        const val PROBE_ID = "probe"
-        const val PROBE_SYSTEM = "This is a connection test. Call the get_time tool now. Do not answer with text."
-        const val PROBE_TEXT = "What time is it? Use the get_time tool."
-        val PROBE_TOOL = ToolSpec("get_time", "Returns the current time.", """{"type":"object","properties":{}}""")
-        const val PROBE_MAX_TOKENS = 1024
+        internal const val PROBE_ID = "probe"
+        internal const val PROBE_SYSTEM = "This is a connection test. Call the get_time tool now. Do not answer with text."
+        internal const val PROBE_TEXT = "What time is it? Use the get_time tool."
+        internal val PROBE_TOOL = ToolSpec("get_time", "Returns the current time.", """{"type":"object","properties":{}}""")
+        internal const val PROBE_MAX_TOKENS = 1024
 
         /**
          * 列模型的接口:OpenAI 兼容、Responses、ChatGPT 和 xAI 都是 `GET {base}/models`(Bearer;订阅登录的 [apiKey] 是访问令牌)。

@@ -354,24 +354,24 @@ internal class LearnRunner(
         const val PURGE_SENSITIVE = ":sensitive"
         /** 记着的单删:后面跟着编号(话题、联系人、一句分段归纳)或纪元日(某天、某周、某个月的归纳的起头那天)。 */
         /** 记着的「全清」:整份没删掉(存不上、文件也删不掉),读得出来时把里面的全清掉。 */
-        const val MARK_ALL = ":all"
-        const val MARK_TOPIC = ":topic:"
-        const val MARK_CONTACT = ":contact:"
+        internal const val MARK_ALL = ":all"
+        internal const val MARK_TOPIC = ":topic:"
+        internal const val MARK_CONTACT = ":contact:"
         /** 通知原文上:某个通知键某一阵的那几段。后面是键的哈希、[KEY_SINCE]、从什么时候起(毫秒)。 */
-        const val MARK_KEY = ":key:"
-        const val KEY_SINCE = "@"
+        internal const val MARK_KEY = ":key:"
+        internal const val KEY_SINCE = "@"
         /** 那一阵有多长:认状态显示时往回看的窗口。 */
-        const val LIVE_WINDOW_MS = com.wangzan101.mika.core.proactive.LiveUpdates.WINDOW_MS
+        internal const val LIVE_WINDOW_MS = com.wangzan101.mika.core.proactive.LiveUpdates.WINDOW_MS
         /** 一次合并:后面是并掉的话题 id、[MERGE_INTO]、并进去的话题 id。话题、联系人两份上都可能记着。 */
-        const val MARK_MERGE = ":merge:"
-        const val MERGE_INTO = ">"
-        const val MARK_NOTE = ":note:"
-        const val MARK_DAY = ":day:"
-        const val MARK_WEEK = ":week:"
-        const val MARK_MONTH = ":month:"
+        internal const val MARK_MERGE = ":merge:"
+        internal const val MERGE_INTO = ">"
+        internal const val MARK_NOTE = ":note:"
+        internal const val MARK_DAY = ":day:"
+        internal const val MARK_WEEK = ":week:"
+        internal const val MARK_MONTH = ":month:"
 
         /** 不记联系人时用的(测试、或没给存放处):读出来总是空的,存了也不留。 */
-        object NoContacts : ContactPoolStore {
+        internal object NoContacts : ContactPoolStore {
             override fun load() = ContactPoolData()
             override fun save(data: ContactPoolData) {}
             override fun dropBroken() {}
@@ -380,7 +380,7 @@ internal class LearnRunner(
 
         /** 带进任务的那一段里最多放几个话题、几个联系人(按强弱取;整段另有 token 上限)。 */
         /** 一次最多连着直接记下几份「没有可归纳的」周(月)归纳(防着写错了转不出来)。 */
-        const val AUTO_SPANS_MAX = 64
+        internal const val AUTO_SPANS_MAX = 64
         const val OBSERVED_TOPICS = 40
         const val OBSERVED_PEOPLE = 20
 
@@ -388,21 +388,21 @@ internal class LearnRunner(
         const val JOURNAL_FLUSH_EVERY = 20
 
         /** 不存当日消息归纳时用的(测试、或没给存放处)。 */
-        object NoDigest : DigestStore {
+        internal object NoDigest : DigestStore {
             override fun load() = DigestData()
             override fun save(data: DigestData) {}
             override fun wipe() {}
         }
 
         /** 不存通知日志时用的(测试、或没给存放处)。 */
-        object NoJournal : NoticeJournalStore {
+        internal object NoJournal : NoticeJournalStore {
             override fun load(): NoticeJournalData? = null
             override fun save(data: NoticeJournalData) {}
             override fun wipe() {}
         }
 
         /** 只在内存里记着的(测试用;正式的是 [ProactivePrefs])。 */
-        class MemoryPurges : LearnPurges {
+        internal class MemoryPurges : LearnPurges {
             override var topicPurges: Set<String> = emptySet()
             override var contactPurges: Set<String> = emptySet()
             override var digestPurges: Set<String> = emptySet()

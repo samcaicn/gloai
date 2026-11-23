@@ -906,17 +906,17 @@ class ShellService(
     }
 
     companion object {
-        const val TAG = "MikaShell"
-        const val MAX_TASKS = 100
-        const val TAP_MS = 50L
+        internal const val TAG = "MikaShell"
+        internal const val MAX_TASKS = 100
+        internal const val TAP_MS = 50L
         // injectStroke 一笔的上限:点数、从按下到抬起的毫秒数
-        const val STROKE_MAX_POINTS = 1_024
-        const val STROKE_MAX_MS = 10_000L
-        const val CMD_TIMEOUT_S = 10L
-        const val COMMAND_OUTPUT_MAX = 64 * 1024
-        const val READER_JOIN_MS = 1_000L
-        val MODE_RE = Regex("[a-z_]+")
-        const val PER_USER_RANGE = 100_000
+        internal const val STROKE_MAX_POINTS = 1_024
+        internal const val STROKE_MAX_MS = 10_000L
+        internal const val CMD_TIMEOUT_S = 10L
+        internal const val COMMAND_OUTPUT_MAX = 64 * 1024
+        internal const val READER_JOIN_MS = 1_000L
+        internal val MODE_RE = Regex("[a-z_]+")
+        internal const val PER_USER_RANGE = 100_000
 
         const val START_OK = 0
         const val START_IN_USE_ON_MAIN = 1
@@ -937,40 +937,40 @@ class ShellService(
         const val KEY_COPY_USERS = "users"
         const val KEY_COPY_SUMMARY = "summary"
         // UserProperties.PROFILE_API_VISIBILITY_HIDDEN
-        const val PROFILE_API_VISIBILITY_HIDDEN = 1
+        internal const val PROFILE_API_VISIBILITY_HIDDEN = 1
 
         // setClipText 的结果
         const val CLIP_SET = 0
         const val CLIP_UNREADABLE = 1
         const val CLIP_FAILED = 2
-        const val CLIP_LABEL = "Mika"
+        internal const val CLIP_LABEL = "Mika"
         // AppOpsManager 里这个名字是隐藏的
-        const val OPSTR_READ_CLIPBOARD = "android:read_clipboard"
-        const val READ_CLIPBOARD_IN_BACKGROUND = "android.permission.READ_CLIPBOARD_IN_BACKGROUND"
+        internal const val OPSTR_READ_CLIPBOARD = "android:read_clipboard"
+        internal const val READ_CLIPBOARD_IN_BACKGROUND = "android.permission.READ_CLIPBOARD_IN_BACKGROUND"
 
-        val TASK_INFO: Class<*> by lazy { Class.forName("android.app.TaskInfo") }
-        val WCT: Class<*> by lazy { Class.forName("android.window.WindowContainerTransaction") }
-        const val INJECT_MODE_ASYNC = 0 // InputManager.INJECT_INPUT_EVENT_MODE_ASYNC
-        const val INJECT_MODE_WAIT_FOR_RESULT = 1 // InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT
-        const val INJECT_MODE_WAIT_FOR_FINISH = 2 // InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH
-        const val VIRTUAL_KEYBOARD = -1 // KeyCharacterMap.VIRTUAL_KEYBOARD
-        const val USER_CURRENT = -2 // UserHandle.USER_CURRENT
+        internal val TASK_INFO: Class<*> by lazy { Class.forName("android.app.TaskInfo") }
+        internal val WCT: Class<*> by lazy { Class.forName("android.window.WindowContainerTransaction") }
+        internal const val INJECT_MODE_ASYNC = 0 // InputManager.INJECT_INPUT_EVENT_MODE_ASYNC
+        internal const val INJECT_MODE_WAIT_FOR_RESULT = 1 // InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT
+        internal const val INJECT_MODE_WAIT_FOR_FINISH = 2 // InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH
+        internal const val VIRTUAL_KEYBOARD = -1 // KeyCharacterMap.VIRTUAL_KEYBOARD
+        internal const val USER_CURRENT = -2 // UserHandle.USER_CURRENT
         // WindowConfiguration.ACTIVITY_TYPE_*:桌面、最近任务、助理等是别的种类
-        const val ACTIVITY_TYPE_UNDEFINED = 0
-        const val ACTIVITY_TYPE_STANDARD = 1
+        internal const val ACTIVITY_TYPE_UNDEFINED = 0
+        internal const val ACTIVITY_TYPE_STANDARD = 1
 
         // DisplayManager.VIRTUAL_DISPLAY_FLAG_*(部分为隐藏常量)
-        const val FLAG_PUBLIC = 1 shl 0
-        const val FLAG_OWN_CONTENT_ONLY = 1 shl 3
-        const val FLAG_SUPPORTS_TOUCH = 1 shl 6
-        const val FLAG_ROTATES_WITH_CONTENT = 1 shl 7
-        const val FLAG_DESTROY_CONTENT_ON_REMOVAL = 1 shl 8
-        const val FLAG_TRUSTED = 1 shl 10
-        const val FLAG_OWN_DISPLAY_GROUP = 1 shl 11
-        const val FLAG_ALWAYS_UNLOCKED = 1 shl 12
-        const val FLAG_TOUCH_FEEDBACK_DISABLED = 1 shl 13
-        const val FLAG_OWN_FOCUS = 1 shl 14
-        const val FLAG_STEAL_TOP_FOCUS_DISABLED = 1 shl 16
+        internal const val FLAG_PUBLIC = 1 shl 0
+        internal const val FLAG_OWN_CONTENT_ONLY = 1 shl 3
+        internal const val FLAG_SUPPORTS_TOUCH = 1 shl 6
+        internal const val FLAG_ROTATES_WITH_CONTENT = 1 shl 7
+        internal const val FLAG_DESTROY_CONTENT_ON_REMOVAL = 1 shl 8
+        internal const val FLAG_TRUSTED = 1 shl 10
+        internal const val FLAG_OWN_DISPLAY_GROUP = 1 shl 11
+        internal const val FLAG_ALWAYS_UNLOCKED = 1 shl 12
+        internal const val FLAG_TOUCH_FEEDBACK_DISABLED = 1 shl 13
+        internal const val FLAG_OWN_FOCUS = 1 shl 14
+        internal const val FLAG_STEAL_TOP_FOCUS_DISABLED = 1 shl 16
 
         /**
          * 建虚拟屏用的标志。[trusted] 为 false 时去掉依赖可信屏的那几项:有的系统里 shell 没有
@@ -1024,11 +1024,11 @@ class ShellService(
 
         // WindowManager.DISPLAY_IME_POLICY_LOCAL = 0, _FALLBACK_DISPLAY = 1, _HIDE = 2。
         // 真机(安卓 14)实测 LOCAL:在虚拟屏聚焦输入框后输入法窗口出现在虚拟屏上,主屏焦点不变,无需 HIDE。
-        const val IME_POLICY = 0
+        internal const val IME_POLICY = 0
 
         // SystemUI 的约定:来自 shell 的剪贴板带上它就不显示「已复制」浮层(否则会弹在用户的主屏上)
-        const val EXTRA_IS_SENSITIVE = "android.content.extra.IS_SENSITIVE" // ClipDescription.EXTRA_IS_SENSITIVE(API 33)
-        const val EXTRA_SUPPRESS_CLIPBOARD_OVERLAY = "com.android.systemui.SUPPRESS_CLIPBOARD_OVERLAY"
+        internal const val EXTRA_IS_SENSITIVE = "android.content.extra.IS_SENSITIVE" // ClipDescription.EXTRA_IS_SENSITIVE(API 33)
+        internal const val EXTRA_SUPPRESS_CLIPBOARD_OVERLAY = "com.android.systemui.SUPPRESS_CLIPBOARD_OVERLAY"
 
         /**
          * 一个任务(页面所在的包 [taskPackages]、所属用户 [taskUser],读不到为 null)是不是 [packageName] 在 [userId] 那份用户里的那份。
