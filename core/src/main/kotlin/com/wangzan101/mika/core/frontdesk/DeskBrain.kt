@@ -50,8 +50,9 @@ interface DeskBrain {
  * A text model with a rolling history and optional tools. Streaming models speak while they write; others speak
  * when the reply is complete. Tool calls loop back into the model a bounded number of times.
  * [background], when given, is fetched before every model call and sent as one trailing note after the history.
- * It never enters [system] or the history, so the request prefix stays byte-stable for prompt caching, the note is
- * always current, and old notes never pile up.
+ * It never enters [system] or the history, and is marked [Message.uncached] so adapters keep the moving cache mark
+ * on the history before it: the request prefix stays byte-stable for prompt caching, the note is always current,
+ * and old notes never pile up.
  */
 class LlmBrain(
     private val model: ChatModel,
@@ -131,7 +132,7 @@ class LlmBrain(
         val messages = background?.let { source ->
             val lastUserText = past.lastOrNull { it.role == Role.User && it.author == Author.User }
                 ?.parts?.filterIsInstance<Part.Text>()?.joinToString("") { it.text }.orEmpty()
-            source.render(lastUserText)?.let { past + Message(Role.User, listOf(Part.Text(BACKGROUND_PREFIX + it)), Author.Mika) }
+            source.render(lastUserText)?.let { past + Message(Role.User, listOf(Part.Text(BACKGROUND_PREFIX + it)), Author.Mika, uncached = true) }
         } ?: past
         if (model !is StreamingChatModel) {
             val reply = model.complete(prompt, messages, tools)

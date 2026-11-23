@@ -168,18 +168,23 @@ class AnthropicModel(
     private fun buildMessages(messages: List<Message>): JsonArray {
         // (role, blocks) 先按相邻同角色合并,再输出
         val merged = mutableListOf<Pair<String, MutableList<JsonObject>>>()
-        for (m in messages) {
-            if (m.role == Role.System) continue
+        // 对话缓存到最后一条 user 消息的最后一块为止,下一步的开头与它相同就从缓存取;助手消息可能以思考块结尾,不标。
+        // 末尾每次都变的 uncached 消息不算:标在它们前面,它们的块照常合进去、跟在标记后面。
+        val stable = messages.size - messages.takeLastWhile { it.uncached }.size
+        var mark: Pair<Int, Int>? = null
+        messages.forEachIndexed { index, m ->
+            if (m.role == Role.System) return@forEachIndexed
             val role = if (m.role == Role.Assistant) "assistant" else "user"
             val blocks = if (role == "assistant") assistantBlocks(m) else userBlocks(m)
-            if (blocks.isEmpty()) continue
+            if (blocks.isEmpty()) return@forEachIndexed
             if (merged.lastOrNull()?.first == role) merged.last().second += blocks else merged += role to blocks.toMutableList()
+            if (role == "user" && index < stable) mark = merged.lastIndex to merged.last().second.lastIndex
         }
-        // 对话缓存到最后一条 user 消息为止,下一步的开头与它相同就从缓存取;助手消息可能以思考块结尾,不标
-        val lastUser = merged.indexOfLast { it.first == "user" }
         return buildJsonArray {
             merged.forEachIndexed { i, (role, blocks) ->
-                val content = if (i == lastUser) blocks.dropLast(1) + JsonObject(blocks.last() + ("cache_control" to ephemeral)) else blocks
+                val content = mark?.takeIf { it.first == i }?.let { (_, at) ->
+                    blocks.mapIndexed { j, b -> if (j == at) JsonObject(b + ("cache_control" to ephemeral)) else b }
+                } ?: blocks
                 add(buildJsonObject { put("role", role); put("content", JsonArray(content)) })
             }
         }

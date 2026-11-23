@@ -427,6 +427,52 @@ class OpenAiCompatModelTest {
         assertEquals(first.subList(1, 3), second.subList(1, 3))
     }
 
+    // 没有 uncached 消息时请求逐字不变(锁住加 uncached 之前的请求形状),显式、隐式缓存都看
+    @Test fun requestShapeWithoutUncachedIsUnchanged() = runTest {
+        val history = listOf(
+            Message(Role.User, listOf(Part.Text("goal")), Author.User),
+            Message(Role.Assistant, listOf(Part.Text("ok"), Part.ToolCall("t1", "a", "{}")), Author.Mika),
+            Message(Role.Tool, listOf(Part.ToolResult("t1", "r1", false)), Author.Mika),
+            Message(Role.User, listOf(Part.Text("state 1")), Author.Mika),
+            Message(Role.Assistant, listOf(Part.Text("done")), Author.Mika),
+        )
+        val tools = listOf(ToolSpec("a", "d", """{"type":"object"}"""), ToolSpec("b", "d", """{"type":"object"}"""))
+        val explicit = OpenAiCompatModel(server.url("/v1").toString().trimEnd('/'), "k", "m",
+            Capabilities(true, true, 32000, false, promptCaching = PromptCaching.Explicit), OkHttpClient())
+        server.enqueue(ok("""{"choices":[{"finish_reason":"stop","message":{"content":"ok"}}]}"""))
+        explicit.complete("SYS", history, tools)
+        val rawExplicit = server.takeRequest().body.readUtf8()
+        server.enqueue(ok("""{"choices":[{"finish_reason":"stop","message":{"content":"ok"}}]}"""))
+        model().complete("SYS", history, tools)
+        val rawImplicit = server.takeRequest().body.readUtf8()
+        assertEquals(GOLDEN_OPENAI_EXPLICIT, rawExplicit)
+        assertEquals(GOLDEN_OPENAI_IMPLICIT, rawImplicit)
+    }
+
+    // 末尾的 uncached 消息不带移动标记:标记落在它前面最后一条能标的消息上,uncached 那条原样发
+    @Test fun explicitCachingSkipsTrailingUncachedMessages() = runTest {
+        val m = OpenAiCompatModel(server.url("/v1").toString().trimEnd('/'), "k", "m",
+            Capabilities(true, true, 32000, false, promptCaching = PromptCaching.Explicit), OkHttpClient())
+        val history = listOf(
+            Message(Role.User, listOf(Part.Text("任务")), Author.User),
+            Message(Role.Assistant, listOf(Part.ToolCall("c1", "a", "{}")), Author.Mika),
+            Message(Role.Tool, listOf(Part.ToolResult("c1", "屏幕", false)), Author.Mika),
+        )
+        val notes = listOf(
+            Message(Role.User, listOf(Part.Text("board v1")), Author.Mika, uncached = true),
+            Message(Role.User, listOf(Part.Text("memory")), Author.Mika, uncached = true),
+        )
+        server.enqueue(ok("""{"choices":[{"finish_reason":"stop","message":{"content":"ok"}}]}"""))
+        m.complete("SYS", history + notes, emptyList())
+        val sent = body()["messages"]!!.jsonArray.map { it.jsonObject }
+        val marks = sent.mapIndexedNotNull { i, msg ->
+            (msg["content"] as? JsonArray)?.takeIf { c -> c.any { "cache_control" in it.jsonObject } }?.let { i }
+        }
+        assertEquals(listOf(0, 3), marks)
+        assertEquals("tool", sent[3]["role"]!!.jsonPrimitive.content)
+        assertEquals(listOf("board v1", "memory"), sent.drop(4).map { it["content"]!!.jsonPrimitive.content })
+    }
+
     @Test fun implicitCachingSendsNoMarks() = runTest {
         server.enqueue(ok("""{"choices":[{"finish_reason":"stop","message":{"content":"ok"}}]}"""))
         model().complete("SYS", user, emptyList())
@@ -455,5 +501,12 @@ class OpenAiCompatModelTest {
         assertEquals(InterruptedHistory.PARTIAL, msgs[2]["content"]!!.jsonPrimitive.content)
         assertEquals(InterruptedHistory.STEER, msgs[3]["content"]!!.jsonPrimitive.content)
         assertEquals(InterruptedHistory.RUNTIME, msgs[4]["content"]!!.jsonPrimitive.content)
+    }
+
+    private companion object {
+        const val GOLDEN_OPENAI_EXPLICIT =
+            """{"model":"m","messages":[{"role":"system","content":[{"type":"text","text":"SYS","cache_control":{"type":"ephemeral"}}]},{"role":"user","content":"goal"},{"role":"assistant","content":"ok","tool_calls":[{"id":"t1","type":"function","function":{"name":"a","arguments":"{}"}}]},{"role":"tool","tool_call_id":"t1","content":"r1"},{"role":"user","content":[{"type":"text","text":"state 1","cache_control":{"type":"ephemeral"}}]},{"role":"assistant","content":"done"}],"tools":[{"type":"function","function":{"name":"a","description":"d","parameters":{"type":"object"}}},{"type":"function","function":{"name":"b","description":"d","parameters":{"type":"object"}}}],"stream":false}"""
+        const val GOLDEN_OPENAI_IMPLICIT =
+            """{"model":"m","messages":[{"role":"system","content":"SYS"},{"role":"user","content":"goal"},{"role":"assistant","content":"ok","tool_calls":[{"id":"t1","type":"function","function":{"name":"a","arguments":"{}"}}]},{"role":"tool","tool_call_id":"t1","content":"r1"},{"role":"user","content":"state 1"},{"role":"assistant","content":"done"}],"tools":[{"type":"function","function":{"name":"a","description":"d","parameters":{"type":"object"}}},{"type":"function","function":{"name":"b","description":"d","parameters":{"type":"object"}}}],"stream":false}"""
     }
 }

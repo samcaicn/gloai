@@ -95,10 +95,11 @@ class DeskBrainTest {
             val last = messages.last()
             assertEquals(Role.User, last.role)
             assertEquals(Author.Mika, last.author)
+            assertTrue(last.uncached)
             assertTrue(last.text().startsWith(LlmBrain.BACKGROUND_PREFIX))
             assertTrue(last.text().endsWith("BOARD v${i + 1}"))
             // 背景只在最后一条,之前的(包括上一次的背景)都不在。
-            messages.dropLast(1).forEach { assertFalse(it.text().contains("BOARD")) }
+            messages.dropLast(1).forEach { assertFalse(it.text().contains("BOARD")); assertFalse(it.uncached) }
         }
         // 下一次的前缀就是上一次去掉背景后的历史再往后接。
         assertEquals(model.seen[0].dropLast(1), model.seen[1].take(model.seen[0].size - 1))
