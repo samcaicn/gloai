@@ -121,4 +121,14 @@ class DeskBrainTest {
         LlmBrain(model, "rules", emptyList(), background = DeskBackground { asked += it; null }).notice("Task A started", Recorder())
         assertEquals(listOf(""), asked)
     }
+
+    // 背景画不出来(任务板或记忆源抛错)只少这条附注,这次回话照常说完。
+    @Test
+    fun throwingBackgroundDoesNotFailReply() = runBlocking {
+        val model = FakeModel()
+        val said = Recorder()
+        LlmBrain(model, "rules", emptyList(), background = DeskBackground { error("board broke") }).reply("在吗", said)
+        assertEquals("好的", said.said.toString())
+        assertEquals(listOf(listOf("在吗")), model.seen.map { m -> m.map { it.text() } })
+    }
 }

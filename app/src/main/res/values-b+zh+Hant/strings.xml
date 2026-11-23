@@ -152,4 +152,14 @@
     <string name="drawer_project_delete_body">專案「%1$s」內的全部對話與共用工作區檔案都會被刪除，無法復原。</string>
     <string name="drawer_project_actions">專案操作</string>
     <string name="chat_project_shared">專案</string>
+    <string name="desk_report_line">%1$s：%2$s</string>
+    <string name="desk_report_started">開始做了</string>
+    <string name="desk_report_needs_answer">在問你：%1$s</string>
+    <string name="desk_report_needs_confirm">要你在手機上確認一下</string>
+    <string name="desk_report_needs_takeover">要你在手機上接手一下</string>
+    <string name="desk_report_needs_prerequisite">要你先在手機上處理一下才能接著做</string>
+    <string name="desk_report_succeeded">辦好了：%1$s</string>
+    <string name="desk_report_failed">沒辦成：%1$s</string>
+    <string name="desk_report_cancelled">已取消</string>
+    <string name="desk_task_not_started">任務沒能開始，打開 Mika 再試一次</string>
 </resources>

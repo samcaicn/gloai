@@ -153,4 +153,14 @@
     <string name="drawer_project_delete_body">تمام گفت‌وگوها و فایل‌های فضای کاری مشترک در «%1$s» حذف می‌شوند و قابل بازیابی نیستند.</string>
     <string name="drawer_project_actions">عملیات پروژه</string>
     <string name="chat_project_shared">پروژه</string>
+    <string name="desk_report_line">%1$s: %2$s</string>
+    <string name="desk_report_started">شروع شد</string>
+    <string name="desk_report_needs_answer">از شما می‌پرسد: %1$s</string>
+    <string name="desk_report_needs_confirm">به تأیید شما روی گوشی نیاز دارد</string>
+    <string name="desk_report_needs_takeover">لازم است کنترل را روی گوشی به دست بگیرید</string>
+    <string name="desk_report_needs_prerequisite">برای ادامه باید کاری را روی گوشی انجام دهید</string>
+    <string name="desk_report_succeeded">انجام شد: %1$s</string>
+    <string name="desk_report_failed">انجام نشد: %1$s</string>
+    <string name="desk_report_cancelled">لغو شد</string>
+    <string name="desk_task_not_started">کار شروع نشد. Mika را باز کنید و دوباره امتحان کنید.</string>
 </resources>

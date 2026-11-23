@@ -152,4 +152,14 @@
     <string name="drawer_project_delete_body">سيتم حذف جميع المحادثات وملفات مساحة العمل المشتركة في "%1$s" ولا يمكن استعادتها.</string>
     <string name="drawer_project_actions">إجراءات المشروع</string>
     <string name="chat_project_shared">مشروع</string>
+    <string name="desk_report_line">%1$s: %2$s</string>
+    <string name="desk_report_started">بدأت</string>
+    <string name="desk_report_needs_answer">تسألك: %1$s</string>
+    <string name="desk_report_needs_confirm">تحتاج إلى تأكيدك على الهاتف</string>
+    <string name="desk_report_needs_takeover">تحتاج أن تتولى الأمر على الهاتف</string>
+    <string name="desk_report_needs_prerequisite">تحتاج أن تُنهي أمرًا على الهاتف لتتابع</string>
+    <string name="desk_report_succeeded">تمت: %1$s</string>
+    <string name="desk_report_failed">لم تنجح: %1$s</string>
+    <string name="desk_report_cancelled">أُلغيت</string>
+    <string name="desk_task_not_started">لم تبدأ المهمة. افتح Mika وحاول مرة أخرى.</string>
 </resources>

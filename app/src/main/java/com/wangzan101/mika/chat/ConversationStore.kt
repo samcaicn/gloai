@@ -169,15 +169,15 @@ class ConversationStore(
         val unsaved = pending.asSequence()
             .filter { firstMessage(file(it.id)) == null }
             .filter { includeArchived || archivedAt(it.id) == null }
-            .filter { deskParent(it.id) == null }
+            .filterNot { hiddenDeskChild(it.id) }
         val saved = dir.listFiles { f -> f.isFile && f.name.endsWith(".json") }.orEmpty()
             .map { it to it.lastModified() }
             .sortedWith(compareByDescending<Pair<File, Long>> { it.second }.thenBy { it.first.name })
             .asSequence().mapNotNull { (f, updatedAt) ->
                 val first = firstMessage(f) ?: return@mapNotNull null
                 val id = f.nameWithoutExtension
-                // 前台派活开的子对话在前台对话里看,不单独列
-                if (deskParent(id) != null) return@mapNotNull null
+                // 前台派活开的子对话在前台对话里看,不单独列(前台对话没了就单独列,见 hiddenDeskChild)
+                if (hiddenDeskChild(id)) return@mapNotNull null
                 val archivedAt = archivedAt(id)
                 if (!includeArchived && archivedAt != null) return@mapNotNull null
                 ConversationSummary(id, title(id) ?: first, updatedAt, pinnedAt(id), pageOrigin(id), branchOrigin(id), archivedAt, restoredAt(id), projectId(id))
@@ -465,12 +465,26 @@ class ConversationStore(
     fun deskParent(id: String): String? =
         runCatching { deskParentFile(id).takeIf { it.isFile }?.readText()?.trim() }.getOrNull()?.let(::safe)?.takeIf(String::isNotEmpty)
 
-    /** 记下子对话 [child] 是前台对话 [parent] 派出去的;此后 [child] 不进对话列表。删掉的对话不动。 */
+    /** 这个进程里派过活的前台对话:它的第一轮可能还没存下来,子对话照样藏在它下面。 */
+    private val liveDeskParents = mutableSetOf<String>()
+
+    /** 记下子对话 [child] 是前台对话 [parent] 派出去的;此后前台对话还在时 [child] 不进对话列表。删掉的对话不动。 */
     @Synchronized
     fun setDeskParent(child: String, parent: String) {
         if (safe(child) in deleted || safe(parent).isEmpty()) return
         dir.mkdirs()
+        liveDeskParents += safe(parent)
         if (runCatching { deskParentFile(child).writeText(safe(parent)) }.isSuccess) _changes.tryEmit(child)
+    }
+
+    /**
+     * 子对话只在它的前台对话还在时藏起来(在前台对话里看):前台对话删掉了、或重启后从没存下来过,
+     * 子对话就回到列表里,不会再也找不到。
+     */
+    private fun hiddenDeskChild(id: String): Boolean {
+        val parent = deskParent(id) ?: return false
+        if (parent in deleted) return false
+        return file(parent).isFile || parent in liveDeskParents
     }
 
     /**

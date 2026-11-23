@@ -8,6 +8,7 @@ import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StreamingChatModel
 import com.wangzan101.mika.core.model.ToolSpec
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
@@ -132,7 +133,7 @@ class LlmBrain(
         val messages = background?.let { source ->
             val lastUserText = past.lastOrNull { it.role == Role.User && it.author == Author.User }
                 ?.parts?.filterIsInstance<Part.Text>()?.joinToString("") { it.text }.orEmpty()
-            source.render(lastUserText)?.let { past + Message(Role.User, listOf(Part.Text(BACKGROUND_PREFIX + it)), Author.Mika, uncached = true) }
+            renderBackground(source, lastUserText)?.let { past + Message(Role.User, listOf(Part.Text(BACKGROUND_PREFIX + it)), Author.Mika, uncached = true) }
         } ?: past
         if (model !is StreamingChatModel) {
             val reply = model.complete(prompt, messages, tools)
@@ -164,6 +165,15 @@ class LlmBrain(
             if (text.length > spoken && text.isNotBlank()) ctx.say(text.substring(spoken))
             reply.parts
         }
+    }
+
+    /** A background that fails to render only drops this note; the reply itself still goes out. */
+    private suspend fun renderBackground(source: DeskBackground, lastUserText: String): String? = try {
+        source.render(lastUserText)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
     }
 
     private fun add(message: Message) {

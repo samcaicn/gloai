@@ -152,4 +152,14 @@
     <string name="drawer_project_delete_body">项目「%1$s」里的全部对话和共享工作区文件都会被删掉，没法找回。</string>
     <string name="drawer_project_actions">项目操作</string>
     <string name="chat_project_shared">项目</string>
+    <string name="desk_report_line">%1$s：%2$s</string>
+    <string name="desk_report_started">开始做了</string>
+    <string name="desk_report_needs_answer">在问你：%1$s</string>
+    <string name="desk_report_needs_confirm">要你在手机上确认一下</string>
+    <string name="desk_report_needs_takeover">要你在手机上接手一下</string>
+    <string name="desk_report_needs_prerequisite">要你先在手机上处理一下才能接着做</string>
+    <string name="desk_report_succeeded">办好了：%1$s</string>
+    <string name="desk_report_failed">没办成：%1$s</string>
+    <string name="desk_report_cancelled">已取消</string>
+    <string name="desk_task_not_started">任务没能开始，打开 Mika 再试一次</string>
 </resources>

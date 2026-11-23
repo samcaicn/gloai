@@ -170,4 +170,14 @@
     <string name="drawer_project_delete_body">All chats and shared workspace files in "%1$s" will be deleted and cannot be recovered.</string>
     <string name="drawer_project_actions">Project actions</string>
     <string name="chat_project_shared">Project</string>
+    <string name="desk_report_line">%1$s: %2$s</string>
+    <string name="desk_report_started">Started</string>
+    <string name="desk_report_needs_answer">Asking you: %1$s</string>
+    <string name="desk_report_needs_confirm">Needs your OK on the phone</string>
+    <string name="desk_report_needs_takeover">Needs you to take over on the phone</string>
+    <string name="desk_report_needs_prerequisite">Needs you to sort something out on the phone first</string>
+    <string name="desk_report_succeeded">Done: %1$s</string>
+    <string name="desk_report_failed">Didn\'t work out: %1$s</string>
+    <string name="desk_report_cancelled">Cancelled</string>
+    <string name="desk_task_not_started">The task never started. Open Mika and try again.</string>
 </resources>

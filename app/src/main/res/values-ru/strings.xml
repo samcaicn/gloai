@@ -152,4 +152,14 @@
     <string name="drawer_project_delete_body">Все чаты и общие файлы рабочего пространства в «%1$s» будут удалены без возможности восстановления.</string>
     <string name="drawer_project_actions">Действия с проектом</string>
     <string name="chat_project_shared">Проект</string>
+    <string name="desk_report_line">%1$s: %2$s</string>
+    <string name="desk_report_started">Начато</string>
+    <string name="desk_report_needs_answer">Спрашивает вас: %1$s</string>
+    <string name="desk_report_needs_confirm">Нужно ваше подтверждение на телефоне</string>
+    <string name="desk_report_needs_takeover">Нужно, чтобы вы взяли управление на телефоне</string>
+    <string name="desk_report_needs_prerequisite">Чтобы продолжить, нужно кое-что сделать на телефоне</string>
+    <string name="desk_report_succeeded">Готово: %1$s</string>
+    <string name="desk_report_failed">Не получилось: %1$s</string>
+    <string name="desk_report_cancelled">Отменено</string>
+    <string name="desk_task_not_started">Задача так и не началась. Откройте Mika и попробуйте снова.</string>
 </resources>

@@ -315,6 +315,9 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
     }
 
     /** 删对话(侧栏长按):停掉它的当前任务并删工作区(同项目对话保留共享工作区),保留定时任务。 */
+    /** 每条会话一个常驻前台:聊天页、语音通话等入口从这里拿同一个前台、它的工具执行器和背景。 */
+    val desks: com.wangzan101.mika.frontdesk.DeskRegistry by lazy { com.wangzan101.mika.frontdesk.DeskRegistry(this) }
+
     val conversationDeleter: ConversationDeleter by lazy {
         val app = this
         ConversationDeleter(

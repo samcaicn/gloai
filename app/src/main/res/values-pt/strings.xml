@@ -152,4 +152,14 @@
     <string name="drawer_project_delete_body">Todas as conversas e arquivos compartilhados do espaço de trabalho em "%1$s" serão excluídos e não poderão ser recuperados.</string>
     <string name="drawer_project_actions">Ações do projeto</string>
     <string name="chat_project_shared">Projeto</string>
+    <string name="desk_report_line">%1$s: %2$s</string>
+    <string name="desk_report_started">Começou</string>
+    <string name="desk_report_needs_answer">Está te perguntando: %1$s</string>
+    <string name="desk_report_needs_confirm">Precisa da sua confirmação no celular</string>
+    <string name="desk_report_needs_takeover">Precisa que você assuma o controle no celular</string>
+    <string name="desk_report_needs_prerequisite">Precisa que você resolva algo no celular para continuar</string>
+    <string name="desk_report_succeeded">Pronto: %1$s</string>
+    <string name="desk_report_failed">Não deu certo: %1$s</string>
+    <string name="desk_report_cancelled">Cancelada</string>
+    <string name="desk_task_not_started">A tarefa não chegou a começar. Abra o Mika e tente de novo.</string>
 </resources>

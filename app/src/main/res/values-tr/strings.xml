@@ -169,4 +169,14 @@
     <string name="drawer_project_delete_body">"%1$s" içindeki tüm sohbetler ve paylaşılan çalışma alanı dosyaları silinir ve geri alınamaz.</string>
     <string name="drawer_project_actions">Proje işlemleri</string>
     <string name="chat_project_shared">Proje</string>
+    <string name="desk_report_line">%1$s: %2$s</string>
+    <string name="desk_report_started">Başladı</string>
+    <string name="desk_report_needs_answer">Size soruyor: %1$s</string>
+    <string name="desk_report_needs_confirm">Telefonda onayınız gerekiyor</string>
+    <string name="desk_report_needs_takeover">Telefonda devralmanız gerekiyor</string>
+    <string name="desk_report_needs_prerequisite">Devam etmek için telefonda bir şeyi halletmeniz gerekiyor</string>
+    <string name="desk_report_succeeded">Tamamlandı: %1$s</string>
+    <string name="desk_report_failed">Olmadı: %1$s</string>
+    <string name="desk_report_cancelled">İptal edildi</string>
+    <string name="desk_task_not_started">Görev hiç başlamadı. Mika\'yı açıp tekrar deneyin.</string>
 </resources>

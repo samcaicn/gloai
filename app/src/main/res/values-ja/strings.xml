@@ -152,4 +152,14 @@
     <string name="drawer_project_delete_body">「%1$s」のすべてのチャットと共有ワークスペースのファイルが削除され、元に戻せません。</string>
     <string name="drawer_project_actions">プロジェクトの操作</string>
     <string name="chat_project_shared">プロジェクト</string>
+    <string name="desk_report_line">%1$s：%2$s</string>
+    <string name="desk_report_started">開始しました</string>
+    <string name="desk_report_needs_answer">質問があります：%1$s</string>
+    <string name="desk_report_needs_confirm">スマホで確認してください</string>
+    <string name="desk_report_needs_takeover">スマホで操作を引き継いでください</string>
+    <string name="desk_report_needs_prerequisite">続けるにはスマホでの対応が必要です</string>
+    <string name="desk_report_succeeded">完了：%1$s</string>
+    <string name="desk_report_failed">できませんでした：%1$s</string>
+    <string name="desk_report_cancelled">キャンセルしました</string>
+    <string name="desk_task_not_started">タスクを開始できませんでした。Mika を開いてもう一度お試しください</string>
 </resources>

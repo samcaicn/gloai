@@ -152,4 +152,14 @@
     <string name="drawer_project_delete_body">Semua obrolan dan berkas ruang kerja bersama di "%1$s" akan dihapus dan tidak dapat dipulihkan.</string>
     <string name="drawer_project_actions">Tindakan proyek</string>
     <string name="chat_project_shared">Proyek</string>
+    <string name="desk_report_line">%1$s: %2$s</string>
+    <string name="desk_report_started">Dimulai</string>
+    <string name="desk_report_needs_answer">Bertanya kepada Anda: %1$s</string>
+    <string name="desk_report_needs_confirm">Perlu konfirmasi Anda di ponsel</string>
+    <string name="desk_report_needs_takeover">Perlu Anda ambil alih di ponsel</string>
+    <string name="desk_report_needs_prerequisite">Perlu Anda bereskan sesuatu di ponsel agar bisa lanjut</string>
+    <string name="desk_report_succeeded">Selesai: %1$s</string>
+    <string name="desk_report_failed">Tidak berhasil: %1$s</string>
+    <string name="desk_report_cancelled">Dibatalkan</string>
+    <string name="desk_task_not_started">Tugas tidak sempat dimulai. Buka Mika lalu coba lagi.</string>
 </resources>

@@ -152,4 +152,14 @@
     <string name="drawer_project_delete_body">"%1$s"의 모든 대화와 공유 작업 공간 파일이 삭제되며 복구할 수 없습니다.</string>
     <string name="drawer_project_actions">프로젝트 작업</string>
     <string name="chat_project_shared">프로젝트</string>
+    <string name="desk_report_line">%1$s: %2$s</string>
+    <string name="desk_report_started">시작했어요</string>
+    <string name="desk_report_needs_answer">질문이 있어요: %1$s</string>
+    <string name="desk_report_needs_confirm">휴대폰에서 확인해 주세요</string>
+    <string name="desk_report_needs_takeover">휴대폰에서 이어받아 주세요</string>
+    <string name="desk_report_needs_prerequisite">계속하려면 휴대폰에서 먼저 처리해 주세요</string>
+    <string name="desk_report_succeeded">완료: %1$s</string>
+    <string name="desk_report_failed">하지 못했어요: %1$s</string>
+    <string name="desk_report_cancelled">취소됨</string>
+    <string name="desk_task_not_started">작업을 시작하지 못했어요. Mika를 열고 다시 시도해 주세요.</string>
 </resources>
