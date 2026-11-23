@@ -383,5 +383,6 @@ internal fun CallTranscriptText(line: CallTranscriptLine) {
 internal fun callTranscriptSpeakerLabel(role: String): Int = when (role) {
     "assistant" -> R.string.app_name
     "system" -> R.string.calls_dtmf_status_label
+    CallTranscriptLine.OWNER_UNRELAYED -> R.string.calls_transcript_owner_unrelayed
     else -> R.string.calls_caller
 }

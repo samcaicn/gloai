@@ -16,6 +16,7 @@ import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.calls.instructions.CallInstructionStore
+import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.shell.IMikaShell
 import com.wangzan101.mika.voice.cascade.CallUse
 import com.wangzan101.mika.voice.cascade.CascadeEngine
@@ -446,6 +447,8 @@ class CallRuntime(internal val app: MikaApp) {
         val expectedCallId: String? = null,
         val task: CallTaskBrief? = null,
         val lockedDialTicket: LockedDialGate.Ticket? = null,
+        /** 这通电话所属的后台任务(由任务拨出时才有);电话前台把它的状态放进上下文。 */
+        val ownerTask: StateFlow<TaskState>? = null,
     ) {
         val id = UUID.randomUUID().toString()
         val result = CompletableDeferred<CallActionResult>()

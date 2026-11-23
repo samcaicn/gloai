@@ -22,4 +22,8 @@
     <string name="calls_voice_briefing_permission_denied">لم يتم منح إذن الميكروفون. يمكنك استخدام النموذج النصي.</string>
     <string name="calls_voice_briefing_incomplete">أكمل التعليمات الحالية أو امسحها قبل البدء.</string>
     <string name="calls_voice_briefing_configure">اضبط الصوت في الوقت الفعلي في الإعدادات أولًا.</string>
+    <string name="calls_owner_ask_title">الطرف الآخر ينتظر ردّك</string>
+    <string name="calls_owner_ask_reply">رد</string>
+    <string name="calls_owner_ask_hint">ردّك</string>
+    <string name="calls_transcript_owner_unrelayed">رد المالك (لم يُنقل)</string>
 </resources>

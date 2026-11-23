@@ -93,7 +93,9 @@ internal suspend fun CallRuntime.runWork(w: Work) {
         val helper = shell ?: throw CallProblem("Mika 内置助手未连接")
         val migrated = realtimeController.migrated
         val standard = standardCalls
-        val provider = if (standard) CascadeCallProvider(cascade, CallUse.Phone) else if (migrated) {
+        // 标准通话:所属任务的状态每轮作为尾随附注给电话前台,系统提示保持字节不变
+        val ownerBackground = w.ownerTask?.let(PhoneDesk::background)
+        val provider = if (standard) CascadeCallProvider(cascade, CallUse.Phone, background = ownerBackground) else if (migrated) {
             try {
                 realtimeController.callProvider()
             } catch (e: VoiceModelError) {
@@ -126,7 +128,12 @@ internal suspend fun CallRuntime.runWork(w: Work) {
                 .getOrElse { throw CallProblem("无法读取电话交代，未由 AI 操作电话") }
         }
         validateTarget(w)
-        val systemPrompt = CallPolicy.prompt(w.config.systemPrompt, w.direction, ownerRules, task = w.task) + PHONE_DTMF_PROMPT
+        // 现有电话提示在前,电话前台说明在后;实时通话把开场时所属任务的状态写进提示,之后变了再推
+        val systemPrompt = PhoneDesk.systemPrompt(
+            CallPolicy.prompt(w.config.systemPrompt, w.direction, ownerRules, task = w.task) + PHONE_DTMF_PROMPT,
+            task = w.task.takeIf { w.direction == CallDirection.OUTGOING },
+            openingOwnerTask = if (standard) null else PhoneDesk.renderOwnerTask(w.ownerTask?.value),
+        )
         try {
             provider.validate(profile, systemPrompt, enablePhoneDtmf = true)
         } catch (_: IllegalArgumentException) {
@@ -222,7 +229,7 @@ internal suspend fun CallRuntime.runWork(w: Work) {
                 publish()
             },
         )
-        runAudio(w, helper, session)
+        runAudio(w, helper, session, pushOwnerTask = !standard)
     } catch (e: CancellationException) {
         // Coroutine cancellation may carry a secondary descriptor-close exception.
         if (BuildConfig.DEBUG) e.suppressed.take(MAX_MEDIA_DIAGNOSTICS).forEach { debugMediaException(w, it) }

@@ -283,6 +283,8 @@
         </service>
 
         <receiver android:name=".calls.CallNotificationAction" android:exported="false" />
+        <!-- AI 电话里请示主人:通知里直接回复的落点,不导出(PendingIntent 指明本组件) -->
+        <receiver android:name=".calls.OwnerReplyReceiver" android:exported="false" />
 
         <!-- 应用内语音通话:通话期间撑住进程与后台麦克风;通知带挂断动作,锁屏时不打开通话页。 -->
         <service

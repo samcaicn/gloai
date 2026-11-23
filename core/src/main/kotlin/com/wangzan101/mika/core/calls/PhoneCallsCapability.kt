@@ -9,7 +9,8 @@ import com.wangzan101.mika.core.risk.IrrevAction
 import com.wangzan101.mika.core.tool.*
 import kotlinx.serialization.json.*
 
-internal class PhoneCallsCapability(val port: PhoneCallPort) : Capability {
+/** [ownerConversationId] 是这次运行所在的对话:拨出的电话归这件任务,电话里的前台看得到它的状态。 */
+internal class PhoneCallsCapability(val port: PhoneCallPort, val ownerConversationId: String? = null) : Capability {
     override val id = "calls"
     override fun status(): CapabilityStatus = CapabilityStatus.Available
     override fun tools(): List<AgentTool> = callAgentTools
@@ -77,10 +78,11 @@ private class CallAgentTool(private val action: String, override val verb: Verb)
     }
 
     override suspend fun execute(a: Args, ctx: ToolContext): ToolExecution {
-        val port = ctx[PhoneCallsCapability.KEY]!!.port
+        val calls = ctx[PhoneCallsCapability.KEY]!!
+        val port = calls.port
         return ToolExecution(when (action) {
             "state" -> port.state()
-            "dial" -> dialArgs(a).let { (number, simId, task) -> port.dial(number, simId, task) }
+            "dial" -> dialArgs(a).let { (number, simId, task) -> port.dial(number, simId, task, calls.ownerConversationId) }
             "answer" -> port.answer(callId(a))
             "hangup" -> port.hangup(callId(a))
             else -> port.takeover()

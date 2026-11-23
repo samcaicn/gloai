@@ -106,7 +106,7 @@ class FrontDesk(
 
     private fun updateView(taskId: String, title: String, state: TaskState) {
         views.update { list ->
-            val phase = phaseOf(state)
+            val phase = deskPhaseOf(state)
             val line = lineOf(state)
             val before = list.firstOrNull { it.taskId == taskId }?.recent.orEmpty()
             val recent = if (line != null && (phase == DeskTaskPhase.Running || phase == DeskTaskPhase.NeedsYou)) {
@@ -154,20 +154,6 @@ class FrontDesk(
         }
     }
 
-    private fun phaseOf(state: TaskState): DeskTaskPhase = when (state) {
-        TaskState.Idle -> DeskTaskPhase.Queued
-        is TaskState.Running -> DeskTaskPhase.Running
-        is TaskState.Held -> when {
-            state.reason.queued -> DeskTaskPhase.Queued
-            state.reason.needsYou -> DeskTaskPhase.NeedsYou
-            else -> DeskTaskPhase.Running
-        }
-        is TaskState.WaitingInput, is TaskState.WaitingConfirmation, is TaskState.WaitingTakeover -> DeskTaskPhase.NeedsYou
-        is TaskState.Succeeded -> DeskTaskPhase.Done
-        is TaskState.Failed -> DeskTaskPhase.Failed
-        TaskState.Cancelled -> DeskTaskPhase.Cancelled
-    }
-
     private fun lineOf(state: TaskState): String? = when (state) {
         is TaskState.Running -> deskLine(state.narration)
         is TaskState.Held -> if (state.reason.queued) null else deskLine(state.reason.why)
@@ -177,4 +163,19 @@ class FrontDesk(
         is TaskState.Failed -> deskLine(state.reason)
         else -> null
     }
+}
+
+/** 任务此刻在前台眼里是哪一种(在做、排队、要你处理、做完、没做成、取消);任务板和电话前台共用这一套。 */
+fun deskPhaseOf(state: TaskState): DeskTaskPhase = when (state) {
+    TaskState.Idle -> DeskTaskPhase.Queued
+    is TaskState.Running -> DeskTaskPhase.Running
+    is TaskState.Held -> when {
+        state.reason.queued -> DeskTaskPhase.Queued
+        state.reason.needsYou -> DeskTaskPhase.NeedsYou
+        else -> DeskTaskPhase.Running
+    }
+    is TaskState.WaitingInput, is TaskState.WaitingConfirmation, is TaskState.WaitingTakeover -> DeskTaskPhase.NeedsYou
+    is TaskState.Succeeded -> DeskTaskPhase.Done
+    is TaskState.Failed -> DeskTaskPhase.Failed
+    TaskState.Cancelled -> DeskTaskPhase.Cancelled
 }

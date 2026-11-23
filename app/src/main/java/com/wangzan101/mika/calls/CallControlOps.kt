@@ -8,7 +8,13 @@ import com.wangzan101.mika.calls.CallRuntime.Work
 import com.wangzan101.mika.calls.CallRuntime.Companion.CALL_CHANGED
 
 // 电话运行时:拨号、接听、按键、挂断与接管
-suspend fun CallRuntime.dial(number: String, simId: String? = null, task: CallTaskBrief? = null): CallActionResult = onMain {
+/** [ownerConversationId]:发起这通电话的任务所在的对话;这时就认定这件任务,电话里的前台读它的状态。 */
+suspend fun CallRuntime.dial(
+    number: String,
+    simId: String? = null,
+    task: CallTaskBrief? = null,
+    ownerConversationId: String? = null,
+): CallActionResult = onMain {
     val taskSnapshot = try {
         task?.validatedSnapshot()
     } catch (e: IllegalArgumentException) {
@@ -35,7 +41,8 @@ suspend fun CallRuntime.dial(number: String, simId: String? = null, task: CallTa
             else -> "请选择一张有效的 SIM，或明确选择系统默认 SIM"
         })
     val sim = sims.single { it.info.id == picked.id }
-    val attempt = Work(CallDirection.OUTGOING, config, requestedNumber = normalized, sim = sim, task = taskSnapshot)
+    val ownerTask = ownerConversationId?.let { app.taskState.run(it)?.state }
+    val attempt = Work(CallDirection.OUTGOING, config, requestedNumber = normalized, sim = sim, task = taskSnapshot, ownerTask = ownerTask)
     startWork(attempt)
     awaitResult(attempt)
 }

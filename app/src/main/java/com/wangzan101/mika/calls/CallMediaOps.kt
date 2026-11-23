@@ -40,7 +40,8 @@ internal suspend fun CallRuntime.probeAudio(): Boolean {
     return ready
 }
 
-internal suspend fun CallRuntime.runAudio(w: Work, helper: IMikaShell, session: CallRealtimeSession) {
+/** [pushOwnerTask]:实时通话里所属任务的状态变了要推一句(标准通话每轮附注里就有,不用推)。 */
+internal suspend fun CallRuntime.runAudio(w: Work, helper: IMikaShell, session: CallRealtimeSession, pushOwnerTask: Boolean = false) {
     val greeting = CallPolicy.spokenGreeting(w.config.greeting, hasTask = w.task != null)
     val notification = app.getString(
         if (greeting.isBlank()) R.string.calls_notification_connected_waiting else R.string.calls_notification_connected,
@@ -106,100 +107,115 @@ internal suspend fun CallRuntime.runAudio(w: Work, helper: IMikaShell, session: 
     val remaining = w.config.maxCallSeconds.takeIf { it > 0 }
         ?.let { (it * 1_000L - (SystemClock.elapsedRealtime() - w.activeElapsed)).coerceAtLeast(1) }
     w.mediaStage = MediaStage.PCM_BRIDGE
-    withTimeoutOrNull(remaining ?: Long.MAX_VALUE) {
-        coroutineScope {
-            // 到点前让 AI 先说句道别(两家供应商都照字面播);道别走自然挂断时这里提前收尾
-            val closingJob = CallPolicy.closingDelayMs(remaining)?.let { closingAt ->
-                launch {
-                    delay(closingAt)
-                    if (work === w && w.stopReason.value == null && w.aiActive &&
-                        !target.suppressed && sameActiveMuteTarget(w, target)) {
-                        runCatching { session.sendGreeting(CallPolicy.CLOSING_LINE) }
+    // 电话前台:只能请示主人;主人的回复转进通话,实在没说出去就记进通话记录(回调可能来自别的线程,回主线程写)
+    val desk = PhoneDesk(
+        ownerTask = { w.ownerTask },
+        ask = OwnerAskNotifier(app),
+        notice = { text, ended -> session.sendNotice(text, ended) },
+        unrelayed = { reply -> scope.launch { appendTranscript(w.transcript, CallTranscriptLine.OWNER_UNRELAYED, reply) } },
+    )
+    try {
+        withTimeoutOrNull(remaining ?: Long.MAX_VALUE) {
+            coroutineScope {
+                val ownerTaskPush = if (pushOwnerTask) launch { desk.pushOwnerTaskChanges() } else null
+                // 到点前让 AI 先说句道别(两家供应商都照字面播);道别走自然挂断时这里提前收尾
+                val closingJob = CallPolicy.closingDelayMs(remaining)?.let { closingAt ->
+                    launch {
+                        delay(closingAt)
+                        if (work === w && w.stopReason.value == null && w.aiActive &&
+                            !target.suppressed && sameActiveMuteTarget(w, target)) {
+                            runCatching { session.sendGreeting(CallPolicy.CLOSING_LINE) }
+                        }
                     }
                 }
-            }
-            val watchdog = launch {
-                var lastBytes = -1L
-                var stalled = 0
-                while (true) {
-                    delay(if (w.aiActive) 1_500 else 350)
-                    // 锁有自然到期(尤其不限时长按时长档拿的预算),到期就重新拿,通话没完不能放
-                    if (w.wakeLock?.isHeld == false) acquireCallWakeLock(w)
-                    val stats = withContext(Dispatchers.IO) {
-                        runCatching { helper.callAudioStats(w.audioOwner) }.getOrNull()
-                    }
-                    if (stats?.getBoolean("active") != true) {
-                        throw CallMediaFailure(shellAudioStopDiagnostic(stats?.getString("reason"))
-                            ?: "设备已停止双向音频，电话由系统处理")
-                    }
-                    val bytes = stats.getLong("downBytes")
-                    if (!w.aiActive) {
-                        if (callAudioHasStarted(greeting, bytes, stats.getLong("upBytes"))) {
-                            if (!notifications.show(w.id, notification, ringing = false)) {
-                                throw CallProblem("电话通知不可用，已交还系统")
-                            }
-                            w.aiActive = true
-                            detail = notification
-                            if (w.direction == CallDirection.INCOMING) {
-                                w.result.complete(ok(if (greeting.isBlank()) "Android 已接听，AI 正在等待对方说话"
-                                    else "Android 已接听，双向音频桥已开始传输"))
-                            }
-                            publish()
-                        } else if (SystemClock.elapsedRealtime() - w.activeElapsed >= 7_000) {
-                            throw CallMediaFailure("双向音频未能及时建立，电话由系统处理")
+                val watchdog = launch {
+                    var lastBytes = -1L
+                    var stalled = 0
+                    while (true) {
+                        delay(if (w.aiActive) 1_500 else 350)
+                        // 锁有自然到期(尤其不限时长按时长档拿的预算),到期就重新拿,通话没完不能放
+                        if (w.wakeLock?.isHeld == false) acquireCallWakeLock(w)
+                        val stats = withContext(Dispatchers.IO) {
+                            runCatching { helper.callAudioStats(w.audioOwner) }.getOrNull()
                         }
-                    } else {
-                        stalled = if (lastBytes == bytes) stalled + 1 else 0
-                        if (stalled >= 2) throw CallMediaFailure("运营商音频输入无进展，电话由系统处理")
+                        if (stats?.getBoolean("active") != true) {
+                            throw CallMediaFailure(shellAudioStopDiagnostic(stats?.getString("reason"))
+                                ?: "设备已停止双向音频，电话由系统处理")
+                        }
+                        val bytes = stats.getLong("downBytes")
+                        if (!w.aiActive) {
+                            if (callAudioHasStarted(greeting, bytes, stats.getLong("upBytes"))) {
+                                if (!notifications.show(w.id, notification, ringing = false)) {
+                                    throw CallProblem("电话通知不可用，已交还系统")
+                                }
+                                w.aiActive = true
+                                detail = notification
+                                if (w.direction == CallDirection.INCOMING) {
+                                    w.result.complete(ok(if (greeting.isBlank()) "Android 已接听，AI 正在等待对方说话"
+                                        else "Android 已接听，双向音频桥已开始传输"))
+                                }
+                                publish()
+                            } else if (SystemClock.elapsedRealtime() - w.activeElapsed >= 7_000) {
+                                throw CallMediaFailure("双向音频未能及时建立，电话由系统处理")
+                            }
+                        } else {
+                            stalled = if (lastBytes == bytes) stalled + 1 else 0
+                            if (stalled >= 2) throw CallMediaFailure("运营商音频输入无进展，电话由系统处理")
+                        }
+                        lastBytes = bytes
                     }
-                    lastBytes = bytes
                 }
-            }
-            try {
-                channel.run(
-                    session, greeting, counters = w.mediaCounters,
-                    onTranscript = { role, text -> appendTranscript(w.transcript, role, text) },
-                    onStage = { stage ->
-                        if (work === w && w.voiceStage != stage) {
-                            w.voiceStage = stage
-                            publish()
-                        }
-                    },
-                    sendDtmf = { digits -> onMain { sendCallDtmf(target, digits, owner = w) } },
-                    onFinalTranscript = { role, text ->
-                        if (work === w && w.stopReason.value == null && target.phase == CallPhase.ACTIVE &&
-                            liveCalls().singleOrNull() === target && liveTranscriptCallId == target.id &&
-                            appendTranscript(liveTranscript, role, text)) {
-                            publish()
-                        }
-                    },
-                    playedOutputFrames = {
-                        withContext(Dispatchers.IO) {
-                            val stats = helper.callAudioStats(w.audioOwner)
-                            if (stats?.getBoolean("upPlaybackHeadFresh") == true && stats.getBoolean("upPlaybackRouteReady")) {
-                                (stats.getLong("upPlaybackHeadFrames") - stats.getLong("upPlaybackPrimeFrames"))
-                                    .coerceIn(0L, stats.getLong("upPlaybackEpochDataBytes") / 2L)
-                            } else 0L
-                        }
-                    },
-                    awaitFarewellDrain = { fence ->
-                        if (!sameActiveMuteTarget(w, target) || target.suppressed || work !== w) false
-                        else awaitFarewellPlayback(helper, w, fence)
-                    },
-                    commitFarewell = {
-                        // No suspension: speech can still cancel the waiter up to this point.
-                        if (target.suppressed || w.stopReason.value != null || shell !== helper ||
-                            !settings.state.value.enabled || !sameActiveMuteTarget(w, target) ||
-                            !mute.isConfirmed(target.service.telecomMuted, microphoneMuted())) false
-                        else if (runCatching { target.call.disconnect() }.isSuccess) w.stopReason.record(FAREWELL_ENDING)
-                        else false
-                    },
-                )
-            } finally {
-                watchdog.cancel()
-                closingJob?.cancel()
+                try {
+                    channel.run(
+                        session, greeting, counters = w.mediaCounters,
+                        onTranscript = { role, text -> appendTranscript(w.transcript, role, text) },
+                        onStage = { stage ->
+                            if (work === w && w.voiceStage != stage) {
+                                w.voiceStage = stage
+                                publish()
+                            }
+                        },
+                        sendDtmf = { digits -> onMain { sendCallDtmf(target, digits, owner = w) } },
+                        desk = desk::execute,
+                        onFinalTranscript = { role, text ->
+                            if (work === w && w.stopReason.value == null && target.phase == CallPhase.ACTIVE &&
+                                liveCalls().singleOrNull() === target && liveTranscriptCallId == target.id &&
+                                appendTranscript(liveTranscript, role, text)) {
+                                publish()
+                            }
+                        },
+                        playedOutputFrames = {
+                            withContext(Dispatchers.IO) {
+                                val stats = helper.callAudioStats(w.audioOwner)
+                                if (stats?.getBoolean("upPlaybackHeadFresh") == true && stats.getBoolean("upPlaybackRouteReady")) {
+                                    (stats.getLong("upPlaybackHeadFrames") - stats.getLong("upPlaybackPrimeFrames"))
+                                        .coerceIn(0L, stats.getLong("upPlaybackEpochDataBytes") / 2L)
+                                } else 0L
+                            }
+                        },
+                        awaitFarewellDrain = { fence ->
+                            if (!sameActiveMuteTarget(w, target) || target.suppressed || work !== w) false
+                            else awaitFarewellPlayback(helper, w, fence)
+                        },
+                        commitFarewell = {
+                            // No suspension: speech can still cancel the waiter up to this point.
+                            if (target.suppressed || w.stopReason.value != null || shell !== helper ||
+                                !settings.state.value.enabled || !sameActiveMuteTarget(w, target) ||
+                                !mute.isConfirmed(target.service.telecomMuted, microphoneMuted())) false
+                            else if (runCatching { target.call.disconnect() }.isSuccess) w.stopReason.record(FAREWELL_ENDING)
+                            else false
+                        },
+                    )
+                } finally {
+                    watchdog.cancel()
+                    closingJob?.cancel()
+                    ownerTaskPush?.cancel()
+                }
             }
         }
+    } finally {
+        // 通话结束:撤掉待回的问题和通知,迟到的回复不再转进来
+        desk.close()
     }
     // A natural ending already issued the owner-bound disconnect with media still running.
     if (w.stopReason.value == FAREWELL_ENDING) return

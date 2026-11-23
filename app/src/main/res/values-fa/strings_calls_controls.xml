@@ -22,4 +22,8 @@
     <string name="calls_voice_briefing_permission_denied">مجوز میکروفون داده نشد. از فرم متنی استفاده کنید.</string>
     <string name="calls_voice_briefing_incomplete">پیش از شروع، دستورهای موجود را کامل یا پاک کنید.</string>
     <string name="calls_voice_briefing_configure">ابتدا صدای زنده را در تنظیمات پیکربندی کنید.</string>
+    <string name="calls_owner_ask_title">طرف مقابل منتظر پاسخ شماست</string>
+    <string name="calls_owner_ask_reply">پاسخ</string>
+    <string name="calls_owner_ask_hint">پاسخ شما</string>
+    <string name="calls_transcript_owner_unrelayed">پاسخ مالک (منتقل نشد)</string>
 </resources>

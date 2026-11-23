@@ -112,7 +112,7 @@ internal object VolcRealtimeProtocol {
     fun enableTools(eventId: String, config: VolcRealtimeConfig): String = message("session.update", eventId) {
         putJsonObject("session") {
             put("tools", JsonArray(mutableListOf<kotlinx.serialization.json.JsonElement>().apply {
-                if (config.enablePhoneDtmf) addAll(phoneTools())
+                if (config.enablePhoneDtmf) addAll(phoneCallTools())
                 if (config.agentTools) addAll(DeskTools.specs(DeskToolSet.User))
             }))
         }
@@ -138,6 +138,9 @@ internal object VolcRealtimeProtocol {
         }
     }))
 
+    /** 运营商电话里的整套工具:拨号键 + 电话前台(只有请示主人)。 */
+    fun phoneCallTools() = JsonArray(phoneTools() + DeskTools.specs(DeskToolSet.Phone))
+
     fun toolResults(eventId: String, results: List<Pair<String, JsonObject>>): String =
         message("conversation.item.create", eventId) {
             put("items", JsonArray(results.map { (callId, result) -> buildJsonObject {
@@ -158,12 +161,15 @@ internal object VolcRealtimeProtocol {
             digits.all { it in '0'..'9' || it == '*' || it == '#' }
     }
 
-    /** 前台的用户工具名;通话里只认这几个(加上按键)。 */
+    /** 前台的用户工具名;应用内语音通话只认这几个(加上按键)。 */
     val deskToolNames: Set<String> = DeskTools.specs(DeskToolSet.User).map { it.string("name")!! }.toSet()
+
+    /** 电话前台的工具名(只有请示主人);运营商电话里只认这个(加上按键)。 */
+    val phoneDeskToolNames: Set<String> = DeskTools.specs(DeskToolSet.Phone).map { it.string("name")!! }.toSet()
 
     /** 前台工具的参数:只能有说明里列出的字段,值都是字符串,必填的都在且不为空。字数上限在执行时管(原话不截,其余截断)。 */
     fun validDeskArguments(name: String, arguments: JsonObject): Boolean {
-        val parameters = DeskTools.specs(DeskToolSet.User).firstOrNull { it.string("name") == name }
+        val parameters = (DeskTools.specs(DeskToolSet.User) + DeskTools.specs(DeskToolSet.Phone)).firstOrNull { it.string("name") == name }
             ?.get("parameters") as? JsonObject ?: return false
         val properties = (parameters["properties"] as? JsonObject)?.keys ?: return false
         val required = (parameters["required"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty()
@@ -177,7 +183,7 @@ internal object VolcRealtimeProtocol {
      * against [MAX_UTTERANCE_CHARS] after parsing, so a near-limit utterance is never lost to the envelope.
      */
     fun maxArgumentCharsFor(name: String?): Int = when (name) {
-        DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER -> MAX_WORDS_ARGUMENT_CHARS
+        DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER, DeskTools.ASK_OWNER -> MAX_WORDS_ARGUMENT_CHARS
         else -> MAX_FUNCTION_ARGUMENT_CHARS
     }
 

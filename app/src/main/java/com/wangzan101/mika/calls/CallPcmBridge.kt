@@ -1,6 +1,7 @@
 package com.wangzan101.mika.calls
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -37,6 +38,8 @@ internal class CallPcmBridge(
         commitFarewell: () -> Boolean = { false },
         sendDtmf: suspend (String) -> CallDtmfResult = { CallDtmfResult.rejected("unavailable", it.length) },
         onStage: (CallVoiceStage) -> Unit = {},
+        /** 拨号键以外的工具交给电话前台([PhoneDesk.execute]);没有前台时一律 unsupported。 */
+        desk: (suspend (String, JsonObject) -> JsonObject)? = null,
     ): Unit = coroutineScope {
         var stage = CallVoiceStage.Listening
         val playbackQueue = CallPlaybackQueue()
@@ -168,6 +171,17 @@ internal class CallPcmBridge(
                                 // A function request invalidates any pending natural-hangup candidate.
                                 cancelFarewellWaiter()
                                 farewell.cancelCandidate()
+                                if (callToolRoute(event.name) == CallToolRoute.Desk) {
+                                    // 前台工具立刻返回(请示主人不等回复),也放在旁边跑,不挡音频
+                                    launch {
+                                        val result = try {
+                                            desk?.invoke(event.name, event.arguments) ?: buildJsonObject { put("status", "unsupported") }
+                                        } catch (cancelled: CancellationException) { throw cancelled }
+                                        catch (_: Exception) { buildJsonObject { put("status", "failed") } }
+                                        if (!session.sendToolResult(event.callId, result)) throw CallMediaFailure("电话前台结果无法回传，已交还系统")
+                                    }
+                                    return@collect
+                                }
                                 val digits = event.arguments["digits"]?.jsonPrimitive?.content.orEmpty()
                                 fun reply(result: CallDtmfResult) {
                                     if (!session.sendToolResult(event.callId, buildJsonObject {
@@ -178,7 +192,7 @@ internal class CallPcmBridge(
                                         put("next", "Wait for the next phone prompt; never retry uncertain or partial input automatically.")
                                     })) throw CallMediaFailure("电话按键结果无法回传，已交还系统")
                                 }
-                                if (event.name != "send_dtmf" || digits.isEmpty() || digits.length > 32 ||
+                                if (digits.isEmpty() || digits.length > 32 ||
                                     digits.any { it !in "0123456789*#" }) {
                                     reply(CallDtmfResult.rejected("invalid_digits"))
                                 } else if (toolJob?.isActive == true) {
@@ -223,6 +237,12 @@ internal class CallPcmBridge(
         }
     }
 }
+
+/** 通话里模型调的工具交给谁:拨号键由桥自己按,其余(请示主人、编造或不属于电话的名字)都交给电话前台。 */
+internal enum class CallToolRoute { Dtmf, Desk }
+
+internal fun callToolRoute(name: String): CallToolRoute =
+    if (name == VolcRealtimeProtocol.DTMF_FUNCTION) CallToolRoute.Dtmf else CallToolRoute.Desk
 
 /** No suspension between checking for cancellation and committing on the call dispatcher. */
 internal suspend fun commitDrainedFarewell(commit: () -> Boolean): Boolean {

@@ -22,4 +22,8 @@
     <string name="calls_voice_briefing_permission_denied">Microphone permission was not granted. You can use the text task form.</string>
     <string name="calls_voice_briefing_incomplete">Complete or clear the existing text instructions before starting.</string>
     <string name="calls_voice_briefing_configure">Configure realtime voice in Settings first.</string>
+    <string name="calls_owner_ask_title">The caller is waiting for your answer</string>
+    <string name="calls_owner_ask_reply">Reply</string>
+    <string name="calls_owner_ask_hint">Your reply</string>
+    <string name="calls_transcript_owner_unrelayed">Owner\'s reply (not relayed)</string>
 </resources>

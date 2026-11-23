@@ -36,7 +36,10 @@ class VolcRealtimeDtmfTest {
             peer().send("""{"type":"session.created","session":{"id":"local"}}""")
             val update = nextMessage()
             assertEquals("session.update", update.type)
-            val tool = update["session"]!!.jsonObject["tools"]!!.jsonArray.single().jsonObject
+            val tools = update["session"]!!.jsonObject["tools"]!!.jsonArray.map { it.jsonObject }
+            // 电话里只多一个请示主人,用户前台那套工具不在
+            assertEquals(listOf("send_dtmf", "ask_owner"), tools.map { it["name"]!!.jsonPrimitive.content })
+            val tool = tools.first()
             assertEquals("function", tool["type"]!!.jsonPrimitive.content)
             assertEquals("send_dtmf", tool["name"]!!.jsonPrimitive.content)
             val schema = tool["parameters"]!!.jsonObject

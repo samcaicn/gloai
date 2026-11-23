@@ -15,7 +15,7 @@ class McpCallToolsTest {
     private var requestedTask: PhoneCallTask? = null
     private val port = object : PhoneCallPort {
         override suspend fun state() = buildJsonObject { put("phase", "ringing"); put("call_id", "tracked-call") }
-        override suspend fun dial(number: String, simId: String?, task: PhoneCallTask?): JsonObject {
+        override suspend fun dial(number: String, simId: String?, task: PhoneCallTask?, ownerConversationId: String?): JsonObject {
             writes++; requested = number to simId
             requestedTask = task
             return buildJsonObject { put("ok", true); put("phase", "dialing") }

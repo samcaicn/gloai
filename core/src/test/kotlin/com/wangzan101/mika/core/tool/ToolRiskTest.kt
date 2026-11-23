@@ -102,7 +102,7 @@ class ToolRiskTest {
             override suspend fun importFile(path: String, workspace: String): com.wangzan101.mika.core.workspace.DeviceFileImport = error("read call reached device files")
         }, phoneCalls = object : PhoneCallPort {
             override suspend fun state() = JsonObject(emptyMap())
-            override suspend fun dial(number: String, simId: String?, task: PhoneCallTask?) = JsonObject(emptyMap())
+            override suspend fun dial(number: String, simId: String?, task: PhoneCallTask?, ownerConversationId: String?) = JsonObject(emptyMap())
             override suspend fun answer(callId: String) = JsonObject(emptyMap())
             override suspend fun hangup(callId: String) = JsonObject(emptyMap())
             override suspend fun takeover() = JsonObject(emptyMap())

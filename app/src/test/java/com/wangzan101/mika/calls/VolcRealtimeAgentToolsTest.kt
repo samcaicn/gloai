@@ -112,7 +112,7 @@ class VolcRealtimeAgentToolsTest {
             // tools is a complete replacement on the wire, so one update must carry the whole set.
             val names = update.getValue("session").jsonObject.getValue("tools").jsonArray
                 .map { it.jsonObject.getValue("name").jsonPrimitive.content }
-            assertEquals(listOf("send_dtmf") + DeskTools.specs(DeskToolSet.User).map { it.getValue("name").jsonPrimitive.content }, names)
+            assertEquals(listOf("send_dtmf", DeskTools.ASK_OWNER) + DeskTools.specs(DeskToolSet.User).map { it.getValue("name").jsonPrimitive.content }, names)
             assertTrue(messages.tryReceive().isFailure)
             finish(session)
         }
@@ -251,6 +251,24 @@ class VolcRealtimeAgentToolsTest {
         }
     }
 
+    @Test fun phoneCallsOnlyLetAskOwnerThroughNotTheUserDeskTools() = runBlocking {
+        fixture {
+            val session = connectAgent(VolcRealtimeConfig(enablePhoneDtmf = true))
+            val events = Channel<VolcRealtimeEvent>(32)
+            val collector = async { session.events.collect { events.send(it) } }
+            peer().send(functionFrame(item("ask", DeskTools.ASK_OWNER, """{"question":"对方问能不能改到周日"}""")))
+            val call = nextEvent(events) as VolcRealtimeEvent.FunctionCall
+            assertEquals(DeskTools.ASK_OWNER, call.name)
+            assertEquals("对方问能不能改到周日", call.arguments.getValue("question").jsonPrimitive.content)
+            // 用户前台的派活工具在电话里没登记,客户端自己回 unsupported_tool,不交给上层
+            peer().send(functionFrame(item("dispatch", DeskTools.DISPATCH, """{"words":"帮我订个位","title":"x"}""")))
+            assertTrue(nextMessage().toString().contains("unsupported_tool"))
+            assertFalse(events.tryReceive().isSuccess)
+            finish(session)
+            withTimeout(3_000) { collector.await() }
+        }
+    }
+
     @Test fun toolSetupTimeoutIsBoundedAndNeverRetries() = runBlocking {
         fixture(autoAck = true, ackTools = false, timeoutMs = 250) {
             val failure = runCatching { client.connect(credentials, VolcRealtimeConfig(agentTools = true)) }
@@ -281,8 +299,8 @@ class VolcRealtimeAgentToolsTest {
         val socket = CompletableDeferred<WebSocket>()
         suspend fun peer() = withTimeout(3_000) { socket.await() }
         suspend fun nextMessage() = withTimeout(3_000) { messages.receive() }
-        suspend fun connectAgent(): VolcRealtimeSession {
-            val session = client.connect(credentials, VolcRealtimeConfig(agentTools = true))
+        suspend fun connectAgent(config: VolcRealtimeConfig = VolcRealtimeConfig(agentTools = true)): VolcRealtimeSession {
+            val session = client.connect(credentials, config)
             assertEquals("session.create", nextMessage().type)
             assertEquals("session.update", nextMessage().type)
             return session

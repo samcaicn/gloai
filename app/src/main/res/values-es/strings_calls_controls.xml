@@ -22,4 +22,8 @@
     <string name="calls_voice_briefing_permission_denied">Sin permiso de micrófono. Puedes usar el formulario de texto.</string>
     <string name="calls_voice_briefing_incomplete">Completa o borra las instrucciones existentes antes de empezar.</string>
     <string name="calls_voice_briefing_configure">Configura primero la voz en tiempo real en Ajustes.</string>
+    <string name="calls_owner_ask_title">La otra persona espera tu respuesta</string>
+    <string name="calls_owner_ask_reply">Responder</string>
+    <string name="calls_owner_ask_hint">Tu respuesta</string>
+    <string name="calls_transcript_owner_unrelayed">Respuesta del dueño (no transmitida)</string>
 </resources>

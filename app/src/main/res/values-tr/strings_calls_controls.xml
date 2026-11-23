@@ -22,4 +22,8 @@
     <string name="calls_voice_briefing_permission_denied">Mikrofon izni verilmedi. Metin görev formunu kullanabilirsiniz.</string>
     <string name="calls_voice_briefing_incomplete">Başlamadan önce mevcut metin talimatlarını tamamlayın veya temizleyin.</string>
     <string name="calls_voice_briefing_configure">Önce Ayarlar\'da gerçek zamanlı sesi yapılandırın.</string>
+    <string name="calls_owner_ask_title">Karşı taraf yanıtınızı bekliyor</string>
+    <string name="calls_owner_ask_reply">Yanıtla</string>
+    <string name="calls_owner_ask_hint">Yanıtınız</string>
+    <string name="calls_transcript_owner_unrelayed">Sahibin yanıtı (iletilmedi)</string>
 </resources>

@@ -48,8 +48,8 @@ class AndroidPhoneCallPort(private val runtime: CallRuntime) : PhoneCallPort {
     private fun result(result: CallActionResult) = buildJsonObject {
         put("ok", result.ok); put("message", result.message); put("call", snapshot())
     }
-    override suspend fun dial(number: String, simId: String?, task: PhoneCallTask?) = result(runtime.dial(
-        number, simId, task?.let { CallTaskBrief(it.goal, it.questions, it.context, it.constraints) },
+    override suspend fun dial(number: String, simId: String?, task: PhoneCallTask?, ownerConversationId: String?) = result(runtime.dial(
+        number, simId, task?.let { CallTaskBrief(it.goal, it.questions, it.context, it.constraints) }, ownerConversationId,
     ))
     override suspend fun answer(callId: String) = result(runtime.answer(expectedCallId = callId))
     override suspend fun hangup(callId: String) = result(runtime.hangup(expectedCallId = callId))

@@ -585,6 +585,8 @@ class VolcRealtimeSession internal constructor(
                 stale -> "stale_response"
                 name == VolcRealtimeProtocol.DTMF_FUNCTION && config.enablePhoneDtmf ->
                     if (arguments == null || !VolcRealtimeProtocol.validDtmfArguments(arguments)) "invalid_arguments" else null
+                name in VolcRealtimeProtocol.phoneDeskToolNames && config.enablePhoneDtmf ->
+                    if (arguments == null || !VolcRealtimeProtocol.validDeskArguments(name!!, arguments)) "invalid_arguments" else null
                 name in VolcRealtimeProtocol.deskToolNames && config.agentTools ->
                     if (arguments == null || !VolcRealtimeProtocol.validDeskArguments(name!!, arguments)) "invalid_arguments" else null
                 else -> "unsupported_tool"

@@ -22,4 +22,8 @@
     <string name="calls_voice_briefing_permission_denied">マイクが許可されませんでした。テキストで入力できます。</string>
     <string name="calls_voice_briefing_incomplete">既存の説明を完成させるか消去してください。</string>
     <string name="calls_voice_briefing_configure">設定でリアルタイム音声を構成してください。</string>
+    <string name="calls_owner_ask_title">通話相手があなたの返事を待っています</string>
+    <string name="calls_owner_ask_reply">返信</string>
+    <string name="calls_owner_ask_hint">返信内容</string>
+    <string name="calls_transcript_owner_unrelayed">オーナーの返事（未伝達）</string>
 </resources>

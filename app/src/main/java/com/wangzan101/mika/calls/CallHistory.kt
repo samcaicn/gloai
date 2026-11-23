@@ -19,6 +19,11 @@ import kotlinx.serialization.json.Json
 @Serializable
 data class CallTranscriptLine(val role: String, val text: String) {
     override fun toString(): String = "CallTranscriptLine(role=$role)"
+
+    companion object {
+        /** 主人在通知里回了,但没能转告对方(被打断两次或通话已断):记下原文,不算通话里任何一方说的话。 */
+        const val OWNER_UNRELAYED = "owner_unrelayed"
+    }
 }
 
 /** Structured post-call information is stored with the encrypted call record. */

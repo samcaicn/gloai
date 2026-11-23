@@ -22,4 +22,8 @@
     <string name="calls_voice_briefing_permission_denied">Нет разрешения на микрофон. Можно заполнить текстовую форму.</string>
     <string name="calls_voice_briefing_incomplete">Дополните или очистите имеющиеся инструкции.</string>
     <string name="calls_voice_briefing_configure">Сначала настройте голос в реальном времени.</string>
+    <string name="calls_owner_ask_title">Собеседник ждёт вашего ответа</string>
+    <string name="calls_owner_ask_reply">Ответить</string>
+    <string name="calls_owner_ask_hint">Ваш ответ</string>
+    <string name="calls_transcript_owner_unrelayed">Ответ владельца (не передан)</string>
 </resources>

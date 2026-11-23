@@ -22,4 +22,8 @@
     <string name="calls_voice_briefing_permission_denied">未獲得麥克風權限；可在任務頁填寫文字交代。</string>
     <string name="calls_voice_briefing_incomplete">原有文字交代尚不完整，請補充或清空後再開始。</string>
     <string name="calls_voice_briefing_configure">請先在設定中配置即時語音。</string>
+    <string name="calls_owner_ask_title">通話對方在等你回覆</string>
+    <string name="calls_owner_ask_reply">回覆</string>
+    <string name="calls_owner_ask_hint">回覆內容</string>
+    <string name="calls_transcript_owner_unrelayed">主人回覆（未轉告）</string>
 </resources>
