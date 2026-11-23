@@ -13,6 +13,7 @@ import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.chat.CurrentChat
 import com.wangzan101.mika.chat.DeleteBatch
 import com.wangzan101.mika.chat.SharedDraft
+import com.wangzan101.mika.chat.SharedDraftAttachment
 import com.wangzan101.mika.chat.SharedDraftStore
 import com.wangzan101.mika.confirm.ConfirmationNotifier
 import com.wangzan101.mika.core.agent.FailKind
@@ -728,8 +729,8 @@ class ChatViewModelTest {
         val shared = SharedDraftStore(tmp.newFolder())
         val vm = ChatViewModel(backgroundScope, state, stage, actions, store, sharedDrafts = shared)
         runCurrent()
-        shared.imageFile("one.jpg")!!.writeBytes(byteArrayOf(1))
-        val image = com.wangzan101.mika.chat.SharedDraftImage("one.jpg", "one.jpg", 1)
+        shared.attachmentFile("one.jpg")!!.writeBytes(byteArrayOf(1))
+        val image = SharedDraftAttachment("one.jpg", "one.jpg", 1)
         vm.openSharedDraft(SharedDraft("", "first share", image))
         val first = vm.ui.value.conversationId!!
         vm.input("edited share")
@@ -738,11 +739,11 @@ class ChatViewModelTest {
         vm.openConversation(first)
         assertEquals("edited share", vm.ui.value.input)
         assertEquals("one.jpg", vm.ui.value.attachments.single().name)
-        assertTrue(shared.imageFile("one.jpg")!!.exists())
+        assertTrue(shared.attachmentFile("one.jpg")!!.exists())
         vm.openConversation(second)
         assertEquals("second share", vm.ui.value.input)
         vm.deleteConversation(first)
-        assertFalse(shared.imageFile("one.jpg")!!.exists())
+        assertFalse(shared.attachmentFile("one.jpg")!!.exists())
         assertEquals("second share", vm.ui.value.input)
     }
 
@@ -1240,61 +1241,101 @@ class ChatViewModelTest {
     @Test fun sharedDraftImageUsesTheExistingAttachmentImportAndSendPath() = runTest {
         val conversations = ConversationStore(tmp.newFolder())
         val drafts = SharedDraftStore(tmp.newFolder())
-        drafts.imageFile("shared.jpg")!!.writeBytes(byteArrayOf(1, 2, 3))
+        drafts.attachmentFile("shared.jpg")!!.writeBytes(byteArrayOf(1, 2, 3))
         val imported = mutableListOf<List<String>>()
         val vm = ChatViewModel(
             backgroundScope, state, stage, actions, conversations,
             sharedDrafts = drafts,
-            sharedDraftUri = { "content://mika.shared/$it" },
+            sharedDraftUri = { "content://mika.shared/${it.fileName}" },
             importAttachments = { _, uris ->
                 imported += uris
-                com.wangzan101.mika.cap.sandbox.ImportResult(listOf("/workspace/inbox/shared.jpg" to 3L), emptyList())
+                ImportResult(listOf("/workspace/inbox/photo.jpg" to 3L), emptyList())
             },
         )
         runCurrent()
-        val image = com.wangzan101.mika.chat.SharedDraftImage("shared.jpg", "photo.jpg", 3)
+        val image = SharedDraftAttachment("shared.jpg", "photo.jpg", 3)
         assertTrue(vm.openSharedDraft(SharedDraft("", "说明这张图", image)))
-        assertEquals(listOf("content://mika.shared/shared.jpg"), vm.ui.value.attachments.map { it.uri })
+        assertEquals(PendingAttachment("content://mika.shared/shared.jpg", "photo.jpg", 3, photo = true),
+            vm.ui.value.attachments.single())
         assertTrue(imported.isEmpty())
         assertTrue(calls.isEmpty())
 
         assertTrue(vm.send("说明这张图", ok))
         runCurrent()
         assertEquals(listOf(listOf("content://mika.shared/shared.jpg")), imported)
-        assertEquals(listOf("start:说明这张图\n附件:/workspace/inbox/shared.jpg(3 B)"), calls)
+        assertEquals(listOf("start:说明这张图\n附件:/workspace/inbox/photo.jpg(3 B)"), calls)
         assertNull(drafts.read())
-        assertFalse(drafts.imageFile("shared.jpg")!!.exists())
+        assertFalse(drafts.attachmentFile("shared.jpg")!!.exists())
+    }
+
+    @Test fun sharedDocumentRestoresAsAFileAndSurvivesAFailedSend() = runTest {
+        val conversations = ConversationStore(tmp.newFolder())
+        val drafts = SharedDraftStore(tmp.newFolder())
+        val document = SharedDraftAttachment("unique.pdf", "周报.pdf", 3, photo = false)
+        val file = drafts.attachmentFile(document.fileName)!!
+        file.writeBytes(byteArrayOf(1, 2, 3))
+        val initial = ChatViewModel(backgroundScope, state, stage, actions, conversations, sharedDrafts = drafts)
+        runCurrent()
+        assertTrue(initial.openSharedDraft(SharedDraft("", "", document)))
+
+        val pending = PendingAttachment("content://mika.shared/unique.pdf", "周报.pdf", 3, photo = false)
+        var attempts = 0
+        val restored = ChatViewModel(
+            backgroundScope, state, stage, actions, conversations, sharedDrafts = drafts,
+            sharedDraftUri = { "content://mika.shared/${it.fileName}" },
+            importAttachments = { _, uris ->
+                assertEquals(listOf(pending.uri), uris)
+                if (++attempts == 1) ImportResult(emptyList(), listOf(document.name))
+                else ImportResult(listOf("/workspace/inbox/周报.pdf" to document.size), emptyList())
+            },
+        )
+        runCurrent()
+        assertEquals(listOf(pending), restored.ui.value.attachments)
+        assertEquals(0, attempts)
+        assertTrue(calls.isEmpty())
+
+        assertTrue(restored.send("", ok))
+        runCurrent()
+        assertTrue(calls.isEmpty())
+        assertEquals(document, drafts.read()?.attachment)
+        assertEquals(listOf(pending), restored.ui.value.attachments)
+
+        assertTrue(restored.send("", ok))
+        runCurrent()
+        assertEquals(listOf("start:附件:/workspace/inbox/周报.pdf(3 B)"), calls)
+        assertNull(drafts.read())
+        assertFalse(file.exists())
     }
 
     @Test fun olderAttachmentImportCannotClearANewerSharedDraft() = runTest {
         val conversations = ConversationStore(tmp.newFolder())
         val drafts = SharedDraftStore(tmp.newFolder())
-        drafts.imageFile("first.jpg")!!.writeBytes(byteArrayOf(1))
-        drafts.imageFile("second.jpg")!!.writeBytes(byteArrayOf(2))
+        drafts.attachmentFile("first.jpg")!!.writeBytes(byteArrayOf(1))
+        drafts.attachmentFile("second.jpg")!!.writeBytes(byteArrayOf(2))
         val releaseImport = CompletableDeferred<Unit>()
         val vm = ChatViewModel(
             backgroundScope, state, stage, actions, conversations,
             sharedDrafts = drafts,
-            sharedDraftUri = { "content://mika.shared/$it" },
+            sharedDraftUri = { "content://mika.shared/${it.fileName}" },
             importAttachments = { _, _ ->
                 releaseImport.await()
                 com.wangzan101.mika.cap.sandbox.ImportResult(listOf("/workspace/inbox/first.jpg" to 1L), emptyList())
             },
         )
         runCurrent()
-        val first = com.wangzan101.mika.chat.SharedDraftImage("first.jpg", "first.jpg", 1)
+        val first = SharedDraftAttachment("first.jpg", "first.jpg", 1)
         assertTrue(vm.openSharedDraft(SharedDraft("", "第一份", first)))
         val firstId = vm.ui.value.conversationId
         assertTrue(vm.send("第一份", ok))
         assertTrue(vm.ui.value.importing)
 
-        val second = com.wangzan101.mika.chat.SharedDraftImage("second.jpg", "second.jpg", 1)
+        val second = SharedDraftAttachment("second.jpg", "second.jpg", 1)
         assertTrue(vm.openSharedDraft(SharedDraft("", "", second)))
         val secondId = vm.ui.value.conversationId
         releaseImport.complete(Unit)
         runCurrent()
         assertEquals(secondId, vm.ui.value.conversationId)
-        assertEquals(second, vm.ui.value.sharedDraft?.image)
+        assertEquals(second, vm.ui.value.sharedDraft?.attachment)
         assertEquals(listOf("content://mika.shared/second.jpg"), vm.ui.value.attachments.map { it.uri })
         assertTrue(calls.isEmpty())
 
@@ -1303,8 +1344,8 @@ class ChatViewModelTest {
         assertNull(vm.ui.value.sharedDraft)
         assertTrue(vm.ui.value.attachments.isEmpty())
         assertEquals(listOf(firstId), drafts.readAll().map { it.conversationId })
-        assertTrue(drafts.imageFile("first.jpg")!!.exists())
-        assertFalse(drafts.imageFile("second.jpg")!!.exists())
+        assertTrue(drafts.attachmentFile("first.jpg")!!.exists())
+        assertFalse(drafts.attachmentFile("second.jpg")!!.exists())
     }
 
     @Test fun inactiveSharedDraftDoesNotReplaceAnotherCurrentConversation() = runTest {
@@ -1384,23 +1425,23 @@ class ChatViewModelTest {
     @Test fun shareInCurrentConversationPromptsWhenDraftExistsAndSupportsReplaceOrCancel() = runTest {
         val conversations = ConversationStore(tmp.newFolder())
         val drafts = SharedDraftStore(tmp.newFolder())
-        drafts.imageFile("old.jpg")!!.writeBytes(byteArrayOf(1))
-        drafts.imageFile("cancelled.jpg")!!.writeBytes(byteArrayOf(2))
-        drafts.imageFile("replaced.jpg")!!.writeBytes(byteArrayOf(3))
+        drafts.attachmentFile("old.jpg")!!.writeBytes(byteArrayOf(1))
+        drafts.attachmentFile("cancelled.jpg")!!.writeBytes(byteArrayOf(2))
+        drafts.attachmentFile("replaced.jpg")!!.writeBytes(byteArrayOf(3))
         val vm = ChatViewModel(
             backgroundScope, state, stage, actions, conversations,
             sharedDrafts = drafts,
-            sharedDraftUri = { "content://mika.shared/$it" },
+            sharedDraftUri = { "content://mika.shared/${it.fileName}" },
         )
         runCurrent()
 
-        val oldImage = com.wangzan101.mika.chat.SharedDraftImage("old.jpg", "old.jpg", 1)
+        val oldImage = SharedDraftAttachment("old.jpg", "old.jpg", 1)
         assertTrue(vm.openSharedDraft(SharedDraft("", "原有草稿", oldImage), inCurrentConversation = true))
         val currentId = vm.ui.value.conversationId!!
         vm.quote(QuoteMessage.From.Mika, "被引用的回复")
 
         // 已有草稿时收到后台分享:先挂入 pendingSharedDraft 等用户选择,原草稿不动。
-        val cancelledImage = com.wangzan101.mika.chat.SharedDraftImage("cancelled.jpg", "cancelled.jpg", 1)
+        val cancelledImage = SharedDraftAttachment("cancelled.jpg", "cancelled.jpg", 1)
         assertTrue(vm.openSharedDraft(SharedDraft("", "将被取消的分享", cancelledImage), inCurrentConversation = true))
         assertEquals("将被取消的分享", vm.ui.value.pendingSharedDraft?.text)
         assertEquals("原有草稿", vm.ui.value.input)
@@ -1410,25 +1451,25 @@ class ChatViewModelTest {
         assertFalse(vm.openSharedDraft(SharedDraft("", "无效的替换", missingImage), inCurrentConversation = true))
         assertEquals("将被取消的分享", vm.ui.value.pendingSharedDraft?.text)
         assertEquals(vm.ui.value.pendingSharedDraft, drafts.readPending())
-        assertTrue(drafts.imageFile("cancelled.jpg")!!.isFile)
+        assertTrue(drafts.attachmentFile("cancelled.jpg")!!.isFile)
 
         // 点「取消」:保留原草稿与原图,删除新分享的临时图片副本。
         vm.cancelPendingSharedDraft()
         assertNull(vm.ui.value.pendingSharedDraft)
         assertEquals("原有草稿", vm.ui.value.input)
         assertNotNull(vm.ui.value.quote)
-        assertTrue(drafts.imageFile("old.jpg")!!.exists())
-        assertFalse(drafts.imageFile("cancelled.jpg")!!.exists())
+        assertTrue(drafts.attachmentFile("old.jpg")!!.exists())
+        assertFalse(drafts.attachmentFile("cancelled.jpg")!!.exists())
 
         // 再次后台分享:若弹窗期间进程被回收重建,cleanup 不会误删待确认图片,重建后仍可点「替换」。
-        val replacedImage = com.wangzan101.mika.chat.SharedDraftImage("replaced.jpg", "replaced.jpg", 1)
+        val replacedImage = SharedDraftAttachment("replaced.jpg", "replaced.jpg", 1)
         assertTrue(vm.openSharedDraft(SharedDraft("", "确认替换的分享", replacedImage), inCurrentConversation = true))
         drafts.cleanup()
-        assertTrue(drafts.imageFile("replaced.jpg")!!.exists())
+        assertTrue(drafts.attachmentFile("replaced.jpg")!!.exists())
         val restored = ChatViewModel(
             backgroundScope, state, stage, actions, conversations,
             sharedDrafts = drafts,
-            sharedDraftUri = { "content://mika.shared/$it" },
+            sharedDraftUri = { "content://mika.shared/${it.fileName}" },
         )
         runCurrent()
         assertEquals("确认替换的分享", restored.ui.value.pendingSharedDraft?.text)
@@ -1438,19 +1479,19 @@ class ChatViewModelTest {
         assertEquals("确认替换的分享", restored.ui.value.input)
         assertNull(restored.ui.value.quote)
         assertEquals(listOf("content://mika.shared/replaced.jpg"), restored.ui.value.attachments.map { it.uri })
-        assertFalse(drafts.imageFile("old.jpg")!!.exists())
-        assertTrue(drafts.imageFile("replaced.jpg")!!.exists())
+        assertFalse(drafts.attachmentFile("old.jpg")!!.exists())
+        assertTrue(drafts.attachmentFile("replaced.jpg")!!.exists())
     }
 
     @Test fun shareImageInBusyConversationAutomaticallySwitchesToQueueMode() = runTest {
         val conversations = ConversationStore(tmp.newFolder())
         val drafts = SharedDraftStore(tmp.newFolder())
-        drafts.imageFile("busy.jpg")!!.writeBytes(byteArrayOf(1, 2))
-        drafts.imageFile("answer.jpg")!!.writeBytes(byteArrayOf(3, 4))
+        drafts.attachmentFile("busy.jpg")!!.writeBytes(byteArrayOf(1, 2))
+        drafts.attachmentFile("answer.jpg")!!.writeBytes(byteArrayOf(3, 4))
         val vm = ChatViewModel(
             backgroundScope, state, stage, actions, conversations,
             sharedDrafts = drafts,
-            sharedDraftUri = { "content://mika.shared/$it" },
+            sharedDraftUri = { "content://mika.shared/${it.fileName}" },
             importAttachments = { _, _ -> ImportResult(listOf("/workspace/inbox/answer.jpg" to 2L), emptyList()) },
         )
         runCurrent()
@@ -1462,7 +1503,7 @@ class ChatViewModelTest {
         assertEquals(FollowUpMode.Queue, vm.ui.value.followUpMode)
 
         // 任务运行中收到后台图片分享:自动切换到排队模式。
-        val image = com.wangzan101.mika.chat.SharedDraftImage("busy.jpg", "busy.jpg", 2)
+        val image = SharedDraftAttachment("busy.jpg", "busy.jpg", 2)
         assertTrue(vm.openSharedDraft(SharedDraft("", "排队看这张图", image), inCurrentConversation = true))
         assertEquals(FollowUpMode.Queue, vm.ui.value.followUpMode)
         assertEquals(listOf("content://mika.shared/busy.jpg"), vm.ui.value.attachments.map { it.uri })
@@ -1471,7 +1512,7 @@ class ChatViewModelTest {
         vm.input("改成纯文字插话")
         vm.setFollowUpMode(FollowUpMode.Steer)
         assertTrue(vm.ui.value.attachments.isEmpty())
-        assertFalse(drafts.imageFile("busy.jpg")!!.exists())
+        assertFalse(drafts.attachmentFile("busy.jpg")!!.exists())
         assertEquals("改成纯文字插话", drafts.read()?.text)
 
         // 发送插话后,分享草稿从存储中一并清除。
@@ -1483,50 +1524,50 @@ class ChatViewModelTest {
         state.value = TaskState.WaitingInput("选哪个?", listOf("A", "B"))
         runCurrent()
         assertEquals(ComposerMode.Answer, vm.ui.value.composer)
-        val answerImg = com.wangzan101.mika.chat.SharedDraftImage("answer.jpg", "answer.jpg", 2)
+        val answerImg = SharedDraftAttachment("answer.jpg", "answer.jpg", 2)
         assertTrue(vm.openSharedDraft(SharedDraft("", "", answerImg), inCurrentConversation = true))
         assertEquals(FollowUpMode.Queue, vm.ui.value.followUpMode)
         assertTrue(vm.send("", ok))
         runCurrent()
         assertTrue(calls.contains("queue:附件:/workspace/inbox/answer.jpg(2 B)"))
-        assertFalse(drafts.imageFile("answer.jpg")!!.exists())
+        assertFalse(drafts.attachmentFile("answer.jpg")!!.exists())
     }
 
     @Test fun shareIntoCurrentConversationDuringAttachmentImportDoesNotPromptOrDeleteImportingFile() = runTest {
         val conversations = ConversationStore(tmp.newFolder())
         val drafts = SharedDraftStore(tmp.newFolder())
-        drafts.imageFile("first.jpg")!!.writeBytes(byteArrayOf(1))
-        drafts.imageFile("second.jpg")!!.writeBytes(byteArrayOf(2))
+        drafts.attachmentFile("first.jpg")!!.writeBytes(byteArrayOf(1))
+        drafts.attachmentFile("second.jpg")!!.writeBytes(byteArrayOf(2))
         val releaseImport = CompletableDeferred<Unit>()
         var firstFileExistedDuringImport = false
         val vm = ChatViewModel(
             backgroundScope, state, stage, actions, conversations,
             sharedDrafts = drafts,
-            sharedDraftUri = { "content://mika.shared/$it" },
+            sharedDraftUri = { "content://mika.shared/${it.fileName}" },
             importAttachments = { _, _ ->
                 releaseImport.await()
-                firstFileExistedDuringImport = drafts.imageFile("first.jpg")!!.exists()
+                firstFileExistedDuringImport = drafts.attachmentFile("first.jpg")!!.exists()
                 ImportResult(listOf("/workspace/inbox/first.jpg" to 1L), emptyList())
             },
         )
         runCurrent()
 
-        val first = com.wangzan101.mika.chat.SharedDraftImage("first.jpg", "first.jpg", 1)
+        val first = SharedDraftAttachment("first.jpg", "first.jpg", 1)
         assertTrue(vm.openSharedDraft(SharedDraft("", "看图", first), inCurrentConversation = true))
         assertTrue(vm.send("看图", ok))
         assertTrue(vm.ui.value.importing)
 
         // 正在异步导入上一条分享图片时收到同会话新分享:不弹过期替换确认框,也不提前删掉正在导入的 first.jpg。
-        val second = com.wangzan101.mika.chat.SharedDraftImage("second.jpg", "second.jpg", 1)
+        val second = SharedDraftAttachment("second.jpg", "second.jpg", 1)
         assertTrue(vm.openSharedDraft(SharedDraft("", "看图", second), inCurrentConversation = true))
         assertNull(vm.ui.value.pendingSharedDraft)
-        assertTrue(drafts.imageFile("first.jpg")!!.exists())
+        assertTrue(drafts.attachmentFile("first.jpg")!!.exists())
 
         releaseImport.complete(Unit)
         runCurrent()
         assertTrue(firstFileExistedDuringImport)
-        assertFalse(drafts.imageFile("first.jpg")!!.exists())
-        assertTrue(drafts.imageFile("second.jpg")!!.exists())
+        assertFalse(drafts.attachmentFile("first.jpg")!!.exists())
+        assertTrue(drafts.attachmentFile("second.jpg")!!.exists())
         assertEquals("看图", vm.ui.value.input)
         assertEquals(listOf("content://mika.shared/second.jpg"), vm.ui.value.attachments.map { it.uri })
         assertEquals(FollowUpMode.Queue, vm.ui.value.followUpMode)
@@ -1535,12 +1576,12 @@ class ChatViewModelTest {
     @Test fun editingSharedTextDuringImportStillClearsSentAttachmentsAndSharedDraft() = runTest {
         val conversations = ConversationStore(tmp.newFolder())
         val drafts = SharedDraftStore(tmp.newFolder())
-        drafts.imageFile("shot.jpg")!!.writeBytes(byteArrayOf(1))
+        drafts.attachmentFile("shot.jpg")!!.writeBytes(byteArrayOf(1))
         val releaseImport = CompletableDeferred<Unit>()
         val vm = ChatViewModel(
             backgroundScope, state, stage, actions, conversations,
             sharedDrafts = drafts,
-            sharedDraftUri = { "content://mika.shared/$it" },
+            sharedDraftUri = { "content://mika.shared/${it.fileName}" },
             importAttachments = { _, _ ->
                 releaseImport.await()
                 ImportResult(listOf("/workspace/inbox/shot.jpg" to 1L), emptyList())
@@ -1548,7 +1589,7 @@ class ChatViewModelTest {
         )
         runCurrent()
 
-        val shot = com.wangzan101.mika.chat.SharedDraftImage("shot.jpg", "shot.jpg", 1)
+        val shot = SharedDraftAttachment("shot.jpg", "shot.jpg", 1)
         assertTrue(vm.openSharedDraft(SharedDraft("", "看图", shot), inCurrentConversation = true))
         assertTrue(vm.send("看图", ok))
         assertTrue(vm.ui.value.importing)
@@ -1560,7 +1601,7 @@ class ChatViewModelTest {
         assertTrue(vm.ui.value.attachments.isEmpty())
         assertNull(vm.ui.value.sharedDraft)
         assertNull(drafts.read())
-        assertFalse(drafts.imageFile("shot.jpg")!!.exists())
+        assertFalse(drafts.attachmentFile("shot.jpg")!!.exists())
     }
 
     @Test fun startWaitsUntilServiceFinishedPreviousTask() = runTest {

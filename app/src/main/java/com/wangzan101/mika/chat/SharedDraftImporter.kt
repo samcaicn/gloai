@@ -16,65 +16,63 @@ import java.io.File
 import java.io.InputStream
 import java.util.UUID
 
-/** 把系统分享的一张内容图片立即复制到私有草稿目录,不依赖之后仍有效的 URI 授权。 */
+/** 把系统分享的文件复制到私有草稿目录，不依赖之后仍有效的 URI 授权。 */
 class SharedDraftImporter(private val context: Context, private val store: SharedDraftStore) {
-    suspend fun image(text: String, uri: Uri, declaredType: String?): SharedDraft? {
+    suspend fun attachment(text: String, uri: Uri, declaredType: String?): SharedDraft? {
         var copied: File? = null
         return try {
             withContext(Dispatchers.IO) {
-                if (text.length > SharedDraftStore.MAX_TEXT_CHARS || declaredType?.startsWith("image/") != true) return@withContext null
+                if (text.length > SharedDraftStore.MAX_TEXT_CHARS) return@withContext null
                 if (uri.scheme != ContentResolver.SCHEME_CONTENT) return@withContext null
-                // 外部分享不应该借 Mika 自己的私有 provider 指定另一个内部文件;所有收到的内容都从外部 provider 新复制。
-                val authority = uri.authority.orEmpty()
-                if (authority == context.packageName || authority.startsWith("${context.packageName}.")) return@withContext null
+                // Android 跨用户 URI 的 authority 可以是「用户编号@提供方」。
+                val authority = uri.authority.orEmpty().substringAfterLast('@')
+                if (authority.isBlank() || authority == context.packageName || authority.startsWith("${context.packageName}.")) return@withContext null
+                if (uri.path?.split('/')?.any { it == ".." } == true) return@withContext null
                 val resolver = context.contentResolver
-                val mime = runCatching { resolver.getType(uri) }.getOrNull() ?: declaredType
-                if (!mime.startsWith("image/")) return@withContext null
-                val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mime)
-                    ?.filter { it.isLetterOrDigit() }?.takeIf { it.isNotEmpty() } ?: "img"
+                val providerType = runCatching { resolver.getType(uri) }.getOrNull()?.substringBefore(';')?.trim()?.lowercase()
                 var display: String? = null
                 var declaredSize = -1L
                 runCatching {
                     resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { c ->
                         if (c.moveToFirst()) {
-                            display = c.getString(0)
-                            if (!c.isNull(1)) declaredSize = c.getLong(1)
+                            val nameColumn = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                            val sizeColumn = c.getColumnIndex(OpenableColumns.SIZE)
+                            if (nameColumn >= 0) display = c.getString(nameColumn)
+                            if (sizeColumn >= 0 && !c.isNull(sizeColumn)) declaredSize = c.getLong(sizeColumn)
                         }
                     }
                 }
                 if (declaredSize > Attachments.MAX_BYTES) return@withContext null
-                val name = Attachments.safeName(display ?: "image.$extension")
+                val mimeMap = MimeTypeMap.getSingleton()
+                val sourceName = display?.takeIf { it.isNotBlank() }
+                    ?: uri.lastPathSegment?.substringAfterLast('/')?.takeIf { '.' in it }
+                val suffix = sourceName?.substringAfterLast('.', "")?.lowercase()?.takeIf { it.matches(EXTENSION) }
+                val mime = listOfNotNull(providerType, declaredType).firstOrNull {
+                    it.contains('/') && '*' !in it && it != "application/octet-stream"
+                } ?: suffix?.let { mimeMap.getMimeTypeFromExtension(it) }
+                val photo = mime?.startsWith("image/") == true || declaredType?.startsWith("image/") == true ||
+                    providerType?.startsWith("image/") == true
+                if (photo && mime != null && !mime.startsWith("image/")) return@withContext null
+                val extension = mime?.let { mimeMap.getExtensionFromMimeType(it) }?.takeIf { it.matches(EXTENSION) }
+                    ?: suffix ?: if (photo) "img" else "bin"
+                val fallbackName = if (photo) "image.$extension" else "attachment.$extension"
+                val name = Attachments.safeName(sourceName ?: fallbackName)
                 val fileName = "${UUID.randomUUID()}.$extension"
-                val final = store.imageFile(fileName) ?: return@withContext null
+                val final = store.attachmentFile(fileName) ?: return@withContext null
                 copied = final
-                val tmp = store.imageFile("$fileName.tmp") ?: return@withContext null
-                val size = try {
-                    resolver.openInputStream(uri)?.use { input ->
-                        // 目标文件尚未创建,查它的可用空间会得到 0;copy 会先建好父目录。
-                        SharedDraftCopy.copy(input, tmp, final) { tmp.parentFile?.usableSpace ?: 0L }
-                    } ?: return@withContext null
-                } catch (e: CancellationException) {
-                    tmp.delete()
-                    final.delete()
-                    throw e
-                } catch (e: Exception) {
-                    tmp.delete()
-                    final.delete()
-                    return@withContext null
-                }
-                // 类型声明可以被伪造;只收系统能识别出边界的位图,不在界面线程解全图。
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                val readable = try {
+                val tmp = store.attachmentFile("$fileName.tmp") ?: return@withContext null
+                val size = resolver.openInputStream(uri)?.use { input ->
+                    SharedDraftCopy.copy(input, tmp, final) { tmp.parentFile?.usableSpace ?: 0L }
+                } ?: return@withContext null
+                if (photo) {
+                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                     final.inputStream().use { BitmapFactory.decodeStream(it, null, bounds) }
-                    bounds.outWidth > 0 && bounds.outHeight > 0
-                } catch (e: Exception) {
-                    false
+                    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+                        final.delete()
+                        return@withContext null
+                    }
                 }
-                if (!readable) {
-                    final.delete()
-                    return@withContext null
-                }
-                SharedDraft("", text, SharedDraftImage(fileName, name, size))
+                SharedDraft("", text, SharedDraftAttachment(fileName, name, size, photo))
             }
         } catch (e: CancellationException) {
             // withContext 在复制刚完成、结果尚未交给界面的那一刻也可能被取消;这份副本还没绑到草稿,不能留下。
@@ -84,6 +82,10 @@ class SharedDraftImporter(private val context: Context, private val store: Share
             copied?.delete()
             null
         }
+    }
+
+    private companion object {
+        val EXTENSION = Regex("[a-z0-9]{1,16}")
     }
 }
 

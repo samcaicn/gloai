@@ -12,19 +12,19 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
-/** 系统分享图片的私有副本;[fileName] 只由本 App 生成,不保留外部路径。 */
-data class SharedDraftImage(val fileName: String, val name: String, val size: Long)
+/** 系统分享附件的私有副本;[fileName] 只由本 App 生成,不保留外部路径。 */
+data class SharedDraftAttachment(val fileName: String, val name: String, val size: Long, val photo: Boolean = true)
 
 /** 一个新对话里尚未发送的分享内容。只保存草稿,不包含任何执行状态。 */
-data class SharedDraft(val conversationId: String, val text: String, val image: SharedDraftImage? = null)
+data class SharedDraft(val conversationId: String, val text: String, val attachment: SharedDraftAttachment? = null)
 
 /**
  * 系统分享草稿按对话保存的落盘点。对话编号由对话页决定;这里只负责让草稿跨进程存下来。
- * 元数据先写临时文件再改名;图片在写入元数据前已完整复制,外部 URI 授权之后失效也能继续编辑和发送。
+ * 元数据先写临时文件再改名;附件在写入元数据前已完整复制,外部 URI 授权之后失效也能继续编辑和发送。
  */
 class SharedDraftStore(private val dir: File) {
     private val metadata: File get() = File(dir, METADATA)
-    private val importingImages = mutableSetOf<String>()
+    private val importingAttachments = mutableSetOf<String>()
 
     @Synchronized
     fun read(): SharedDraft? = readAll().lastOrNull()
@@ -48,25 +48,25 @@ class SharedDraftStore(private val dir: File) {
     }
 
     @Synchronized
-    fun clearPending(deleteImage: Boolean = true) {
+    fun clearPending() {
         val (oldDrafts, oldPending) = readState()
         if (oldPending == null) return
-        write(oldDrafts, null, oldDrafts, if (deleteImage) oldPending else null)
+        write(oldDrafts, null, oldDrafts, oldPending)
     }
 
-    /** 标记某张分享图片正在导入工作区:导入期间即使同会话收到新分享也不会提前删掉原图文件。 */
+    /** 导入工作区期间保留文件副本，即使同会话收到新分享。 */
     @Synchronized
     fun setImporting(fileName: String?, active: Boolean) {
         if (fileName.isNullOrEmpty()) return
         if (active) {
-            importingImages += fileName
+            importingAttachments += fileName
         } else {
-            importingImages -= fileName
-            discard(SharedDraftImage(fileName, "", 0))
+            importingAttachments -= fileName
+            discardFile(fileName)
         }
     }
 
-    /** 保存前要求图片已经是本目录里的完整普通文件;失败时不改旧草稿。 */
+    /** 保存前要求附件已经是本目录里的完整普通文件;失败时不改旧草稿。 */
     @Synchronized
     fun save(draft: SharedDraft): Boolean {
         if (!valid(draft)) return false
@@ -78,7 +78,7 @@ class SharedDraftStore(private val dir: File) {
         return write(next, nextPending, old, oldPending)
     }
 
-    /** 发送或删除只清理所属对话,其他会话的分享图片继续可用。 */
+    /** 发送或删除只清理所属对话,其他会话的分享附件继续可用。 */
     @Synchronized
     fun clear(conversationId: String) {
         val (old, oldPending) = readState()
@@ -89,22 +89,25 @@ class SharedDraftStore(private val dir: File) {
     }
 
     @Synchronized
-    fun removeImage(conversationId: String) {
+    fun removeAttachment(conversationId: String) {
         val old = readState().first.firstOrNull { it.conversationId == conversationId } ?: return
-        if (old.image == null) return
-        if (old.text.isBlank()) clear(conversationId) else save(old.copy(image = null))
+        if (old.attachment == null) return
+        if (old.text.isBlank()) clear(conversationId) else save(old.copy(attachment = null))
     }
 
     /** 尚未绑到对话的副本取消时删除;已经保存成功的同一文件不能删。 */
     @Synchronized
-    fun discard(image: SharedDraftImage?) {
-        if (image == null) return
+    fun discard(attachment: SharedDraftAttachment?) {
+        attachment?.let { discardFile(it.fileName) }
+    }
+
+    private fun discardFile(fileName: String) {
         val (drafts, pending) = readState()
-        if (image.fileName in importingImages ||
-            drafts.any { it.image?.fileName == image.fileName } ||
-            pending?.image?.fileName == image.fileName
+        if (fileName in importingAttachments ||
+            drafts.any { it.attachment?.fileName == fileName } ||
+            pending?.attachment?.fileName == fileName
         ) return
-        imageFile(image.fileName)?.delete()
+        attachmentFile(fileName)?.delete()
     }
 
     /** 清掉复制中断的临时文件、没来得及绑到对话的副本和损坏的元数据。 */
@@ -112,9 +115,9 @@ class SharedDraftStore(private val dir: File) {
     fun cleanup() {
         val (drafts, pending) = readState()
         if (drafts.isEmpty() && pending == null && metadata.exists()) metadata.delete()
-        val images = (drafts.mapNotNull { it.image?.fileName } + listOfNotNull(pending?.image?.fileName) + importingImages).toSet()
+        val retained = (drafts.mapNotNull { it.attachment?.fileName } + listOfNotNull(pending?.attachment?.fileName) + importingAttachments).toSet()
         dir.listFiles()?.forEach { f ->
-            if (f.name == METADATA || f.name in images) return@forEach
+            if (f.name == METADATA || f.name in retained) return@forEach
             if (f.isFile) f.delete()
         }
     }
@@ -122,11 +125,12 @@ class SharedDraftStore(private val dir: File) {
     private fun encodeDraft(draft: SharedDraft): JsonObject = buildJsonObject {
         put("conversation", draft.conversationId)
         put("text", draft.text)
-        draft.image?.let { image ->
-            put("image", buildJsonObject {
-                put("file", image.fileName)
-                put("name", image.name)
-                put("size", image.size)
+        draft.attachment?.let { attachment ->
+            put("attachment", buildJsonObject {
+                put("file", attachment.fileName)
+                put("name", attachment.name)
+                put("size", attachment.size)
+                put("photo", attachment.photo)
             })
         }
     }
@@ -156,14 +160,14 @@ class SharedDraftStore(private val dir: File) {
                 return false
             }
         }
-        val retained = (drafts.mapNotNull { it.image?.fileName } + listOfNotNull(pending?.image?.fileName) + importingImages).toSet()
-        (oldDrafts.mapNotNull { it.image?.fileName } + listOfNotNull(oldPending?.image?.fileName))
+        val retained = (drafts.mapNotNull { it.attachment?.fileName } + listOfNotNull(pending?.attachment?.fileName) + importingAttachments).toSet()
+        (oldDrafts.mapNotNull { it.attachment?.fileName } + listOfNotNull(oldPending?.attachment?.fileName))
             .filterNot { it in retained }
-            .forEach { imageFile(it)?.delete() }
+            .forEach { attachmentFile(it)?.delete() }
         return true
     }
 
-    fun imageFile(fileName: String): File? {
+    fun attachmentFile(fileName: String): File? {
         if (!fileName.matches(FILE)) return null
         val f = File(dir, fileName)
         return f.takeIf { runCatching { it.canonicalFile.parentFile == dir.canonicalFile }.getOrDefault(false) }
@@ -171,17 +175,24 @@ class SharedDraftStore(private val dir: File) {
 
     private fun decodeDraft(o: JsonObject): SharedDraft? {
         fun string(obj: JsonObject, key: String) = (obj[key] as? JsonPrimitive)?.contentOrNull
-        val image = (o["image"] as? JsonObject)?.let { i ->
-            SharedDraftImage(
-                string(i, "file") ?: return null,
-                string(i, "name") ?: return null,
-                string(i, "size")?.toLongOrNull() ?: return null,
+        // 旧版只保存图片，元数据用 image，并且没有 photo 标记。
+        val encoded = o["attachment"] ?: o["image"]
+        val attachment = encoded?.let {
+            val fields = it as? JsonObject ?: return null
+            val photo = if ("attachment" in o) {
+                string(fields, "photo")?.toBooleanStrictOrNull() ?: return null
+            } else true
+            SharedDraftAttachment(
+                string(fields, "file") ?: return null,
+                string(fields, "name") ?: return null,
+                string(fields, "size")?.toLongOrNull() ?: return null,
+                photo,
             )
         }
         return SharedDraft(
             string(o, "conversation") ?: return null,
             string(o, "text") ?: return null,
-            image,
+            attachment,
         ).takeIf(::valid)
     }
 
@@ -196,11 +207,11 @@ class SharedDraftStore(private val dir: File) {
 
     private fun valid(draft: SharedDraft): Boolean {
         if (!draft.conversationId.matches(ID) || draft.text.length > MAX_TEXT_CHARS) return false
-        if (draft.text.isBlank() && draft.image == null) return false
-        val image = draft.image ?: return true
-        val file = imageFile(image.fileName)?.takeIf { it.isFile } ?: return false
-        return image.name.isNotBlank() && image.name.length <= 240 && image.size >= 0 &&
-            image.size <= Attachments.MAX_BYTES && file.length() == image.size
+        if (draft.text.isBlank() && draft.attachment == null) return false
+        val attachment = draft.attachment ?: return true
+        val file = attachmentFile(attachment.fileName)?.takeIf { it.isFile } ?: return false
+        return attachment.name.isNotBlank() && attachment.name.length <= 240 && attachment.size >= 0 &&
+            attachment.size <= Attachments.MAX_BYTES && file.length() == attachment.size
     }
 
     companion object {

@@ -21,7 +21,6 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
     private var pipClosed by session::pipClosed
     private val store = vm.store
     private val sharedDrafts = vm.sharedDrafts
-    private val sharedDraftUri = vm.sharedDraftUri
 
     fun withDrafts(history: List<ConversationSummary>): List<ConversationSummary> =
         draftConversations.value.filter { draft -> history.none { it.id == draft.id } }.map {
@@ -34,7 +33,7 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
         if (text == _ui.value.input) return
         val id = session.draftConversation()
         val currentShared = _ui.value.sharedDraft
-        val updatedShared = currentShared?.copy(text = text)?.takeIf { it.text.isNotBlank() || it.image != null }
+        val updatedShared = currentShared?.copy(text = text)?.takeIf { it.text.isNotBlank() || it.attachment != null }
         if (currentShared != null) {
             if (updatedShared == null) sharedDrafts?.clear(id)
             else sharedDrafts?.save(updatedShared)
@@ -77,9 +76,9 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
             if (!hasUnsentDraft) return applySharedDraftToCurrent(prepared)
             val id = session.draftConversation()
             val pending = prepared.copy(conversationId = id)
-            // Replacing the pending draft and cleaning up its old image happen after the new draft is saved.
-            if ((pending.image != null && session.sharedAttachments(pending).size != 1) || !drafts.savePending(pending)) {
-                drafts.discard(pending.image)
+            // Replacing the pending draft and cleaning up its old attachment happen after the new draft is saved.
+            if ((pending.attachment != null && session.sharedAttachments(pending).size != 1) || !drafts.savePending(pending)) {
+                drafts.discard(pending.attachment)
                 return false
             }
             _ui.update { it.copy(pendingSharedDraft = pending) }
@@ -88,7 +87,7 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
         if (pendingStart?.isActive == true &&
             (_ui.value.conversationId == null || _ui.value.exchanges.getOrNull(liveIndex) == null)
         ) {
-            drafts.discard(prepared.image)
+            drafts.discard(prepared.attachment)
             return false
         }
         val id = store.newConversation()
@@ -118,19 +117,17 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
     /** 用户在替换草稿弹窗里点了「替换」:用待确认的分享内容覆盖当前会话草稿。 */
     fun confirmPendingSharedDraft(): Boolean {
         val pending = _ui.value.pendingSharedDraft ?: return false
-        _ui.update { it.copy(pendingSharedDraft = null) }
-        sharedDrafts?.clearPending(deleteImage = false)
         return applySharedDraftToCurrent(pending)
     }
 
-    /** 用户在替换草稿弹窗里点了「取消」或关闭弹窗:保留原草稿,清掉这次分享的临时图片副本。 */
+    /** 用户在替换草稿弹窗里点了「取消」或关闭弹窗:保留原草稿,清掉这次分享的临时附件副本。 */
     fun cancelPendingSharedDraft() {
         val pending = _ui.value.pendingSharedDraft
         if (pending != null) {
             _ui.update { if (it.pendingSharedDraft == pending) it.copy(pendingSharedDraft = null) else it }
         }
-        sharedDrafts?.clearPending(deleteImage = true)
-        if (pending != null) sharedDrafts?.discard(pending.image)
+        sharedDrafts?.clearPending()
+        if (pending != null) sharedDrafts?.discard(pending.attachment)
     }
 
     private fun applySharedDraftToCurrent(prepared: SharedDraft): Boolean {
@@ -148,7 +145,7 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
                 quote = null,
                 rejectedAttachments = emptyList(),
                 overLimit = 0,
-                followUpMode = if (draft.image != null && it.composer != ComposerMode.Idle) FollowUpMode.Queue else it.followUpMode,
+                followUpMode = if (draft.attachment != null && it.composer != ComposerMode.Idle) FollowUpMode.Queue else it.followUpMode,
                 pendingSharedDraft = null,
             )
         }
@@ -161,8 +158,8 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
         val drafts = sharedDrafts ?: return null
         val draft = prepared.copy(conversationId = id)
         val attachments = session.sharedAttachments(draft)
-        if ((draft.image != null && attachments.size != 1) || !drafts.save(draft)) {
-            drafts.discard(draft.image)
+        if ((draft.attachment != null && attachments.size != 1) || !drafts.save(draft)) {
+            drafts.discard(draft.attachment)
             return null
         }
         return draft to attachments
@@ -172,20 +169,20 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
         val draft = target ?: return
         val isCurrent = _ui.value.sharedDraft == draft || drafts.value[draft.conversationId]?.sharedDraft == draft
         if (!isCurrent) return
-        val imageUri = draft.image?.let { image -> runCatching { sharedDraftUri(image.fileName) }.getOrNull() }
+        val sharedUri = draft.attachment?.let(session::attachmentUri)
         sharedDrafts?.clear(draft.conversationId)
         _ui.update { current ->
             if (current.sharedDraft == draft) current.copy(
                 sharedDraft = null,
-                // 私有分享图片随草稿一起删掉;普通待发附件仍属于全局输入框。
-                attachments = current.attachments.filterNot { it.uri == imageUri },
+                // 私有分享附件随草稿一起删掉;普通待发附件仍属于全局输入框。
+                attachments = current.attachments.filterNot { it.uri == sharedUri },
             ) else current
         }
         drafts.update { saved ->
             val existing = saved[draft.conversationId]
             if (existing?.sharedDraft != draft) saved
             else {
-                val next = existing.copy(sharedDraft = null, attachments = existing.attachments.filterNot { it.uri == imageUri })
+                val next = existing.copy(sharedDraft = null, attachments = existing.attachments.filterNot { it.uri == sharedUri })
                 if (next.hasContent) saved + (draft.conversationId to next) else saved - draft.conversationId
             }
         }

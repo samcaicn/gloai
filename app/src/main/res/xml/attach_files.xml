@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 对话页附件:相机拍的照片、系统分享图片的私有副本、点开已发附件时复制出来的那一份;工作区本身不开放 -->
+<!-- 对话页附件:相机拍的照片、系统分享文件的私有副本、点开已发附件时复制出来的那一份;工作区本身不开放 -->
 <paths>
     <cache-path name="camera" path="attach/camera/" />
     <cache-path name="viewing" path="attach/viewing/" />

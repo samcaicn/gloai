@@ -72,7 +72,7 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
         if (sent && !sendingAttachments) {
             val shared = ui.sharedDraft
             if (shared != null) {
-                if (shared.image == null) {
+                if (shared.attachment == null) {
                     vm.drafting.discardSharedDraft(shared)
                 } else {
                     val textCleared = shared.copy(text = "")
@@ -126,8 +126,8 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
         val id = session.draftConversation()
         val submitted = _ui.value.draft()
         val serialBefore = sharedDraftSerial
-        val importingImage = submitted.sharedDraft?.image?.fileName
-        sharedDrafts?.setImporting(importingImage, true)
+        val importingFileName = submitted.sharedDraft?.attachment?.fileName
+        sharedDrafts?.setImporting(importingFileName, true)
         val importedUris = items.map { it.uri }.distinct()
         importedUris.forEach { uri -> libraryImports[uri] = (libraryImports[uri] ?: 0) + 1 }
         _ui.update { it.copy(importing = true, rejectedAttachments = emptyList(), overLimit = 0) }
@@ -164,7 +164,7 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
             } catch (e: Exception) {
                 ImportResult(emptyList(), items.map { it.name })
             } finally {
-                sharedDrafts?.setImporting(importingImage, false)
+                sharedDrafts?.setImporting(importingFileName, false)
                 importedUris.forEach { uri ->
                     val count = (libraryImports[uri] ?: 1) - 1
                     if (count == 0) libraryImports.remove(uri) else libraryImports[uri] = count
@@ -203,7 +203,7 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
     /** 在对话 [id] 里开始新任务 [goal]:界面上加一问一答,交给服务(并行关着、服务还忙时排在它收尾后面)。 */
     private fun begin(goal: String, id: String, clearDraftAttachments: Boolean = true) {
         lingerJob?.cancel()
-        // 真正开始任务后,草稿图片已在工作区(纯文字不需要图片),可以清掉私有暂存副本。
+        // 真正开始任务后,草稿附件已在工作区,可以清掉私有暂存副本。
         if (clearDraftAttachments) vm.drafting.discardSharedDraft()
         val boundProject = (_ui.value.projectId ?: store.projectId(id))?.takeIf { projectStore == null || projectStore.get(it) != null }
         if (boundProject != null && store.projectId(id) != boundProject) {
@@ -279,7 +279,7 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
     fun setFollowUpMode(mode: FollowUpMode) {
         if (_ui.value.importing) return
         if (mode == FollowUpMode.Steer) {
-            _ui.value.sharedDraft?.takeIf { it.image != null }?.let(vm.attaching::clearSharedImage)
+            _ui.value.sharedDraft?.takeIf { it.attachment != null }?.let(vm.attaching::clearSharedAttachment)
         }
         _ui.update {
             if (it.followUpMode == mode) it else it.copy(followUpMode = mode,

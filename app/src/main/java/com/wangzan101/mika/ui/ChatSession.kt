@@ -3,6 +3,7 @@ import com.wangzan101.mika.chat.BranchCopyResult
 import com.wangzan101.mika.chat.CurrentChat
 import com.wangzan101.mika.chat.DeleteBatch
 import com.wangzan101.mika.chat.SharedDraft
+import com.wangzan101.mika.chat.SharedDraftAttachment
 import com.wangzan101.mika.memory.RunNotes
 import com.wangzan101.mika.task.SteerNote
 import kotlinx.coroutines.Job
@@ -66,7 +67,7 @@ internal class ChatSession(private val vm: ChatViewModel) {
         draftStateChanged = true
         val ui = _ui.value
         val id = ui.conversationId ?: return
-        val shared = ui.sharedDraft?.copy(text = ui.input)?.takeIf { it.text.isNotBlank() || it.image != null }
+        val shared = ui.sharedDraft?.copy(text = ui.input)?.takeIf { it.text.isNotBlank() || it.attachment != null }
         if (ui.sharedDraft != null) {
             if (shared == null) sharedDrafts?.clear(id)
             else sharedDrafts?.save(shared)
@@ -131,10 +132,11 @@ internal class ChatSession(private val vm: ChatViewModel) {
     /** 用户把正在跟踪的这个任务的小画面关掉了(换任务时清掉,见 [PipUi.closed])。 */
     var pipClosed = false
 
-    fun sharedAttachments(draft: SharedDraft) = listOfNotNull(draft.image?.let { image ->
-        runCatching { sharedDraftUri(image.fileName) }.getOrNull()
-            ?.takeIf { it.isNotEmpty() }
-            ?.let { PendingAttachment(it, image.name, image.size, photo = true) }
+    fun attachmentUri(attachment: SharedDraftAttachment): String? =
+        runCatching { sharedDraftUri(attachment) }.getOrNull()?.takeIf { it.isNotEmpty() }
+
+    fun sharedAttachments(draft: SharedDraft) = listOfNotNull(draft.attachment?.let { attachment ->
+        attachmentUri(attachment)?.let { PendingAttachment(it, attachment.name, attachment.size, attachment.photo) }
     })
 
     /** 停止的那一轮:交代还在写时标上「正在整理」;写好了、写不成就去掉。 */

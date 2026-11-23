@@ -283,7 +283,7 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
     /** 对话编号到工作区的解析器(不依赖 [chat] 避免循环 lazy)。 */
     val workspaceResolver: WorkspaceResolver by lazy { WorkspaceResolver(conversations, projects) }
 
-    /** 最近一次系统分享尚未发送的草稿和它的私有图片副本。 */
+    /** 系统分享尚未发送的草稿和它的私有附件副本。 */
     val sharedDrafts: SharedDraftStore by lazy { SharedDraftStore(java.io.File(filesDir, "shared-drafts")) }
 
     /** 用户自己打开的终端(按工作区):只从界面进,不交给任何任务,也不写运行记录。 */
@@ -536,9 +536,11 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             // 标题后面加当前界面语言的「分支」后缀;源标题太长时先截短,后缀留着
             branchTitle = { base -> ChatCopy.branchTitle(base, tr(R.string.chat_branch_title_suffix)) },
             sharedDrafts = sharedDrafts,
-            sharedDraftUri = { name ->
-                sharedDrafts.imageFile(name)?.let { file ->
-                    androidx.core.content.FileProvider.getUriForFile(app, com.wangzan101.mika.chat.AttachFilesProvider.authority(app.packageName), file).toString()
+            sharedDraftUri = { attachment ->
+                sharedDrafts.attachmentFile(attachment.fileName)?.let { file ->
+                    androidx.core.content.FileProvider.getUriForFile(
+                        app, com.wangzan101.mika.chat.AttachFilesProvider.authority(app.packageName), file, attachment.name,
+                    ).toString()
                 }.orEmpty()
             },
             teaching = { teach.blocksTasks() },

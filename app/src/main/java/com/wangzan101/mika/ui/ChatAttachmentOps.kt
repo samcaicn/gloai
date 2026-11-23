@@ -23,7 +23,6 @@ internal class ChatAttachmentOps(private val vm: ChatViewModel, private val sess
     private val sandboxReady = vm.sandboxReady
     private val describeAttachments = vm.describeAttachments
     private val sharedDrafts = vm.sharedDrafts
-    private val sharedDraftUri = vm.sharedDraftUri
 
     /** 从相机、相册、文件选择器拿到的文件:没有任务在跑、沙箱就绪时才收;读出名字和大小后挂在输入框上方,随下一句话发出去。 */
     fun attach(uris: List<String>, conversationId: String? = _ui.value.conversationId) {
@@ -202,25 +201,25 @@ internal class ChatAttachmentOps(private val vm: ChatViewModel, private val sess
         return !t.full
     }
 
-    fun clearSharedImage(draft: SharedDraft) {
+    fun clearSharedAttachment(draft: SharedDraft) {
         val currentText = _ui.value.input
         if (currentText.isBlank()) {
             sharedDrafts?.clear(draft.conversationId)
         } else {
-            val updated = draft.copy(text = currentText, image = null)
-            if (sharedDrafts?.save(updated) != true) sharedDrafts?.removeImage(draft.conversationId)
+            val updated = draft.copy(text = currentText, attachment = null)
+            if (sharedDrafts?.save(updated) != true) sharedDrafts?.removeAttachment(draft.conversationId)
         }
         _ui.update { current ->
             if (current.sharedDraft == draft) {
-                current.copy(sharedDraft = draft.copy(text = current.input, image = null).takeIf { it.text.isNotBlank() })
+                current.copy(sharedDraft = draft.copy(text = current.input, attachment = null).takeIf { it.text.isNotBlank() })
             } else current
         }
     }
 
     fun removeAttachment(uri: String) {
         val draft = _ui.value.sharedDraft
-        if (draft?.image != null && runCatching { sharedDraftUri(draft.image.fileName) }.getOrNull() == uri) {
-            clearSharedImage(draft)
+        if (draft?.attachment != null && session.attachmentUri(draft.attachment) == uri) {
+            clearSharedAttachment(draft)
         }
         _ui.update { ui -> ui.copy(attachments = ui.attachments.filterNot { it.uri == uri }) }
         session.releaseUnusedLibraryCopies()

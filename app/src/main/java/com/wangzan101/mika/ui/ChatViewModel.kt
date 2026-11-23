@@ -14,6 +14,7 @@ import com.wangzan101.mika.chat.Project
 import com.wangzan101.mika.chat.ProjectDeleteImpact
 import com.wangzan101.mika.chat.ProjectStore
 import com.wangzan101.mika.chat.SharedDraft
+import com.wangzan101.mika.chat.SharedDraftAttachment
 import com.wangzan101.mika.chat.SharedDraftStore
 import com.wangzan101.mika.chat.SharedFile
 import com.wangzan101.mika.chat.WorkspaceResolver
@@ -141,7 +142,7 @@ class ChatViewModel(
     internal val branchTitle: (String) -> String = { it },
     /** 系统分享草稿的持久化;内部图片文件名变成本 App provider 的内容地址。 */
     internal val sharedDrafts: SharedDraftStore? = null,
-    internal val sharedDraftUri: (String) -> String = { it },
+    internal val sharedDraftUri: (SharedDraftAttachment) -> String = { it.fileName },
     /** 读写对话记录、复制分支在哪儿做。 */
     internal val io: CoroutineContext = Dispatchers.IO,
     /** 正在跟用户学习时不另开任务，也不把这句话记成已经开始。 */
@@ -281,7 +282,7 @@ class ChatViewModel(
         // 任务登记进任务列表(原话可以取了)可能晚于它的第一个状态:那时接上的那一问一答补上原话
         scope.launch { activeConversations.collect { live.fillGoal() } }
         scope.launch { summarizing.collect { set -> _ui.update { ui -> ui.copy(exchanges = ui.exchanges.map { session.withSummarizing(it, set) }) } } }
-        // 分享图片有私有副本,可以恢复;只把当前对话那份放到输入框,其余留在各自草稿里。
+        // 分享附件有私有副本,可以恢复;只把当前对话那份放到输入框,其余留在各自草稿里。
         sharedDrafts?.readAll()?.forEach { draft ->
             drafts.update { it + (draft.conversationId to ComposerDraft(input = draft.text,
                 attachments = session.sharedAttachments(draft), sharedDraft = draft)) }
