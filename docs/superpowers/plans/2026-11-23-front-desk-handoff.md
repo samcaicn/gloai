@@ -1,39 +1,46 @@
-# 前台层实施：交接说明（2026-11-23）
+# 前台层实施：交接说明（2026-11-23，第二次交接）
 
-给接手的 agent。按这份说明可以接着做，不需要回看之前的对话。
+给接手的 agent。按这份说明可以接着做，不需要回看之前的对话。上一版交接（Task 3 半途）已被执行完，本版是当前状态。
 
 ## 1. 在哪、做到哪了
 
 - **工作目录**：`/Users/bolyn/coding-projects/Mika/.claude/worktrees/front-desk`（git worktree，分支 `front-desk`，从本地 main `2e33e150b` 拉出）。所有活都在这里干。**不要动 main、其他分支和其他 worktree，不要 push、不要 merge**，除非用户亲口要求。
 - **要读的三份文件**（都已提交在这个分支上）：
   - 设计（最高依据）：`docs/superpowers/specs/2026-11-23-front-desk-design.md`
-  - 实施计划（11 个任务）：`docs/superpowers/plans/2026-11-23-front-desk.md`
-  - 聊天页原型：`docs/superpowers/prototypes/2026-11-23-front-desk-chat.html`
-- **进度账本**（最重要，git 忽略、只在磁盘上）：`.superpowers/sdd/2026-11-23-front-desk/progress.md`。里面有预检表、所有裁定（Ruling A–F）、每个任务的提交区间和延后的小问题。**以账本 + `git log` 为准**，不要凭印象重做已完成的任务。
-- **当前状态**（写这份时）：
+  - 实施计划（11 个任务 + 插入的 3b）：`docs/superpowers/plans/2026-11-23-front-desk.md`
+  - 聊天页原型（用户已认可 v2 + 输入框上方在办条变体）：`docs/superpowers/prototypes/2026-11-23-front-desk-chat.html`
+- **进度账本**（最重要，git 忽略、只在磁盘上）：`.superpowers/sdd/2026-11-23-front-desk/progress.md`。里面有预检表、所有裁定（Ruling A–K）、每个任务的提交区间和延后的小问题。**以账本 + `git log` 为准**，不要凭印象重做已完成的任务。
+- **当前状态**（写这份时，HEAD = `c4ac312e2`）：
 
 | 任务 | 状态 | 提交 |
 |---|---|---|
-| 1 对话脑子搬进 core（notice/seed） | ✅ 完成，审查通过 | `4e44b27cf` |
+| 1 对话脑子搬进 core | ✅ 完成，审查通过 | `4e44b27cf` |
 | 2 任务事件归类 + 汇报规则 | ✅ 完成，审查通过 | `6fcb6813b` |
-| 3 调度工具 + 执行器 | ⏸ 做到一半被叫停（没提交、没报告、没跑通测试） | 起点 `6fcb6813b` |
-| 4–11 | 未开始 | — |
+| 3 调度工具 + 执行器 | ✅ 完成，审查通过 | `ea95da0ef` |
+| 3b 前台只说话+派活（用户改定，去掉查询工具） | ✅ 完成，审查通过 | `455cb0c19`…`677a7ae66` |
+| 4 按会话常驻 FrontDesk | ✅ 完成，审查通过 | `3db7ef9ff` |
+| 5 后台接收前台补充 | ✅ 完成，审查通过 | `1727a6f81` |
+| 6 app 层接线（1 轮修复后通过） | ✅ 完成，审查通过 | `cef4d456f`…`37fb910c3` |
+| 7 前台提示词 + 模型选择 | ✅ 完成，审查通过 | `c4ac312e2` |
+| 8 语音通话接前台 | ⏸ **实现者已派出，被叫停时还没动工作区** | 起点 `c4ac312e2` |
+| 9 聊天页走前台（原型门已开） | 未开始 | — |
+| 10 AI 电话里的前台 | 未开始 | — |
+| 11 全量回归 + 真机验证 | 未开始 | — |
 
-**Task 3 留下的半成品**：工作区里有它没提交的改动，未经测试，可能编译不过。
-- 改了：`core/.../frontdesk/DeskEvent.kt`、`DeskLines.kt`
-- 新建：`DeskLedger.kt`、`DeskLookup.kt`、`DeskTaskPort.kt`、`DeskToolExecutor.kt`、`DeskTools.kt`、`core/src/test/.../frontdesk/DeskToolExecutorTest.kt`
-- 备份补丁：`.superpowers/sdd/2026-11-23-front-desk/task-3-partial.patch`（新文件也包含在内）
+**Task 8 的摊子**：上一个控制器派出实现者（opus，agent id `a87edfaece2ea0f44`，BASE `c4ac312e2`）后就被用户叫停了。叫停那一刻 `git status` 干净，实现者还在读代码阶段。**接手第一件事：`git status` + `git log` 看它的结果**——
 
-**接手第一件事**：`git status` 确认上面这些还在，然后**重新派一个 Task 3 实现者**（BASE = 派之前的 HEAD，也就是这份交接说明的提交，用 `git rev-parse HEAD` 取）。提示词里告诉它：「工作区里已有上一个实现者没做完的 Task 3 改动，先读一遍，能用的接着用、不对的改掉，按 brief 补齐测试（先确认测试能失败再让它通过），跑 `./gradlew :core:test` 全绿后再提交」。如果你更想从头做，先 `git checkout -- core && git clean -fd core/src`（看清楚只删这些文件），再按 brief 正常派。
-- Task 3 的说明已经生成好：`.superpowers/sdd/2026-11-23-front-desk/task-3-brief.md`；报告写到同目录的 `task-3-report.md`。
-- 派 Task 3 时必须带上下面第 3 节的 **Ruling F**（brief 里没有）。
+- 如果它**已经做完并提交**（会有 `feat(voicecall): talk through the front desk…` 提交 + `.superpowers/sdd/2026-11-23-front-desk/task-8-report.md`）：直接生成审查包（BASE `c4ac312e2`）派审查者，走正常流程。
+- 如果它**留了半成品**（工作区有未提交改动、没有报告）：照 Task 3/7 的老办法——把改动备份成 patch 存到 `.superpowers/sdd/2026-11-23-front-desk/task-8-partial.patch`，然后重新派一个实现者接着做（提示词让它先读半成品，能用的用、不对的改，TDD 先红后绿，`./gradlew :app:testDebugUnitTest` 全绿再提交）。半成品不可靠，未经测试。
+- 如果它**还挂着没跑完**（这个可能性随时间降低）：等它的通知，别重复派。
+
+**派 Task 8 时必须带上的裁定和接口**（brief 里没有，第 3 节有全文）：Ruling B（删 VoiceCallRoute 前查 DeskLines.stripDetails 的其他调用方）、Ruling F/G/H（执行器接口、track 接线、interrupted 报告去向）、Ruling I（工具集，不许接查询工具）。上一个控制器给 Task 8 实现者的完整提示词要点都在账本和本节里，照着重写即可。
 
 ## 2. 执行方式（用户选的：subagent-driven）
 
 用 superpowers 的 `subagent-driven-development` 技能。每个任务：派一个实现子代理 → 派一个审查子代理 → 有 Critical/Important 就回给原实现者修 → 通过后记账本 → 下一个。不在任务之间停下来问用户。
 
 **脚本**（技能目录 `/Users/bolyn/.claude/plugins/cache/superpowers-dev/superpowers/7.0.2/skills/subagent-driven-development/scripts/`，在 worktree 根目录下跑）：
-- 生成任务说明：`bash <dir>/task-brief $PWD/docs/superpowers/plans/2026-11-23-front-desk.md N` → 写出 `task-N-brief.md`
+- 生成任务说明：`bash <dir>/task-brief $PWD/docs/superpowers/plans/2026-11-23-front-desk.md N` → 写出 `task-N-brief.md`（**8/9/10/11 的 brief 已经生成好**，直接在 `.superpowers/sdd/2026-11-23-front-desk/` 里）
 - 生成审查包：`bash <dir>/review-package $PWD/docs/superpowers/plans/2026-11-23-front-desk.md <BASE> HEAD`。BASE 是派实现者之前记下的 HEAD，**不要用 HEAD~1**
 
 **已经准备好的公共文件**（在 `.superpowers/sdd/2026-11-23-front-desk/`，派活时让子代理读，提示词就能写得很短）：
@@ -41,38 +48,40 @@
 - `reviewer-rules.md`：审查方法和输出格式
 - `global-constraints.md`：计划里的全局约束
 
-**派实现者的提示词写法**（照 Task 1–3 的样子）：一句话说明这个任务在干什么 → `task-N-brief.md` 路径（「先读，这是你的需求」）→ 让它读 `implementer-rules.md` → 前面任务定下来、brief 不知道的接口和裁定 → 报告文件路径 `task-N-report.md`。
+**模型**：一律用 **`opus`**（Ruling D：`sonnet` 别名在这个账号上 404）。
 
-**模型**：`model: "sonnet"` 在这个账号上会 404（被路由到一个不可用的模型），**一律用 `opus`**（账本 Ruling D）。
-
-**验证**：纯 core 的任务跑 `./gradlew :core:test` 全量 + 相关 app 测试；Task 6/8/9/10/11 跑 `./gradlew :app:testDebugUnitTest` 全量（约 20 分钟）。**不要跑裸 `:app:test`**（会内存溢出）。`TerminalHubTest` 偶发 15 秒超时是本地负载抖动，改动不碰 terminal 时忽略。
+**验证**：纯 core 的任务跑 `./gradlew :core:test`；碰 app 的任务（8/9/10/11 全部）跑 `./gradlew :app:testDebugUnitTest` 全量（约 20 分钟）。**不要跑裸 `:app:test`**（会 OOM）。已知本地负载抖动可忽略：`TerminalHubTest` 15s 超时、`McpServerStoreTest.cancelDuringConnectClosesWhatConnected`（diff 不碰对应区域时）。
 
 ## 3. 已定的裁定（派后面的任务时要带上）
 
-账本里有原文，这里列后面任务会用到的：
+账本里有原文，这里列后面任务会用的：
 - **Ruling A**：`DeskBrain.seed(prior)` 只在历史为空时生效，每个 Turn 展开成 用户(userText 非空) + 助手(outcome 非空)，不看 status。
-- **Ruling B**：清洗函数已搬到 core `DeskLines.stripDetails`；`VoiceCallRoute` 暂时改调它，Task 8 删 `VoiceCallRoute`。结果上限常量是 `DESK_RESULT_MAX_CHARS = 1_800`（取代 `VOICE_RESULT_MAX_CHARS`）。
-- **Ruling C**：用户看过聊天页原型、没提意见就选了执行方式，按「原型已认可」处理；但 **Task 9 排在 Task 10 之后做**，好让用户有机会补意见。开始 Task 9 前如果用户在场，顺口问一句原型要不要改。
+- **Ruling B**：清洗函数在 core `DeskLines.stripDetails`；`VoiceCallRoute` 调它，Task 8 删 `VoiceCallRoute` 时确认没有别的调用方被晾着。结果上限常量 `DESK_RESULT_MAX_CHARS = 1_800`。
+- **Ruling C**：原型已认可（v2 + 输入框上方在办条变体，11-23 18:03），**Task 9 的门已开**，直接按原型做。
 - **Ruling E**：只改 core 的任务不跑 app 全量。
-- **Ruling F（Task 3 的接口，和计划原文略有出入，后续任务按这个来）**：
-  - `DeskLedger.add(entry: DeskTaskEntry)`（entry 含 taskId、title、words、at）
-  - `DeskToolExecutor` 构造多两个参数：`conversationId: String`、`onDispatched: (DeskTaskEntry) -> Unit = {}`。**Task 4/6 要把 `onDispatched` 接到 `FrontDesk.track`。**
-  - `DISPATCH_DEDUPE_MS = 30_000L`
-  - 工具结果：`started{task_id}` / `queued{task_id, position}` / `failed{reason}` / `ok` / `not_accepted` / `rejected{reason}` / `unknown_task` / `already_dispatched{task_id}` / `unavailable` / `unsupported`；查询成功为 `{"status":"ok","text":…}`；`check_tasks` 的 state 取值多一个 `unknown`。
-- 实际 Task 3 的接口以**提交后的代码**为准，派 Task 4 前先看一眼 `core/src/main/kotlin/com/wangzan101/mika/core/frontdesk/` 下的真实签名。
-- `classify` 不产生 `Queued`：排队由派活结果直接告诉模型，排队任务开跑时 `Held(queued)→Running` 报 `Started`，任务卡上的排位来自 `port.queuePosition`。
+- **Ruling F**（Task 3 实际接口）：`DeskLedger.add(entry: DeskTaskEntry)`；`DeskToolExecutor` 构造带 `conversationId: String` + `onDispatched: (DeskTaskEntry) -> Unit = {}`；`DISPATCH_DEDUPE_MS = 30_000L`；工具结果形态固定（`started{task_id}` / `queued{task_id, position}` / `failed{reason}` / `ok` / `not_accepted` / `rejected{reason}` / `unknown_task` / `already_dispatched{task_id}` / `unavailable` / `unsupported`）。
+- **Ruling G**：`FrontDesk.track(taskId, title)` 不写账本（执行器写）；app 接线 `onDispatched = { desk.track(it.taskId, it.title) }`。
+- **Ruling H**：interrupted 报告去下一个挂着的 surface，否则立刻进 sink（写进会话，不重念）——`FrontDesk.deliver` 已是这个行为，bridge 的 `deliver` 返回 false 就会触发。
+- **Ruling I（用户 11-23 改定）**：前台只说话+派活。User 工具 = dispatch/add/answer/cancel；Phone 工具 = 只有 ask_owner；查询工具（check_tasks/web_search/recall_memory）已删除，任务板+记忆由代码经 DeskBackground 放进上下文。**任何任务都不得把查询工具接回来。**
+- **Ruling J**：背景块是临时尾随消息（system 保持字节稳定吃缓存）；记忆每句用户话查一次；任务板带进行中/待答任务最近 ≤3 行进展。
+- **Ruling K**：model 适配器有 opt-in 的不缓存消息标记，移动缓存点放在不缓存块之前；默认请求保持字节不变。
+- **Task 6 的 Ruling**：desk 的 steer 走本地 `run.steer`，不是计划原文的 `steerRemote`（那是 MCP 专用）。
+- 派每个任务前看一眼真实代码签名，别照抄计划原文。
+- 派发顺序：**`8 → 10 → 9 → 11 → 全分支终审`**。
 
-## 4. 剩下的顺序
+## 4. 剩下的任务要点
 
-`3（重新实现 + 审查）→ 4 → 5 → 6 → 7 → 8 → 10 → 9 → 11 → 全分支终审`
-
-- **Task 9（聊天页）**：按原型做，见 Ruling C。
-- **Task 11（真机）**：要打 perf 包、装到测试机（安装要在手机上点一下）、用 `LiveRunTest` 自己跑场景。需要用户在手机旁边；用户不在就把能自动跑的跑完，真机项写进验收文档标「待真机」。
-- **全分支终审**：所有任务完成后，按技能的 `references/final-review.md` 做，用最强的模型。账本里所有 `minor (deferred)` 交给终审分拣。Task 1 留下的「seed 可能出现连续同角色消息」到 Task 8/9 接 seed 时要留意。
+- **Task 8（语音通话接前台）**：删 `VoiceCallRoute`/`VoiceCallTaskLauncher` 及其测试；新建 `VoiceDeskBridge`；`CallRealtimeSession.sendNotice`；级联 + 实时（Volc）两套；`onBargeIn` 不再取消任务；对话流任务卡改由 `desk.active` 驱动。账本里两条 deferred 要在本任务顺手验证：desk_report 行渲染、sink 通知靠 `ReportPolicy` 节流（不要在 bridge 里造第二个节流）。
+- **Task 9（聊天页走前台）**：按原型做，门已开（Ruling C）。
+- **Task 10（AI 电话前台）**：`PhoneDesk` 只有 `ask_owner`；主人回复走通知 `RemoteInput`（minSdk 29 满足 API 24+）；`OwnerReplyReceiver` 在 Manifest 注册、不导出。
+- **Task 11（真机）**：打 perf 包（`./gradlew :app:assemblePerf`，正式版就是这个变体、debug 签名）、装测试机（安装要在手机上点一下，**用户在手机旁才能做**）、`adb shell cmd package compile -f -m speed com.wangzan101.mika` 强制 AOT（注意：`cmd compile` 在这台机上不存在，要用 `cmd package compile`）。测试机是 HONOR ANP-AN00（A94VUT2C28001694，Android 14）。用 `LiveRunTest` 自己跑场景。用户不在就把能自动跑的跑完，真机项写进验收文档标「待真机」。
+- **全分支终审**：所有任务完成后按技能的 `references/final-review.md` 做，用最强模型。账本里所有 `minor (deferred)` 交给终审分拣。
 - 做完以后用 `superpowers:finishing-a-development-branch` 问用户怎么合，**不要自己合到 main**。
 
 ## 5. 其他注意
 
-- 主仓库 `/Users/bolyn/coding-projects/Mika` 里还有这三份文档的未跟踪副本（`docs/superpowers/{specs,plans,prototypes}/2026-11-23-front-desk*`），是建 worktree 之前留下的。正式版本在分支上，主仓库里的副本等合并时再处理，现在别动。
+- 主仓库 `/Users/bolyn/coding-projects/Mika` 里还有这三份文档的未跟踪副本（`docs/superpowers/{specs,plans,prototypes}/2026-11-23-front-desk*`），是建 worktree 之前留下的。正式版本在分支上，主仓库的副本等合并时再处理，现在别动。主仓库另有大量别的 `docs/superpowers/` 未跟踪目录，与本次无关。
+- main 的 perf 包（0.1.51, versionCode 52, `a85b8a7be`）已装到测试机给用户体验，与本分支无关。
 - 项目规矩见仓库根目录的 `CLAUDE.md` 和用户记忆目录 `/Users/bolyn/.claude/projects/-Users-bolyn-coding-projects-Mika/memory/MEMORY.md`（通用安卓、不加小众服务商、按根因修、新界面先原型等）。
 - 每做完一个任务就往账本追加一行 `Task N: complete (commits a..b, review clean)`，小问题记成 `Task N: minor (deferred): …`。
+- 代码和注释用中文，跟随周围风格；提交信息按任务 brief 给的写。
