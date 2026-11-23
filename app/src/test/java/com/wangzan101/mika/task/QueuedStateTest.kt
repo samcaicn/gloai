@@ -8,10 +8,10 @@ import com.wangzan101.mika.capsule.CardRun
 import com.wangzan101.mika.core.agent.GateReason
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.i18n.ChineseTexts
-import com.wangzan101.mika.ui.ChatCopy
-import com.wangzan101.mika.ui.ChatViewModel
-import com.wangzan101.mika.ui.Exchange
-import com.wangzan101.mika.ui.ExchangeStatus
+import com.wangzan101.mika.chat.ui.ChatCopy
+import com.wangzan101.mika.chat.ui.ChatViewModel
+import com.wangzan101.mika.chat.ui.Exchange
+import com.wangzan101.mika.chat.ui.ExchangeStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Rule

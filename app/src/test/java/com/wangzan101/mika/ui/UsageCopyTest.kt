@@ -16,6 +16,7 @@ import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.wangzan101.mika.settings.ui.UsageCopy
 
 class UsageCopyTest {
     @get:Rule val texts = ChineseTexts()

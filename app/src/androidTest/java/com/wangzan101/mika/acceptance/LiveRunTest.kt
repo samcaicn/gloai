@@ -248,7 +248,7 @@ class LiveRunTest {
         mainShot(dir, "end-main")
         // 停止后的交代:等它当作这一轮的回答出现在对话页
         val summary = if (end == TaskState.Cancelled) DeviceSupport.pollUntil(30_000) {
-            chat.ui.value.exchanges.lastOrNull()?.status?.let { it as? com.wangzan101.mika.ui.ExchangeStatus.Cancelled }?.summary
+            chat.ui.value.exchanges.lastOrNull()?.status?.let { it as? com.wangzan101.mika.chat.ui.ExchangeStatus.Cancelled }?.summary
         }.also {
             note("stop summary: $it")
             compose.waitForIdle()

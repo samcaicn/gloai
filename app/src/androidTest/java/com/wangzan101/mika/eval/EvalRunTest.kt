@@ -6,7 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.DeviceTaskState
 import com.wangzan101.mika.cap.phone.a11y.DeviceSupport
-import com.wangzan101.mika.confirm.ConfirmationCopy
+import com.wangzan101.mika.task.ConfirmationCopy
 import com.wangzan101.mika.core.agent.SpeedFlags
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.assembly.recordedTools

@@ -35,10 +35,10 @@ import com.wangzan101.mika.task.TaskRun
 import com.wangzan101.mika.task.TaskService
 import com.wangzan101.mika.task.TaskService.Companion.isActive
 import com.wangzan101.mika.takeover.TakeoverQueue
-import com.wangzan101.mika.ui.FollowUpMode
-import com.wangzan101.mika.ui.ChatViewModel
-import com.wangzan101.mika.ui.Exchange
-import com.wangzan101.mika.ui.ExchangeStatus
+import com.wangzan101.mika.chat.ui.FollowUpMode
+import com.wangzan101.mika.chat.ui.ChatViewModel
+import com.wangzan101.mika.chat.ui.Exchange
+import com.wangzan101.mika.chat.ui.ExchangeStatus
 import com.wangzan101.mika.ui.ToolLabels
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -495,7 +495,7 @@ class CapsuleController(
             quitConfirm = false
         }
         override fun quit() {
-            com.wangzan101.mika.quit.MikaQuit.quit(context)
+            com.wangzan101.mika.MikaQuit.quit(context)
         }
         override fun closeKeptPage() {
             keeper.close(KeptPageClose.User)

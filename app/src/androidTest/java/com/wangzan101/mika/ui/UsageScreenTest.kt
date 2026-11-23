@@ -33,6 +33,9 @@ import org.junit.runner.RunWith
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.wangzan101.mika.settings.ui.UsageContent
+import com.wangzan101.mika.settings.ui.UsageCopy
+import com.wangzan101.mika.settings.ui.UsagePreset
 
 @RunWith(AndroidJUnit4::class)
 class UsageScreenTest {

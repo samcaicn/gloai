@@ -9,7 +9,7 @@ import com.wangzan101.mika.core.uistate.normalize
 import com.wangzan101.mika.core.userscreen.CapturedScreen
 import com.wangzan101.mika.core.userscreen.UserScreen
 import com.wangzan101.mika.core.userscreen.UserScreenText
-import com.wangzan101.mika.vision.BitmapImageOps
+import com.wangzan101.mika.media.BitmapImageOps
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

@@ -10,7 +10,7 @@ import com.wangzan101.mika.core.model.Usage
 import com.wangzan101.mika.core.usage.UsagePurpose
 import com.wangzan101.mika.core.usage.UsageSink
 import com.wangzan101.mika.core.usage.UsageSource
-import com.wangzan101.mika.ui.testDecisionConnection
+import com.wangzan101.mika.settings.ui.testDecisionConnection
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive

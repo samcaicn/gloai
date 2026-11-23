@@ -20,6 +20,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import com.wangzan101.mika.chat.ui.InteractiveOperationScreen
+import com.wangzan101.mika.chat.ui.PipMode
 
 class InteractiveOperationScreenTest {
     @get:Rule val compose = createComposeRule()

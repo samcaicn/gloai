@@ -3,7 +3,7 @@ package com.wangzan101.mika.task
 import android.util.Log
 import com.wangzan101.mika.BuildConfig
 import com.wangzan101.mika.chat.ConversationStore
-import com.wangzan101.mika.confirm.ConfirmationNotifier
+import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.JudgedOutcome
 import com.wangzan101.mika.core.agent.LearnGate
@@ -30,7 +30,7 @@ import com.wangzan101.mika.core.skills.SkillDrafter
 import com.wangzan101.mika.core.tool.ToolDispatcher
 import com.wangzan101.mika.core.tool.ToolIndex
 import com.wangzan101.mika.memory.MemoryRuntime
-import com.wangzan101.mika.replay.FileRouteStore
+import com.wangzan101.mika.knowledge.FileRouteStore
 import com.wangzan101.mika.record.RunStore
 import com.wangzan101.mika.settings.MemorySwitches
 import com.wangzan101.mika.ui.ToolLabels

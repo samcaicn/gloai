@@ -4,12 +4,12 @@ import com.wangzan101.mika.R
 import com.wangzan101.mika.cap.web.KeptPage
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural
-import com.wangzan101.mika.confirm.ConfirmationCopy
-import com.wangzan101.mika.confirm.ConfirmationNotifier
+import com.wangzan101.mika.task.ConfirmationCopy
+import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.ui.Exchange
-import com.wangzan101.mika.ui.ExchangeStatus
-import com.wangzan101.mika.ui.StatusCopy
+import com.wangzan101.mika.chat.ui.Exchange
+import com.wangzan101.mika.chat.ui.ExchangeStatus
+import com.wangzan101.mika.settings.ui.StatusCopy
 
 /**
  * 卡片里的一件事:[kind]/[line] 和胶囊上那件事的说法一致;[startedAt] 在跑、等条件时有(显示用时);

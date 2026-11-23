@@ -48,9 +48,9 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wangzan101.mika.ui.FollowUpMode
-import com.wangzan101.mika.ui.ScreenCopy
-import com.wangzan101.mika.ui.ScreenThumb
+import com.wangzan101.mika.chat.ui.FollowUpMode
+import com.wangzan101.mika.chat.ui.ScreenCopy
+import com.wangzan101.mika.chat.ui.ScreenThumb
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaTheme

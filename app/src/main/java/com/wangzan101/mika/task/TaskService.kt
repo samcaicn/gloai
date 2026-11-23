@@ -14,8 +14,8 @@ import android.util.Log
 import com.wangzan101.mika.core.action.ConfirmChoice
 import com.wangzan101.mika.R
 import com.wangzan101.mika.chat.ConversationStore
-import com.wangzan101.mika.confirm.ConfirmationCopy
-import com.wangzan101.mika.confirm.ConfirmationNotifier
+import com.wangzan101.mika.task.ConfirmationCopy
+import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.FailKind
 import com.wangzan101.mika.core.agent.TaskState
@@ -31,7 +31,7 @@ import com.wangzan101.mika.core.run.Attendance
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.takeover.Takeover
 import com.wangzan101.mika.ui.MainActivity
-import com.wangzan101.mika.ui.StatusCopy
+import com.wangzan101.mika.settings.ui.StatusCopy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart

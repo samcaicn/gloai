@@ -10,6 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
+import com.wangzan101.mika.settings.ui.RecoveryCopy
 
 class RecoveryCopyTest {
     @get:Rule val texts = ChineseTexts()

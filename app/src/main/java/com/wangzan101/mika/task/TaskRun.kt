@@ -49,7 +49,7 @@ import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.memory.MemoryRuntime
 import com.wangzan101.mika.record.RunHandle
 import com.wangzan101.mika.record.RunStore
-import com.wangzan101.mika.replay.FileRouteStore
+import com.wangzan101.mika.knowledge.FileRouteStore
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.RunApproval

@@ -27,6 +27,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExternalResource
+import com.wangzan101.mika.settings.ui.models.edit
 
 /** 真机完整链路：固定模型回复，真实 TaskRun、虚拟屏、系统设置与触控输入。 */
 class InlineScreenControlDeviceTest {

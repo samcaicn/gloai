@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import javax.crypto.KeyGenerator
+import com.wangzan101.mika.settings.ui.JevSettingsScreen
 
 @RunWith(AndroidJUnit4::class)
 class JevSettingsScreenTest {

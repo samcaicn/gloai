@@ -60,13 +60,13 @@ import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.chat.CurrentChat
 import com.wangzan101.mika.chat.SharedDraft
 import com.wangzan101.mika.chat.SharedDraftImporter
-import com.wangzan101.mika.confirm.ConfirmationNotifier
+import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.core.knowledge.GuideCatalog
 import com.wangzan101.mika.core.shell.BuiltinShellStatus
 import com.wangzan101.mika.i18n.AppLanguage
 import com.wangzan101.mika.memory.MemoryRuntime
 import com.wangzan101.mika.record.RunStore
-import com.wangzan101.mika.replay.FileRouteStore
+import com.wangzan101.mika.knowledge.FileRouteStore
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.Prerequisites
 import com.wangzan101.mika.settings.ProviderStore
@@ -79,8 +79,8 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.animationsOff
 import com.wangzan101.mika.ui.theme.appearanceDark
 import com.wangzan101.mika.ui.theme.systemBarsFor
-import com.wangzan101.mika.ui.voicecall.VoiceCallDeps
-import com.wangzan101.mika.ui.voicecall.VoiceCallHost
+import com.wangzan101.mika.voicecall.ui.VoiceCallDeps
+import com.wangzan101.mika.voicecall.ui.VoiceCallHost
 import com.wangzan101.mika.voicecall.VoiceCallService
 import com.wangzan101.mika.voicecall.VoiceCallTaskLauncher
 import kotlinx.coroutines.Dispatchers
@@ -88,6 +88,59 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.wangzan101.mika.about.ui.AboutCopy
+import com.wangzan101.mika.about.ui.AboutScreen
+import com.wangzan101.mika.about.ui.LicensesScreen
+import com.wangzan101.mika.about.ui.UpdateMirrorsScreen
+import com.wangzan101.mika.about.ui.UpdateReadyCapsule
+import com.wangzan101.mika.about.ui.UpdateSheet
+import com.wangzan101.mika.browser.ui.BrowserScreen
+import com.wangzan101.mika.browser.ui.WebSitesState
+import com.wangzan101.mika.calls.ui.CallModeScreen
+import com.wangzan101.mika.calls.ui.CallSettingsScreen
+import com.wangzan101.mika.chat.ui.AttachFiles
+import com.wangzan101.mika.chat.ui.ChatScreen
+import com.wangzan101.mika.chat.ui.ChatWithDrawer
+import com.wangzan101.mika.chat.ui.ScreensScreen
+import com.wangzan101.mika.chat.ui.ShareContent
+import com.wangzan101.mika.chat.ui.SourceScreen
+import com.wangzan101.mika.chat.ui.SourceViewModel
+import com.wangzan101.mika.chat.ui.draft
+import com.wangzan101.mika.chat.ui.evidenceSource
+import com.wangzan101.mika.chat.ui.isShareIntent
+import com.wangzan101.mika.chat.ui.readShare
+import com.wangzan101.mika.chat.ui.shareCanRead
+import com.wangzan101.mika.files.ui.FileLibraryScreen
+import com.wangzan101.mika.memory.ui.MemoryDataScreen
+import com.wangzan101.mika.memory.ui.MemoryViewModel
+import com.wangzan101.mika.memory.ui.Segment
+import com.wangzan101.mika.personal.ui.PersonalAgentScreen
+import com.wangzan101.mika.settings.ui.Fix
+import com.wangzan101.mika.settings.ui.LanguagePromptDialog
+import com.wangzan101.mika.settings.ui.PersonaScreen
+import com.wangzan101.mika.settings.ui.PhoneSetupScreen
+import com.wangzan101.mika.settings.ui.SettingsScreen
+import com.wangzan101.mika.settings.ui.UsageScreen
+import com.wangzan101.mika.settings.ui.models.ImageModelScreen
+import com.wangzan101.mika.settings.ui.models.ModelSetupScreen
+import com.wangzan101.mika.settings.ui.models.ModelsScreen
+import com.wangzan101.mika.settings.ui.models.refresh
+import com.wangzan101.mika.setup.ui.Onboarding
+import com.wangzan101.mika.setup.ui.OnboardingState
+import com.wangzan101.mika.setup.ui.OnboardingStep
+import com.wangzan101.mika.setup.ui.WelcomeScreen
+import com.wangzan101.mika.task.ui.PlansScreen
+import com.wangzan101.mika.task.ui.RunTimelineScreen
+import com.wangzan101.mika.task.ui.RunTimelineViewModel
+import com.wangzan101.mika.task.ui.TaskPlaybackScreen
+import com.wangzan101.mika.task.ui.TaskReportScreen
+import com.wangzan101.mika.task.ui.TaskReportViewModel
+import com.wangzan101.mika.teach.ui.TeachScreen
+import com.wangzan101.mika.voice.ui.RealtimeVoiceScreen
+import com.wangzan101.mika.voice.ui.SpeechModelScreen
+import com.wangzan101.mika.voice.ui.VoiceCatalogScreen
+import com.wangzan101.mika.voice.ui.VoiceModelScreen
+import com.wangzan101.mika.voice.ui.VoiceServicesScreen
 
 class MainActivity : ComponentActivity() {
     private lateinit var monitor: SystemStatusMonitor
@@ -235,7 +288,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         // 用户先前点了「完全退出」:打开 Mika 就回来,胶囊和退出时略过的启动工作在这里补上
-        com.wangzan101.mika.quit.MikaQuit.resume(this)
+        com.wangzan101.mika.MikaQuit.resume(this)
         monitor.start()
         // 每次打开都悄悄查一次新版本(两分钟内连着打开的只查一次),失败不吭声
         val app = application as MikaApp
@@ -869,7 +922,7 @@ private fun MikaRoot(
     // 通话页盖在整棵导航上:全屏 Dialog,收起后宿主还在,服务保活的通话随时能亮回来
     VoiceCallHost(voiceCallDeps, voiceCallSignal + localVoiceCall, onGoConfigure = { gate ->
         // 标准通话缺的是听和说的模型,去「通话方式」;实时通话缺凭据,去电话页的语音设置
-        nav.push(if (gate == com.wangzan101.mika.ui.voicecall.VoiceCallGateStage.NeedListenSpeak) Route.CallMode else Route.Calls)
+        nav.push(if (gate == com.wangzan101.mika.voicecall.ui.VoiceCallGateStage.NeedListenSpeak) Route.CallMode else Route.Calls)
     })
 
     var showLanguagePrompt by rememberSaveable { mutableStateOf(!AppLanguage.hasPrompted(context)) }

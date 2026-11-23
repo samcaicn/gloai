@@ -83,11 +83,11 @@ class SkillsSyncTest {
     }
 
     @Test fun cardLineForSandboxSteps() {
-        assertEquals("正在处理文件:python3 sum.py", com.wangzan101.mika.ui.StatusCopy.sandboxCommand("python3   sum.py", network = false))
-        assertEquals("正在处理文件:${"x".repeat(40)}… · 可联网", com.wangzan101.mika.ui.StatusCopy.sandboxCommand("x".repeat(50), network = true))
-        assertEquals("正在运行脚本", com.wangzan101.mika.ui.StatusCopy.sandboxScript(network = false))
-        assertEquals("第 3/10 页", com.wangzan101.mika.ui.StatusCopy.sandboxProgress("第 3/10 页", network = false))
+        assertEquals("正在处理文件:python3 sum.py", com.wangzan101.mika.settings.ui.StatusCopy.sandboxCommand("python3   sum.py", network = false))
+        assertEquals("正在处理文件:${"x".repeat(40)}… · 可联网", com.wangzan101.mika.settings.ui.StatusCopy.sandboxCommand("x".repeat(50), network = true))
+        assertEquals("正在运行脚本", com.wangzan101.mika.settings.ui.StatusCopy.sandboxScript(network = false))
+        assertEquals("第 3/10 页", com.wangzan101.mika.settings.ui.StatusCopy.sandboxProgress("第 3/10 页", network = false))
         // 命令里的零宽字符、改写方向的字符不上卡片
-        assertEquals("正在处理文件:rm a.txt", com.wangzan101.mika.ui.StatusCopy.sandboxCommand("rm \u202Ea\u200B.txt", network = false))
+        assertEquals("正在处理文件:rm a.txt", com.wangzan101.mika.settings.ui.StatusCopy.sandboxCommand("rm \u202Ea\u200B.txt", network = false))
     }
 }

@@ -8,6 +8,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import com.wangzan101.mika.record.RunStore
+import com.wangzan101.mika.task.ui.RunTimelineViewModel
+import com.wangzan101.mika.task.ui.TaskReport
+import com.wangzan101.mika.task.ui.TaskReportViewModel
+import com.wangzan101.mika.task.ui.replaySwipeDirection
 
 class TaskPlaybackActionsTest {
     @get:Rule val texts = ChineseTexts()

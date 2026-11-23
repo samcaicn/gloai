@@ -38,6 +38,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.UUID
+import com.wangzan101.mika.chat.ui.ChatScreen
+import com.wangzan101.mika.chat.ui.ChatViewModel
+import com.wangzan101.mika.chat.ui.ChatWithDrawer
+import com.wangzan101.mika.chat.ui.TaskActions
 
 /**
  * 侧栏项目分组 UI 测试:新建项目并在其中发起对话、聊天页顶部显示项目胶囊、

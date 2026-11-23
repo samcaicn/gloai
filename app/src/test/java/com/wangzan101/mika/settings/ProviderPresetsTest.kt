@@ -2,7 +2,7 @@ package com.wangzan101.mika.settings
 
 import com.wangzan101.mika.i18n.ChineseTexts
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.ui.AddForm
+import com.wangzan101.mika.settings.ui.models.AddForm
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals

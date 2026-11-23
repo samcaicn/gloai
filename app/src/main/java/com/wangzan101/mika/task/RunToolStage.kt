@@ -7,7 +7,7 @@ import com.wangzan101.mika.core.cap.web.PagePacing
 import com.wangzan101.mika.core.uistate.PlacePace
 import kotlin.random.Random
 import com.wangzan101.mika.core.action.OutwardPacing
-import com.wangzan101.mika.ui.StatusCopy
+import com.wangzan101.mika.settings.ui.StatusCopy
 import com.wangzan101.mika.cap.sandbox.GrantedFolderFiles
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.cap.phone.setup.RootShell
@@ -25,7 +25,7 @@ import com.wangzan101.mika.core.child.ChildAgentRunner
 import com.wangzan101.mika.core.vision.VisionService
 import com.wangzan101.mika.record.RunStore
 import com.wangzan101.mika.settings.FeatureFlags
-import com.wangzan101.mika.vision.BitmapImageOps
+import com.wangzan101.mika.media.BitmapImageOps
 import com.wangzan101.mika.cap.web.LazyWebPort
 import com.wangzan101.mika.cap.web.WebStack
 import kotlinx.coroutines.flow.first

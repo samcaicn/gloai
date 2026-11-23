@@ -30,6 +30,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.browser.ui.PageAskBar
+import com.wangzan101.mika.browser.ui.PageAskCopy
+import com.wangzan101.mika.browser.ui.PageAskOverlay
+import com.wangzan101.mika.browser.ui.PageChat
+import com.wangzan101.mika.chat.ui.ConversationRowContent
+import com.wangzan101.mika.chat.ui.DrawerConversation
 
 /**
  * 浏览器页上「问 Mika」那一块的几种样子:平时的输入条 → 干活中的半屏面板(光边、步骤、停止)→ 你在页面上动手后收成小卡片、

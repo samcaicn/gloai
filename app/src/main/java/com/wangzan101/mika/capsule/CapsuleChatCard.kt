@@ -49,8 +49,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.ui.MarkdownText
-import com.wangzan101.mika.ui.ScreenCopy
-import com.wangzan101.mika.ui.UserMessage
+import com.wangzan101.mika.chat.ui.ScreenCopy
+import com.wangzan101.mika.chat.ui.UserMessage
 import com.wangzan101.mika.ui.components.ScrollToBottomButton
 import com.wangzan101.mika.ui.components.glassSource
 import com.wangzan101.mika.ui.components.rememberGlassBackdrop

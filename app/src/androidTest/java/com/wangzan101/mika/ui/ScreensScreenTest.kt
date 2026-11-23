@@ -16,6 +16,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.chat.ui.ScreenRow
+import com.wangzan101.mika.chat.ui.ScreensContent
+import com.wangzan101.mika.chat.ui.ScreensCopy
 
 /** 「后台屏」那一页:空态、一块屏一行、点开小画面(只用假数据,不建真屏)。 */
 @RunWith(AndroidJUnit4::class)

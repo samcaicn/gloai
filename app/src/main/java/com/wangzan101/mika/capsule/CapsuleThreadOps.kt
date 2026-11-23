@@ -5,10 +5,10 @@ import androidx.compose.runtime.setValue
 import com.wangzan101.mika.chat.ConversationStore
 import kotlinx.coroutines.withContext
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
-import com.wangzan101.mika.confirm.ConfirmationNotifier
+import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.core.record.RunEvent
 import com.wangzan101.mika.task.TaskService.Companion.isActive
-import com.wangzan101.mika.ui.ScreenCopy
+import com.wangzan101.mika.chat.ui.ScreenCopy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull

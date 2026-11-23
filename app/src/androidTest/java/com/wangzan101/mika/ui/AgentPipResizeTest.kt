@@ -12,6 +12,9 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.chat.ui.AgentPip
+import com.wangzan101.mika.chat.ui.PipMode
+import com.wangzan101.mika.chat.ui.PipUi
 
 @RunWith(AndroidJUnit4::class)
 class AgentPipResizeTest {

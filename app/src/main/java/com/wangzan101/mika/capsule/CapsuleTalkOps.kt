@@ -5,8 +5,7 @@ import androidx.compose.runtime.setValue
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.MikaApp
-import com.wangzan101.mika.ui.VoiceCopy
-import com.wangzan101.mika.i18n.tr
+import com.wangzan101.mika.voice.ui.VoiceCopy
 import com.wangzan101.mika.voice.HoldToTalk
 import com.wangzan101.mika.voice.SpeechChoice
 import com.wangzan101.mika.voice.SpeechFailure

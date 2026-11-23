@@ -21,6 +21,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.chat.ui.KeptLine
+import com.wangzan101.mika.chat.ui.draft
 
 /** 留在后台运行的那一页在界面上:对话里那一行、胶囊、展开的卡片(实时画面、剩余时间、来源对话、两个按钮)。 */
 @RunWith(AndroidJUnit4::class)

@@ -20,8 +20,8 @@ import com.wangzan101.mika.core.uistate.ScreenPort
 import com.wangzan101.mika.core.run.*
 import com.wangzan101.mika.runAction
 import com.wangzan101.mika.core.workspace.SandboxError
-import com.wangzan101.mika.ui.DeviceDirectoriesScreen
-import com.wangzan101.mika.ui.FolderGrantPicker
+import com.wangzan101.mika.files.ui.DeviceDirectoriesScreen
+import com.wangzan101.mika.files.ui.FolderGrantPicker
 import com.wangzan101.mika.settings.DeviceDirectoryStore
 import com.wangzan101.mika.task.DeviceImportStore
 import com.wangzan101.mika.task.DeviceWorkspaceImports

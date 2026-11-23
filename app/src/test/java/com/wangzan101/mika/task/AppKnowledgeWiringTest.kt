@@ -15,7 +15,7 @@ import com.wangzan101.mika.core.record.RunEvent
 import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.knowledge.AppKnowledgeFiles
 import com.wangzan101.mika.settings.MemorySwitches
-import com.wangzan101.mika.ui.SkillsUi
+import com.wangzan101.mika.memory.ui.SkillsUi
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

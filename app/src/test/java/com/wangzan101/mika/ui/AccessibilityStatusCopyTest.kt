@@ -9,6 +9,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import com.wangzan101.mika.settings.ui.Fix
+import com.wangzan101.mika.settings.ui.StatusCopy
 
 class AccessibilityStatusCopyTest {
     @get:Rule val texts = ChineseTexts()

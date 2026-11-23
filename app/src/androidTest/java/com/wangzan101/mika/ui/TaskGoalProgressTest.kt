@@ -15,6 +15,10 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.chat.ui.ChatViewModel
+import com.wangzan101.mika.chat.ui.Exchange
+import com.wangzan101.mika.chat.ui.ExchangeStatus
+import com.wangzan101.mika.chat.ui.WorkBlock
 
 @RunWith(AndroidJUnit4::class)
 class TaskGoalProgressTest {

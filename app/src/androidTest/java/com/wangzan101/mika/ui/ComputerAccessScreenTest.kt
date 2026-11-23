@@ -23,6 +23,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.mcp.ui.ComputerAccessPage
+import com.wangzan101.mika.mcp.ui.ComputerAccessUi
 
 @RunWith(AndroidJUnit4::class)
 class ComputerAccessScreenTest {

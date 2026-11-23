@@ -7,6 +7,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.*
 import org.junit.Test
+import com.wangzan101.mika.settings.ui.JevPreset
+import com.wangzan101.mika.settings.ui.testDecisionConnection
 
 class JevSettingsTest {
     @Test fun connectionProbeOnlySendsTheFixedSyntheticInputAndChecksItsAnswer() = runTest {

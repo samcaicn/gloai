@@ -21,6 +21,9 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
+import com.wangzan101.mika.settings.ui.models.use
+import com.wangzan101.mika.task.ui.RunTimelineScreen
+import com.wangzan101.mika.task.ui.RunTimelineViewModel
 
 @RunWith(AndroidJUnit4::class)
 class OtlpSendDeviceTest {

@@ -16,7 +16,7 @@ import com.wangzan101.mika.core.shell.PairingChannelHealth
 import com.wangzan101.mika.core.shell.PairingDiscovery
 import com.wangzan101.mika.core.shell.PhoneSetupFlow
 import com.wangzan101.mika.ui.MainActivity
-import com.wangzan101.mika.ui.PhoneSetupCopy
+import com.wangzan101.mika.settings.ui.PhoneSetupCopy
 import com.wangzan101.mika.setup.PairingCodeReceiver
 
 /** 配对通知此刻该显示什么。 */

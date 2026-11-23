@@ -9,7 +9,7 @@ import java.nio.file.StandardCopyOption
 
 /**
  * 屏图落盘：`<dir>/knowledge/apps/<app>/screens.json`。原子写（临时文件 + ATOMIC_MOVE，旧文件在新文件就位前一直完好），
- * 读失败/损坏返回 null 不抛（先例 [com.wangzan101.mika.replay.FileRouteStore]）。全进程一把锁。
+ * 读失败/损坏返回 null 不抛（先例 [com.wangzan101.mika.knowledge.FileRouteStore]）。全进程一把锁。
  */
 class FileScreenMapStore(dir: File) : ScreenMapStore {
     private val root = File(dir, "knowledge/apps")

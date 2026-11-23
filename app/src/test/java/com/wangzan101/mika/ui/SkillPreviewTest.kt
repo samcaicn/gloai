@@ -2,6 +2,8 @@ package com.wangzan101.mika.ui
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import com.wangzan101.mika.skills.ui.readingSections
+import com.wangzan101.mika.skills.ui.skillPreviewBody
 
 class SkillPreviewTest {
     @Test fun railSkillDisplaysItsMarkdownBodyWithoutTheFileHeader() {

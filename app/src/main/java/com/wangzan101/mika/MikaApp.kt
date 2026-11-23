@@ -30,7 +30,7 @@ import com.wangzan101.mika.chat.ProjectDeleter
 import com.wangzan101.mika.chat.ProjectStore
 import com.wangzan101.mika.chat.SharedDraftStore
 import com.wangzan101.mika.chat.WorkspaceResolver
-import com.wangzan101.mika.confirm.ConfirmationNotifier
+import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.run.Outbox
 import com.wangzan101.mika.core.run.RunStore
@@ -43,7 +43,7 @@ import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.memory.AppLearningActions
 import com.wangzan101.mika.memory.MemoryRuntime
 import com.wangzan101.mika.record.DetailedTraces
-import com.wangzan101.mika.replay.FileRouteStore
+import com.wangzan101.mika.knowledge.FileRouteStore
 import com.wangzan101.mika.settings.ApprovalControl
 import com.wangzan101.mika.settings.ApprovalStore
 import com.wangzan101.mika.settings.FeatureFlags
@@ -65,10 +65,10 @@ import com.wangzan101.mika.task.TaskService
 import com.wangzan101.mika.task.TriggerOutcomes
 import com.wangzan101.mika.task.TriggerRuntime
 import com.wangzan101.mika.teach.TeachRuntime
-import com.wangzan101.mika.ui.AttachFiles
-import com.wangzan101.mika.ui.ChatCopy
-import com.wangzan101.mika.ui.ChatViewModel
-import com.wangzan101.mika.ui.TaskActions
+import com.wangzan101.mika.chat.ui.AttachFiles
+import com.wangzan101.mika.chat.ui.ChatCopy
+import com.wangzan101.mika.chat.ui.ChatViewModel
+import com.wangzan101.mika.chat.ui.TaskActions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -261,7 +261,7 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             override fun delivered(key: String) = TriggerRuntime.delivered(app, key)
             override fun actionFailed(key: String, reason: String) = TriggerRuntime.actionFailed(app, key, reason)
         }, conversations, scope, records = com.wangzan101.mika.record.RunStore(app).reader(), label = labels::label,
-            appLabel = { com.wangzan101.mika.confirm.ConfirmationNotifier.appLabel(app, it) },
+            appLabel = { com.wangzan101.mika.task.ConfirmationNotifier.appLabel(app, it) },
             languageTag = { com.wangzan101.mika.i18n.AppLanguage.resolved(app).tag },
             scheduledLocalChannel = localChannel(scheduled = true))
     }
@@ -678,7 +678,7 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
         environment.migrateLegacy(source)
     }
 
-    /** 用户重新打开 Mika:补上退出时略过的启动工作(见 [com.wangzan101.mika.quit.MikaQuit])。 */
+    /** 用户重新打开 Mika:补上退出时略过的启动工作(见 [com.wangzan101.mika.MikaQuit])。 */
     fun resumeAfterQuit() {
         runRecovery.recover()
         RuntimePreparer.ensure(this)

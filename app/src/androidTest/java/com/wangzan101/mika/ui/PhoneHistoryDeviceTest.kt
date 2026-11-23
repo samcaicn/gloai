@@ -22,6 +22,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import com.wangzan101.mika.mcp.ui.McpScreen
+import com.wangzan101.mika.settings.ui.models.use
 
 /** Uses the installed app's settings and computer server with locally created run data. */
 @RunWith(AndroidJUnit4::class)

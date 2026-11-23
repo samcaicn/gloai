@@ -11,6 +11,7 @@ import com.wangzan101.mika.ui.theme.MikaType
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.memory.ui.Row
 
 /**
  * 回答正文的两端对齐:排版要在真机上正常渲染,尤其是引用块——它外面是按内容量高的 Row,

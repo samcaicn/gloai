@@ -19,6 +19,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import com.wangzan101.mika.chat.ui.AgentPip
+import com.wangzan101.mika.chat.ui.PipUi
+import com.wangzan101.mika.settings.ui.models.use
 
 /** 真实后台 Activity → ImageReader → Task 预览帧 → 应用内画中画,检查整条链路。 */
 @RunWith(AndroidJUnit4::class)

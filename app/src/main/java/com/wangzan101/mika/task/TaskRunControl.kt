@@ -11,7 +11,7 @@ import com.wangzan101.mika.core.run.InputReceipt
 import com.wangzan101.mika.core.run.RunInbox
 import com.wangzan101.mika.core.run.RunInput
 import com.wangzan101.mika.core.run.RunId
-import com.wangzan101.mika.confirm.ConfirmationNotifier
+import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural
 import com.wangzan101.mika.takeover.Takeover

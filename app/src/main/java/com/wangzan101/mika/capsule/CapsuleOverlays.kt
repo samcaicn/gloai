@@ -10,10 +10,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.TransformOrigin
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.confirm.ConfirmationNotifier
+import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.task.TaskService
-import com.wangzan101.mika.ui.ChatCopy
-import com.wangzan101.mika.i18n.tr
+import com.wangzan101.mika.chat.ui.ChatCopy
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.animationsOff
 import kotlinx.coroutines.delay

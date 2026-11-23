@@ -18,6 +18,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.chat.ui.AgentPip
+import com.wangzan101.mika.chat.ui.PipUi
 
 /** 小窗按画面比例定大小:横向网页看得到左右两端,长屏手机的画面看得到最底下。 */
 @RunWith(AndroidJUnit4::class)
