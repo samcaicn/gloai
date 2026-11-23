@@ -252,18 +252,6 @@ SERVICES = [
           "https://www.npmjs.com/package/@modelcontextprotocol/server-slack", "chat",
           "npm", "@modelcontextprotocol/server-slack", "2025.4.25", auth="fields",
           fields=[("token", True, True, "env", "SLACK_BOT_TOKEN", "token")]),
-    stdio("github", "GitHub", "git", "mcp-server-github",
-          "https://www.npmjs.com/package/@modelcontextprotocol/server-github", "git",
-          "npm", "@modelcontextprotocol/server-github", "2025.4.8", auth="fields",
-          fields=[("token", True, True, "env", "GITHUB_PERSONAL_ACCESS_TOKEN", "token")]),
-    stdio("notion", "Notion", "docs", "notion-mcp-server",
-          "https://www.npmjs.com/package/@notionhq/notion-mcp-server", "docs",
-          "npm", "@notionhq/notion-mcp-server", "2.6.1", auth="fields",
-          fields=[("token", True, True, "env", "NOTION_TOKEN", "token")]),
-    stdio("sentry", "Sentry", "analytics", "mcp-server",
-          "https://www.npmjs.com/package/@sentry/mcp-server", "analytics",
-          "npm", "@sentry/mcp-server", "0.50.0", auth="fields",
-          fields=[("token", True, True, "env", "SENTRY_TOKEN", "token")]),
     stdio("playwright", "Playwright", "browser", "playwright-mcp-server",
           "https://www.npmjs.com/package/@executeautomation/playwright-mcp-server", "browser",
           "npm", "@executeautomation/playwright-mcp-server", "1.0.12"),
@@ -311,12 +299,16 @@ SERVICES = [
     remote("cockroachdb", "CockroachDB", "database", "https://cockroachlabs.cloud/mcp", "https://www.cockroachlabs.com/docs/cockroachcloud/connect-to-the-cockroachdb-cloud-mcp-server", "database"),
 
     # developer tools, git hosting, CI/CD, observability
+    # GitHub's sign-in server has no dynamic client registration, so its hosted server takes a personal access token.
+    remote("github", "GitHub", "git", "https://api.githubcopilot.com/mcp/", "https://github.com/github/github-mcp-server", "git",
+           auth="fields", fields=[("token", True, True, "bearer", "", "token")]),
     remote("gitlab", "GitLab", "git", "https://gitlab.com/api/v4/mcp", "https://docs.gitlab.com/user/gitlab_duo/model_context_protocol/mcp_server/", "git"),
     remote("gitee", "Gitee", "git", "https://api.gitee.com/mcp", "https://gitee.com/oschina/mcp-gitee", "git",
            auth="fields", fields=[("token", True, True, "bearer", "", "access_token")]),
     remote("buildkite", "Buildkite", "ci", "https://mcp.buildkite.com/mcp", "https://buildkite.com/docs/apis/mcp-server", "ci"),
     remote("datadog", "Datadog", "analytics", "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp", "https://docs.datadoghq.com/bits_ai/mcp_server/", "analytics"),
     remote("grafana", "Grafana", "analytics", "https://mcp.grafana.com/mcp", "https://grafana.com/docs/grafana-cloud/", "analytics"),
+    remote("sentry", "Sentry", "analytics", "https://mcp.sentry.dev/mcp", "https://docs.sentry.io/product/sentry-mcp/", "analytics"),
     remote("newrelic", "New Relic", "analytics", "https://mcp.newrelic.com/mcp/", "https://docs.newrelic.com/docs/agentic-ai/mcp/overview/", "analytics"),
 
     # cloud & hosting
@@ -330,6 +322,7 @@ SERVICES = [
     remote("digitalocean", "DigitalOcean", "cloud", "https://apps.mcp.digitalocean.com/mcp", "https://docs.digitalocean.com/reference/mcp/", "cloud"),
 
     # documents & productivity
+    remote("notion", "Notion", "docs", "https://mcp.notion.com/mcp", "https://developers.notion.com/docs/mcp", "docs"),
     remote("confluence", "Confluence", "docs", "https://mcp.atlassian.com/v1/mcp", "https://www.atlassian.com/platform/remote-mcp-server", "docs"),
     remote("dropbox", "Dropbox", "docs", "https://mcp.dropbox.com/mcp", "https://www.dropbox.com/developers", "docs"),
     remote("airtable", "Airtable", "docs", "https://mcp.airtable.com/mcp", "https://support.airtable.com/docs/using-the-airtable-mcp-server", "docs"),

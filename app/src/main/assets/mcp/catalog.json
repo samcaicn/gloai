@@ -406,168 +406,6 @@
    ]
   },
   {
-   "id": "github",
-   "name": "GitHub",
-   "summary": {
-    "en": "Git repositories and version control",
-    "zh": "Git 仓库与版本控制",
-    "zh-Hant": "Git 儲存庫與版本控制",
-    "ar": "مستودعات Git والتحكم بالإصدارات",
-    "fa": "مخازن Git و کنترل نسخه",
-    "ja": "Git リポジトリとバージョン管理",
-    "ko": "Git 저장소 및 버전 관리",
-    "es": "Repositorios Git y control de versiones",
-    "pt": "Repositórios Git e controle de versão",
-    "ru": "Репозитории Git и контроль версий",
-    "id": "Repositori Git dan kontrol versi",
-    "tr": "Git depoları ve sürüm kontrolü"
-   },
-   "category": "git",
-   "transport": "stdio",
-   "auth": "fields",
-   "officialSource": "https://www.npmjs.com/package/@modelcontextprotocol/server-github",
-   "command": [
-    "mcp-server-github"
-   ],
-   "packageSpec": {
-    "ecosystem": "npm",
-    "name": "@modelcontextprotocol/server-github",
-    "version": "2025.4.8",
-    "source": "https://www.npmjs.com/package/@modelcontextprotocol/server-github"
-   },
-   "fields": [
-    {
-     "id": "token",
-     "label": {
-      "en": "Token",
-      "zh": "令牌",
-      "zh-Hant": "權杖",
-      "ar": "رمز",
-      "fa": "توکن",
-      "ja": "トークン",
-      "ko": "토큰",
-      "es": "Token",
-      "pt": "Token",
-      "ru": "Токен",
-      "id": "Token",
-      "tr": "Belirteç"
-     },
-     "secret": true,
-     "required": true,
-     "target": "env",
-     "name": "GITHUB_PERSONAL_ACCESS_TOKEN"
-    }
-   ]
-  },
-  {
-   "id": "notion",
-   "name": "Notion",
-   "summary": {
-    "en": "Notes, documents and wikis",
-    "zh": "笔记、文档与维基",
-    "zh-Hant": "筆記、文件與維基",
-    "ar": "الملاحظات والمستندات والويكي",
-    "fa": "یادداشت‌ها، اسناد و ویکی‌ها",
-    "ja": "ノート・文書・Wiki",
-    "ko": "메모, 문서 및 위키",
-    "es": "Notas, documentos y wikis",
-    "pt": "Notas, documentos e wikis",
-    "ru": "Заметки, документы и вики",
-    "id": "Catatan, dokumen, dan wiki",
-    "tr": "Notlar, belgeler ve wikiler"
-   },
-   "category": "docs",
-   "transport": "stdio",
-   "auth": "fields",
-   "officialSource": "https://www.npmjs.com/package/@notionhq/notion-mcp-server",
-   "command": [
-    "notion-mcp-server"
-   ],
-   "packageSpec": {
-    "ecosystem": "npm",
-    "name": "@notionhq/notion-mcp-server",
-    "version": "2.6.1",
-    "source": "https://www.npmjs.com/package/@notionhq/notion-mcp-server"
-   },
-   "fields": [
-    {
-     "id": "token",
-     "label": {
-      "en": "Token",
-      "zh": "令牌",
-      "zh-Hant": "權杖",
-      "ar": "رمز",
-      "fa": "توکن",
-      "ja": "トークン",
-      "ko": "토큰",
-      "es": "Token",
-      "pt": "Token",
-      "ru": "Токен",
-      "id": "Token",
-      "tr": "Belirteç"
-     },
-     "secret": true,
-     "required": true,
-     "target": "env",
-     "name": "NOTION_TOKEN"
-    }
-   ]
-  },
-  {
-   "id": "sentry",
-   "name": "Sentry",
-   "summary": {
-    "en": "Query and visualize data",
-    "zh": "查询和可视化数据",
-    "zh-Hant": "查詢和視覺化資料",
-    "ar": "الاستعلام عن البيانات وتصويرها",
-    "fa": "پرس‌وجو و تصویرسازی داده‌ها",
-    "ja": "データのクエリと可視化",
-    "ko": "데이터 쿼리 및 시각화",
-    "es": "Consultar y visualizar datos",
-    "pt": "Consultar e visualizar dados",
-    "ru": "Запросы к данным и визуализация",
-    "id": "Mengkueri dan memvisualisasikan data",
-    "tr": "Verileri sorgulama ve görselleştirme"
-   },
-   "category": "analytics",
-   "transport": "stdio",
-   "auth": "fields",
-   "officialSource": "https://www.npmjs.com/package/@sentry/mcp-server",
-   "command": [
-    "mcp-server"
-   ],
-   "packageSpec": {
-    "ecosystem": "npm",
-    "name": "@sentry/mcp-server",
-    "version": "0.50.0",
-    "source": "https://www.npmjs.com/package/@sentry/mcp-server"
-   },
-   "fields": [
-    {
-     "id": "token",
-     "label": {
-      "en": "Token",
-      "zh": "令牌",
-      "zh-Hant": "權杖",
-      "ar": "رمز",
-      "fa": "توکن",
-      "ja": "トークン",
-      "ko": "토큰",
-      "es": "Token",
-      "pt": "Token",
-      "ru": "Токен",
-      "id": "Token",
-      "tr": "Belirteç"
-     },
-     "secret": true,
-     "required": true,
-     "target": "env",
-     "name": "SENTRY_TOKEN"
-    }
-   ]
-  },
-  {
    "id": "playwright",
    "name": "Playwright",
    "summary": {
@@ -1146,6 +984,52 @@
    "endpoint": "https://cockroachlabs.cloud/mcp"
   },
   {
+   "id": "github",
+   "name": "GitHub",
+   "summary": {
+    "en": "Git repositories and version control",
+    "zh": "Git 仓库与版本控制",
+    "zh-Hant": "Git 儲存庫與版本控制",
+    "ar": "مستودعات Git والتحكم بالإصدارات",
+    "fa": "مخازن Git و کنترل نسخه",
+    "ja": "Git リポジトリとバージョン管理",
+    "ko": "Git 저장소 및 버전 관리",
+    "es": "Repositorios Git y control de versiones",
+    "pt": "Repositórios Git e controle de versão",
+    "ru": "Репозитории Git и контроль версий",
+    "id": "Repositori Git dan kontrol versi",
+    "tr": "Git depoları ve sürüm kontrolü"
+   },
+   "category": "git",
+   "transport": "streamable-http",
+   "auth": "fields",
+   "officialSource": "https://github.com/github/github-mcp-server",
+   "endpoint": "https://api.githubcopilot.com/mcp/",
+   "fields": [
+    {
+     "id": "token",
+     "label": {
+      "en": "Token",
+      "zh": "令牌",
+      "zh-Hant": "權杖",
+      "ar": "رمز",
+      "fa": "توکن",
+      "ja": "トークン",
+      "ko": "토큰",
+      "es": "Token",
+      "pt": "Token",
+      "ru": "Токен",
+      "id": "Token",
+      "tr": "Belirteç"
+     },
+     "secret": true,
+     "required": true,
+     "target": "bearer",
+     "name": ""
+    }
+   ]
+  },
+  {
    "id": "gitlab",
    "name": "GitLab",
    "summary": {
@@ -1282,6 +1166,29 @@
    "auth": "oauth",
    "officialSource": "https://grafana.com/docs/grafana-cloud/",
    "endpoint": "https://mcp.grafana.com/mcp"
+  },
+  {
+   "id": "sentry",
+   "name": "Sentry",
+   "summary": {
+    "en": "Query and visualize data",
+    "zh": "查询和可视化数据",
+    "zh-Hant": "查詢和視覺化資料",
+    "ar": "الاستعلام عن البيانات وتصويرها",
+    "fa": "پرس‌وجو و تصویرسازی داده‌ها",
+    "ja": "データのクエリと可視化",
+    "ko": "데이터 쿼리 및 시각화",
+    "es": "Consultar y visualizar datos",
+    "pt": "Consultar e visualizar dados",
+    "ru": "Запросы к данным и визуализация",
+    "id": "Mengkueri dan memvisualisasikan data",
+    "tr": "Verileri sorgulama ve görselleştirme"
+   },
+   "category": "analytics",
+   "transport": "streamable-http",
+   "auth": "oauth",
+   "officialSource": "https://docs.sentry.io/product/sentry-mcp/",
+   "endpoint": "https://mcp.sentry.dev/mcp"
   },
   {
    "id": "newrelic",
@@ -1489,6 +1396,29 @@
    "auth": "oauth",
    "officialSource": "https://docs.digitalocean.com/reference/mcp/",
    "endpoint": "https://apps.mcp.digitalocean.com/mcp"
+  },
+  {
+   "id": "notion",
+   "name": "Notion",
+   "summary": {
+    "en": "Notes, documents and wikis",
+    "zh": "笔记、文档与维基",
+    "zh-Hant": "筆記、文件與維基",
+    "ar": "الملاحظات والمستندات والويكي",
+    "fa": "یادداشت‌ها، اسناد و ویکی‌ها",
+    "ja": "ノート・文書・Wiki",
+    "ko": "메모, 문서 및 위키",
+    "es": "Notas, documentos y wikis",
+    "pt": "Notas, documentos e wikis",
+    "ru": "Заметки, документы и вики",
+    "id": "Catatan, dokumen, dan wiki",
+    "tr": "Notlar, belgeler ve wikiler"
+   },
+   "category": "docs",
+   "transport": "streamable-http",
+   "auth": "oauth",
+   "officialSource": "https://developers.notion.com/docs/mcp",
+   "endpoint": "https://mcp.notion.com/mcp"
   },
   {
    "id": "confluence",

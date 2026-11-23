@@ -583,4 +583,32 @@ class McpServerStoreTest {
         assertEquals("cn", reopened.servers.value.single().fieldValues["region"])
         assertEquals("encrypted-only", reopened.secret(valid.id, "apiKey"))
     }
+
+    /** 目录里同一预设换了形态(本地包 → 官方远程 OAuth):重连时旧形态留下的秘密不能让新配置永久「未知字段」。 */
+    @Test fun replacingPresetWithNewShapeDropsSecretsTheNewShapeDoesNotUse() {
+        val label = McpCopy(mapOf("en" to "Token"))
+        val local = McpPreset(
+            id = "docs", name = "Docs", summary = McpCopy(mapOf("en" to "Docs")), category = "docs",
+            transport = "stdio", auth = "fields", command = listOf("docs-mcp"),
+            fields = listOf(McpPresetField("token", label, secret = true, required = true, target = "env", name = "DOCS_TOKEN")),
+            officialSource = "https://docs.example/mcp",
+        )
+        val remote = local.copy(transport = "streamable-http", auth = "oauth", command = emptyList(), endpoint = "https://mcp.docs.example/mcp", fields = emptyList())
+        val s = store()
+        val old = s.savePreset(McpServerConfig(name = "Docs", url = "", command = "docs-mcp", transport = "stdio", auth = "fields", presetId = "docs", presetSnapshot = local)).getOrThrow()
+        s.setSecret(old.id, "token", "old-local-token")
+        s.setOAuthTokens(old.id, McpOAuthTokens(accessToken = "stale", clientId = "c", tokenEndpoint = "https://oauth.example/token"))
+
+        // 同一形态重试:秘密和授权都保留
+        s.savePreset(s.servers.value.single()).getOrThrow()
+        assertEquals("old-local-token", s.secret(old.id, "token"))
+        assertEquals("stale", s.oauthTokens(old.id)?.accessToken)
+
+        // 换成远程 OAuth:沿用同一 id,但旧字段秘密和发给旧目标的令牌都清掉
+        val replaced = s.savePreset(McpServerConfig(name = "Docs", url = remote.endpoint, transport = "streamable-http", auth = "oauth", presetId = "docs", presetSnapshot = remote)).getOrThrow()
+        assertEquals(old.id, replaced.id)
+        assertTrue(s.secrets(old.id).isEmpty())
+        assertEquals(null, s.oauthTokens(old.id))
+        assertEquals(1, s.servers.value.size)
+    }
 }

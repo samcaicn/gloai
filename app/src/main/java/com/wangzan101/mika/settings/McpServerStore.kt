@@ -211,7 +211,23 @@ class McpServerStore(
         val next = if (existing != null) _servers.value.map { if (it.id == existing.id) effective else it } else _servers.value + effective
         saveConfigs(next)
         _servers.value = next
+        if (existing != null) dropStaleSecrets(existing, effective)
         return Result.success(effective)
+    }
+
+    /**
+     * 目录里预设换了形态(如本地包 → 官方远程 OAuth)后按同一 id 替换:新快照不声明的字段秘密删掉,
+     * 否则 resolver 会永远报「未知字段」;连接目标(地址/传输/认证)变了,发给旧目标的令牌也一并作废。
+     */
+    private fun dropStaleSecrets(old: McpServerConfig, new: McpServerConfig) {
+        val declared = new.presetSnapshot?.fields?.map { it.id }?.toSet() ?: return
+        (fieldSecrets.all(new.id).keys - declared).forEach { fieldSecrets.set(new.id, it, null) }
+        val sameTarget = old.url == new.url && old.command == new.command &&
+            old.transport == new.transport && old.auth == new.auth
+        if (!sameTarget) {
+            setToken(new.id, null)
+            clearOAuth(new.id)
+        }
     }
 
     /**
