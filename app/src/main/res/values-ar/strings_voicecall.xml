@@ -41,4 +41,16 @@
     <string name="voicecall_go_setup">الذهاب إلى الإعداد</string>
     <string name="voicecall_protocol_title">المكالمة الصوتية تحتاج إعدادًا متوافقًا</string>
     <string name="voicecall_protocol_body">المكالمة الصوتية تعمل فقط مع إعداد صوت فوري ثنائي الاتجاه. الإعداد المحدد يستخدم بروتوكولًا آخر — أضف إعدادًا متوافقًا للبدء.</string>
+    <string name="voicecall_title">في مكالمة مع Mika</string>
+    <string name="voicecall_status_listening">أستمع</string>
+    <string name="voicecall_status_thinking">أفكّر…</string>
+    <string name="voicecall_status_speaking">Mika تتحدث</string>
+    <string name="voicecall_status_working">أعمل على ذلك · يمكنك متابعة الحديث</string>
+    <string name="voicecall_status_muted">الميكروفون مكتوم</string>
+    <string name="voicecall_mute">كتم</string>
+    <string name="voicecall_unmute">إلغاء الكتم</string>
+    <string name="voicecall_keyboard">كتابة</string>
+    <string name="voicecall_connected_at">متصل · %1$s</string>
+    <string name="voicecall_ended_after">%1$s · %2$s</string>
+    <string name="voicecall_back_to_chat">العودة إلى المحادثة</string>
 </resources>

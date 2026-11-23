@@ -41,4 +41,16 @@
     <string name="voicecall_go_setup">설정하기</string>
     <string name="voicecall_protocol_title">음성 통화에는 호환되는 설정이 필요해요</string>
     <string name="voicecall_protocol_body">음성 통화는 양방향 실시간 음성 설정에서만 동작해요. 지금 선택된 설정은 다른 프로토콜이에요. 호환되는 설정을 추가하면 시작할 수 있어요.</string>
+    <string name="voicecall_title">Mika와 통화 중</string>
+    <string name="voicecall_status_listening">듣고 있어요</string>
+    <string name="voicecall_status_thinking">생각 중…</string>
+    <string name="voicecall_status_speaking">Mika가 말하는 중</string>
+    <string name="voicecall_status_working">작업 중 · 계속 말해도 돼요</string>
+    <string name="voicecall_status_muted">음소거됨</string>
+    <string name="voicecall_mute">음소거</string>
+    <string name="voicecall_unmute">음소거 해제</string>
+    <string name="voicecall_keyboard">입력</string>
+    <string name="voicecall_connected_at">연결됨 · %1$s</string>
+    <string name="voicecall_ended_after">%1$s · %2$s</string>
+    <string name="voicecall_back_to_chat">채팅으로 돌아가기</string>
 </resources>

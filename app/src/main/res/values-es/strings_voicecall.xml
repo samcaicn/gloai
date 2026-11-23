@@ -41,4 +41,16 @@
     <string name="voicecall_go_setup">Configurar</string>
     <string name="voicecall_protocol_title">La llamada de voz necesita una configuración compatible</string>
     <string name="voicecall_protocol_body">La llamada de voz solo funciona con una configuración de voz en tiempo real bidireccional. La seleccionada usa otro protocolo; añade una compatible para empezar.</string>
+    <string name="voicecall_title">En llamada con Mika</string>
+    <string name="voicecall_status_listening">Escuchando</string>
+    <string name="voicecall_status_thinking">Pensando…</string>
+    <string name="voicecall_status_speaking">Mika está hablando</string>
+    <string name="voicecall_status_working">Trabajando · puedes seguir hablando</string>
+    <string name="voicecall_status_muted">Silenciado</string>
+    <string name="voicecall_mute">Silenciar</string>
+    <string name="voicecall_unmute">Activar micrófono</string>
+    <string name="voicecall_keyboard">Escribir</string>
+    <string name="voicecall_connected_at">Conectado · %1$s</string>
+    <string name="voicecall_ended_after">%1$s · %2$s</string>
+    <string name="voicecall_back_to_chat">Volver al chat</string>
 </resources>

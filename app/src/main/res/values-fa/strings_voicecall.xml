@@ -41,4 +41,16 @@
     <string name="voicecall_go_setup">رفتن به تنظیمات</string>
     <string name="voicecall_protocol_title">گفتگوی صوتی به تنظیمات سازگار نیاز دارد</string>
     <string name="voicecall_protocol_body">گفتگوی صوتی فقط با تنظیمات صدای بی‌درنگ دوطرفه کار می‌کند. تنظیم انتخاب‌شده پروتکل دیگری دارد — برای شروع یک تنظیم سازگار اضافه کنید.</string>
+    <string name="voicecall_title">در تماس با Mika</string>
+    <string name="voicecall_status_listening">در حال شنیدن</string>
+    <string name="voicecall_status_thinking">در حال فکر کردن…</string>
+    <string name="voicecall_status_speaking">Mika در حال صحبت است</string>
+    <string name="voicecall_status_working">در حال انجام · می‌توانی ادامه بدهی</string>
+    <string name="voicecall_status_muted">بی‌صدا</string>
+    <string name="voicecall_mute">بی‌صدا کردن</string>
+    <string name="voicecall_unmute">باصدا کردن</string>
+    <string name="voicecall_keyboard">تایپ</string>
+    <string name="voicecall_connected_at">وصل شد · %1$s</string>
+    <string name="voicecall_ended_after">%1$s · %2$s</string>
+    <string name="voicecall_back_to_chat">بازگشت به گفتگو</string>
 </resources>

@@ -41,4 +41,16 @@
     <string name="voicecall_go_setup">Настроить</string>
     <string name="voicecall_protocol_title">Для голосового звонка нужна совместимая настройка</string>
     <string name="voicecall_protocol_body">Голосовой звонок работает только с двусторонней настройкой голоса в реальном времени. Выбранная использует другой протокол — добавьте совместимую, чтобы начать.</string>
+    <string name="voicecall_title">Звонок с Mika</string>
+    <string name="voicecall_status_listening">Слушаю</string>
+    <string name="voicecall_status_thinking">Думаю…</string>
+    <string name="voicecall_status_speaking">Mika говорит</string>
+    <string name="voicecall_status_working">Выполняю · можно продолжать</string>
+    <string name="voicecall_status_muted">Микрофон выключен</string>
+    <string name="voicecall_mute">Выключить микрофон</string>
+    <string name="voicecall_unmute">Включить микрофон</string>
+    <string name="voicecall_keyboard">Ввести текст</string>
+    <string name="voicecall_connected_at">Соединено · %1$s</string>
+    <string name="voicecall_ended_after">%1$s · %2$s</string>
+    <string name="voicecall_back_to_chat">Вернуться в чат</string>
 </resources>

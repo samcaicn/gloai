@@ -41,4 +41,16 @@
     <string name="voicecall_go_setup">Set up</string>
     <string name="voicecall_protocol_title">Voice chat needs a compatible setup</string>
     <string name="voicecall_protocol_body">Voice chat only runs on a duplex realtime voice setup. The selected one uses a different protocol — add a compatible setup to start.</string>
+    <string name="voicecall_title">On a call with Mika</string>
+    <string name="voicecall_status_listening">Listening</string>
+    <string name="voicecall_status_thinking">Thinking…</string>
+    <string name="voicecall_status_speaking">Mika is talking</string>
+    <string name="voicecall_status_working">Working on it · keep talking</string>
+    <string name="voicecall_status_muted">Muted</string>
+    <string name="voicecall_mute">Mute</string>
+    <string name="voicecall_unmute">Unmute</string>
+    <string name="voicecall_keyboard">Type</string>
+    <string name="voicecall_connected_at">Connected · %1$s</string>
+    <string name="voicecall_ended_after">%1$s · %2$s</string>
+    <string name="voicecall_back_to_chat">Back to chat</string>
 </resources>

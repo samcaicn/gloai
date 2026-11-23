@@ -41,4 +41,16 @@
     <string name="voicecall_go_setup">Ayarla</string>
     <string name="voicecall_protocol_title">Sesli sohbet uyumlu bir kurulum gerektirir</string>
     <string name="voicecall_protocol_body">Sesli sohbet yalnızca çift yönlü gerçek zamanlı ses kurulumuyla çalışır. Seçili olan farklı bir protokol kullanıyor — başlamak için uyumlu bir kurulum ekleyin.</string>
+    <string name="voicecall_title">Mika ile görüşmede</string>
+    <string name="voicecall_status_listening">Dinliyor</string>
+    <string name="voicecall_status_thinking">Düşünüyor…</string>
+    <string name="voicecall_status_speaking">Mika konuşuyor</string>
+    <string name="voicecall_status_working">Çalışıyor · konuşmaya devam edebilirsin</string>
+    <string name="voicecall_status_muted">Sessizde</string>
+    <string name="voicecall_mute">Sessize al</string>
+    <string name="voicecall_unmute">Sesi aç</string>
+    <string name="voicecall_keyboard">Yaz</string>
+    <string name="voicecall_connected_at">Bağlandı · %1$s</string>
+    <string name="voicecall_ended_after">%1$s · %2$s</string>
+    <string name="voicecall_back_to_chat">Sohbete dön</string>
 </resources>

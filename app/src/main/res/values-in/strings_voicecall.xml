@@ -41,4 +41,16 @@
     <string name="voicecall_go_setup">Buka pengaturan</string>
     <string name="voicecall_protocol_title">Panggilan suara butuh pengaturan yang kompatibel</string>
     <string name="voicecall_protocol_body">Panggilan suara hanya berjalan pada pengaturan suara real-time dua arah. Yang dipilih memakai protokol lain — tambahkan yang kompatibel untuk mulai.</string>
+    <string name="voicecall_title">Sedang menelepon Mika</string>
+    <string name="voicecall_status_listening">Mendengarkan</string>
+    <string name="voicecall_status_thinking">Berpikir…</string>
+    <string name="voicecall_status_speaking">Mika sedang bicara</string>
+    <string name="voicecall_status_working">Sedang dikerjakan · boleh terus bicara</string>
+    <string name="voicecall_status_muted">Dibisukan</string>
+    <string name="voicecall_mute">Bisukan</string>
+    <string name="voicecall_unmute">Bunyikan</string>
+    <string name="voicecall_keyboard">Ketik</string>
+    <string name="voicecall_connected_at">Tersambung · %1$s</string>
+    <string name="voicecall_ended_after">%1$s · %2$s</string>
+    <string name="voicecall_back_to_chat">Kembali ke obrolan</string>
 </resources>

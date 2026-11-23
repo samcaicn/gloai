@@ -41,4 +41,16 @@
     <string name="voicecall_go_setup">設定へ</string>
     <string name="voicecall_protocol_title">音声通話には対応する設定が必要です</string>
     <string name="voicecall_protocol_body">音声通話は双方向リアルタイム音声の設定でのみ動きます。現在の設定は別のプロトコルです。対応する設定を追加すると開始できます。</string>
+    <string name="voicecall_title">Mika と通話中</string>
+    <string name="voicecall_status_listening">聞いています</string>
+    <string name="voicecall_status_thinking">考え中…</string>
+    <string name="voicecall_status_speaking">Mika が話しています</string>
+    <string name="voicecall_status_working">作業中 · 話し続けて OK</string>
+    <string name="voicecall_status_muted">ミュート中</string>
+    <string name="voicecall_mute">ミュート</string>
+    <string name="voicecall_unmute">ミュート解除</string>
+    <string name="voicecall_keyboard">入力</string>
+    <string name="voicecall_connected_at">接続 · %1$s</string>
+    <string name="voicecall_ended_after">%1$s · %2$s</string>
+    <string name="voicecall_back_to_chat">チャットに戻る</string>
 </resources>

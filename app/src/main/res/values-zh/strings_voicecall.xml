@@ -41,4 +41,16 @@
     <string name="voicecall_go_setup">去配置</string>
     <string name="voicecall_protocol_title">语音通话需要兼容的配置</string>
     <string name="voicecall_protocol_body">语音通话只用双向实时语音协议；当前配置用的是另一种协议。新增一套兼容配置即可开始。</string>
+    <string name="voicecall_title">和 Mika 通话中</string>
+    <string name="voicecall_status_listening">在听你说</string>
+    <string name="voicecall_status_thinking">在想…</string>
+    <string name="voicecall_status_speaking">Mika 在说</string>
+    <string name="voicecall_status_working">正在办事 · 可以接着聊</string>
+    <string name="voicecall_status_muted">已静音</string>
+    <string name="voicecall_mute">静音</string>
+    <string name="voicecall_unmute">取消静音</string>
+    <string name="voicecall_keyboard">打字</string>
+    <string name="voicecall_connected_at">已接通 · %1$s</string>
+    <string name="voicecall_ended_after">%1$s · %2$s</string>
+    <string name="voicecall_back_to_chat">回到聊天</string>
 </resources>

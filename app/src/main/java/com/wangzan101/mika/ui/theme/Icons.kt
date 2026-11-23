@@ -54,6 +54,13 @@ object MikaIcons {
     val Trash = stroke("trash", "M4 7 h16 M9 7 V4.5 h6 V7", "M6.5 7 l1 13 h9 l1 -13")
     /** 语音转文字:一支话筒。 */
     val Mic = stroke("mic", "M9 6 a3 3 0 0 1 6 0 v5 a3 3 0 0 1 -6 0 z", "M5 11 a7 7 0 0 0 14 0", "M12 18 v3")
+    /** 麦克风关了:话筒加一道斜线(通话静音)。 */
+    val MicOff = stroke("mic-off", "M9 6 a3 3 0 0 1 6 0 v5 a3 3 0 0 1 -6 0 z", "M5 11 a7 7 0 0 0 14 0", "M12 18 v3", "M4 4 l16 16")
+    /** 键盘:改用打字。 */
+    val Keyboard = stroke(
+        "keyboard", "M5.5 6 h13 a2.5 2.5 0 0 1 2.5 2.5 v7 a2.5 2.5 0 0 1 -2.5 2.5 h-13 a2.5 2.5 0 0 1 -2.5 -2.5 v-7 a2.5 2.5 0 0 1 2.5 -2.5 z",
+        "M7 10 h.01 M10.3 10 h.01 M13.7 10 h.01 M17 10 h.01 M8 14.5 h8",
+    )
     /** 轻量模型:一片叶子。 */
     val Leaf = stroke("leaf", "M5 19 c0 -8 5 -13 14 -14 c0 9 -5 14 -13 14", "M5 19 l7 -7")
     val Apps = stroke(
