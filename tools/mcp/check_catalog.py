@@ -8,19 +8,24 @@ enforces — format version, unique IDs, transport/auth/field targets, template 
 completeness — and emits a JSON report. A preset is only ever listed as structurally "ok", never as a
 reachable service.
 
-Online mode (--online) additionally performs a secret-free MCP handshake + tools/list against each
-remote endpoint. A preset is marked "verified" only when the protocol handshake succeeds; any network
-failure is reported as "unreachable" and never as verified. stdio presets are "unsupported" here
+Online mode (--online) additionally performs a secret-free MCP handshake against each remote
+endpoint. A preset is marked "verified" only when the protocol handshake succeeds, and
+"auth_required" only when it answers 401 with OAuth discovery the app can complete (resource
+metadata + authorization server with dynamic client registration); any network failure is reported
+as "unreachable" and never as verified. stdio presets are "unsupported" here
 because they run locally and cannot be probed over the network.
 
 The report is written to stdout (or --output). It never modifies the catalog or claims anything that
 was not actually observed.
 
 Usage:
-  check_catalog.py CATALOG.json [--online] [--timeout SECONDS] [--output REPORT.json]
+  check_catalog.py CATALOG.json [--online [--require-online]] [--timeout SECONDS] [--output REPORT.json]
+
+--require-online exits 1 unless every remote preset is "verified" or "auth_required".
 """
 
 import argparse
+import concurrent.futures
 import json
 import re
 import sys
@@ -213,35 +218,121 @@ def validate_catalog(catalog):
     }
 
 
-def classify_probe(kind, detail=""):
-    """Map a raw probe outcome to a catalog status. Network failures are never 'verified'."""
+def classify_probe(kind, detail="", auth=None):
+    """Map a raw probe outcome to a catalog status. Network failures are never 'verified'.
+
+    'auth_required' means the endpoint is a live MCP server that answered 401 with OAuth resource
+    metadata. For an oauth preset the app must also be able to finish sign-in on its own (an
+    authorization server with dynamic client registration); a fields preset sends the user's token
+    itself, so published resource metadata is enough.
+    """
     if kind == "mcp_ok":
         return "verified"
-    if kind == "not_mcp":
+    if kind == "oauth_ok":
+        return "auth_required"
+    if kind == "oauth_no_registration":
+        return "auth_required" if auth == "fields" else "unsupported"
+    if kind in ("not_mcp", "oauth_unusable", "templated"):
         return "unsupported"
     if kind in ("network_error", "http_error", "timeout"):
         return "unreachable"
     return "unsupported"
 
 
-def probe_http(endpoint, timeout):
-    """Secret-free MCP initialize over Streamable HTTP. Returns (kind, detail)."""
-    req = urllib.request.Request(
-        endpoint,
-        data=INITIALIZE_BODY.encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Accept": "application/json, text/event-stream",
-            "User-Agent": "mika-catalog-check/0.0.0",
-        },
-        method="POST",
-    )
+_resourceMetadataParam = re.compile(r'resource_metadata=(?:"([^"]+)"|([^,\s]+))')
+
+
+def _get_json(url, timeout):
+    req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "mika-catalog-check/0.0.0"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            body = resp.read(4096)
+            if resp.status != 200:
+                return None
+            obj = json.loads(resp.read(65536).decode("utf-8", "replace"))
+            return obj if isinstance(obj, dict) else None
+    except Exception:  # noqa: BLE001 — any failure just means "not found here"
+        return None
+
+
+def _well_known(base, suffix):
+    u = urlsplit(base)
+    path = u.path.rstrip("/")
+    return f"{u.scheme}://{u.netloc}/.well-known/{suffix}{path}"
+
+
+def discover_oauth(endpoint, www_authenticate, timeout):
+    """Follow the app's OAuth discovery (RFC 9728 -> RFC 8414 -> RFC 7591). Returns (kind, detail).
+
+    Order mirrors McpOAuth.discover: origin resource metadata, path-inserted resource metadata, then
+    the WWW-Authenticate resource_metadata hint; without resource metadata the endpoint origin is the
+    authorization server (the app's fallback too). 'oauth_ok' requires a registration endpoint,
+    because the app signs in as a dynamically registered public client and has no other way to obtain
+    a client id; resource metadata without one is 'oauth_no_registration'.
+    """
+    u = urlsplit(endpoint)
+    origin = f"{u.scheme}://{u.netloc}"
+    candidates = [origin + "/.well-known/oauth-protected-resource"]
+    if u.path not in ("", "/"):
+        candidates.append(_well_known(endpoint, "oauth-protected-resource"))
+    m = _resourceMetadataParam.search(www_authenticate or "")
+    if m:
+        candidates.append(m.group(1) or m.group(2))
+    prm_url, prm = None, None
+    for c in candidates:
+        prm = _get_json(c, timeout)
+        if prm and prm.get("authorization_servers"):
+            prm_url = c
+            break
+        prm = None
+    issuer = (prm.get("authorization_servers") or [None])[0] if prm else origin + "/"
+    meta = None
+    for c in (_well_known(issuer, "oauth-authorization-server"), _well_known(issuer, "openid-configuration"),
+              issuer.rstrip("/") + "/.well-known/openid-configuration"):
+        meta = _get_json(c, timeout)
+        if meta and meta.get("authorization_endpoint") and meta.get("token_endpoint"):
+            break
+        meta = None
+    via = f"resource metadata {prm_url}" if prm_url else "no resource metadata, origin authorization server"
+    if meta is None:
+        if prm_url:
+            return "oauth_no_registration", f"http 401; {via}; issuer {issuer} metadata missing"
+        return "oauth_unusable", f"http 401; {via}; no authorization server metadata"
+    if not meta.get("registration_endpoint"):
+        if prm_url is None:
+            return "oauth_unusable", f"http 401; {via}; no dynamic client registration"
+        return "oauth_no_registration", f"http 401; {via}; issuer {issuer} has no dynamic client registration"
+    return "oauth_ok", f"http 401; {via}; issuer {issuer}"
+
+
+def probe_http(endpoint, timeout, transport="streamable-http"):
+    """Secret-free MCP probe. Streamable HTTP posts initialize; legacy SSE opens the event stream.
+
+    Returns (kind, detail).
+    """
+    if "{{" in endpoint:
+        return "templated", "endpoint needs user configuration"
+    if transport == "http-sse":
+        req = urllib.request.Request(endpoint, headers={
+            "Accept": "text/event-stream", "User-Agent": "mika-catalog-check/0.0.0"}, method="GET")
+    else:
+        req = urllib.request.Request(
+            endpoint,
+            data=INITIALIZE_BODY.encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream",
+                "User-Agent": "mika-catalog-check/0.0.0",
+            },
+            method="POST",
+        )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             ct = resp.headers.get("Content-Type", "")
             status = resp.status
+            body = resp.readline() if transport == "http-sse" else resp.read(4096)
     except urllib.error.HTTPError as e:
+        if e.code == 401:
+            return discover_oauth(endpoint, e.headers.get("WWW-Authenticate", ""), timeout)
         # A live server answering non-MCP (e.g. REST 4xx/redirect) — not a reachable MCP endpoint.
         return "not_mcp", f"http {e.code}"
     except urllib.error.URLError as e:
@@ -256,6 +347,8 @@ def probe_http(endpoint, timeout):
 
     if status != 200 or not body:
         return "not_mcp", f"http {status}"
+    if transport == "http-sse":
+        return ("mcp_ok", "") if "event-stream" in ct else ("not_mcp", "not an event stream")
 
     # A successful initialize is JSON-RPC (application/json) or an SSE stream. If it echoes a
     # JSON-RPC result we have real MCP; otherwise we still got a live answer, so treat it as unsupported.
@@ -282,15 +375,20 @@ def run(catalog_text, online=False, timeout=10):
         return json.dumps(report, ensure_ascii=False, indent=1) + "\n"
 
     report["probed"] = True
-    results = []
-    for p in catalog.get("presets", []):
+    def one(p):
         pid = p.get("id")
         if p.get("transport") == "stdio":
-            results.append({"id": pid, "status": "unsupported", "reason": "stdio runs locally"})
-            continue
-        kind, detail = probe_http(p.get("endpoint", ""), timeout)
-        results.append({"id": pid, "status": classify_probe(kind, detail), "reason": detail})
+            return {"id": pid, "status": "unsupported", "reason": "stdio runs locally"}
+        kind, detail = probe_http(p.get("endpoint", ""), timeout, p.get("transport", "streamable-http"))
+        return {"id": pid, "status": classify_probe(kind, detail, p.get("auth")), "reason": detail}
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+        results = list(pool.map(one, catalog.get("presets", [])))
     report["online"] = results
+    counts = {}
+    for r in results:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+    report["onlineSummary"] = counts
     return json.dumps(report, ensure_ascii=False, indent=1) + "\n"
 
 
@@ -298,6 +396,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("catalog")
     ap.add_argument("--online", action="store_true", help="also perform a secret-free MCP handshake per remote preset")
+    ap.add_argument("--require-online", action="store_true",
+                    help="exit 1 unless every remote preset is verified or auth_required")
     ap.add_argument("--timeout", type=float, default=10)
     ap.add_argument("--output", help="write the report to this path instead of stdout")
     a = ap.parse_args(argv)
@@ -310,6 +410,13 @@ def main(argv=None):
             fh.write(out)
     else:
         sys.stdout.write(out)
+    report = json.loads(out)
+    if not report.get("ok", False):
+        return 1
+    if a.require_online and any(r["status"] not in ("verified", "auth_required", "unsupported")
+                                or (r["status"] == "unsupported" and r.get("reason") != "stdio runs locally")
+                                for r in report.get("online", [])):
+        return 1
     return 0
 
 

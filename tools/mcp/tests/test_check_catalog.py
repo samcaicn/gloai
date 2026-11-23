@@ -93,6 +93,56 @@ class ClassifyProbeTest(unittest.TestCase):
     def test_unknownKindFallsBackToUnsupported(self):
         self.assertEqual(check_catalog.classify_probe("something_else"), "unsupported")
 
+    def test_oauthDiscoveryIsAuthRequiredNotVerified(self):
+        self.assertEqual(check_catalog.classify_probe("oauth_ok", "x", "oauth"), "auth_required")
+
+    def test_missingClientRegistrationOnlyPassesForTokenPresets(self):
+        # The app signs in as a dynamically registered client; without registration only a user token works.
+        self.assertEqual(check_catalog.classify_probe("oauth_no_registration", "x", "oauth"), "unsupported")
+        self.assertEqual(check_catalog.classify_probe("oauth_no_registration", "x", "fields"), "auth_required")
+
+    def test_unauthenticatedOrTemplatedEndpointsAreUnsupported(self):
+        self.assertEqual(check_catalog.classify_probe("oauth_unusable", "x", "fields"), "unsupported")
+        self.assertEqual(check_catalog.probe_http("https://{{tenant}}.example.com/mcp", 1)[0], "templated")
+
+
+class DiscoverOAuthTest(unittest.TestCase):
+    def setUp(self):
+        self.docs = {}
+        self._orig = check_catalog._get_json
+        check_catalog._get_json = lambda url, timeout: self.docs.get(url)
+
+    def tearDown(self):
+        check_catalog._get_json = self._orig
+
+    def test_resourceMetadataWithRegistrationIsOk(self):
+        self.docs["https://mcp.example.com/.well-known/oauth-protected-resource/mcp"] = {
+            "resource": "https://mcp.example.com/mcp", "authorization_servers": ["https://auth.example.com"]}
+        self.docs["https://auth.example.com/.well-known/oauth-authorization-server"] = {
+            "authorization_endpoint": "https://auth.example.com/a", "token_endpoint": "https://auth.example.com/t",
+            "registration_endpoint": "https://auth.example.com/r"}
+        kind, _ = check_catalog.discover_oauth("https://mcp.example.com/mcp", "", 1)
+        self.assertEqual(kind, "oauth_ok")
+
+    def test_resourceMetadataHintFromHeaderIsFollowed(self):
+        self.docs["https://mcp.example.com/meta"] = {"authorization_servers": ["https://auth.example.com"]}
+        self.docs["https://auth.example.com/.well-known/openid-configuration"] = {
+            "authorization_endpoint": "https://auth.example.com/a", "token_endpoint": "https://auth.example.com/t"}
+        kind, _ = check_catalog.discover_oauth(
+            "https://mcp.example.com/mcp", 'Bearer resource_metadata="https://mcp.example.com/meta"', 1)
+        self.assertEqual(kind, "oauth_no_registration")
+
+    def test_plainRestUnauthorizedIsNotMcp(self):
+        kind, _ = check_catalog.discover_oauth("https://api.example.com/v1", "Bearer", 1)
+        self.assertEqual(kind, "oauth_unusable")
+
+    def test_originAuthorizationServerFallbackNeedsRegistration(self):
+        self.docs["https://mcp.example.com/.well-known/oauth-authorization-server"] = {
+            "authorization_endpoint": "https://mcp.example.com/a", "token_endpoint": "https://mcp.example.com/t"}
+        self.assertEqual(check_catalog.discover_oauth("https://mcp.example.com/v1/mcp", "", 1)[0], "oauth_unusable")
+        self.docs["https://mcp.example.com/.well-known/oauth-authorization-server"]["registration_endpoint"] = "https://mcp.example.com/r"
+        self.assertEqual(check_catalog.discover_oauth("https://mcp.example.com/v1/mcp", "", 1)[0], "oauth_ok")
+
 
 class RunTest(unittest.TestCase):
     def test_runOfflineOnValidCatalog(self):
