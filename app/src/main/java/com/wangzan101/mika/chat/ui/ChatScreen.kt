@@ -514,8 +514,8 @@ fun ChatScreen(
                 keyboardController?.hide()
                 showPlus = true
             }) else null,
-            // 附件跟着一件直接开跑的任务走:这条会话自己在跑任务时加不了(见 [ChatSession.canAttach])
-            attachBlocked = ui.attachEnabled && !ui.importing && ui.composer != ComposerMode.Idle,
+            // 接了前台时随时能加附件;没接前台时附件跟着一件直接开跑的任务走,这条会话自己在跑任务时加不了(见 [ChatSession.canAttach])
+            attachBlocked = ui.attachEnabled && !ui.importing && vm.desking == null && ui.composer != ComposerMode.Idle,
             attachments = ui.attachments,
             importing = ui.importing,
             rejected = ui.rejectedAttachments,

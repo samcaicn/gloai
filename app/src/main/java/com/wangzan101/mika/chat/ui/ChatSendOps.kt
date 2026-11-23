@@ -55,8 +55,8 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
 
     /**
      * 发送输入框里的话;有引用时引用写在话的前面(见 [QuoteMessage]),发出去后清掉。返回 false 表示没发出去(条件不满足)。
-     * 去向按先后:通话在等主人回话时交给通话;任务在等回答时是回答;带附件时随新任务直接开;其余都交给这条会话的前台
-     * (前台在回话时照样能发,不变成「任务在跑」)。正在跟用户学习时一律不发。
+     * 去向按先后:通话在等主人回话时交给通话;任务在等回答时是回答;带附件时派成前台跟着的一件新任务(不经前台模型);
+     * 其余都交给这条会话的前台(前台在回话时照样能发,不变成「任务在跑」)。正在跟用户学习时一律不发。
      */
     fun send(text: String, check: Prerequisites.Check): Boolean {
         if (teaching()) {
@@ -82,9 +82,10 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
             act({ actions.answer(goal) }) { actions.answerIn(it, goal) }
             return Routed.Sent
         }
-        // 附件只能随新任务直接开(前台派出的任务在自己的子会话里,拿不到这条会话工作区里的附件);先复制进工作区,再把路径随原话一起持久化
+        // 带附件:先复制进这条会话的工作区,再派成前台跟着的一件新任务(文件随它复制进子会话),有没有任务在跑都一样;
+        // 没接前台(只在测试里)时照旧随新任务直接开,任务在跑时不发
         if (ui.attachments.isNotEmpty()) {
-            if (ui.composer != ComposerMode.Idle) return Routed.NotSent
+            if (vm.desking == null && ui.composer != ComposerMode.Idle) return Routed.NotSent
             return if (sendWithAttachments(goal, ui.attachments, check)) Routed.Importing else Routed.NotSent
         }
         // 只有引用、没写话时不发
@@ -133,8 +134,9 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
     }
 
     /**
-     * 带着附件开新任务:先把附件复制进对话工作区的 inbox/(期间输入框上方显示正在添加),
-     * 全部复制成功后,把每个附件写成一行「附件:<路径>(<大小>)」接在话后面开始任务。
+     * 带着附件发出去:先把附件复制进对话工作区的 inbox/(期间输入框上方显示正在添加),
+     * 全部复制成功后,把每个附件写成一行「附件:<路径>(<大小>)」接在话后面,交给前台派成一件新任务
+     * (见 [DeskChatOps.sendFiles]);没接前台时照旧在这条会话里开始任务。
      * 有附件没收下时保留草稿并列出失败项,由用户重试或移除后再发送。
      * 复制期间换了对话或开始了别的任务就不发了(复制进去的文件留在原对话的工作区里)。
      */
@@ -199,9 +201,16 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
             val currentAttachments = now.attachments
             val draftReplaced = sharedDraftSerial != serialBefore
             val keepNewerAttachments = draftReplaced || currentAttachments != submitted.attachments
-            // 复制期间开始了别的任务就不发了,草稿和附件留着
-            val accepted = now.composer == ComposerMode.Idle
-            if (accepted) begin(goal, id, clearDraftAttachments = !keepNewerAttachments)
+            val desk = vm.desking
+            // 交给前台时不看有没有任务在跑;没接前台时照旧:复制期间开始了别的任务就不发了,草稿和附件留着
+            val accepted = desk != null || now.composer == ComposerMode.Idle
+            if (accepted && desk != null) {
+                if (!keepNewerAttachments) vm.drafting.discardSharedDraft()
+                claim(id)
+                desk.line(id).sendFiles(text, goal, r.added, deskTitle(text, items))
+            } else if (accepted) {
+                begin(goal, id, clearDraftAttachments = !keepNewerAttachments)
+            }
             if (accepted) {
                 if (!draftReplaced) vm.drafting.discardSharedDraft()
                 _ui.update {
@@ -216,6 +225,10 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
         }
         return true
     }
+
+    /** 带附件那件任务卡片上的标题:用户的话(不带引用);只发了文件时是文件名。 */
+    private fun deskTitle(text: String, items: List<PendingAttachment>): String =
+        QuoteMessage.words(text).trim().ifBlank { items.joinToString("、") { it.name } }
 
     /** 在对话 [id] 里开始新任务 [goal]:界面上加一问一答,交给服务(并行关着、服务还忙时排在它收尾后面)。 */
     private fun begin(goal: String, id: String, clearDraftAttachments: Boolean = true) {

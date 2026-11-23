@@ -30,13 +30,14 @@ internal class ChatAttachmentOps(private val vm: ChatViewModel, private val sess
     private val describeAttachments = vm.describeAttachments
     private val sharedDrafts = vm.sharedDrafts
 
-    /** 从相机、相册、文件选择器拿到的文件:没有任务在跑、沙箱就绪时才收;读出名字和大小后挂在输入框上方,随下一句话发出去。 */
+    /** 从相机、相册、文件选择器拿到的文件:能加附件时(见 [ChatSession.canAttach])、沙箱就绪时才收;读出名字和大小后挂在输入框上方,随下一句话发出去。 */
     fun attach(uris: List<String>, conversationId: String? = _ui.value.conversationId) {
         if (uris.isEmpty() || conversationId != _ui.value.conversationId || !session.canAttach(_ui.value)) return
         val id = session.draftConversation()
         val sharedBefore = _ui.value.sharedDraft
         val serialBefore = sharedDraftSerial
-        val wasIdle = _ui.value.composer == ComposerMode.Idle
+        // 没接前台时附件随新任务直接开:读文件期间这条会话开始了任务就不收了;接了前台时有没有任务在跑都收
+        val wasIdle = vm.desking == null && _ui.value.composer == ComposerMode.Idle
         scope.launch {
             val items = try { describeAttachments(uris) } catch (e: CancellationException) { throw e } catch (e: Exception) { emptyList() }
             if (wasIdle && _ui.value.composer != ComposerMode.Idle) return@launch

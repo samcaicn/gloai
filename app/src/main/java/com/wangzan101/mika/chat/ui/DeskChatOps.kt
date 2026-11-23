@@ -1,6 +1,7 @@
 package com.wangzan101.mika.chat.ui
 
 import com.wangzan101.mika.R
+import com.wangzan101.mika.chat.RetryAttachmentStatus
 import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.frontdesk.DeskBrain
@@ -39,7 +40,10 @@ class DeskChatDeps(
     val desk: (conversationId: String) -> FrontDesk,
     /** 聊天页用的前台工具执行器;[verifyWords] 由聊天页给(核对这句话确实是用户在这条会话里打过的)。 */
     val executor: (conversationId: String, verifyWords: (String) -> Boolean) -> DeskToolExecutor,
-    /** 这条会话的文字前台;没配模型时为 null(发出去拦下,引导去模型设置)。 */
+    /**
+     * 按此刻设置里的模型新造一个这条会话的文字前台;没配模型时为 null(发出去拦下,引导去模型设置)。
+     * 每一轮(回话、汇报)都新造一个,所以设置里换了模型,下一句就用新的。
+     */
     val brain: (conversationId: String) -> DeskBrain?,
 )
 
@@ -98,7 +102,11 @@ internal class ChatDesk(private val vm: ChatViewModel, private val session: Chat
  * 后台有该说的变化、页面正开着这条会话时,由前台说一句,存成一行 `desk_report`;页面不在时返回 false,交给兜底。
  *
  * 回话和汇报一条一条来(前一句回完才回下一句):前台还在回的时候输入框照样能发,发出去的排在后面,派单不会因为抢话丢掉。
- * 前台交给后台的原话要核对:是用户在这条会话里打过的字(这一句或之前的,整句或其中一段)才认。
+ * 前台交给后台的原话要核对:是用户在这条会话里说过的话(这一句或之前的,整句或其中一段)才认。
+ *
+ * 前台跟着会话走:每一轮都按此刻的模型新造前台,用这条会话存下的轮次垫上(和通话打开时同一条路),
+ * 所以通话里写进来的轮次、页面不在时兜底写下的汇报、设置里换的模型,下一句都已经算上;通话里说过的话也认作用户的原话。
+ * 带附件的一句不经前台模型,直接派成一件新任务([sendFiles])。
  */
 internal class DeskChatOps(
     private val conversationId: String,
@@ -109,10 +117,9 @@ internal class DeskChatOps(
 ) : DeskSurface {
     private val _ui = session._ui
     private val turns = Mutex()
-    private var brain: DeskBrain? = null
     private var executor: DeskToolExecutor? = null
 
-    /** 这条会话里用户说过的话:之前存下的(第一次回话前读进来)和这次打开后发的。 */
+    /** 这条会话里用户说过的话:存下的(每一轮前重读,包括通话里说的)和这次打开后发的。 */
     private val said = CopyOnWriteArrayList<String>()
 
     /**
@@ -120,7 +127,7 @@ internal class DeskChatOps(
      * 没配模型时不发,界面上拦下并引导去模型设置,返回 false。
      */
     fun send(text: String): Boolean {
-        val brain = brain()
+        val brain = deps.brain(conversationId)
         if (brain == null) {
             _ui.update { it.copy(blocked = listOf(Problem.NoModel)) }
             return false
@@ -138,6 +145,46 @@ internal class DeskChatOps(
     }
 
     /**
+     * 带着附件发来的一句:[goal] 是 [text] 加上文件行,文件已在这条会话的工作区里(气泡和「重新问」看的是这里)。
+     * 不经前台模型(前台的工具不收文件),直接派成一件新的后台任务:文件复制进它的子会话,卡片挂在这一轮下面。
+     * 有没有任务在跑都一样,输入框不因此变忙。[title] 是卡片上的标题。
+     */
+    fun sendFiles(text: String, goal: String, files: List<Pair<String, Long>>, title: String) {
+        if (text.isNotBlank()) said += text
+        val runId = newRunId()
+        val startedAt = vm.clock()
+        val row = Exchange(goal, emptyList(), ExchangeStatus.Working, live = true, runId = runId, startedAt = startedAt, deskReply = "")
+        _ui.update {
+            if (it.conversationId != null && it.conversationId != conversationId) it
+            else it.copy(conversationId = conversationId, exchanges = it.exchanges + row, blocked = null)
+        }
+        vm.scope.launch {
+            val result = try {
+                executor().dispatchWithFiles(text, title) { child -> copyFiles(child, files)?.let { ChatReduce.withAttachments(text, it) } }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+            val status = result?.string("status")
+            val taskId = result?.string("task_id")?.takeIf { status == "started" || status == "queued" }
+            val failure = if (taskId == null) result?.string("reason") ?: status ?: "dispatch_error" else null
+            val tasks = listOfNotNull(taskId)
+            update(runId) { it.copy(deskTasks = tasks, status = failure?.let(ExchangeStatus::Failed) ?: ExchangeStatus.Done("", null)) }
+            // 和前台的回话排在同一条线上落库,重读会话时先后不乱
+            turns.withLock { persist(Turn(goal, "", DeskTurn.STATUS, note = failure, runId = runId, atMs = startedAt, deskTasks = tasks)) }
+        }
+    }
+
+    /** 把这条会话工作区里的文件复制进子会话 [child] 的工作区;有一个没复制成就整件不派(返回 null)。 */
+    private suspend fun copyFiles(child: String, files: List<Pair<String, Long>>): List<Pair<String, Long>>? {
+        val workspace = vm.branchWorkspace ?: return null
+        val copied = workspace.copyInboxForRetry(conversationId, child, files.map { it.first })
+        if (copied.size != files.size || copied.any { it.status != RetryAttachmentStatus.COPIED || it.sizeBytes == null }) return null
+        return copied.map { it.path to it.sizeBytes!! }
+    }
+
+    /**
      * 页面开着这条会话时说一句汇报。开始、排队、进度卡片上和「在办」条里实时看得到,不另说一句;
      * 要你处理、办好、没办成由前台说,写成一行汇报。页面不在、没配模型、前台什么也没说时返回 false(交给兜底);
      * 前台说失败时去掉这一行、抛出,也交给兜底。
@@ -148,7 +195,7 @@ internal class DeskChatOps(
             is DeskEvent.Started, is DeskEvent.Queued, is DeskEvent.Progress -> return true
             else -> Unit
         }
-        val brain = brain() ?: return false
+        val brain = deps.brain(conversationId) ?: return false
         return turns.withLock {
             if (!page.showing(conversationId)) return@withLock false
             val taskId = report.event.taskId
@@ -219,23 +266,27 @@ internal class DeskChatOps(
         }
     }
 
-    /** 第一次回话前:读这条会话之前的轮次(喂给前台、记下用户说过的话),拿到和前台共用账本的工具执行器。 */
+    /**
+     * 每一轮回话、汇报前:重读这条会话存下的轮次(别的入口写进来的也在),垫给这一轮新造的前台,记下其中用户说过的话;
+     * 拿到和前台共用账本的工具执行器。
+     */
     private suspend fun prepare(brain: DeskBrain): DeskToolExecutor {
-        executor?.let { return it }
         val prior = withContext(vm.io) { runCatching { vm.store.turns(conversationId) }.getOrDefault(emptyList()) }
-        said.addAll(0, prior.map { it.userText }.filter { it.isNotBlank() })
+        said.addAllAbsent(prior.map { it.userText }.filter { it.isNotBlank() })
         brain.seed(prior)
-        return withContext(vm.io) { deps.executor(conversationId, ::verified) }.also { executor = it }
+        return executor()
     }
+
+    private suspend fun executor(): DeskToolExecutor =
+        synchronized(this) { executor } ?: withContext(vm.io) { deps.executor(conversationId, ::verified) }.let { made ->
+            synchronized(this) { executor ?: made.also { executor = it } }
+        }
 
     /** 前台交给后台的原话得是用户在这条会话里打过的字(整句或其中一段),前台自己编的不认。 */
     private fun verified(words: String): Boolean {
         val w = words.trim()
         return w.isNotEmpty() && said.any { w in it }
     }
-
-    @Synchronized
-    private fun brain(): DeskBrain? = brain ?: deps.brain(conversationId)?.also { brain = it }
 
     /** 给前台的一条汇报:带上任务编号(它要接着回话、补话时用),后面是这件任务这次的变化。 */
     private fun noticeText(report: DeskReport) =

@@ -1,6 +1,11 @@
 package com.wangzan101.mika.chat.ui
 
+import com.wangzan101.mika.cap.sandbox.ImportResult
+import com.wangzan101.mika.chat.BranchCopyResult
+import com.wangzan101.mika.chat.BranchWorkspace
 import com.wangzan101.mika.chat.ConversationStore
+import com.wangzan101.mika.chat.RetryAttachmentResult
+import com.wangzan101.mika.chat.RetryAttachmentStatus
 import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn
@@ -86,6 +91,14 @@ class DeskChatOpsTest {
             return DispatchOutcome.Started(id)
         }
 
+        override suspend fun dispatchWithFiles(parentConversation: String, prepare: suspend (child: String) -> String?): DispatchOutcome {
+            val id = "child-${states.size + 1}"
+            val words = prepare(id) ?: return DispatchOutcome.Failed("not_prepared")
+            states[id] = MutableStateFlow(TaskState.Running(1, ""))
+            dispatched += words
+            return DispatchOutcome.Started(id)
+        }
+
         override fun state(taskId: String): StateFlow<TaskState>? = states[taskId]
         override fun queuePosition(taskId: String): Int? = null
         override fun steer(taskId: String, words: String) = true
@@ -113,7 +126,13 @@ class DeskChatOpsTest {
         val desk: (String) -> FrontDesk,
     )
 
-    private fun TestScope.harness(brain: DeskBrain?, store: ConversationStore = ConversationStore(tmp.newFolder())): Harness {
+    private fun TestScope.harness(
+        brain: DeskBrain?,
+        store: ConversationStore = ConversationStore(tmp.newFolder()),
+        brains: () -> DeskBrain? = { brain },
+        importAttachments: suspend (String, List<String>) -> ImportResult = { _, _ -> ImportResult(emptyList(), emptyList()) },
+        branchWorkspace: BranchWorkspace? = null,
+    ): Harness {
         val port = FakePort()
         val sunk = mutableListOf<Pair<String, DeskReport>>()
         val sink = object : DeskSink {
@@ -130,10 +149,11 @@ class DeskChatOpsTest {
                 val (desk, ledger) = entry(id)
                 DeskToolExecutor(port, ledger, verify, { 0L }, id) { desk.track(it.taskId, it.title) }
             },
-            brain = { brain },
+            brain = { brains() },
         )
         val vm = ChatViewModel(backgroundScope, MutableStateFlow(TaskState.Idle), MutableStateFlow(Takeover.Stage.None), actions, store,
-            io = StandardTestDispatcher(testScheduler), desk = deps).also { runCurrent() }
+            io = StandardTestDispatcher(testScheduler), desk = deps, sandboxReady = MutableStateFlow(true),
+            importAttachments = importAttachments, branchWorkspace = branchWorkspace).also { runCurrent() }
         return Harness(vm, store, port, sunk) { entry(it).first }
     }
 
@@ -375,5 +395,111 @@ class DeskChatOpsTest {
         runCurrent()
         assertEquals(1, blocked)
         assertTrue(brain.replies.isEmpty())
+    }
+    // 带附件的一句也走前台的派单:不管有没有任务在跑,派成一件新的后台任务(文件复制进它的子会话),卡片挂在这一轮下面
+    @Test fun attachmentsWhileATaskRunsBecomeANewTrackedCard() = runTest {
+        val brain = ScriptBrain({ text, ctx ->
+            ctx.callTool(DeskTools.DISPATCH, dispatch(text, "订日料"))
+            ctx.say("好。")
+        })
+        val inbox = "/workspace/inbox/合同.pdf"
+        val copies = mutableListOf<Triple<String, String, List<String>>>()
+        val workspace = object : BranchWorkspace {
+            override suspend fun copyInbox(sourceId: String, targetId: String, maxBytes: Long): BranchCopyResult? = null
+            override suspend fun copyInboxForRetry(sourceId: String, targetId: String, paths: List<String>, maxBytes: Long): List<RetryAttachmentResult> {
+                copies += Triple(sourceId, targetId, paths)
+                return paths.map { RetryAttachmentResult(it, RetryAttachmentStatus.COPIED, 12L) }
+            }
+        }
+        val imported = mutableListOf<String>()
+        val h = harness(brain, importAttachments = { id, uris -> imported += id; ImportResult(uris.map { inbox to 12L }, emptyList()) },
+            branchWorkspace = workspace)
+        h.vm.openConversation("c")
+        runCurrent()
+        assertTrue(h.vm.send("帮我订明天的日料", ok))
+        runCurrent()
+        assertEquals(DeskTaskPhase.Running, h.vm.ui.value.deskTasks.single().state)
+
+        h.vm.attach(listOf("content://x/合同.pdf"))
+        runCurrent()
+        assertEquals(1, h.vm.ui.value.attachments.size)
+        h.vm.input("把这份合同也看一下")
+        assertTrue(h.vm.send(h.vm.ui.value.input, ok))
+        runCurrent()
+        // 文件先进这条会话的工作区(气泡里看得到),再复制进新任务的子会话;交给后台的是用户打的话加上文件行
+        assertEquals(listOf("c"), imported)
+        assertEquals(listOf(Triple("c", "child-2", listOf(inbox))), copies)
+        assertEquals(2, h.port.dispatched.size)
+        val words = h.port.dispatched[1]
+        assertTrue(words, words.startsWith("把这份合同也看一下") && inbox in words)
+        // 卡片挂在这一轮下面,前台任务板也在跟它;输入框没变忙,草稿清空
+        val row = h.vm.ui.value.exchanges.last()
+        assertTrue(row.goal.startsWith("把这份合同也看一下"))
+        assertEquals(listOf("child-2"), row.deskTasks)
+        assertFalse(deskReplyShown(row))
+        assertEquals(listOf("child-1", "child-2"), h.vm.ui.value.deskTasks.map { it.taskId })
+        assertEquals(ComposerMode.Idle, h.vm.ui.value.composer)
+        assertTrue(h.vm.ui.value.attachments.isEmpty())
+        assertEquals("", h.vm.ui.value.input)
+        val saved = h.store.turns("c").last()
+        assertEquals(DeskTurn.STATUS, saved.status)
+        assertEquals(listOf("child-2"), saved.deskTasks)
+        assertTrue(inbox in saved.userText)
+        // 没开老路径的任务,也没交给前台模型去回
+        assertTrue(calls.isEmpty())
+        assertEquals(listOf("帮我订明天的日料"), brain.replies)
+    }
+
+    // 通话里写进这条会话的轮次,下一次在聊天页发话时前台就知道(和通话打开时用同一份会话记录),通话里说过的话也认作用户的原话
+    @Test fun nextSendKnowsTheTurnsACallWrote() = runTest {
+        val made = mutableListOf<ScriptBrain>()
+        val results = mutableListOf<JsonObject?>()
+        val h = harness(null, brains = {
+            ScriptBrain({ text, ctx ->
+                if (text == "就按电话里说的办") results += ctx.callTool(DeskTools.DISPATCH, dispatch("帮我订后天的日料", "订日料"))
+                ctx.say("好。")
+            }).also { made += it }
+        })
+        h.vm.openConversation("c")
+        h.vm.pageShown(true)
+        runCurrent()
+        assertTrue(h.vm.send("你好", ok))
+        runCurrent()
+        // 打了一通电话:通话接着前台,写回两句,挂断
+        val call = h.desk("c").attach(object : DeskSurface {
+            override suspend fun deliver(report: DeskReport) = true
+        })
+        h.store.append("c", Turn("帮我订后天的日料", "好,我让后面去订。", DeskTurn.STATUS))
+        runCurrent()
+        call.close()
+        runCurrent()
+        assertTrue(h.vm.send("就按电话里说的办", ok))
+        runCurrent()
+        val seeded = made.last { it.replies.isNotEmpty() }.seeded.flatten()
+        assertTrue(seeded.map { it.userText }.toString(), seeded.any { it.userText == "帮我订后天的日料" })
+        assertEquals("started", results.single()!!["status"].toString().trim('"'))
+        assertEquals(listOf("帮我订后天的日料"), h.port.dispatched)
+    }
+
+    // 设置里换了前台模型:下一句就用新的,之前的话照样带上
+    @Test fun nextSendUsesTheModelChosenSinceTheLastOne() = runTest {
+        var model = "A"
+        val made = mutableListOf<Pair<String, ScriptBrain>>()
+        val h = harness(null, brains = {
+            val name = model
+            ScriptBrain({ _, ctx -> ctx.say("$name 回") }).also { made += name to it }
+        })
+        h.vm.openConversation("c")
+        runCurrent()
+        assertTrue(h.vm.send("第一句", ok))
+        runCurrent()
+        model = "B"
+        assertTrue(h.vm.send("第二句", ok))
+        runCurrent()
+        assertEquals(listOf("A 回", "B 回"), h.vm.ui.value.exchanges.map { it.deskReply })
+        val b = made.filter { it.first == "B" }.map { it.second }.single { it.replies.isNotEmpty() }
+        assertEquals(listOf("第二句"), b.replies)
+        assertTrue(b.seeded.flatten().any { it.userText == "第一句" && it.outcome == "A 回" })
+        assertTrue(made.filter { it.first == "A" }.none { "第二句" in it.second.replies })
     }
 }

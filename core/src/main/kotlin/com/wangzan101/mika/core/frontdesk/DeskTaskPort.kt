@@ -8,6 +8,14 @@ interface DeskTaskPort {
     /** 派一件新任务:[words] 是用户原话,[note] 是前台补的说明(两者分开交给后台),挂在 [parentConversation] 下。 */
     fun dispatch(words: String, note: String, parentConversation: String): DispatchOutcome
 
+    /**
+     * 派一件要带文件的新任务(用户在输入框带着附件发来的一句):先开好子会话(挂在 [parentConversation] 下),
+     * [prepare] 把文件放进子会话的工作区,给出交给后台的原话(用户的话后面接上文件行);它返回 null(文件没放进去)
+     * 或出错时删掉子会话、不派。没有说明:这一句不经前台模型。不支持带文件的端口回 Failed。
+     */
+    suspend fun dispatchWithFiles(parentConversation: String, prepare: suspend (child: String) -> String?): DispatchOutcome =
+        DispatchOutcome.Failed("files_unsupported")
+
     /** 这件任务的状态;不认识这个编号时为 null。 */
     fun state(taskId: String): StateFlow<TaskState>?
 

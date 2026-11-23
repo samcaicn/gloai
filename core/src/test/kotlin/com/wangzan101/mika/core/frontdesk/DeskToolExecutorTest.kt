@@ -37,6 +37,17 @@ class DeskToolExecutorTest {
             return queueAt?.let { DispatchOutcome.Queued(id, it) } ?: DispatchOutcome.Started(id)
         }
 
+        /** 带文件派的:子会话编号 f1、f2…,[prepare] 给出的原话记在 [withFiles]。 */
+        val withFiles = mutableListOf<Pair<String, String>>()
+
+        override suspend fun dispatchWithFiles(parentConversation: String, prepare: suspend (child: String) -> String?): DispatchOutcome {
+            val id = "f${withFiles.size + 1}"
+            val words = prepare(id) ?: return DispatchOutcome.Failed("files_not_ready")
+            withFiles += id to words
+            states[id] = MutableStateFlow(TaskState.Idle)
+            return queueAt?.let { DispatchOutcome.Queued(id, it) } ?: DispatchOutcome.Started(id)
+        }
+
         override fun state(taskId: String): StateFlow<TaskState>? = states[taskId]
         override fun queuePosition(taskId: String): Int? = positions[taskId]
         override fun steer(taskId: String, words: String): Boolean = accept.also { steered += taskId to words }
@@ -241,5 +252,33 @@ class DeskToolExecutorTest {
         assertEquals("b", ledger.find(" 查天气 ", since = 0)?.taskId)
         assertNull(ledger.find("查天气", since = 201))
         assertNull(ledger.find("订机票", since = 0))
+    }
+    // 带文件的一句:用户打的话照样要核对;派成一件新任务,登记进账本、交给前台跟进,和 dispatch_task 同形
+    @Test
+    fun dispatchWithFilesChecksWordsAndRecordsTheTask() {
+        val result = runBlocking { executor().dispatchWithFiles("看看这份合同", "看合同") { child -> "看看这份合同\n附件:$child/a.pdf" } }
+        assertEquals(buildJsonObject { put("status", "started"); put("task_id", "f1") }, result)
+        assertEquals(listOf("f1" to "看看这份合同\n附件:f1/a.pdf"), port.withFiles)
+        val entry = DeskTaskEntry("f1", "看合同", "看看这份合同", now)
+        assertEquals(listOf(entry), ledger.all())
+        assertEquals(listOf(entry), notified)
+        assertTrue(port.dispatched.isEmpty())
+
+        verified = { false }
+        val rejected = runBlocking { executor().dispatchWithFiles("不是用户说的", "x") { "不是用户说的" } }
+        assertEquals("rejected", rejected.str("status"))
+        assertEquals(1, port.withFiles.size)
+    }
+
+    // 只发了文件、没写话:没有要核对的原话,照样派;文件没放进去时回 failed,不登记
+    @Test
+    fun dispatchWithFilesWithoutWordsAndFailedPrepare() {
+        verified = { false }
+        val onlyFiles = runBlocking { executor().dispatchWithFiles("", "a.pdf") { "附件:a.pdf" } }
+        assertEquals("started", onlyFiles.str("status"))
+        assertEquals("a.pdf", ledger.all().single().title)
+        val failed = runBlocking { executor().dispatchWithFiles("", "b.pdf") { null } }
+        assertEquals(buildJsonObject { put("status", "failed"); put("reason", "files_not_ready") }, failed)
+        assertEquals(1, ledger.all().size)
     }
 }

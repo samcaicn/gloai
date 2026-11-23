@@ -69,6 +69,34 @@ class DeskToolExecutor(
         }
     }
 
+    /**
+     * 用户在输入框带着文件发来的一句:不经前台模型,直接派成一件新任务(前台的工具不收文件)。[words] 是用户打的整句,
+     * 不空时照样要过核对(只有文件、没写话时交给后台的只有代码写的文件行);[prepare] 见 [DeskTaskPort.dispatchWithFiles]。
+     * 结果和 dispatch_task 同形。不查重:每次带的文件不同。放文件期间不占派单的锁,前台照样能派别的。
+     */
+    suspend fun dispatchWithFiles(words: String, title: String, prepare: suspend (child: String) -> String?): JsonObject {
+        if (words.isNotBlank() && !verifyWords(words)) return wordsRejected()
+        val outcome = try {
+            tasks.dispatchWithFiles(conversationId, prepare)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            DispatchOutcome.Failed(e.message ?: e::class.simpleName ?: "dispatch_error")
+        }
+        val name = title.trim().ifBlank { words }.take(DESK_LINE_MAX_CHARS)
+        return when (outcome) {
+            is DispatchOutcome.Started -> {
+                record(DeskTaskEntry(outcome.taskId, name, words, clock()))
+                buildJsonObject { put("status", "started"); put("task_id", outcome.taskId) }
+            }
+            is DispatchOutcome.Queued -> {
+                record(DeskTaskEntry(outcome.taskId, name, words, clock()))
+                buildJsonObject { put("status", "queued"); put("task_id", outcome.taskId); put("position", outcome.position) }
+            }
+            is DispatchOutcome.Failed -> buildJsonObject { put("status", "failed"); put("reason", outcome.reason) }
+        }
+    }
+
     private fun record(entry: DeskTaskEntry) {
         ledger.add(entry)
         onDispatched(entry)

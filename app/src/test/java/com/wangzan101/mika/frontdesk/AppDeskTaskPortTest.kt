@@ -180,4 +180,34 @@ class AppDeskTaskPortTest {
         assertEquals(TaskState.Running(1, "在做"), rig.port.state("c4")!!.value)
         assertTrue(rig.port.dispatch("查天气", "", "p") is DispatchOutcome.Started)
     }
+    // 带文件派:先开好挂在前台会话下的子会话,文件放好后才开始,交给服务的是放好后给出的原话,没有说明
+    @Test fun dispatchWithFilesOpensTheChildFirstAndStartsAfterPrepare() = runTest {
+        val rig = Rig(this)
+        var prepared: String? = null
+        val outcome = rig.port.dispatchWithFiles("p") { child ->
+            prepared = child
+            assertEquals("p", rig.store.deskParent(child))
+            assertTrue(rig.starts.isEmpty())
+            "看合同\n附件:/workspace/inbox/a.pdf(1 B)"
+        }
+        val child = (outcome as DispatchOutcome.Started).taskId
+        assertEquals(prepared, child)
+        assertEquals(listOf(Start("看合同\n附件:/workspace/inbox/a.pdf(1 B)", child, null)), rig.starts)
+        // 它和别的派单一样占并行位置
+        assertTrue(rig.port.dispatch("查天气", "", "p") is DispatchOutcome.Started)
+        assertTrue(rig.port.dispatch("订票", "", "p") is DispatchOutcome.Queued)
+    }
+
+    // 文件没放进去(或出错):不交给服务,子会话删掉
+    @Test fun dispatchWithFilesThatFailToPrepareLeaveNoChild() = runTest {
+        val rig = Rig(this)
+        var child: String? = null
+        val outcome = rig.port.dispatchWithFiles("p") { child = it; null }
+        assertTrue(outcome is DispatchOutcome.Failed)
+        assertTrue(rig.starts.isEmpty())
+        assertNull(rig.store.deskParent(child!!))
+        val thrown = rig.port.dispatchWithFiles("p") { error("disk full") }
+        assertEquals(DispatchOutcome.Failed("disk full"), thrown)
+        assertTrue(rig.starts.isEmpty())
+    }
 }

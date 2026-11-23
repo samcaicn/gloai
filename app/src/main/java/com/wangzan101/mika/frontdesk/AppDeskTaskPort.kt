@@ -71,10 +71,35 @@ class AppDeskTaskPort(
 
     private val followed = HashMap<String, Followed>()
 
+    override fun dispatch(words: String, note: String, parentConversation: String): DispatchOutcome =
+        startIn(openChild(parentConversation), words, note)
+
+    /** 文件放进子会话的工作区期间不占这把锁(复制可能要一会儿),放好了才按此刻的并行情况开始或排队。 */
+    override suspend fun dispatchWithFiles(parentConversation: String, prepare: suspend (child: String) -> String?): DispatchOutcome {
+        val child = openChild(parentConversation)
+        val words = try {
+            prepare(child)
+        } catch (e: CancellationException) {
+            runCatching { conversations.delete(child) }
+            throw e
+        } catch (e: Exception) {
+            runCatching { conversations.delete(child) }
+            return DispatchOutcome.Failed(e.message ?: e::class.simpleName ?: "prepare_failed")
+        }
+        if (words.isNullOrBlank()) {
+            runCatching { conversations.delete(child) }
+            return DispatchOutcome.Failed("files_not_ready")
+        }
+        return startIn(child, words, "")
+    }
+
+    /** 开一个新的子会话,挂在前台会话 [parentConversation] 下。 */
+    private fun openChild(parentConversation: String): String =
+        conversations.newConversation().also { conversations.setDeskParent(it, parentConversation) }
+
+    /** 在子会话 [child] 里开始(或排上队)这件活;没交给任务服务时删掉子会话。 */
     @Synchronized
-    override fun dispatch(words: String, note: String, parentConversation: String): DispatchOutcome {
-        val child = conversations.newConversation()
-        conversations.setDeskParent(child, parentConversation)
+    private fun startIn(child: String, words: String, note: String): DispatchOutcome {
         val outcome = predict(child)
         val entry = Followed(MutableStateFlow(TaskState.Idle), (outcome as? DispatchOutcome.Queued)?.position)
         followed[child] = entry
