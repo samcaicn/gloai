@@ -7,6 +7,8 @@ import com.wangzan101.mika.core.frontdesk.DeskSurface
 import com.wangzan101.mika.core.frontdesk.DeskToolExecutor
 import com.wangzan101.mika.core.frontdesk.DeskTools
 import com.wangzan101.mika.core.frontdesk.FrontDesk
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -16,7 +18,7 @@ import kotlinx.serialization.json.put
  * 应用内语音通话和前台之间的一层:
  * - 通话里模型调的前台工具交给 [executor],派单马上回结果,任务在后台跑,通话不等;
  * - 前台的汇报按 [copy] 变成一句话,交给此刻的通话会话 [session] 排在当前这句后面说;会话已经不在时返回 false,
- *   前台改交给 sink(写回会话、发通知)。说出去的话交给 [onSpoken](回声窗口用)。
+ *   被插话打断时抛取消,两种都由前台改交给 sink(写回会话、发通知)。说出去的话交给 [onSpoken](回声窗口用)。
  *
  * 用户插话只打断通话里正在说的话,不碰后台任务。
  */
@@ -59,11 +61,17 @@ class VoiceDeskBridge(
         buildJsonObject { put("words", text) },
     )
 
+    /**
+     * 交给通话说,等这句说完才返回(前台据此一条一条送)。说到一半被插话打断、或没轮到说通话就断了,
+     * 按前台的约定抛 [CancellationException]:这条改由前台交给 sink 写回会话,不再念第二遍。
+     */
     override suspend fun deliver(report: DeskReport): Boolean {
         val live = session() ?: return false
         val text = copy(report).ifBlank { return true }
-        if (!live.sendNotice(text)) return false
+        val end = CompletableDeferred<Boolean>()
+        if (!live.sendNotice(text) { end.complete(it) }) return false
         onSpoken(text)
+        if (!end.await()) throw CancellationException("notice cut off")
         return true
     }
 

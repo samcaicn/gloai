@@ -33,7 +33,8 @@ class VolcRealtimeAgentToolsTest {
     @Test fun deskToolsAreTheUserSetAndWordsGetAFullUtterance() {
         assertEquals(DeskTools.specs(DeskToolSet.User).map { it.getValue("name").jsonPrimitive.content }.toSet(), VolcRealtimeProtocol.deskToolNames)
         for (name in listOf(DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER)) {
-            assertEquals(VolcRealtimeProtocol.MAX_UTTERANCE_CHARS, VolcRealtimeProtocol.maxArgumentCharsFor(name))
+            // 整包上限给原话以外的字段(title、note)和 JSON 转义留出余量
+            assertTrue(VolcRealtimeProtocol.maxArgumentCharsFor(name) > VolcRealtimeProtocol.MAX_UTTERANCE_CHARS + 2 * VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS)
         }
         assertEquals(VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS, VolcRealtimeProtocol.maxArgumentCharsFor(DeskTools.CANCEL))
         assertEquals(VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS, VolcRealtimeProtocol.maxArgumentCharsFor("send_dtmf"))
@@ -145,13 +146,33 @@ class VolcRealtimeAgentToolsTest {
         }
     }
 
+    @Test fun fullLengthWordsWithTitleAndNoteArriveEvenWhenEscaped() = runBlocking {
+        fixture {
+            val session = connectAgent()
+            val events = Channel<VolcRealtimeEvent>(32)
+            val collector = async { session.events.collect { events.send(it) } }
+            val words = "订".repeat(VolcRealtimeProtocol.MAX_UTTERANCE_CHARS)
+            val title = "题".repeat(VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS)
+            val note = "备".repeat(VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS)
+            // 有的服务端把非 ASCII 字转义成 \uXXXX,一个字占六个字符
+            fun escaped(text: String) = text.map { "\\u%04x".format(it.code) }.joinToString("")
+            val raw = """{"words":"${escaped(words)}","title":"${escaped(title)}","note":"${escaped(note)}"}"""
+            peer().send(functionFrame(item("full", DeskTools.DISPATCH, raw)))
+            val call = nextEvent(events) as VolcRealtimeEvent.FunctionCall
+            assertEquals(words, call.arguments.getValue("words").jsonPrimitive.content)
+            assertEquals(note, call.arguments.getValue("note").jsonPrimitive.content)
+            finish(session)
+            withTimeout(3_000) { collector.await() }
+        }
+    }
+
     @Test fun oversizedOrMalformedDeskArgumentsAreAnsweredWithErrors() = runBlocking {
         fixture {
             val session = connectAgent()
             val events = Channel<VolcRealtimeEvent>(32)
             val collector = async { session.events.collect { events.send(it) } }
             val cases = listOf(
-                item("huge", DeskTools.DISPATCH, """{"words":"${"字".repeat(4_200)}","title":"x"}"""),
+                item("huge", DeskTools.DISPATCH, """{"words":"${"字".repeat(VolcRealtimeProtocol.maxArgumentCharsFor(DeskTools.DISPATCH))}","title":"x"}"""),
                 item("empty", DeskTools.DISPATCH, """{"words":"","title":"x"}"""),
                 item("missing", DeskTools.ANSWER, """{"words":"七点"}"""),
                 item("extra", DeskTools.DISPATCH, """{"words":"帮我订个闹钟","title":"x","foo":"x"}"""),

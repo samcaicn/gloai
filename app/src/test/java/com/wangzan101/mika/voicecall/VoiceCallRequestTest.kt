@@ -1,6 +1,7 @@
 package com.wangzan101.mika.voicecall
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** 执行安全闸:5 条规则各有正反例,另含跨轮重放、消费后同轮二次 offer、回声窗环形边界。 */
@@ -13,7 +14,7 @@ class VoiceCallRequestTest {
         assertEquals(VoiceCallDecision.Reject, gate.offer("c1", "打开微信"))
     }
 
-    // 规则⑤正例:匹配 → Accept(原始转写,非归一化结果)
+    // 规则⑤正例:匹配 → Accept(转写原文里对上的那段,非归一化结果)
     @Test
     fun matchingUtteranceAcceptsWithOriginalTranscript() {
         val gate = VoiceCallRequest(RingBuffer(10))
@@ -29,15 +30,16 @@ class VoiceCallRequestTest {
     fun punctuationWhitespaceAndCaseAreNormalized() {
         val gate = VoiceCallRequest(RingBuffer(10))
         gate.onUserTranscript("你好,世界!")
-        assertEquals(VoiceCallDecision.Accept("你好,世界!"), gate.offer("c1", "你好 世界"))
+        assertEquals(VoiceCallDecision.Accept("你好,世界"), gate.offer("c1", "你好 世界"))
     }
 
-    // 规则③正例:单向包含,不要求等长——utterance 是转写的片段也过,执行的是用户完整的原话
+    // 规则③正例:单向包含,不要求等长——utterance 是转写的片段也过,执行的是原文里对上的那段
+    // (一句话办几件事时各件只拿自己那段,不会每件都把整句办一遍)
     @Test
     fun partialOverlapAccepts() {
         val gate = VoiceCallRequest(RingBuffer(10))
         gate.onUserTranscript("帮我打开微信好吗")
-        assertEquals(VoiceCallDecision.Accept("帮我打开微信好吗"), gate.offer("c1", "打开微信"))
+        assertEquals(VoiceCallDecision.Accept("打开微信"), gate.offer("c1", "打开微信"))
     }
 
     // 规则③反例:utterance 比当轮转写还长——模型往里添了用户没说的话 → Reject 且不消费转写
@@ -80,12 +82,26 @@ class VoiceCallRequestTest {
         assertEquals(VoiceCallDecision.Accept("打开支付宝"), gate.offer("c2", "打开支付宝"))
     }
 
-    // 规则⑤反例:转写一次性消费——Accept 后同轮换新 callId 再 offer → Reject
+    // 规则⑤:一句话可以办几件事——同轮转写不随放行消费,各次调用各带自己那段原话
     @Test
-    fun secondOfferSameTurnAfterAcceptRejects() {
+    fun oneUtteranceAuthorizesSeveralCalls() {
+        val gate = VoiceCallRequest(RingBuffer(10))
+        gate.onUserTranscript("帮我订晚饭,再叫个车")
+        assertEquals(VoiceCallDecision.Accept("帮我订晚饭"), gate.offer("c1", "帮我订晚饭"))
+        assertEquals(VoiceCallDecision.Accept("再叫个车"), gate.offer("c2", "再叫个车"))
+        assertTrue(gate.verified("帮我订晚饭"))
+        assertTrue(gate.verified("再叫个车"))
+        // 用户没说过的话,同轮里照样拒
+        assertEquals(VoiceCallDecision.Reject, gate.offer("c3", "顺便转账"))
+    }
+
+    // 规则⑤:下一轮用户开口,上一轮转写作废
+    @Test
+    fun nextUserTurnExpiresTheTranscript() {
         val gate = VoiceCallRequest(RingBuffer(10))
         gate.onUserTranscript("打开微信")
         assertEquals(VoiceCallDecision.Accept("打开微信"), gate.offer("c1", "打开微信"))
+        gate.onUserTurnStart()
         assertEquals(VoiceCallDecision.Reject, gate.offer("c2", "打开微信"))
     }
 

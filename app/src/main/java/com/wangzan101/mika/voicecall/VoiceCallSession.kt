@@ -345,6 +345,8 @@ class VoiceCallSession(
                 is VolcRealtimeEvent.Audio ->
                     if (queue.offer(event.pcm) == null) throw VoiceCallFailure(VoiceCallError.Playback)
                 VolcRealtimeEvent.UserSpeaking, VolcRealtimeEvent.AssistantInterrupted -> {
+                    // 用户又开口:上一句话授权的调用到此为止
+                    if (event == VolcRealtimeEvent.UserSpeaking) requestGate.onUserTurnStart()
                     queue.invalidate()
                     audio.interruptPlayback()
                     _speakerLevel.value = 0f
@@ -377,7 +379,7 @@ class VoiceCallSession(
         throw VolcRealtimeException(VolcRealtimeException.Kind.NETWORK)
     }
 
-    /** 带原话(words)的前台工具先过安全闸,放行后原话换成当轮转写原文;不带原话的(取消)直接交出去。 */
+    /** 带原话(words)的前台工具先过安全闸,放行的原话核对过落在当轮转写里;不带原话的(取消)直接交出去。 */
     private fun handleFunctionCall(realtime: CallRealtimeSession, event: VolcRealtimeEvent.FunctionCall) {
         if (event.name !in VolcRealtimeProtocol.deskToolNames) return
         val words = event.arguments["words"] ?: return onDeskCall(event.callId, event.name, event.arguments)

@@ -13,8 +13,11 @@ interface CallRealtimeSession : AutoCloseable {
     fun sendGreeting(text: String): Boolean
     fun setMuted(muted: Boolean): Boolean
     fun sendToolResult(callId: String, result: JsonObject): Boolean = false
-    /** 后台任务来了消息:等手上这句说完再说,不打断;说不了返回 false(调用方改走别的路)。 */
-    fun sendNotice(text: String): Boolean = false
+    /**
+     * 后台任务来了消息:等手上这句说完、用户也没在说话时再说,不打断;说不了返回 false(调用方改走别的路)。
+     * 收下的消息最后一定回一次 [ended]:说完了为 true;被插话打断、或没轮到说通话就断了为 false。
+     */
+    fun sendNotice(text: String, ended: (spoken: Boolean) -> Unit = {}): Boolean = false
     /** 用户打字说的话,当成一句话来回;不支持返回 false。 */
     fun sendUserText(text: String): Boolean = false
     override fun close()

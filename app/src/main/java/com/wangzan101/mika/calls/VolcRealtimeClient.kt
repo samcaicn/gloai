@@ -249,10 +249,15 @@ class VolcRealtimeSession internal constructor(
         return send(if (openAi) OpenAiCallProtocol.greeting(text) else VolcRealtimeProtocol.greeting(nextId(), text))
     }
 
-    /** 前台的汇报:代码拼好的一句话原样念出(和开场白同一条路)。 */
-    @Synchronized override fun sendNotice(text: String): Boolean {
+    /**
+     * 前台的汇报:代码拼好的一句话原样念出(和开场白同一条路)。排队、让用户先说由服务端管,
+     * 这一侧看不到念没念完,交出去就算说完。
+     */
+    @Synchronized override fun sendNotice(text: String, ended: (spoken: Boolean) -> Unit): Boolean {
         if (phase != Phase.ACTIVE || text.isBlank() || text.length > VolcRealtimeProtocol.MAX_TOOL_RESULT_CHARS) return false
-        return send(if (openAi) OpenAiCallProtocol.greeting(text) else VolcRealtimeProtocol.greeting(nextId(), text))
+        val sent = send(if (openAi) OpenAiCallProtocol.greeting(text) else VolcRealtimeProtocol.greeting(nextId(), text))
+        if (sent) ended(true)
+        return sent
     }
 
     @Synchronized override fun setMuted(muted: Boolean): Boolean {

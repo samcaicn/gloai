@@ -577,6 +577,25 @@ class VoiceCallSessionTest {
         assertEquals(listOf("打开微信" to true), h.userTranscripts)
     }
 
+    @Test fun `one utterance authorizes several desk calls until the user speaks again`() = runTest {
+        val requests = mutableListOf<Pair<String, String>>()
+        lateinit var h: Harness
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onDeskCall = { id, _, args -> requests += id to args.words() })
+        runCurrent()
+        reachActive(h, this)
+        h.rt.emit(VolcRealtimeEvent.UserTranscript("帮我订晚饭,再叫个车", isFinal = true))
+        h.rt.emit(requestCall("c1", "帮我订晚饭"))
+        h.rt.emit(requestCall("c2", "再叫个车"))
+        runCurrent()
+        assertEquals(listOf("c1" to "帮我订晚饭", "c2" to "再叫个车"), requests)
+        // 用户又开口了:上一句不再能授权
+        h.rt.emit(VolcRealtimeEvent.UserSpeaking)
+        h.rt.emit(requestCall("c3", "再叫个车"))
+        runCurrent()
+        assertEquals(2, requests.size)
+        assertEquals("c3", h.rt.toolResults.single().first)
+    }
+
     @Test fun `function call without a transcript is rejected with retry guidance`() = runTest {
         val requests = mutableListOf<Pair<String, String>>()
         lateinit var h: Harness
@@ -710,8 +729,8 @@ class VoiceCallSessionTest {
         h.session.sendUserText("帮我订明晚的日料")
         h.rt.emit(requestCall("c1", "订明晚的日料"))
         runCurrent()
-        // 放行后原话换成当轮完整的话
-        assertEquals(listOf("c1" to "帮我订明晚的日料"), requests)
+        // 放行的是打的字里对上的那段
+        assertEquals(listOf("c1" to "订明晚的日料"), requests)
     }
 
     @Test fun `a tool without words skips the gate`() = runTest {

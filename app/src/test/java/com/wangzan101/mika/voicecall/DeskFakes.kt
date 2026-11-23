@@ -56,7 +56,15 @@ internal class FakeDeskRealtime : CallRealtimeSession {
     override fun sendGreeting(text: String) = true
     override fun setMuted(muted: Boolean) = true
     override fun sendToolResult(callId: String, result: JsonObject): Boolean { toolResults += callId to result; return true }
-    override fun sendNotice(text: String): Boolean { notices += text; return true }
+    /** 为 false 时汇报说没说完由测试用 [endNotice] 决定;默认交出去即算说完。 */
+    var endsAtOnce = true
+    private val unfinished = ArrayDeque<(Boolean) -> Unit>()
+    override fun sendNotice(text: String, ended: (spoken: Boolean) -> Unit): Boolean {
+        notices += text
+        if (endsAtOnce) ended(true) else unfinished.addLast(ended)
+        return true
+    }
+    fun endNotice(spoken: Boolean) = unfinished.removeFirst()(spoken)
     override fun sendUserText(text: String): Boolean { typed += text; return acceptsTyped }
     override fun close() {}
 }

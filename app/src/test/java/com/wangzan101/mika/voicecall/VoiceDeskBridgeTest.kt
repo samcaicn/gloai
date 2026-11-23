@@ -130,4 +130,29 @@ class VoiceDeskBridgeTest {
         runCurrent()
         assertEquals(DeskReport(DeskEvent.Succeeded("t1", "订好了"), "帮我订明晚的日料".take(8)), r.sink.recorded.single().second)
     }
+
+    @Test fun noticeCutOffGoesToTheSinkNotSpokenAgain() = runTest {
+        val r = rig()
+        r.realtime.endsAtOnce = false
+        r.bridge.onFunctionCall("c1", DeskTools.DISPATCH, dispatch("帮我订明晚的日料"))
+        runCurrent()
+        // 开工那条说完
+        r.realtime.endNotice(spoken = true)
+        runCurrent()
+        val before = r.realtime.notices.size
+        r.port.states.getValue("t1").value = TaskState.WaitingInput("要几点?")
+        runCurrent()
+        r.port.states.getValue("t1").value = TaskState.Succeeded("订好了七点")
+        runCurrent()
+        // 同一时刻只说一条:要问的那条没说完,办好了那条不交出去
+        assertEquals(before + 1, r.realtime.notices.size)
+        r.realtime.endNotice(spoken = false)
+        runCurrent()
+        // 被打断的那条写回会话,不再念;下一条照常交给通话
+        assertTrue(r.sink.recorded.single().second.event is DeskEvent.NeedsAnswer)
+        assertEquals(before + 2, r.realtime.notices.size)
+        r.realtime.endNotice(spoken = true)
+        runCurrent()
+        assertEquals(1, r.sink.recorded.size)
+    }
 }

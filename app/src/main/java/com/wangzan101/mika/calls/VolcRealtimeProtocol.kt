@@ -171,11 +171,18 @@ internal object VolcRealtimeProtocol {
             required.all { !arguments.string(it).isNullOrBlank() }
     }
 
-    /** Argument envelopes are tool-sized: a DTMF batch is tiny; tools carrying the user's words get a full utterance. */
+    /**
+     * Argument envelopes are tool-sized: a DTMF batch is tiny; tools carrying the user's words get a full utterance
+     * plus the other fields (title, note), all possibly sent as `\uXXXX` escapes. The words alone are checked
+     * against [MAX_UTTERANCE_CHARS] after parsing, so a near-limit utterance is never lost to the envelope.
+     */
     fun maxArgumentCharsFor(name: String?): Int = when (name) {
-        DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER -> MAX_UTTERANCE_CHARS
+        DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER -> MAX_WORDS_ARGUMENT_CHARS
         else -> MAX_FUNCTION_ARGUMENT_CHARS
     }
+
+    /** One escaped character takes at most six (`\uXXXX`); the rest covers keys, quotes and separators. */
+    private const val MAX_WORDS_ARGUMENT_CHARS = (MAX_UTTERANCE_CHARS + 2 * MAX_FUNCTION_ARGUMENT_CHARS) * 6 + MAX_FUNCTION_ARGUMENT_CHARS
 
     fun greeting(eventId: String, text: String): String = message("speech_text_buffer.commit", eventId) {
         put("text", text)
