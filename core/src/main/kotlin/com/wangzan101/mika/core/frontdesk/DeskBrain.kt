@@ -49,6 +49,8 @@ interface DeskBrain {
 /**
  * A text model with a rolling history and optional tools. Streaming models speak while they write; others speak
  * when the reply is complete. Tool calls loop back into the model a bounded number of times.
+ * [background], when given, is fetched before every model call and appended to the system prompt only, so it is
+ * always current and never piles up in the history.
  */
 class LlmBrain(
     private val model: ChatModel,
@@ -56,6 +58,7 @@ class LlmBrain(
     private val tools: List<ToolSpec>,
     private val maxMessages: Int = 40,
     private val maxToolRounds: Int = 4,
+    private val background: DeskBackground? = null,
 ) : DeskBrain {
     private val history = mutableListOf<Message>()
     private val opening = StringBuilder()
@@ -120,10 +123,15 @@ class LlmBrain(
     }
 
     private suspend fun complete(ctx: ReplyContext): List<Part> {
-        val (prompt, messages) = synchronized(lock) {
+        val (base, messages) = synchronized(lock) {
             val prompt = if (opening.isEmpty()) system else "$system\n\nYou opened the conversation by saying:\n$opening"
             prompt to history.toList()
         }
+        val prompt = background?.let { source ->
+            val lastUserText = messages.lastOrNull { it.role == Role.User && it.author == Author.User }
+                ?.parts?.filterIsInstance<Part.Text>()?.joinToString("") { it.text }.orEmpty()
+            source.render(lastUserText)?.let { "$base\n\n$it" }
+        } ?: base
         if (model !is StreamingChatModel) {
             val reply = model.complete(prompt, messages, tools)
             reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.takeIf { it.isNotBlank() }?.let { ctx.say(it) }

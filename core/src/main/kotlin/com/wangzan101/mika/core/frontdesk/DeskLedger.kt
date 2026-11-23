@@ -3,7 +3,7 @@ package com.wangzan101.mika.core.frontdesk
 /** 前台派出去的一件任务:[words] 是派单时的用户原话,[at] 是派单时刻。 */
 data class DeskTaskEntry(val taskId: String, val title: String, val words: String, val at: Long)
 
-/** 这次对话里前台派过的任务,按派单先后;查进展、防重复派单、核对任务编号都看它。线程安全。 */
+/** 这次对话里前台派过的任务,按派单先后;防重复派单、核对任务编号都看它。线程安全。 */
 class DeskLedger {
     private val entries = mutableListOf<DeskTaskEntry>()
 
