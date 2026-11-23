@@ -121,7 +121,8 @@ internal suspend fun TaskRun.assembleTools(a: RunAssembly, m: RunModels, ph: Run
     val deviceImports = if (provenance.origin == RunOrigin.Ui &&
         provenance.attendance != Attendance.Unattended && !runSpec.readOnly) {
         DeviceWorkspaceImports(SandboxDirs(service), sandbox::freeBytes, DeviceImportStore.get(service),
-            resolveWorkspace = { workspaceKey }, conversationIdFor = { conversationId })
+            resolveWorkspace = { workspaceKey }, conversationIdFor = { conversationId },
+            limits = { FeatureFlags.get(service).attachmentLimits() }) // 每次导入现取档位,与聊天附件同一套
     } else null
     val folders = sandbox.folderFiles as? GrantedFolderFiles
     val tools = toolDispatcher(privatePhone, model.capabilities.vision, catalog, recordFrames = true,

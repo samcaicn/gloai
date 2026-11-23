@@ -63,6 +63,7 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.voice.HoldToTalk
 import com.wangzan101.mika.voice.VoiceSource
+import com.wangzan101.mika.i18n.trPlural
 
 /**
  * 玻璃胶囊输入栏:左边「＋」,右边发送(没内容时灰);任务在跑时多一个停止,补充消息先排在输入栏上方。
@@ -174,15 +175,19 @@ internal fun Composer(
                 Column(Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (importing) Text(AttachCopy.IMPORTING, style = MikaType.Caption, color = c.ink3)
                     if (rejected.isNotEmpty() || overLimit > 0) {
+                        // 超限提示写当前档位,不再硬编码 200 MiB
+                        val ctx = LocalContext.current
+                        val attachmentLimitLabel = remember(ctx) {
+                            trPlural(R.plurals.settings_attachment_file_limit_mb_n, com.wangzan101.mika.settings.FeatureFlags.get(ctx).attachmentMaxMb())
+                        }
                         val why = listOfNotNull(
                             rejected.takeIf { it.isNotEmpty() }?.map { failure ->
-                                val reason = when (failure.reason) {
-                                    AttachmentFailureReason.TOO_LARGE -> R.string.chat_attach_too_large
-                                    AttachmentFailureReason.LOW_DEVICE_SPACE -> R.string.chat_attach_low_device_space
-                                    AttachmentFailureReason.WORKSPACE_LIMIT -> R.string.chat_attach_workspace_limit
-                                    AttachmentFailureReason.IO_ERROR -> R.string.chat_attach_io_error
+                                when (failure.reason) {
+                                    AttachmentFailureReason.TOO_LARGE -> stringResource(R.string.chat_attach_too_large, failure.name, attachmentLimitLabel)
+                                    AttachmentFailureReason.LOW_DEVICE_SPACE -> stringResource(R.string.chat_attach_low_device_space, failure.name)
+                                    AttachmentFailureReason.WORKSPACE_LIMIT -> stringResource(R.string.chat_attach_workspace_limit, failure.name)
+                                    AttachmentFailureReason.IO_ERROR -> stringResource(R.string.chat_attach_io_error, failure.name)
                                 }
-                                stringResource(reason, failure.name)
                             }?.joinToString("\n"),
                             overLimit.takeIf { it > 0 }?.let(AttachCopy::overLimit),
                         ).joinToString("\n")

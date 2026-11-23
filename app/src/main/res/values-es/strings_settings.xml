@@ -312,4 +312,18 @@
         <item quantity="many">%1$d minutos</item>
         <item quantity="other">%1$d minutos</item>
     </plurals>
+    <string name="settings_attachment_file_limit">Límite por archivo subido</string>
+    <string name="settings_attachment_file_limit_sub">Tamaño máximo de un archivo al adjuntar en el chat o importar archivos del dispositivo; las imágenes de WeChat y los archivos del ordenador mantienen límites fijos. Por defecto, 200 MB.</string>
+    <plurals name="settings_attachment_file_limit_mb_n">
+        <item quantity="one">%1$d MB</item>
+        <item quantity="many">%1$d MB</item>
+        <item quantity="other">%1$d MB</item>
+    </plurals>
+    <string name="settings_workspace_size_limit">Límite por espacio de trabajo</string>
+    <string name="settings_workspace_size_limit_sub">Espacio del espacio de trabajo para adjuntos del chat e importaciones de archivos del dispositivo. Por defecto, 4 GB.</string>
+    <plurals name="settings_workspace_size_limit_gb_n">
+        <item quantity="one">%1$d GB</item>
+        <item quantity="many">%1$d GB</item>
+        <item quantity="other">%1$d GB</item>
+    </plurals>
 </resources>

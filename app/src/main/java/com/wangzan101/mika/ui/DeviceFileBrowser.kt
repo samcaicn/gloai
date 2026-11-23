@@ -132,7 +132,7 @@ internal fun DeviceFileBrowser(vm: ChatViewModel, conversationId: String, onClos
             AndroidSandbox(context, SandboxState.get(context)),
             directories,
             importStore,
-            resolveWorkspace = WorkspaceResolver.resolver(context),
+            resolveWorkspace = WorkspaceResolver.resolver(context), limits = { FeatureFlags.get(context).attachmentLimits() },
         )
     }
     val records by remember(importStore) {

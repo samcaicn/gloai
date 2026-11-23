@@ -298,4 +298,14 @@
     <plurals name="settings_sandbox_budget_minutes_n">
         <item quantity="other">%1$d 分</item>
     </plurals>
+    <string name="settings_attachment_file_limit">アップロード1ファイルの上限</string>
+    <string name="settings_attachment_file_limit_sub">チャット添付とデバイスのファイル取り込みで受け付ける1ファイルの最大サイズ。WeChat画像とPC接続のファイルは固定のまま。デフォルトは 200 MB。</string>
+    <plurals name="settings_attachment_file_limit_mb_n">
+        <item quantity="other">%1$d MB</item>
+    </plurals>
+    <string name="settings_workspace_size_limit">ワークスペース1つあたりの上限</string>
+    <string name="settings_workspace_size_limit_sub">チャット添付とデバイスのファイル取り込みに使えるワークスペース容量。デフォルトは 4 GB。</string>
+    <plurals name="settings_workspace_size_limit_gb_n">
+        <item quantity="other">%1$d GB</item>
+    </plurals>
 </resources>

@@ -54,6 +54,29 @@ class TaskAttachmentImportTest {
         check(AttachmentFailureReason.TOO_LARGE, { Attachments.MIN_FREE }, { 0 }, Attachments.MAX_BYTES + 1)
     }
 
+    @Test fun injectedLimitsRaiseAndLowerBothCaps() = runBlocking {
+        val ws = temp.newFolder()
+        val twoMiB = 2L shl 20
+        // 单文件上限收到 1 MiB 档:2 MiB 的文件被拒
+        val lowered = AttachmentLimits(maxFileBytes = 1L shl 20, workspaceMaxBytes = Attachments.WORKSPACE_MAX)
+        val refused = Attachments.importOne(ws, JVM_GATE, "a", { Attachments.MIN_FREE }, { 0 }, { bytes(twoMiB) }, limits = lowered)
+        assertEquals(listOf(AttachmentFailure("a", AttachmentFailureReason.TOO_LARGE)), refused.failures)
+        // 放宽到 4 MiB 档后同一个文件放行
+        val raised = AttachmentLimits(maxFileBytes = 4L shl 20, workspaceMaxBytes = Attachments.WORKSPACE_MAX)
+        val accepted = Attachments.importOne(ws, JVM_GATE, "a", { Attachments.MIN_FREE }, { 0 }, { bytes(twoMiB) }, limits = raised)
+        assertEquals(listOf("/workspace/inbox/a" to twoMiB), accepted.added)
+        assertTrue(accepted.failures.isEmpty())
+        // 工作区占用 5 GB:默认 4 GB 档拒绝,调到 8 GB 档放行
+        val overDefaultWorkspace = 5L shl 30
+        val workspaceRefused = Attachments.importOne(ws, JVM_GATE, "b", { Attachments.MIN_FREE }, { overDefaultWorkspace }, { bytes(1) })
+        assertEquals(AttachmentFailureReason.WORKSPACE_LIMIT, workspaceRefused.failures.single().reason)
+        val workspaceAccepted = Attachments.importOne(
+            ws, JVM_GATE, "b", { Attachments.MIN_FREE }, { overDefaultWorkspace }, { bytes(1) },
+            limits = AttachmentLimits(maxFileBytes = 4L shl 20, workspaceMaxBytes = 8L shl 30),
+        )
+        assertEquals(listOf("/workspace/inbox/b" to 1L), workspaceAccepted.added)
+    }
+
     @Test fun handlesSuccessIoFailureAndCancellation() = runBlocking {
         val ws = temp.newFolder()
         suspend fun copy(open: () -> InputStream) = Attachments.importOne(ws, JVM_GATE, "input", { Attachments.MIN_FREE }, { 0 }, open)

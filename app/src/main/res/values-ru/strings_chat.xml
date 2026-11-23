@@ -267,7 +267,7 @@
     <string name="chat_branch_retry">Спросить заново отсюда</string>
     <string name="chat_branch_attachments_readd">Добавьте нужные вложения заново</string>
     <string name="chat_attach_unavailable">Не удалось добавить: %1$s. Убедитесь, что файлы доступны и не превышают ограничение размера.</string>
-    <string name="chat_attach_too_large">%1$s: размер превышает ограничение в 200 MiB</string>
+    <string name="chat_attach_too_large">%1$s: размер превышает ограничение в %2$s</string>
     <string name="chat_attach_low_device_space">%1$s: недостаточно места на телефоне; освободите место и повторите попытку</string>
     <string name="chat_attach_workspace_limit">%1$s: достигнут предел хранилища рабочего пространства; удалите файлы из рабочего пространства и повторите попытку</string>
     <string name="chat_attach_io_error">%1$s: не удалось прочитать или скопировать файл; убедитесь, что он доступен, и повторите попытку</string>

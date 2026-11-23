@@ -4,6 +4,7 @@ import android.os.ParcelFileDescriptor
 import android.system.Os
 import android.system.OsConstants
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
+import com.wangzan101.mika.cap.sandbox.AttachmentLimits
 import com.wangzan101.mika.cap.sandbox.Attachments
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.cap.sandbox.WorkspaceKey
@@ -23,6 +24,8 @@ internal class DeviceWorkspaceImports(
     private val imports: DeviceImportStore,
     private val resolveWorkspace: (String) -> WorkspaceKey,
     private val conversationIdFor: (String) -> String,
+    /** 每次导入现取设置里的档位(聊天附件与设备导入共用),改完下一次导入即生效。 */
+    private val limits: () -> AttachmentLimits = { AttachmentLimits.DEFAULT },
 ) {
     suspend fun fromFolder(path: String, workspace: String, open: (String) -> InputStream) = locked {
         // Open through the live SAF grant before touching the workspace or consulting its history.
@@ -70,7 +73,7 @@ internal class DeviceWorkspaceImports(
             },
             logFailure = { error ->
                 if (error is SecurityException) throw SandboxError("device_access_denied", "Access to the device file was denied.", true)
-            })
+            }, limits = limits())
         val entry = result.added.singleOrNull() ?: run {
             val reason = result.failures.firstOrNull()?.reason?.name?.lowercase() ?: "io_error"
             throw SandboxError(reason, "Could not copy the device file to the workspace ($reason).", true)

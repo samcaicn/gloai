@@ -273,7 +273,7 @@
     <string name="recommendations_unreadable">کارهای پیشنهادی ذخیره‌شده خوانده نشدند، بنابراین فعلاً قابل تغییر نیستند.</string>
     <string name="share_draft_replace_body">این محتوای به‌اشتراک‌گذاشته‌شده جایگزین پیش‌نویس فعلی شما می‌شود.</string>
     <string name="chat_attach_unavailable">افزودن ممکن نشد: %1$s. بررسی کنید فایل‌ها در دسترس و در محدودهٔ حجم باشند.</string>
-    <string name="chat_attach_too_large">%1$s: از محدودیت 200 MiB بیشتر است</string>
+    <string name="chat_attach_too_large">%1$s: از محدودیت %2$s بیشتر است</string>
     <string name="chat_attach_low_device_space">%1$s: فضای ذخیره‌سازی گوشی کافی نیست؛ فضا را آزاد کنید و دوباره تلاش کنید</string>
     <string name="chat_attach_workspace_limit">%1$s: فضای ذخیره‌سازی محیط کار به سقف رسیده است؛ فایل‌های محیط کار را پاک کنید و دوباره تلاش کنید</string>
     <string name="chat_attach_io_error">%1$s: خواندن یا کپی کردن ممکن نیست؛ بررسی کنید فایل در دسترس باشد و دوباره تلاش کنید</string>

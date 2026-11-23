@@ -45,6 +45,7 @@ internal fun androidWechatImages(context: Context, api: WechatApi): WechatImageF
     return StoredWechatImages(
         File(context.cacheDir, "wechat-images"), api::downloadImage, ::prepareWechatImage,
         { thread -> dirs.workspace(WorkspaceResolver.resolveFor(context, thread)) }, dirs.gate, dirs.tree,
+        // 微信层不在存储档位范围内:单文件仍是协议层 WechatImages.MAX_BYTES(10 MB),工作区余量仍用固定 WORKSPACE_MAX
         { thread -> sandbox.freeBytes() >= Attachments.MIN_FREE && sandbox.workspaceBytes(WorkspaceResolver.resolveFor(context, thread)) <= Attachments.WORKSPACE_MAX },
         { uri -> context.contentResolver.openInputStream(Uri.parse(uri)) },
     )

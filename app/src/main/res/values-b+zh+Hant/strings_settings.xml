@@ -298,4 +298,14 @@
     <plurals name="settings_sandbox_budget_minutes_n">
         <item quantity="other">%1$d 分鐘</item>
     </plurals>
+    <string name="settings_attachment_file_limit">單一上傳檔案上限</string>
+    <string name="settings_attachment_file_limit_sub">聊天附件與裝置檔案匯入接受的單一檔案最大體積;微信圖片與電腦傳輸仍為固定限額。預設 200 MB。</string>
+    <plurals name="settings_attachment_file_limit_mb_n">
+        <item quantity="other">%1$d MB</item>
+    </plurals>
+    <string name="settings_workspace_size_limit">單一工作區上限</string>
+    <string name="settings_workspace_size_limit_sub">聊天附件與裝置檔案匯入可用的工作區空間;預設 4 GB。</string>
+    <plurals name="settings_workspace_size_limit_gb_n">
+        <item quantity="other">%1$d GB</item>
+    </plurals>
 </resources>

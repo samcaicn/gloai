@@ -79,6 +79,24 @@ class DeviceWorkspaceImportsTest {
         assertTrue(File(dirs.workspace(workspace), "inbox").list().isNullOrEmpty())
     }
 
+    @Test fun tieredLimitsApplyPerImportAndRereadEachTime() = runBlocking {
+        requireUnixGate()
+        var maxFileBytes = 2L
+        val imports = DeviceWorkspaceImports(dirs, { Attachments.MIN_FREE }, store,
+            resolveWorkspace = WorkspaceKey::parse, conversationIdFor = { "chat" },
+            limits = { com.wangzan101.mika.cap.sandbox.AttachmentLimits(maxFileBytes, Attachments.WORKSPACE_MAX) })
+        val denied = runCatching {
+            imports.fromFolder(path, workspace.wire) { byteArrayOf(1, 2, 3).inputStream() }
+        }.exceptionOrNull()
+        assertEquals("too_large", (denied as SandboxError).code)
+        assertTrue(store.allRecords().isEmpty())
+        // 同一个导入器实例,档位调大后下一次导入就按新值,无需重建
+        maxFileBytes = 1024
+        val allowed = imports.fromFolder(path, workspace.wire) { byteArrayOf(1, 2, 3).inputStream() }
+        assertEquals("/workspace/inbox/report.pdf", allowed.path)
+        assertEquals(3L, allowed.size)
+    }
+
     @Test fun aFailedHistoryCommitRollsBackOnlyTheNewCopy() = runBlocking {
         requireUnixGate()
         val prefs = FeatureFlagsCapsuleTest.MemoryPrefs()

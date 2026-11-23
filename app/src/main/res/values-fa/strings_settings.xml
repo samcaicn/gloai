@@ -316,4 +316,16 @@
         <item quantity="one">%1$d دقیقه</item>
         <item quantity="other">%1$d دقیقه</item>
     </plurals>
+    <string name="settings_attachment_file_limit">محدودیت هر فایل بارگذاری</string>
+    <string name="settings_attachment_file_limit_sub">بزرگ‌ترین حجم فایل مجاز برای پیوست‌های گفتگو و درون‌ریزی فایل‌های دستگاه؛ تصاویر وچت و فایل‌های رایانه با حد ثابت می‌مانند. پیش‌فرض 200 مگابایت.</string>
+    <plurals name="settings_attachment_file_limit_mb_n">
+        <item quantity="one">%1$d مگابایت</item>
+        <item quantity="other">%1$d مگابایت</item>
+    </plurals>
+    <string name="settings_workspace_size_limit">محدودیت هر فضای کاری</string>
+    <string name="settings_workspace_size_limit_sub">فضای ذخیره‌سازی برای پیوست‌های گفتگو و درون‌ریزی فایل‌های دستگاه. پیش‌فرض 4 گیگابایت.</string>
+    <plurals name="settings_workspace_size_limit_gb_n">
+        <item quantity="one">%1$d گیگابایت</item>
+        <item quantity="other">%1$d گیگابایت</item>
+    </plurals>
 </resources>

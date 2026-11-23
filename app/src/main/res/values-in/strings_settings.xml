@@ -298,4 +298,14 @@
     <plurals name="settings_sandbox_budget_minutes_n">
         <item quantity="other">%1$d menit</item>
     </plurals>
+    <string name="settings_attachment_file_limit">Batas per berkas unggahan</string>
+    <string name="settings_attachment_file_limit_sub">Ukuran terbesar satu berkas dari lampiran obrolan dan impor berkas perangkat; gambar WeChat dan berkas dari komputer tetap dengan batas tetap. Bawaan 200 MB.</string>
+    <plurals name="settings_attachment_file_limit_mb_n">
+        <item quantity="other">%1$d MB</item>
+    </plurals>
+    <string name="settings_workspace_size_limit">Batas per ruang kerja</string>
+    <string name="settings_workspace_size_limit_sub">Ruang penyimpanan untuk lampiran obrolan dan impor berkas perangkat. Bawaan 4 GB.</string>
+    <plurals name="settings_workspace_size_limit_gb_n">
+        <item quantity="other">%1$d GB</item>
+    </plurals>
 </resources>

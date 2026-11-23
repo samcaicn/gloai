@@ -319,4 +319,20 @@
         <item quantity="many">%1$d минут</item>
         <item quantity="other">%1$d минуты</item>
     </plurals>
+    <string name="settings_attachment_file_limit">Лимит на один загружаемый файл</string>
+    <string name="settings_attachment_file_limit_sub">Максимальный размер одного файла из вложений чата и импорта файлов с устройства; изображения WeChat и файлы с компьютера остаются с фиксированными лимитами. По умолчанию 200 МБ.</string>
+    <plurals name="settings_attachment_file_limit_mb_n">
+        <item quantity="one">%1$d МБ</item>
+        <item quantity="few">%1$d МБ</item>
+        <item quantity="many">%1$d МБ</item>
+        <item quantity="other">%1$d МБ</item>
+    </plurals>
+    <string name="settings_workspace_size_limit">Лимит на одно рабочее пространство</string>
+    <string name="settings_workspace_size_limit_sub">Место рабочей области для вложений чата и импорта файлов с устройства. По умолчанию 4 ГБ.</string>
+    <plurals name="settings_workspace_size_limit_gb_n">
+        <item quantity="one">%1$d ГБ</item>
+        <item quantity="few">%1$d ГБ</item>
+        <item quantity="many">%1$d ГБ</item>
+        <item quantity="other">%1$d ГБ</item>
+    </plurals>
 </resources>

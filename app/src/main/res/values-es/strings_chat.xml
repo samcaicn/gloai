@@ -255,7 +255,7 @@
     <string name="chat_branch_retry">Volver a preguntar desde aquí</string>
     <string name="chat_branch_attachments_readd">Vuelve a adjuntar los archivos que quieras incluir</string>
     <string name="chat_attach_unavailable">No se pudo añadir: %1$s. Comprueba que los archivos estén disponibles y no superen el límite de tamaño.</string>
-    <string name="chat_attach_too_large">%1$s: supera el límite de 200 MiB</string>
+    <string name="chat_attach_too_large">%1$s: supera el límite de %2$s</string>
     <string name="chat_attach_low_device_space">%1$s: no hay suficiente espacio en el teléfono; libera espacio y vuelve a intentarlo</string>
     <string name="chat_attach_workspace_limit">%1$s: se alcanzó el límite de almacenamiento del espacio de trabajo; elimina archivos del espacio de trabajo y vuelve a intentarlo</string>
     <string name="chat_attach_io_error">%1$s: no se pudo leer ni copiar; comprueba que el archivo esté disponible y vuelve a intentarlo</string>

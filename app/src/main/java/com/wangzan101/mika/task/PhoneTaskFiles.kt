@@ -35,6 +35,7 @@ internal class PhoneTaskFiles(private val context: Context, private val exported
         val sandbox = AndroidSandbox(context, SandboxState.get(context))
         val key = WorkspaceResolver.resolveFor(context, conversation)
         val bytes = files.sumOf { it.size }
+        // 电脑传输不在存储档位范围内:电脑端 RemoteTaskFiles 也是固定 200 MB,这里保持同一定额
         if (sandbox.freeBytes() - bytes < Attachments.MIN_FREE || sandbox.workspaceBytes(key) + bytes > Attachments.WORKSPACE_MAX)
             throw IOException("Not enough space for attachments")
         return runBlocking(Dispatchers.IO) {

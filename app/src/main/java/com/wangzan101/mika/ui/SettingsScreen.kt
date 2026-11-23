@@ -158,6 +158,8 @@ fun SettingsScreen(
     var stepLimit by remember { mutableStateOf(flags.taskStepLimit()) }
     var triggerRunMinutes by remember { mutableStateOf(flags.triggerRunMinutes()) }
     var sandboxBudgetMinutes by remember { mutableStateOf(flags.sandboxBudgetMinutes()) }
+    var attachmentMaxMb by remember { mutableStateOf(flags.attachmentMaxMb()) }
+    var workspaceMaxGb by remember { mutableStateOf(flags.workspaceMaxGb()) }
     var tokenBudget by remember { mutableStateOf(flags.taskTokenBudget()) }
     var selfConfig by remember { mutableStateOf(flags.selfConfig()) }
     var selfOperate by remember { mutableStateOf(flags.selfOperate()) }
@@ -296,6 +298,8 @@ fun SettingsScreen(
             stepLimit = stepLimit, onStepLimit = { flags.setTaskStepLimit(it); stepLimit = it },
             triggerRunMinutes = triggerRunMinutes, onTriggerRunMinutes = { flags.setTriggerRunMinutes(it); triggerRunMinutes = it },
             sandboxBudgetMinutes = sandboxBudgetMinutes, onSandboxBudgetMinutes = { flags.setSandboxBudgetMinutes(it); sandboxBudgetMinutes = it },
+            attachmentMaxMb = attachmentMaxMb, onAttachmentMaxMb = { flags.setAttachmentMaxMb(it); attachmentMaxMb = it },
+            workspaceMaxGb = workspaceMaxGb, onWorkspaceMaxGb = { flags.setWorkspaceMaxGb(it); workspaceMaxGb = it },
             tokenBudget = tokenBudget, onTokenBudget = { flags.setTaskTokenBudget(it); tokenBudget = it },
             showTaskCost = showTaskCost, onShowTaskCost = { flags.setShowTaskCost(it); showTaskCost = it },
             pocketGuard = pocketGuard, onPocketGuard = { pocketPrefs.edit().putBoolean(com.wangzan101.mika.pocket.PocketGuardManager.ENABLED, it).apply(); pocketGuard = it },

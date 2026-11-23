@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import com.wangzan101.mika.cap.phone.shell.HelperHub
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
+import com.wangzan101.mika.cap.sandbox.AttachmentLimits
 import com.wangzan101.mika.cap.sandbox.SandboxDirs
 import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.settings.DeviceDirectory
@@ -29,7 +30,8 @@ internal class AndroidDeviceFiles(
     constructor(hub: HelperHub, dirs: SandboxDirs, sandbox: AndroidSandbox, directoryStore: DeviceDirectoryStore,
         imports: DeviceImportStore, resolveWorkspace: (String) -> WorkspaceKey = WorkspaceKey::parse,
         conversationIdFor: (String) -> String = { it },
-    ) : this(hub, directoryStore, DeviceWorkspaceImports(dirs, sandbox::freeBytes, imports, resolveWorkspace, conversationIdFor))
+        limits: () -> AttachmentLimits = { AttachmentLimits.DEFAULT },
+    ) : this(hub, directoryStore, DeviceWorkspaceImports(dirs, sandbox::freeBytes, imports, resolveWorkspace, conversationIdFor, limits))
 
     private fun hint(directory: DeviceDirectory): DeviceDirectoryHint {
         val status = try { hub.listFiles(directory.path, null, 1).getString("status") ?: "helper_error" }

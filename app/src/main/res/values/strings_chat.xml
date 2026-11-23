@@ -243,7 +243,7 @@
     <string name="chat_branch_retry">Ask again from here</string>
     <string name="chat_branch_attachments_readd">Re-add the attachments you want to include</string>
     <string name="chat_attach_unavailable">Couldn’t add: %1$s. Check that the files are available and within the size limit.</string>
-    <string name="chat_attach_too_large">%1$s: exceeds the 200 MiB limit</string>
+    <string name="chat_attach_too_large">%1$s: exceeds the %2$s limit</string>
     <string name="chat_attach_low_device_space">%1$s: not enough device storage; free up space and try again</string>
     <string name="chat_attach_workspace_limit">%1$s: workspace storage limit reached; remove workspace files and try again</string>
     <string name="chat_attach_io_error">%1$s: couldn’t read or copy the file; check that it is available and try again</string>

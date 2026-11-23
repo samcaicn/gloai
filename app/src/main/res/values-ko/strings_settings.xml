@@ -298,4 +298,14 @@
     <plurals name="settings_sandbox_budget_minutes_n">
         <item quantity="other">%1$d분</item>
     </plurals>
+    <string name="settings_attachment_file_limit">파일 1개 업로드 제한</string>
+    <string name="settings_attachment_file_limit_sub">채팅 첨부와 기기 파일 가져오기에 적용되는 파일 한 개의 최대 크기예요. 위챗 이미지와 PC 전송은 고정 한도예요. 기본값은 200 MB.</string>
+    <plurals name="settings_attachment_file_limit_mb_n">
+        <item quantity="other">%1$d MB</item>
+    </plurals>
+    <string name="settings_workspace_size_limit">워크스페이스별 제한</string>
+    <string name="settings_workspace_size_limit_sub">채팅 첨부와 기기 파일 가져오기가 쓸 수 있는 워크스페이스 용량이에요. 기본값은 4 GB.</string>
+    <plurals name="settings_workspace_size_limit_gb_n">
+        <item quantity="other">%1$d GB</item>
+    </plurals>
 </resources>

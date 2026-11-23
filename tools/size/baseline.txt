@@ -13,7 +13,7 @@
 1281 core/src/main/kotlin/com/wangzan101/mika/core/agent/AgentLoop.kt
 1144 app/src/main/java/com/wangzan101/mika/cap/phone/a11y/AndroidScreen.kt
 1102 app/src/main/java/com/wangzan101/mika/capsule/CapsuleCardContent.kt
-1093 app/src/main/java/com/wangzan101/mika/ui/SettingsSubPages.kt
+1069 app/src/main/java/com/wangzan101/mika/ui/SettingsSubPages.kt
 1048 app/src/main/java/com/wangzan101/mika/ui/FileLibraryScreen.kt
 971 app/src/main/java/com/wangzan101/mika/proactive/ProactiveLearnScreen.kt
 923 app/src/main/java/com/wangzan101/mika/cap/phone/shell/ShellCallAudio.kt

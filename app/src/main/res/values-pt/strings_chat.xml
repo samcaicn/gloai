@@ -255,7 +255,7 @@
     <string name="chat_branch_retry">Perguntar de novo daqui</string>
     <string name="chat_branch_attachments_readd">Anexe novamente os arquivos que quiser incluir</string>
     <string name="chat_attach_unavailable">Não foi possível adicionar: %1$s. Verifique se os arquivos estão disponíveis e dentro do limite de tamanho.</string>
-    <string name="chat_attach_too_large">%1$s: excede o limite de 200 MiB</string>
+    <string name="chat_attach_too_large">%1$s: excede o limite de %2$s</string>
     <string name="chat_attach_low_device_space">%1$s: espaço insuficiente no celular; libere espaço e tente novamente</string>
     <string name="chat_attach_workspace_limit">%1$s: o armazenamento do espaço de trabalho atingiu o limite; remova arquivos do espaço de trabalho e tente novamente</string>
     <string name="chat_attach_io_error">%1$s: não foi possível ler ou copiar; verifique se o arquivo está disponível e tente novamente</string>

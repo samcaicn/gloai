@@ -231,7 +231,7 @@
     <string name="chat_branch_retry">Buradan tekrar sor</string>
     <string name="chat_branch_attachments_readd">Eklemek istediğiniz ekleri yeniden ekleyin</string>
     <string name="chat_attach_unavailable">Eklenemedi: %1$s. Dosyaların mevcut olduğunu ve boyut sınırı içinde olduğunu kontrol edin.</string>
-    <string name="chat_attach_too_large">%1$s: 200 MiB sınırını aşıyor</string>
+    <string name="chat_attach_too_large">%1$s: %2$s sınırını aşıyor</string>
     <string name="chat_attach_low_device_space">%1$s: yetersiz cihaz depolaması; alan boşaltıp tekrar deneyin</string>
     <string name="chat_attach_workspace_limit">%1$s: çalışma alanı depolama sınırına ulaşıldı; çalışma alanı dosyalarını kaldırıp tekrar deneyin</string>
     <string name="chat_attach_io_error">%1$s: dosya okunamadı veya kopyalanamadı; mevcut olduğunu kontrol edip tekrar deneyin</string>

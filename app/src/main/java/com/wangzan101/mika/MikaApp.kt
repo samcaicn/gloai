@@ -22,6 +22,7 @@ import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.cap.sandbox.AndroidSandbox
 import com.wangzan101.mika.cap.sandbox.Attachments
+import com.wangzan101.mika.cap.sandbox.AttachmentLimits
 import com.wangzan101.mika.cap.sandbox.WorkspaceKey
 import com.wangzan101.mika.ui.AttachFiles
 import com.wangzan101.mika.cap.sandbox.ShareExporter
@@ -525,7 +526,10 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                 val sandbox = AndroidSandbox(app, SandboxState.get(app))
                 val dirs = SandboxDirs(app)
                 val key = workspaceResolver.resolve(id)
-                Attachments.importInto(app, uris.map(Uri::parse), dirs.workspace(key), dirs.gate, dirs.tree, sandbox::freeBytes) { sandbox.workspaceBytes(key) }
+                val flags = FeatureFlags.get(app)
+                Attachments.importInto(app, uris.map(Uri::parse), dirs.workspace(key), dirs.gate, dirs.tree,
+                    freeBytes = sandbox::freeBytes, workspaceBytes = { sandbox.workspaceBytes(key) },
+                    limits = AttachmentLimits(flags.attachmentMaxBytes(), flags.workspaceMaxBytes()))
             },
             describeAttachments = { uris -> AttachFiles.describe(app, uris) },
             deletionImpact = conversationDeleter::impact,

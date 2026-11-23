@@ -29,6 +29,14 @@ data class AttachmentFailure(val name: String, val reason: AttachmentFailureReas
 
 enum class AttachmentFailureReason { TOO_LARGE, LOW_DEVICE_SPACE, WORKSPACE_LIMIT, IO_ERROR }
 
+/** 单文件与工作区两道存储上限;设置里调档后由调用方注入,默认与历史写死值一致。 */
+data class AttachmentLimits(
+    val maxFileBytes: Long = Attachments.MAX_BYTES,
+    val workspaceMaxBytes: Long = Attachments.WORKSPACE_MAX,
+) {
+    companion object { val DEFAULT = AttachmentLimits() }
+}
+
 /** 用户在聊天里附加的文件:复制进当前对话工作区的 inbox/,沙箱里在 /workspace/inbox/。 */
 object Attachments {
     const val MAX_BYTES = 200L shl 20
@@ -57,13 +65,14 @@ object Attachments {
     fun numbered(name: String, n: Int): String = WorkspaceFileGate.numbered(name, n)
 
     /**
-     * 复制到 [workspace] 下的 inbox/;每个文件 ≤ 200 MB(超过的删掉、记进 rejected)。
-     * 每个文件开始前(复制中每 16 MB 也)看一次空间:手机可用空间低于 500 MB、或工作区超过 4 GB 就不收。
+     * 复制到 [workspace] 下的 inbox/;每个文件 ≤ [AttachmentLimits.maxFileBytes](超过的删掉、记进 rejected)。
+     * 每个文件开始前(复制中每 16 MB 也)看一次空间:手机可用空间低于 500 MB、或工作区超过 [AttachmentLimits.workspaceMaxBytes] 就不收。
      * 经 [gate] 在 inbox/ 里新建(不覆盖、按句柄核实):inbox 被沙箱里的命令换成链接也写不出去;失败时只删自己建的那个文件。
      */
     suspend fun importInto(
         context: Context, uris: List<Uri>, workspace: File, gate: WorkspaceFileGate, tree: SandboxTree,
         freeBytes: () -> Long = { workspace.usableSpace }, workspaceBytes: () -> Long = { 0L },
+        limits: AttachmentLimits = AttachmentLimits.DEFAULT,
     ): ImportResult = tree.shared { withContext(Dispatchers.IO) { // 写进 files/sandbox/:和重置互斥
         val added = mutableListOf<Pair<String, Long>>()
         val failures = mutableListOf<AttachmentFailure>()
@@ -73,18 +82,18 @@ object Attachments {
             val base = safeName(display)
             val result = importOne(workspace, gate, base, freeBytes, workspaceBytes, {
                 context.contentResolver.openInputStream(uri) ?: throw IOException("Cannot open attachment")
-            }) { e ->
+            }, logFailure = { e ->
                 Log.w(TAG, "Attachment import failed for \"$base\" (${e.javaClass.simpleName}: ${e.message})")
-            }
+            }, limits = limits)
             added += result.added
             failures += result.failures
         }
         ImportResult(added, failures.map { it.name }, failures)
     } }
 
-    private fun roomFailure(freeBytes: () -> Long, workspaceBytes: () -> Long): AttachmentFailureReason? = when {
+    private fun roomFailure(freeBytes: () -> Long, workspaceBytes: () -> Long, limits: AttachmentLimits): AttachmentFailureReason? = when {
         freeBytes() < MIN_FREE -> AttachmentFailureReason.LOW_DEVICE_SPACE
-        workspaceBytes() > WORKSPACE_MAX -> AttachmentFailureReason.WORKSPACE_LIMIT
+        workspaceBytes() > limits.workspaceMaxBytes -> AttachmentFailureReason.WORKSPACE_LIMIT
         else -> null
     }
 
@@ -92,7 +101,7 @@ object Attachments {
         workspace: File, gate: WorkspaceFileGate, base: String,
         freeBytes: () -> Long, workspaceBytes: () -> Long, open: () -> InputStream,
         onCopied: (Pair<String, Long>) -> Unit = {},
-        logFailure: (Exception) -> Unit = {},
+        logFailure: (Exception) -> Unit = {}, limits: AttachmentLimits = AttachmentLimits.DEFAULT,
     ): ImportResult {
         fun failure(e: Exception): ImportResult {
             logFailure(e)
@@ -100,8 +109,8 @@ object Attachments {
             return ImportResult(emptyList(), listOf(base), listOf(AttachmentFailure(base, reason)))
         }
         val copied = try {
-            roomFailure(freeBytes, workspaceBytes)?.let { throw AttachmentLimitException(it) }
-            copyOne(workspace, gate, base, { roomFailure(freeBytes, workspaceBytes) }, open)
+            roomFailure(freeBytes, workspaceBytes, limits)?.let { throw AttachmentLimitException(it) }
+            copyOne(workspace, gate, base, { roomFailure(freeBytes, workspaceBytes, limits) }, open, limits.maxFileBytes)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -128,13 +137,14 @@ object Attachments {
     /** Keep the exact handles until the phone accepts the task, so a failed batch leaves no partial input. */
     suspend fun <T> withTaskFiles(
         sources: List<Pair<String, File>>, workspace: File, gate: WorkspaceFileGate, tree: SandboxTree,
-        room: () -> Boolean, launch: (List<Pair<String, Long>>) -> T,
+        room: () -> Boolean, limits: AttachmentLimits = AttachmentLimits.DEFAULT,
+        launch: (List<Pair<String, Long>>) -> T,
     ): T = tree.shared {
         val created = mutableListOf<GatedFile>()
         try {
             for ((name, source) in sources) {
                 if (!room()) throw IOException("Not enough space for task attachments")
-                created += copyOne(workspace, gate, safeName(name), { if (room()) null else AttachmentFailureReason.IO_ERROR }) { source.inputStream() }
+                created += copyOne(workspace, gate, safeName(name), { if (room()) null else AttachmentFailureReason.IO_ERROR }, { source.inputStream() }, limits.maxFileBytes)
             }
             launch(created.map { it.entry() })
         } catch (e: Throwable) {
@@ -144,7 +154,7 @@ object Attachments {
     }
 
     private suspend fun copyOne(workspace: File, gate: WorkspaceFileGate, base: String, room: () -> AttachmentFailureReason?,
-        open: () -> InputStream): GatedFile {
+        open: () -> InputStream, maxFileBytes: Long = MAX_BYTES): GatedFile {
         workspace.mkdirs()
         val (_, g) = gate.createNumbered(workspace, INBOX, base, max = 1000)
         var size = 0L
@@ -156,7 +166,7 @@ object Attachments {
                     val r = input.read(buf)
                     if (r < 0) break
                     size += r
-                    if (size > MAX_BYTES) throw AttachmentLimitException(AttachmentFailureReason.TOO_LARGE)
+                    if (size > maxFileBytes) throw AttachmentLimitException(AttachmentFailureReason.TOO_LARGE)
                     if (size % CHECK_EVERY < r) room()?.let { throw AttachmentLimitException(it) }
                     g.write(if (r == buf.size) buf else buf.copyOf(r))
                 }

@@ -231,7 +231,7 @@
     <string name="chat_branch_retry">여기서 다시 묻기</string>
     <string name="chat_branch_attachments_readd">첨부 파일을 다시 추가하세요</string>
     <string name="chat_attach_unavailable">추가하지 못했어요: %1$s. 파일을 사용할 수 있고 크기 제한을 넘지 않았는지 확인하세요.</string>
-    <string name="chat_attach_too_large">%1$s: 200 MiB 제한을 초과했어요</string>
+    <string name="chat_attach_too_large">%1$s: %2$s 제한을 초과했어요</string>
     <string name="chat_attach_low_device_space">%1$s: 휴대전화 저장 공간이 부족해요. 공간을 확보한 후 다시 시도하세요</string>
     <string name="chat_attach_workspace_limit">%1$s: 작업 공간 저장 용량이 한도에 도달했어요. 작업 공간의 파일을 정리한 후 다시 시도하세요</string>
     <string name="chat_attach_io_error">%1$s: 읽거나 복사할 수 없어요. 파일을 사용할 수 있는지 확인한 후 다시 시도하세요</string>
