@@ -107,6 +107,14 @@ class VoiceCallSession(
         if (muted) _micLevel.value = 0f
     }
 
+    /**
+     * 回复已在本地显示(打字请求的结果只进转写/面板,云端不会播报):不会再有播放把「在想」带回「在听」,
+     * 由装配方显示后告诉会话。正在播报时不动,播完自然回到听。
+     */
+    fun onLocalReply() {
+        _turn.compareAndSet(VoiceCallTurn.Thinking, VoiceCallTurn.Listening)
+    }
+
     private var typedCount = 0
 
     /**

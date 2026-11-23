@@ -232,6 +232,8 @@ class VoiceCallController(
             appendTurn = deps.appendTurn,
         )
         val feed = VoiceCallFeed()
+        // 路由的回调要回头告诉会话(打字结果已显示),会话又要路由来派发请求:先声明,下面建好
+        lateinit var session: VoiceCallSession
         val callScope = CoroutineScope(SupervisorJob(deps.scope.coroutineContext[kotlinx.coroutines.Job]) + Dispatchers.Default)
         this.callScope = callScope
         val route = VoiceCallRoute(
@@ -244,6 +246,7 @@ class VoiceCallController(
                         transcript.onAssistant(it)
                         feed.onAssistant(it, isFinal = true)
                     }
+                    session.onLocalReply()
                 } else {
                     currentRealtime?.sendToolResult(callId, buildJsonObject {
                         put("status", "completed")
@@ -253,7 +256,7 @@ class VoiceCallController(
             },
             cancelTask = deps.cancelTask,
         )
-        val session = VoiceCallSession(
+        session = VoiceCallSession(
             scope = callScope,
             audio = AndroidVoiceCallAudio(deps.context),
             foregroundResumed = deps.foregroundResumed,

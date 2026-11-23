@@ -731,6 +731,29 @@ class VoiceCallSessionTest {
         assertEquals("没听清就回到听", VoiceCallTurn.Listening, h.session.turn.value)
     }
 
+    @Test fun `a reply shown locally ends thinking without waiting for speech`() = runTest {
+        lateinit var h: Harness
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt })
+        runCurrent()
+        reachActive(h, this)
+        h.session.sendUserText("现在几点")
+        assertEquals(VoiceCallTurn.Thinking, h.session.turn.value)
+        h.session.onLocalReply()
+        assertEquals("打字的结果只在本地显示、不会播出来,显示了就轮回到听", VoiceCallTurn.Listening, h.session.turn.value)
+    }
+
+    @Test fun `a local reply does not cut off mika while she is talking`() = runTest {
+        lateinit var h: Harness
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt })
+        runCurrent()
+        reachActive(h, this)
+        h.rt.emit(VolcRealtimeEvent.Audio(ByteArray(3200)))
+        runCurrent()
+        assertEquals(VoiceCallTurn.Speaking, h.session.turn.value)
+        h.session.onLocalReply()
+        assertEquals(VoiceCallTurn.Speaking, h.session.turn.value)
+    }
+
     @Test fun `mute sends silence upstream and zeroes the mic level until unmuted`() = runTest {
         lateinit var h: Harness
         h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt })

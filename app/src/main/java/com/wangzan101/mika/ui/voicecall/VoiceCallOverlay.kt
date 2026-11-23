@@ -1,6 +1,10 @@
 package com.wangzan101.mika.ui.voicecall
 
 import android.text.format.DateFormat
+import android.view.View
+import android.view.ViewParent
+import android.view.Window
+import android.view.WindowManager
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -53,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
@@ -226,16 +231,35 @@ private fun CallDialog(content: @Composable () -> Unit) {
         ),
     ) {
         val dark = MikaTheme.colors.isDark
+        val bg = MikaTheme.colors.bg
         val view = LocalView.current
         SideEffect {
-            val window = (view.parent as? DialogWindowProvider)?.window ?: return@SideEffect
-            WindowCompat.getInsetsController(window, view).apply {
+            val window = view.dialogWindow() ?: return@SideEffect
+            // 整页不透明,后面不用变暗:去掉变暗标志(只把亮度调 0 不够,系统见到变暗窗口就把状态栏图标强制成白色),
+            // 系统栏刷成页面底色,不再露出一条变暗的旧界面
+            window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            @Suppress("DEPRECATION")
+            window.statusBarColor = bg.toArgb()
+            @Suppress("DEPRECATION")
+            window.navigationBarColor = bg.toArgb()
+            WindowCompat.getInsetsController(window, window.decorView).apply {
                 isAppearanceLightStatusBars = !dark
                 isAppearanceLightNavigationBars = !dark
             }
         }
         content()
     }
+}
+
+/** 往上找到承载这段 Compose 内容的 Dialog 窗口;中间可能隔着几层容器,不能只看直接父级。 */
+private fun View.dialogWindow(): Window? {
+    var p: ViewParent? = parent
+    while (p != null) {
+        if (p is DialogWindowProvider) return p.window
+        p = p.parent
+    }
+    return null
 }
 
 /** 页面骨架:App 底色 + 顶栏(收起、[header] 小图、标题、状态句)+ 一道细线,[content] 排在下面。 */
@@ -444,7 +468,7 @@ private fun CallDock(
                     .padding(horizontal = 20.dp).testTag("voicecall-hangup"),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(MikaIcons.Phone, stringResource(R.string.voicecall_hangup), Modifier.size(20.dp).graphicsLayer { rotationZ = 135f }, tint = Color.White)
+                Icon(MikaIcons.HangUp, stringResource(R.string.voicecall_hangup), Modifier.size(22.dp), tint = Color.White)
                 Text(clock, Modifier.padding(start = 6.dp).testTag("voicecall-clock"), style = MikaType.BodyStrong, color = Color.White)
             }
             Spacer(Modifier.weight(1f))
