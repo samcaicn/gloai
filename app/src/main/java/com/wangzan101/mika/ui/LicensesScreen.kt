@@ -74,6 +74,7 @@ object Licenses {
         Entry("xterm.js", "MIT", "版本 5.5.0(及 @xterm/addon-fit 0.10.0),用户终端页的终端仿真器。https://github.com/xtermjs/xterm.js"),
         Entry("Shizuku API", "Apache-2.0", "版本 13.1.5(api 与 provider),仅在设备已安装、启动并授权 Shizuku 时按官方 API 绑定本地助手服务。https://github.com/RikkaApps/Shizuku-API"),
         Entry("MCP 服务品牌 logo（mcp/mcp-logos.json）", "CC0 1.0", "服务目录/列表/管理页的品牌轮廓图标字形本体为 CC0 1.0;各品牌标志仍归各自品牌所有,仅用于「可连接的服务」标识。"),
+        Entry("Lobe Icons（MCP 服务品牌 logo 补充）", "MIT", "版本 1.106.0,补上前一项没有的 AI/搜索服务单色标志。Copyright (c) 2023 LobeHub. https://github.com/lobehub/lobe-icons"),
     )
 }
 

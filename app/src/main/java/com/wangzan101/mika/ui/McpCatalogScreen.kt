@@ -172,7 +172,7 @@ fun McpCatalogScreen(
                                 logo ?: McpCategory.icon(McpCategory.of(p)), p.name,
                                 subtitle = p.summary.resolve(langTag),
                                 first = i == 0,
-                                brand = logo != null,
+                                brandTile = logos.tile(p.id),
                                 onClick = { onOpenPreset(p.id) },
                                 modifier = Modifier.testTag("mcp-preset-${p.id}"),
                             ) { RowChevron() }

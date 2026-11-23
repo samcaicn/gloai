@@ -309,6 +309,36 @@ THE SOFTWARE.
 - Usage: Library dependency used to optionally bind a local privileged user service when Shizuku is already installed, running, and authorized by the user.
 ## MCP 服务品牌 logo（mcp/mcp-logos.json）
 
-- Source: https://www.npmjs.com/package/simple-icons（Simple Icons, 钉死版本 16.38.1 + 14.11.0）
+- Source: https://www.npmjs.com/package/simple-icons（Simple Icons, 钉死版本 16.38.1 + 14.11.0 + 11.15.0）
 - License: CC0 1.0（图标字形本体）;各品牌标志（GitHub、Slack、OpenAI、Google、Notion 等）仍归各自品牌所有,仅在此用于「可连接的服务」标识。
 - Usage: `app/src/main/assets/mcp/mcp-logos.json` 里的品牌轮廓 path 与官方品牌色,由 `tools/mcp/build_logos.py` 生成,供 `McpLogos` 在服务目录/列表/管理页渲染为自着色矢量图标。
+
+## MCP 服务品牌 logo 补充集（mcp/mcp-logos.json）
+
+- Source: https://www.npmjs.com/package/@lobehub/icons-static-svg（Lobe Icons, 钉死版本 1.106.0）,只补上一节图标集没有的 AI/搜索服务（Cohere、Groq、xAI、Tencent Cloud 等）
+- License: MIT;各品牌标志仍归各自品牌所有,仅在此用于「可连接的服务」标识。
+- Usage: 同上,由 `tools/mcp/build_logos.py` 取单色 path 写进 `app/src/main/assets/mcp/mcp-logos.json`。
+
+```text
+MIT License
+
+Copyright (c) 2023 LobeHub
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```

@@ -95,7 +95,7 @@ fun McpServerManageScreen(
                     ListRow(
                         logo ?: MikaIcons.Link, statusTitle, subtitle = address, first = true,
                         tone = if (state?.ok == true) TileTone.Ok else TileTone.Neutral,
-                        brand = logo != null,
+                        brandTile = current.presetId?.let { logos.tile(it) },
                     ) {
                         MikaSwitch(current.enabled, { on -> store.setEnabled(current.id, on) })
                     }

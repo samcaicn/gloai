@@ -119,7 +119,7 @@ private fun McpServerList(
                         } ?: address),
                         detail = state?.let { address },
                         first = i == 0,
-                        brand = logo != null,
+                        brandTile = server.presetId?.let { logos.tile(it) },
                         onClick = { onEdit(server) },
                     ) {
                         MikaSwitch(server.enabled, { on -> store.setEnabled(server.id, on) })
