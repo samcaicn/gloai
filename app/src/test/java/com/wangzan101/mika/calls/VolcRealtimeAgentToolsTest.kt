@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -163,6 +164,60 @@ class VolcRealtimeAgentToolsTest {
             assertEquals(note, call.arguments.getValue("note").jsonPrimitive.content)
             finish(session)
             withTimeout(3_000) { collector.await() }
+        }
+    }
+
+    private fun audio(type: String, response: String) = """{"type":"$type","response_id":"$response"}"""
+
+    @Test fun aNoticeEndsSpokenOnlyWhenItsResponseFinishes() = runBlocking {
+        fixture {
+            val session = connectAgent()
+            val collector = async { session.events.collect {} }
+            // 上一句还在播:它播完不算这条汇报说完
+            peer().send(audio(VolcRealtimeProtocol.AUDIO_STARTED, "r0"))
+            val ends = Channel<Boolean>(4)
+            assertTrue(session.sendNotice("订日料那件,办好了") { ends.trySend(it) })
+            assertEquals("speech_text_buffer.commit", nextMessage().type)
+            peer().send(audio(VolcRealtimeProtocol.AUDIO_DONE, "r0"))
+            peer().send(audio(VolcRealtimeProtocol.AUDIO_STARTED, "r1"))
+            delay(200)
+            assertTrue("上一句播完、这条刚开播,还不算说完", ends.isEmpty)
+            peer().send(audio(VolcRealtimeProtocol.AUDIO_DONE, "r1"))
+            assertEquals(true, withTimeout(3_000) { ends.receive() })
+            finish(session)
+            withTimeout(3_000) { collector.await() }
+        }
+    }
+
+    @Test fun aNoticeCutByTheUserOrACancelEndsUnspoken() = runBlocking {
+        fixture {
+            val session = connectAgent()
+            val collector = async { session.events.collect {} }
+            val ends = Channel<Boolean>(4)
+            assertTrue(session.sendNotice("订日料那件,办好了") { ends.trySend(it) })
+            assertEquals("speech_text_buffer.commit", nextMessage().type)
+            peer().send(audio(VolcRealtimeProtocol.AUDIO_STARTED, "r1"))
+            peer().send("""{"type":"${VolcRealtimeProtocol.USER_STARTED}","item_id":"u1"}""")
+            assertEquals(false, withTimeout(3_000) { ends.receive() })
+            // 服务端取消回复也算没说完
+            assertTrue(session.sendNotice("查天气那件,明天晴") { ends.trySend(it) })
+            assertEquals("speech_text_buffer.commit", nextMessage().type)
+            peer().send(audio(VolcRealtimeProtocol.AUDIO_STARTED, "r2"))
+            peer().send(audio(VolcRealtimeProtocol.CANCELED, "r2"))
+            assertEquals(false, withTimeout(3_000) { ends.receive() })
+            finish(session)
+            withTimeout(3_000) { collector.await() }
+        }
+    }
+
+    @Test fun aNoticeStillPendingWhenTheCallEndsEndsUnspoken() = runBlocking {
+        fixture {
+            val session = connectAgent()
+            val ends = Channel<Boolean>(4)
+            assertTrue(session.sendNotice("订日料那件,办好了") { ends.trySend(it) })
+            assertEquals("speech_text_buffer.commit", nextMessage().type)
+            finish(session)
+            assertEquals(false, withTimeout(3_000) { ends.receive() })
         }
     }
 

@@ -1,10 +1,11 @@
 package com.wangzan101.mika.voicecall
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 执行安全闸:5 条规则各有正反例,另含跨轮重放、消费后同轮二次 offer、回声窗环形边界。 */
+/** 执行安全闸:5 条规则各有正反例,另含跨轮重放、同轮多次 offer、回声按整句判定、回声窗环形边界。 */
 class VoiceCallRequestTest {
 
     // 规则①:无当轮转写 → Reject
@@ -14,7 +15,7 @@ class VoiceCallRequestTest {
         assertEquals(VoiceCallDecision.Reject, gate.offer("c1", "打开微信"))
     }
 
-    // 规则⑤正例:匹配 → Accept(转写原文里对上的那段,非归一化结果)
+    // 规则⑤正例:匹配 → Accept(用户整句原文,非归一化结果)
     @Test
     fun matchingUtteranceAcceptsWithOriginalTranscript() {
         val gate = VoiceCallRequest(RingBuffer(10))
@@ -30,16 +31,25 @@ class VoiceCallRequestTest {
     fun punctuationWhitespaceAndCaseAreNormalized() {
         val gate = VoiceCallRequest(RingBuffer(10))
         gate.onUserTranscript("你好,世界!")
-        assertEquals(VoiceCallDecision.Accept("你好,世界"), gate.offer("c1", "你好 世界"))
+        assertEquals(VoiceCallDecision.Accept("你好,世界!"), gate.offer("c1", "你好 世界"))
     }
 
-    // 规则③正例:单向包含,不要求等长——utterance 是转写的片段也过,执行的是原文里对上的那段
-    // (一句话办几件事时各件只拿自己那段,不会每件都把整句办一遍)
+    // 规则③正例:单向包含,不要求等长——utterance 是转写的片段也过,执行的是用户完整的原话
     @Test
     fun partialOverlapAccepts() {
         val gate = VoiceCallRequest(RingBuffer(10))
         gate.onUserTranscript("帮我打开微信好吗")
-        assertEquals(VoiceCallDecision.Accept("打开微信"), gate.offer("c1", "打开微信"))
+        assertEquals(VoiceCallDecision.Accept("帮我打开微信好吗"), gate.offer("c1", "打开微信"))
+    }
+
+    // 规则⑤:模型只摘片段也改不了用户的意思——否定词不会被摘掉,交给后台的永远是整句
+    @Test
+    fun aFragmentCannotDropANegation() {
+        val gate = VoiceCallRequest(RingBuffer(10))
+        gate.onUserTranscript("千万别帮我给他转账")
+        assertEquals(VoiceCallDecision.Accept("千万别帮我给他转账"), gate.offer("c1", "帮我给他转账"))
+        assertTrue(gate.verified("千万别帮我给他转账"))
+        assertFalse(gate.verified("帮我给他转账"))
     }
 
     // 规则③反例:utterance 比当轮转写还长——模型往里添了用户没说的话 → Reject 且不消费转写
@@ -87,10 +97,10 @@ class VoiceCallRequestTest {
     fun oneUtteranceAuthorizesSeveralCalls() {
         val gate = VoiceCallRequest(RingBuffer(10))
         gate.onUserTranscript("帮我订晚饭,再叫个车")
-        assertEquals(VoiceCallDecision.Accept("帮我订晚饭"), gate.offer("c1", "帮我订晚饭"))
-        assertEquals(VoiceCallDecision.Accept("再叫个车"), gate.offer("c2", "再叫个车"))
-        assertTrue(gate.verified("帮我订晚饭"))
-        assertTrue(gate.verified("再叫个车"))
+        // 各件都带整句(用户原话),哪件办哪部分由前台的标题、备注说明
+        assertEquals(VoiceCallDecision.Accept("帮我订晚饭,再叫个车"), gate.offer("c1", "帮我订晚饭"))
+        assertEquals(VoiceCallDecision.Accept("帮我订晚饭,再叫个车"), gate.offer("c2", "再叫个车"))
+        assertTrue(gate.verified("帮我订晚饭,再叫个车"))
         // 用户没说过的话,同轮里照样拒
         assertEquals(VoiceCallDecision.Reject, gate.offer("c3", "顺便转账"))
     }
@@ -126,14 +136,36 @@ class VoiceCallRequestTest {
         assertEquals(VoiceCallDecision.Reject, gate.offer("c1", "马上帮你打开微信"))
     }
 
-    // 规则④反例(反向):回声窗内容是 utterance 的子串 → 同样 Reject
+    // 规则④正例:回声只盖住这句的一小部分 → 不算回声(用户自己接着说了别的)
     @Test
-    fun echoWindowInsideUtteranceRejects() {
+    fun echoCoveringOnlyPartOfTheTurnDoesNotBlock() {
         val window = RingBuffer<String>(10)
         val gate = VoiceCallRequest(window)
         window.append("你好")
         gate.onUserTranscript("你好世界")
-        assertEquals(VoiceCallDecision.Reject, gate.offer("c1", "你好世界"))
+        assertEquals(VoiceCallDecision.Accept("你好世界"), gate.offer("c1", "你好世界"))
+    }
+
+    // 规则④正例:刚念过的问题里有选项,用户挑一个回答 → 不算回声
+    @Test
+    fun answeringWithAnOptionFromTheSpokenQuestionPasses() {
+        val window = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
+        val gate = VoiceCallRequest(window)
+        window.append("订日料那件,在问你:七点还是八点?")
+        gate.onUserTranscript("七点吧")
+        assertEquals(VoiceCallDecision.Accept("七点吧"), gate.offer("c1", "七点"))
+        gate.onUserTranscript("七点")
+        assertEquals(VoiceCallDecision.Accept("七点"), gate.offer("c2", "七点"))
+    }
+
+    // 规则④反例:整句几乎都是刚念过的话(播音回流成了用户转写)→ Reject,哪怕只摘一段
+    @Test
+    fun aTurnMostlyMadeOfEchoRejectsEvenForAFragment() {
+        val window = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
+        val gate = VoiceCallRequest(window)
+        window.append("好的,马上帮你打开微信")
+        gate.onUserTranscript("马上帮你打开微信吧")
+        assertEquals(VoiceCallDecision.Reject, gate.offer("c1", "打开微信"))
     }
 
     // 规则④正例:回声窗有无关内容,utterance 与转写匹配且不在窗内 → Accept
@@ -152,8 +184,8 @@ class VoiceCallRequestTest {
         val window = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
         val gate = VoiceCallRequest(window)
         window.append("甲".repeat(ECHO_WINDOW_CAPACITY_CHARS))
-        gate.onUserTranscript("甲甲")
-        assertEquals(VoiceCallDecision.Reject, gate.offer("c1", "甲甲"))
+        gate.onUserTranscript("甲甲甲甲")
+        assertEquals(VoiceCallDecision.Reject, gate.offer("c1", "甲甲甲甲"))
     }
 
     // 回声窗 500 字环形边界:超出容量逐条丢最旧,被丢内容不再判回声,留存内容仍判
@@ -162,12 +194,12 @@ class VoiceCallRequestTest {
         val window = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
         val gate = VoiceCallRequest(window)
         window.append("甲".repeat(ECHO_WINDOW_CAPACITY_CHARS))
-        window.append("乙")
-        assertEquals(listOf("乙"), window.snapshot())
-        gate.onUserTranscript("甲甲")
-        assertEquals(VoiceCallDecision.Accept("甲甲"), gate.offer("c1", "甲甲"))
-        gate.onUserTranscript("乙乙")
-        assertEquals(VoiceCallDecision.Reject, gate.offer("c2", "乙乙"))
+        window.append("乙乙乙乙")
+        assertEquals(listOf("乙乙乙乙"), window.snapshot())
+        gate.onUserTranscript("甲甲甲甲")
+        assertEquals(VoiceCallDecision.Accept("甲甲甲甲"), gate.offer("c1", "甲甲甲甲"))
+        gate.onUserTranscript("乙乙乙乙")
+        assertEquals(VoiceCallDecision.Reject, gate.offer("c2", "乙乙乙乙"))
     }
 
     // 回声窗环形边界:单条超过容量只留尾部最近的内容
@@ -179,8 +211,8 @@ class VoiceCallRequestTest {
         assertEquals(listOf("丁".repeat(ECHO_WINDOW_CAPACITY_CHARS)), window.snapshot())
         gate.onUserTranscript("丙丙")
         assertEquals(VoiceCallDecision.Accept("丙丙"), gate.offer("c1", "丙丙"))
-        gate.onUserTranscript("丁丁")
-        assertEquals(VoiceCallDecision.Reject, gate.offer("c2", "丁丁"))
+        gate.onUserTranscript("丁丁丁丁")
+        assertEquals(VoiceCallDecision.Reject, gate.offer("c2", "丁丁丁丁"))
     }
 
     // 加固:归一化后为空的 utterance(纯标点)宁可拒执行——空串是任何串的子串,不能放行

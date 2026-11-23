@@ -250,14 +250,33 @@ class VolcRealtimeSession internal constructor(
     }
 
     /**
-     * 前台的汇报:代码拼好的一句话原样念出(和开场白同一条路)。排队、让用户先说由服务端管,
-     * 这一侧看不到念没念完,交出去就算说完。
+     * 前台的汇报:代码拼好的一句话原样念出(和开场白同一条路),排队由服务端管。
+     * 交出去之后开播的那段回复播完才算说完;在那之前用户开口、回复被取消或通话断了,都算没说完。
      */
     @Synchronized override fun sendNotice(text: String, ended: (spoken: Boolean) -> Unit): Boolean {
         if (phase != Phase.ACTIVE || text.isBlank() || text.length > VolcRealtimeProtocol.MAX_TOOL_RESULT_CHARS) return false
         val sent = send(if (openAi) OpenAiCallProtocol.greeting(text) else VolcRealtimeProtocol.greeting(nextId(), text))
-        if (sent) ended(true)
+        if (sent) notices.addLast(PendingNotice(ended))
         return sent
+    }
+
+    /** 交出去还没说完的汇报;[playing] 表示交出去之后已经有一段新回复开播,它播完这条就算说完。 */
+    private class PendingNotice(val ended: (Boolean) -> Unit, var playing: Boolean = false)
+    private val notices = ArrayDeque<PendingNotice>()
+
+    /** 一段新回复开播了:排在最前、还没开播的汇报就是它。 */
+    private fun noticeAudioStarted() {
+        notices.firstOrNull { !it.playing }?.playing = true
+    }
+
+    /** 一段回复播完了:正在播的那条汇报说完了。 */
+    private fun noticeAudioDone() {
+        if (notices.firstOrNull()?.playing == true) notices.removeFirst().ended(true)
+    }
+
+    /** 用户开口、回复被取消、通话断了:交出去的汇报都算没说完。 */
+    private fun cutNotices() {
+        while (notices.isNotEmpty()) notices.removeFirst().ended(false)
     }
 
     @Synchronized override fun setMuted(muted: Boolean): Boolean {
@@ -468,6 +487,7 @@ class VolcRealtimeSession internal constructor(
                 if (!audioActive || (responseId != null && responseId != audioId)) {
                     audioId = responseId
                     audioActive = true
+                    noticeAudioStarted()
                     publish(VolcRealtimeEvent.AssistantAudioStarted)
                 }
             }
@@ -478,6 +498,7 @@ class VolcRealtimeSession internal constructor(
                 acceptResponseIdentity(responseId)
                 if (!audioActive) {
                     audioActive = true
+                    noticeAudioStarted()
                     publish(VolcRealtimeEvent.AssistantAudioStarted)
                 }
                 if (responseId != null) {
@@ -494,6 +515,7 @@ class VolcRealtimeSession internal constructor(
             VolcRealtimeProtocol.AUDIO_DONE -> if (!isRetiredResponse(responseId) && audioActive && (responseId == null || responseId == audioId || audioId == null)) {
                 audioActive = false
                 audioId = null
+                noticeAudioDone()
                 publish(VolcRealtimeEvent.AssistantAudioEnded)
             }
             VolcRealtimeProtocol.CANCELED -> {
@@ -639,6 +661,7 @@ class VolcRealtimeSession internal constructor(
     }
 
     private fun interruptAudio() {
+        cutNotices()
         // Text can arrive before synthesis starts. Retire that observed identity too.
         retireResponse(lastResponseId)
         lastResponseId = null
@@ -696,6 +719,7 @@ class VolcRealtimeSession internal constructor(
         if (phase == Phase.ENDED) return
         phase = Phase.ENDED
         closeWatchdog?.cancel()
+        cutNotices()
         val connection = socket
         socket = null
         if (cancelSocket) connection?.cancel()

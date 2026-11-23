@@ -587,7 +587,7 @@ class VoiceCallSessionTest {
         h.rt.emit(requestCall("c1", "帮我订晚饭"))
         h.rt.emit(requestCall("c2", "再叫个车"))
         runCurrent()
-        assertEquals(listOf("c1" to "帮我订晚饭", "c2" to "再叫个车"), requests)
+        assertEquals(listOf("c1" to "帮我订晚饭,再叫个车", "c2" to "帮我订晚饭,再叫个车"), requests)
         // 用户又开口了:上一句不再能授权
         h.rt.emit(VolcRealtimeEvent.UserSpeaking)
         h.rt.emit(requestCall("c3", "再叫个车"))
@@ -729,8 +729,8 @@ class VoiceCallSessionTest {
         h.session.sendUserText("帮我订明晚的日料")
         h.rt.emit(requestCall("c1", "订明晚的日料"))
         runCurrent()
-        // 放行的是打的字里对上的那段
-        assertEquals(listOf("c1" to "订明晚的日料"), requests)
+        // 放行后原话换成当轮完整的话
+        assertEquals(listOf("c1" to "帮我订明晚的日料"), requests)
     }
 
     @Test fun `a tool without words skips the gate`() = runTest {
@@ -774,6 +774,40 @@ class VoiceCallSessionTest {
         assertTrue(h.audio.interruptCount >= 1)
         assertTrue("插话不取消后台任务", port.cancels.isEmpty())
         assertTrue(port.states.getValue("t1").value is TaskState.Running)
+    }
+
+    @Test fun `answering a spoken question with one of its options reaches the task`() = runTest {
+        val port = FakeDeskPort()
+        val ledger = DeskLedger()
+        val desk = FrontDesk("p", backgroundScope, port, ledger, ReportPolicy({ currentTime }), FakeDeskSink())
+        val echo = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
+        val gate = VoiceCallRequest(echo)
+        val executor = DeskToolExecutor(port, ledger, gate::verified, { currentTime }, "p") { desk.track(it.taskId, it.title) }
+        lateinit var h: Harness
+        lateinit var bridge: VoiceDeskBridge
+        h = Harness(
+            backgroundScope, connect = { h.rt }, echoWindow = echo, requestGate = gate,
+            onDeskCall = { id, name, args -> backgroundScope.launch { bridge.onFunctionCall(id, name, args) } },
+            clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime },
+        )
+        bridge = VoiceDeskBridge(desk, executor, { h.rt }, { it.title }, echo::append)
+        bridge.attach()
+        runCurrent()
+        reachActive(h, this)
+        h.rt.emit(VolcRealtimeEvent.UserTranscript("帮我订明晚的日料", isFinal = true))
+        h.rt.emit(requestCall("c1", "帮我订明晚的日料"))
+        runCurrent()
+        port.states.getValue("t1").value = TaskState.WaitingInput("七点还是八点?")
+        runCurrent()
+        // 问题念出来了(进回声窗),用户挑了一个选项回答
+        h.rt.emit(VolcRealtimeEvent.AssistantTranscript("订日料那件,在问你:七点还是八点?"))
+        h.rt.emit(VolcRealtimeEvent.AssistantTextEnded)
+        h.rt.emit(VolcRealtimeEvent.UserSpeaking)
+        h.rt.emit(VolcRealtimeEvent.UserTranscript("七点吧", isFinal = true))
+        h.rt.emit(VolcRealtimeEvent.FunctionCall("c2", DeskTools.ANSWER, buildJsonObject { put("task_id", "t1"); put("words", "七点") }))
+        runCurrent()
+        assertEquals(listOf("t1" to "七点吧"), port.answers)
+        assertEquals("ok", h.rt.toolResults.last().second.getValue("status").jsonPrimitive.content)
     }
 
     @Test fun `typed text is ignored outside the active state`() = runTest {

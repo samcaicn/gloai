@@ -9,8 +9,11 @@ const val ECHO_WINDOW_CAPACITY_CHARS = 500
  *
  * ① 无当轮转写 → Reject;② callId 已见过(含跨轮重放)→ Reject;③ utterance 归一化后不是当轮转写
  * 的子串 → Reject——单向包含:模型可以只摘用户说的片段,不能往里添用户没说的话;
- * ④ utterance 归一化后与回声窗内助手内容互为子串 → Reject(回声是对称判定,两个方向都算);
- * ⑤ 通过 → Accept(转写原文里对上的那一段,保留用户原来的写法)。一句话可以办几件事,放行不消费转写:同一轮里各次调用各摘各的;
+ * ④ 当轮整句转写大半是回声窗里助手刚说过的话(播音回流成了用户转写)→ Reject。按整句判,不按模型摘的片段判:
+ * 用户从刚念的问题里挑一个选项回答(「七点还是八点?」→「七点吧」)不算回声;太短的一句(不到
+ * [ECHO_MIN_CHARS] 个字)分不清是回声还是简短回答,也不算;
+ * ⑤ 通过 → Accept(用户整句原文)。交给后台的永远是整句——模型摘片段只用来核对,摘掉否定词、条件改不了用户的意思。
+ * 一句话可以办几件事:放行不消费转写,同一轮里各次调用都带整句,各件办哪部分由前台的标题、备注说明;
  * 用户下一轮开口([onUserTurnStart])或新转写登记时,上一轮转写作废。
  *
  * @param echoWindow 助手已说内容的环形缓冲,容量 [ECHO_WINDOW_CAPACITY_CHARS] 字。
@@ -70,12 +73,9 @@ class VoiceCallRequest(
             return VoiceCallDecision.Reject
         }
         val echo = normalizeForMatch(echoWindow.snapshot().joinToString(""))
-        if (echo.isNotEmpty() && isMutualSubstring(normalizedUtterance, echo)) {
-            return VoiceCallDecision.Reject
-        }
-        val words = originalSpan(transcript, normalizedUtterance)
-        remember(words)
-        return VoiceCallDecision.Accept(words)
+        if (isMostlyEcho(normalizedTranscript, echo)) return VoiceCallDecision.Reject
+        remember(transcript)
+        return VoiceCallDecision.Accept(transcript)
     }
 
     private companion object {
@@ -84,7 +84,7 @@ class VoiceCallRequest(
 }
 
 sealed interface VoiceCallDecision {
-    /** 放行,携带当轮转写原文里对上的那一段(未归一化,用户原来的写法)。 */
+    /** 放行,携带原始(未归一化)的当轮用户整句转写。 */
     data class Accept(val text: String) : VoiceCallDecision
 
     data object Reject : VoiceCallDecision
@@ -94,16 +94,35 @@ sealed interface VoiceCallDecision {
 private fun normalizeForMatch(text: String): String =
     text.lowercase().filter(Char::isLetterOrDigit)
 
-/** [transcript] 原文里归一化后等于 [normalized] 的那一段(首个匹配,从对上的第一个字到最后一个字)。 */
-private fun originalSpan(transcript: String, normalized: String): String {
-    val kept = transcript.indices.filter { transcript[it].lowercaseChar().isLetterOrDigit() }
-    val start = normalizeForMatch(transcript).indexOf(normalized)
-    // 逐字小写与整串小写长度不同(极少数字符)时对不上位置,退回整句原文
-    if (start < 0 || kept.size != normalizeForMatch(transcript).length) return transcript
-    return transcript.substring(kept[start], kept[start + normalized.length - 1] + 1)
+/** 一句至少这么多个字(归一化后)才可能判成回声。 */
+private const val ECHO_MIN_CHARS = 4
+
+/** 回声盖住一句的比例到这个份上,就当这句是播音回流。 */
+private const val ECHO_COVER_RATIO = 0.8
+
+/** 归一化后的整句 [turn] 里,和回声 [echo] 最长的一段公共连续内容盖住了这句的大半(且这段不太短)。 */
+private fun isMostlyEcho(turn: String, echo: String): Boolean {
+    if (turn.length < ECHO_MIN_CHARS || echo.isEmpty()) return false
+    val covered = longestCommonRun(turn, echo)
+    return covered >= ECHO_MIN_CHARS && covered >= turn.length * ECHO_COVER_RATIO
 }
 
-private fun isMutualSubstring(a: String, b: String): Boolean = a in b || b in a
+/** 两串最长公共连续子串的长度(按行滚动的动态规划)。 */
+private fun longestCommonRun(a: String, b: String): Int {
+    var best = 0
+    var previous = IntArray(b.length + 1)
+    for (i in 1..a.length) {
+        val row = IntArray(b.length + 1)
+        for (j in 1..b.length) {
+            if (a[i - 1] == b[j - 1]) {
+                row[j] = previous[j - 1] + 1
+                if (row[j] > best) best = row[j]
+            }
+        }
+        previous = row
+    }
+    return best
+}
 
 /**
  * 按字符计容量的环形缓冲:逐条追加,总字符数超出 [capacityChars] 时从最旧整条丢弃;
