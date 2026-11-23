@@ -27,13 +27,7 @@
 | 10 AI 电话里的前台 | 未开始 | — |
 | 11 全量回归 + 真机验证 | 未开始 | — |
 
-**Task 8 的摊子**：上一个控制器派出实现者（opus，agent id `a87edfaece2ea0f44`，BASE `c4ac312e2`）后就被用户叫停了。叫停那一刻 `git status` 干净，实现者还在读代码阶段。**接手第一件事：`git status` + `git log` 看它的结果**——
-
-- 如果它**已经做完并提交**（会有 `feat(voicecall): talk through the front desk…` 提交 + `.superpowers/sdd/2026-11-23-front-desk/task-8-report.md`）：直接生成审查包（BASE `c4ac312e2`）派审查者，走正常流程。
-- 如果它**留了半成品**（工作区有未提交改动、没有报告）：照 Task 3/7 的老办法——把改动备份成 patch 存到 `.superpowers/sdd/2026-11-23-front-desk/task-8-partial.patch`，然后重新派一个实现者接着做（提示词让它先读半成品，能用的用、不对的改，TDD 先红后绿，`./gradlew :app:testDebugUnitTest` 全绿再提交）。半成品不可靠，未经测试。
-- 如果它**还挂着没跑完**（这个可能性随时间降低）：等它的通知，别重复派。
-
-**派 Task 8 时必须带上的裁定和接口**（brief 里没有，第 3 节有全文）：Ruling B（删 VoiceCallRoute 前查 DeskLines.stripDetails 的其他调用方）、Ruling F/G/H（执行器接口、track 接线、interrupted 报告去向）、Ruling I（工具集，不许接查询工具）。上一个控制器给 Task 8 实现者的完整提示词要点都在账本和本节里，照着重写即可。
+**Task 8 的摊子**：实现者（opus）被派出后不久用户叫停，控制器已直接终止它。**终止时它还在读代码阶段，工作区干净、没有任何半成品**（已验证）。**接手第一件事：重新派一个 Task 8 实现者**（opus，BASE = 当时的 HEAD），按第 2 节的提示词写法，带上第 3 节的裁定（Ruling B/F/G/H/I 必带）。Task 8 的 brief 已生成好：`.superpowers/sdd/2026-11-23-front-desk/task-8-brief.md`，报告写到同目录 `task-8-report.md`。
 
 ## 2. 执行方式（用户选的：subagent-driven）
 
