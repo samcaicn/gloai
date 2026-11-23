@@ -125,8 +125,18 @@
   .card .recent { margin: 4px 0 0; padding: 0; list-style: none; color: var(--ink3); font-size: 12px; }
   .card .recent li::before { content: "· "; }
   .card .more { margin-top: 6px; font-size: 12px; color: var(--accent); }
-  .tray { position: relative; }
-  .tray .chip { cursor: pointer; }
+  .tray { position: relative; padding: 0 10px; display: block; }
+  .strip { margin-left: 16px; display: inline-flex; align-items: center; gap: 6px; max-width: calc(100% - 32px); background: var(--surface); border: 1px solid var(--hair); border-bottom: 0; border-radius: 12px 12px 0 0; padding: 5px 12px 6px; font-size: 12px; color: var(--ink2); cursor: pointer; position: relative; top: 1px; z-index: 2; }
+  .strip .s { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .strip .w { color: var(--warn); }
+  .composer.joined { margin-top: 0; }
+  .call .strip { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.08); color: #ccc; }
+  .sheet .row { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .sheet .row .hd { display: flex; align-items: center; gap: 8px; width: 100%; }
+  .sheet .row ul { margin: 2px 0 0 16px; padding: 0; list-style: none; color: var(--ink3); font-size: 12px; }
+  .sheet .row ul li::before { content: "· "; }
+  .sheet .row .go { color: var(--accent); font-size: 12px; margin-left: 16px; }
+  .sheet .cap { font-size: 12px; color: var(--ink3); padding: 6px 8px 2px; }
   .sheet { position: absolute; left: 10px; right: 10px; bottom: 100%; margin-bottom: 6px; background: var(--surface); border: 1px solid var(--hair); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.15); padding: 6px; z-index: 5; }
   .sheet .row { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 10px; font-size: 13px; cursor: pointer; }
   .sheet .row:hover { background: var(--fill); }
@@ -152,7 +162,7 @@
         <ul>
           <li><b>前台气泡</b>＝提醒。只在关键节点说话：开始办、要你回答或确认、办好了 / 失败。说结论加一句人话，细节不重复。</li>
           <li><b>任务卡</b>＝档案。派活时插在对话里，原地更新：状态、最近 3 步进展、需要的按钮。点开就是现在的任务详情。</li>
-          <li><b>「N 件在办」条</b>＝实时面板。贴在输入框上方，卡片被聊没了也看得到；点开是任务列表，点一项跳回卡片。</li>
+          <li><b>在办横条</b>＝实时面板。靠左紧贴在输入框顶上，写着最要紧那件事的当前一步（有要你处理的优先）；卡片被聊没了也看得到。点开是这个对话里所有事的详细进展，点一件跳回卡片。</li>
         </ul>
       </div>
       <div class="note">
@@ -285,8 +295,13 @@ function render() {
   const list = Object.values(cards);
   const active = list.filter(c => c.s !== "ok" && c.s !== "bad");
   const ask = active.filter(c => c.s === "ask").length;
-  const sheetHtml = sheet ? `<div class="sheet">${list.map(c => `<div class="row" data-jump="${c.id}"><span class="dot ${STATE[c.s][2]}" style="width:8px;height:8px;border-radius:4px"></span><span class="t">${c.t}</span><span class="l">${STATE[c.s][0]}</span></div>`).join("")}</div>` : "";
-  const tray = active.length ? `<div class="tray">${sheetHtml}<span class="chip" id="trayChip">${ask ? "⚠️" : '<span class="spin"></span>'} ${active.length} 件在办${ask ? ` · ${ask} 件要你处理` : ""} ${sheet ? "⌄" : "›"}</span></div>` : "";
+  const sheetHtml = sheet ? `<div class="sheet"><div class="cap">这个对话里的事 · 点一件看详细进展</div>${list.map(c => {
+      const steps = (c.s === "ok" || c.s === "bad") ? [c.result || ""] : [...(c.recent || []), ...(c.line ? [c.line] : [])].slice(-3);
+      return `<div class="row" data-jump="${c.id}"><div class="hd"><span class="dot ${STATE[c.s][2]}" style="width:8px;height:8px;border-radius:4px"></span><span class="t">${c.t}</span><span class="l">${STATE[c.s][0]}</span></div><ul>${steps.map(x => `<li>${x}</li>`).join("")}</ul><span class="go">查看详细进展 ›</span></div>`;
+    }).join("")}</div>` : "";
+  const head = active.find(c => c.s === "ask") || active[0];
+  const headLine = head ? (head.line || (head.recent || []).slice(-1)[0] || STATE[head.s][0]) : "";
+  const tray = active.length ? `<div class="tray">${sheetHtml}<span class="strip" id="trayChip">${ask ? '<span class="w">●</span>' : '<span class="spin"></span>'}<span class="s">${active.length > 1 ? `${active.length} 件在办 · ` : ""}${short(head.t)}：${headLine}</span>${sheet ? "⌄" : "⌃"}</span></div>` : "";
   const s = document.getElementById("screen");
   if (sc.call) {
     s.className = "screen call";
@@ -299,7 +314,7 @@ function render() {
     s.innerHTML = `<div class="status"><span>9:41</span><span>●●● 5G</span></div>
       <div class="bar"><span class="ico">☰</span><span>Mika</span><span class="sp"></span><span class="ico">🎧</span></div>
       <div class="feed" id="f">${rows || '<div class="desk" style="color:var(--ink3)">有什么要我做的？</div>'}</div>${tray}
-      <div class="composer"><span class="round">＋</span><span class="in">和 Mika 说点什么</span><span class="round">🎤</span><span class="round go">↑</span></div>`;
+      <div class="composer${active.length ? " joined" : ""}"><span class="round">＋</span><span class="in">和 Mika 说点什么</span><span class="round">🎤</span><span class="round go">↑</span></div>`;
   }
   const f = document.getElementById("f"); f.scrollTop = f.scrollHeight;
   document.getElementById("note").innerHTML = sc.note;
