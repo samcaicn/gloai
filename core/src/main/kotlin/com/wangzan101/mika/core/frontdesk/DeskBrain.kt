@@ -1,5 +1,6 @@
-package com.wangzan101.mika.voice.cascade
+package com.wangzan101.mika.core.frontdesk
 
+import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.model.Author
 import com.wangzan101.mika.core.model.ChatModel
 import com.wangzan101.mika.core.model.Message
@@ -27,16 +28,22 @@ interface ReplyContext {
     suspend fun callTool(name: String, arguments: JsonObject): JsonObject?
 }
 
-/** The "think" step of a standard call. */
-interface CascadeBrain {
+/** The conversational brain: the "think" step of a standard call, and the front desk that talks while tasks run behind it. */
+interface DeskBrain {
     /** Answers [userText]; cancelled when the user starts talking again. */
     suspend fun reply(userText: String, ctx: ReplyContext)
 
     /** A tool result that arrived after its reply was cancelled; answer it as a new turn. */
     suspend fun lateResult(name: String, result: JsonObject, ctx: ReplyContext)
 
+    /** Something worth telling the user unprompted (a backend task moved on); it is added as a note and answered as a new turn. */
+    suspend fun notice(text: String, ctx: ReplyContext)
+
     /** Something the assistant said verbatim (greeting, closing line). */
     fun remember(assistantText: String)
+
+    /** Earlier turns of the conversation, so the first reply already knows them; ignored once the history has started. */
+    fun seed(prior: List<Turn>)
 }
 
 /**
@@ -49,7 +56,7 @@ class LlmBrain(
     private val tools: List<ToolSpec>,
     private val maxMessages: Int = 40,
     private val maxToolRounds: Int = 4,
-) : CascadeBrain {
+) : DeskBrain {
     private val history = mutableListOf<Message>()
     private val opening = StringBuilder()
     private val lock = Any()
@@ -62,6 +69,21 @@ class LlmBrain(
     override suspend fun lateResult(name: String, result: JsonObject, ctx: ReplyContext) {
         add(Message(Role.User, listOf(Part.Text("[$name result arrived] $result")), Author.Mika))
         run(ctx)
+    }
+
+    override suspend fun notice(text: String, ctx: ReplyContext) {
+        add(Message(Role.User, listOf(Part.Text("[update] $text")), Author.Mika))
+        run(ctx)
+    }
+
+    override fun seed(prior: List<Turn>) {
+        synchronized(lock) {
+            if (history.isNotEmpty()) return
+            for (turn in prior) {
+                if (turn.userText.isNotBlank()) add(Message(Role.User, listOf(Part.Text(turn.userText)), Author.User))
+                if (turn.outcome.isNotBlank()) add(Message(Role.Assistant, listOf(Part.Text(turn.outcome)), Author.Mika))
+            }
+        }
     }
 
     override fun remember(assistantText: String) {

@@ -3,6 +3,8 @@ package com.wangzan101.mika.voice.cascade
 import com.wangzan101.mika.calls.CallRealtimeSession
 import com.wangzan101.mika.calls.VolcRealtimeEvent
 import com.wangzan101.mika.calls.VolcRealtimeException
+import com.wangzan101.mika.core.frontdesk.DeskBrain
+import com.wangzan101.mika.core.frontdesk.ReplyContext
 import com.wangzan101.mika.voice.Pcm16
 import com.wangzan101.mika.voice.SpeechEvent
 import com.wangzan101.mika.voice.SpeechFailure
@@ -48,7 +50,7 @@ private sealed interface Heard {
  * the assistant is audible.
  */
 class CascadeVoiceSession internal constructor(
-    private val brain: CascadeBrain,
+    private val brain: DeskBrain,
     private val listen: (FeedRecorder) -> SpeechSession,
     private val speak: suspend (String) -> PcmAudioOut,
     silenceMs: Int,

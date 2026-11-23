@@ -1,6 +1,9 @@
 package com.wangzan101.mika.voice.cascade
 
 import com.wangzan101.mika.calls.VolcRealtimeEvent
+import com.wangzan101.mika.core.agent.Turn
+import com.wangzan101.mika.core.frontdesk.DeskBrain
+import com.wangzan101.mika.core.frontdesk.ReplyContext
 import com.wangzan101.mika.voice.Pcm16
 import com.wangzan101.mika.voice.SpeechEvent
 import com.wangzan101.mika.voice.SpeechSession
@@ -46,7 +49,7 @@ class CascadeVoiceSessionTest {
         }
     }
 
-    private class ScriptBrain(val onReply: suspend (String, ReplyContext) -> Unit) : CascadeBrain {
+    private class ScriptBrain(val onReply: suspend (String, ReplyContext) -> Unit) : DeskBrain {
         val late = mutableListOf<JsonObject>()
         val remembered = mutableListOf<String>()
         override suspend fun reply(userText: String, ctx: ReplyContext) = onReply(userText, ctx)
@@ -54,11 +57,13 @@ class CascadeVoiceSessionTest {
             late += result
             ctx.say("Late: done.")
         }
+        override suspend fun notice(text: String, ctx: ReplyContext) {}
         override fun remember(assistantText: String) { remembered += assistantText }
+        override fun seed(prior: List<Turn>) {}
     }
 
     private fun TestScope.session(
-        brain: CascadeBrain,
+        brain: DeskBrain,
         listen: (FeedRecorder) -> SpeechSession,
         bargeIn: Boolean = true,
         secondsPerPiece: Int = 1,

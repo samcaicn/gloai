@@ -1,5 +1,8 @@
 package com.wangzan101.mika.voice.cascade
 
+import com.wangzan101.mika.core.agent.Turn
+import com.wangzan101.mika.core.frontdesk.DeskBrain
+import com.wangzan101.mika.core.frontdesk.ReplyContext
 import com.wangzan101.mika.voice.Pcm16
 import com.wangzan101.mika.voice.SpeechEvent
 import com.wangzan101.mika.voice.SpeechSession
@@ -21,7 +24,7 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VoiceReplyCancellationTest {
-    private fun TestScope.session(brain: CascadeBrain): CascadeVoiceSession {
+    private fun TestScope.session(brain: DeskBrain): CascadeVoiceSession {
         var utterance = 0
         return CascadeVoiceSession(
             brain = brain,
@@ -53,7 +56,7 @@ class VoiceReplyCancellationTest {
         repeat(30) { sendPcm16(Pcm16.toBytes(ShortArray(320))) }
     }
 
-    private class Brain(val cleanup: CompletableDeferred<Unit>) : CascadeBrain {
+    private class Brain(val cleanup: CompletableDeferred<Unit>) : DeskBrain {
         val started = mutableListOf<String>()
         val remembered = mutableListOf<String>()
         override suspend fun reply(userText: String, ctx: ReplyContext) {
@@ -64,7 +67,9 @@ class VoiceReplyCancellationTest {
             }
         }
         override suspend fun lateResult(name: String, result: JsonObject, ctx: ReplyContext) {}
+        override suspend fun notice(text: String, ctx: ReplyContext) {}
         override fun remember(assistantText: String) { remembered += assistantText }
+        override fun seed(prior: List<Turn>) {}
     }
 
     @Test fun newReplyWaitsForInterruptedHistoryCleanup() = runTest {

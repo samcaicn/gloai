@@ -1,5 +1,7 @@
 package com.wangzan101.mika.voice.cascade
 
+import com.wangzan101.mika.core.frontdesk.LlmBrain
+import com.wangzan101.mika.core.frontdesk.ReplyContext
 import com.wangzan101.mika.core.model.Author
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ChatModel
