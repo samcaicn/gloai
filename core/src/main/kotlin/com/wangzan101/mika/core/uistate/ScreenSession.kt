@@ -49,6 +49,8 @@ private const val RECENT_SNAPSHOTS = 8
 private const val ISSUED_MEMORY = 256
 /** 结果里「到上限了」那句话最多留这么长。 */
 private const val LIMIT_TEXT_MAX = 120
+/** 一次就读到空树时等这么久再重读一次:窗口刚切走、正在重绘、无障碍还没吐出节点,都会让这一屏暂时是空的。 */
+private const val BLANK_RETRY_MS = 300L
 
 /** find_visually 找到的一个点:找的是什么、给的原文、视觉模型看到的字;不可逆判定都要看。[unverified]:只靠看图、没有佐证。 */
 internal class Located(val target: String, val text: String?, val seen: String?, val unverified: Boolean = false)
@@ -140,9 +142,17 @@ internal class ScreenSession(
     /**
      * 读一屏并登记编号。[internal]:不是给模型看的(按描述找目标时),模型手里那屏过没过时照旧;
      * 端口原样的这一屏留作接着那个动作的「动作前」([probe] 用它,不再读一次)。
+     * 一次就读到空树时会等 [BLANK_RETRY_MS] 再读一次,用读到内容的那一次:瞬时读不到不该被当成这一屏真的空。
      */
-    suspend fun snapshot(internal: Boolean = false): ScreenSnapshot = screen.snapshot().let { p ->
-        (stabilizer?.next(p)?.screen ?: p).also { primed = if (internal) it.snapshotId to p else null }
+    suspend fun snapshot(internal: Boolean = false): ScreenSnapshot = screen.snapshot().let { first ->
+        // 一次就读到空树:稍等再读一次,两次都空才交给判定。瞬时读不到不该让整屏被判 unusable 而赶模型去整页 OCR。
+        val second = if (blankTree(first)) {
+            delay(BLANK_RETRY_MS)
+            screenAttempt { screen.snapshot() }
+        } else null
+        (if (second != null && !blankTree(second)) second else first).let { p ->
+            (stabilizer?.next(p)?.screen ?: p).also { primed = if (internal) it.snapshotId to p else null }
+        }
     }.also {
         reads++
         if (!internal) stale = false
@@ -151,6 +161,18 @@ internal class ScreenSession(
         readAt[it.snapshotId] = System.currentTimeMillis()
         issued[it.snapshotId] = Unit
         while (recentSnapshots.size > RECENT_SNAPSHOTS) recentSnapshots.removeFirst().snapshotId.let { id -> readAt.remove(id) }
+    }
+
+    /** 这一屏的树里一个带名字的元素都没有,或窗口整个读不到:多半是刚切走/正在重绘,值得再读一次。 */
+    private fun blankTree(s: ScreenSnapshot): Boolean {
+        if (s.protected) return false
+        val named = s.elements.count { it.name.isNotBlank() }
+        return when {
+            s.unreadableApp != null && named == 0 -> true
+            !s.hasWindow -> false
+            s.elements.isEmpty() -> true
+            else -> named == 0 && s.elements.size <= 1
+        }
     }
 
     /** 此刻重新读一屏,不登记编号、不改模型手里的读屏;读不到为 null。 */
