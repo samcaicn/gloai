@@ -78,7 +78,7 @@ class DeskBrainTest {
     }
 
     @Test
-    fun backgroundGoesToSystemNotHistory() = runBlocking {
+    fun backgroundIsTrailingNoteNotSystemNorHistory() = runBlocking {
         val model = FakeModel()
         val asked = mutableListOf<String>()
         var version = 0
@@ -88,9 +88,20 @@ class DeskBrainTest {
         brain.notice("Task A started", Recorder())
         brain.reply("几点？", Recorder())
 
-        assertEquals(listOf("rules\n\nBOARD v1", "rules\n\nBOARD v2", "rules\n\nBOARD v3"), model.systems)
+        // system 每次一字不差,缓存前缀稳定。
+        assertEquals(listOf("rules", "rules", "rules"), model.systems)
         assertEquals(listOf("订日料", "订日料", "几点？"), asked)
-        model.seen.flatten().forEach { assertFalse(it.text().contains("BOARD")) }
+        model.seen.forEachIndexed { i, messages ->
+            val last = messages.last()
+            assertEquals(Role.User, last.role)
+            assertEquals(Author.Mika, last.author)
+            assertTrue(last.text().startsWith(LlmBrain.BACKGROUND_PREFIX))
+            assertTrue(last.text().endsWith("BOARD v${i + 1}"))
+            // 背景只在最后一条,之前的(包括上一次的背景)都不在。
+            messages.dropLast(1).forEach { assertFalse(it.text().contains("BOARD")) }
+        }
+        // 下一次的前缀就是上一次去掉背景后的历史再往后接。
+        assertEquals(model.seen[0].dropLast(1), model.seen[1].take(model.seen[0].size - 1))
     }
 
     @Test
@@ -99,6 +110,7 @@ class DeskBrainTest {
         LlmBrain(model, "rules", emptyList(), background = DeskBackground { null }).reply("在吗", Recorder())
         LlmBrain(model, "rules", emptyList()).reply("在吗", Recorder())
         assertEquals(listOf("rules", "rules"), model.systems)
+        assertEquals(listOf(listOf("在吗"), listOf("在吗")), model.seen.map { m -> m.map { it.text() } })
     }
 
     @Test

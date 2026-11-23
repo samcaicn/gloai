@@ -160,7 +160,7 @@ class FrontDeskTest {
         desk.attach(surface)
         desk.track("t1", "订会议室")
         runCurrent()
-        assertEquals(DeskTaskView("t1", "订会议室", DeskTaskPhase.Running, "打开日历", null), desk.active.value.single())
+        assertEquals(DeskTaskView("t1", "订会议室", DeskTaskPhase.Running, "打开日历", null, listOf("打开日历")), desk.active.value.single())
 
         state.value = TaskState.Succeeded("订好了")
         runCurrent()
@@ -169,6 +169,28 @@ class FrontDeskTest {
 
         assertEquals(listOf(DeskEvent.Started("t1"), DeskEvent.Succeeded("t1", "订好了")), surface.delivered.map { it.event })
         assertEquals(DeskTaskPhase.Done, desk.active.value.single().state)
+    }
+
+    @Test
+    fun activeKeepsLastThreeDistinctCleanedProgressLines() = runTest {
+        val state = port.add("t1", running("打开「日历」 [10,20]"))
+        val desk = desk()
+        desk.track("t1", "订会议室")
+        runCurrent()
+        assertEquals(listOf("打开"), desk.active.value.single().recent)
+
+        // 只差坐标、引号细节的不算新的一行;重复出现的挪到最后,不重复记。
+        for (narration in listOf("打开「日程」 [1,2]", "找日程", "选时间", "找日程", "填标题")) {
+            state.value = running(narration)
+            runCurrent()
+        }
+        val view = desk.active.value.single()
+        assertEquals(listOf("选时间", "找日程", "填标题"), view.recent)
+        assertEquals("填标题", view.line)
+
+        state.value = TaskState.WaitingInput("要订哪一间?", null)
+        runCurrent()
+        assertEquals(listOf("找日程", "填标题", "要订哪一间?"), desk.active.value.single().recent)
     }
 
     @Test

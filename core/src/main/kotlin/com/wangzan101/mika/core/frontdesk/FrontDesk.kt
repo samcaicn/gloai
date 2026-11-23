@@ -16,8 +16,21 @@ import kotlinx.coroutines.launch
 /** 前台眼里一件任务所处的阶段。 */
 enum class DeskTaskPhase { Running, Queued, NeedsYou, Done, Failed, Cancelled }
 
-/** 前台列出的一件任务:[line] 是当前一句话(已剥细节),[position] 是排队时排第几(从 1 起)。 */
-data class DeskTaskView(val taskId: String, val title: String, val state: DeskTaskPhase, val line: String?, val position: Int?)
+/** 在做、要你处理的任务最多记这么多条最近进展。 */
+const val DESK_RECENT_LINES = 3
+
+/**
+ * 前台列出的一件任务:[line] 是当前一句话(已剥细节),[position] 是排队时排第几(从 1 起);
+ * [recent] 是在做、要你处理时最近几条不同的进展(已剥细节,最新的在最后,最多 [DESK_RECENT_LINES] 条)。
+ */
+data class DeskTaskView(
+    val taskId: String,
+    val title: String,
+    val state: DeskTaskPhase,
+    val line: String?,
+    val position: Int?,
+    val recent: List<String> = emptyList(),
+)
 
 /**
  * 一条会话常驻的前台:按任务编号订阅它派出的各件任务,把值得说的变化(见 [DeskEvents]、[ReportPolicy])
@@ -93,7 +106,16 @@ class FrontDesk(
 
     private fun updateView(taskId: String, title: String, state: TaskState) {
         views.update { list ->
-            val view = DeskTaskView(taskId, title, phaseOf(state), lineOf(state), null)
+            val phase = phaseOf(state)
+            val line = lineOf(state)
+            val before = list.firstOrNull { it.taskId == taskId }?.recent.orEmpty()
+            val recent = if (line != null && (phase == DeskTaskPhase.Running || phase == DeskTaskPhase.NeedsYou)) {
+                // 重复出现的一句挪到最后,不重复记。
+                (before - line + line).takeLast(DESK_RECENT_LINES)
+            } else {
+                before
+            }
+            val view = DeskTaskView(taskId, title, phase, line, null, recent)
             val replaced = if (list.any { it.taskId == taskId }) list.map { if (it.taskId == taskId) view else it } else list + view
             // 一件任务开始会让后面排队的往前挪,排队位置每次都整体重取。
             replaced.map { it.copy(position = if (it.state == DeskTaskPhase.Queued) tasks.queuePosition(it.taskId) else null) }
