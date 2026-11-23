@@ -11,7 +11,7 @@
 在源码目录执行：
 
 ```bash
-pipx install ./tools/mika-feishu
+pipx install ./companions/mika-feishu
 mika-feishu setup
 ```
 
@@ -77,7 +77,7 @@ macOS/Linux 配置默认放在 `$XDG_CONFIG_HOME/mika-feishu/config.json` 或 `~
 
 SQLite 按「应用 + 手机地址」保存账号绑定、消息去重、任务/对话关联，可能包含任务文字。换应用或手机地址后需重新绑定，单独轮换令牌不影响绑定。重新 `setup` 或 `unpair` 前先停止连接器，进程锁会防止同配置多开。
 
-连接器安装更新不覆盖用户配置，也不要求修改或重编译 Mika。源码更新后运行 `pipx install --force ./tools/mika-feishu`，再做 `doctor` 和一次只读任务验收。每次写操作前检查公开 API 版本 1 和能力：允许新增响应字段，未知 API 版本、任务状态或缺失能力会停止对应操作。未来发生不兼容的协议变更需要更新适配器，不做静默回退。
+连接器安装更新不覆盖用户配置，也不要求修改或重编译 Mika。源码更新后运行 `pipx install --force ./companions/mika-feishu`，再做 `doctor` 和一次只读任务验收。每次写操作前检查公开 API 版本 1 和能力：允许新增响应字段，未知 API 版本、任务状态或缺失能力会停止对应操作。未来发生不兼容的协议变更需要更新适配器，不做静默回退。
 
 消息 ID 持久化去重，手机写操作响应丢失时**不自动重发**；处理中崩溃会阻止新写入，直到主人核对手机并发送 `/reset checked`。手机 API 当前没有幂等提交键，因此不承诺整个链路恰好执行一次。手机重启导致旧任务 ID 消失时只提示，不重新创建任务。通知使用确定的飞书 UUID 减少重复回复。
 

@@ -71,7 +71,7 @@ The existing branch remains based on `9fd0be4`; no unrelated core change is copi
   attached only after matching the outgoing request to the actual Call. AI takeover or
   Work cleanup leaves it intact. Disconnect/removal clears it permanently; multiple
   calls, wrong identity, missing service ownership or non-carrier details hide it.
-- `ui/CallSettingsScreen.kt`, `CallHistorySection.kt`: add a one-line latest nonblank
+- `calls/ui/CallSettingsScreen.kt`, `CallHistorySection.kt`: add a one-line latest nonblank
   transcript preview and reuse the same role label as the full transcript. Keep MIKA's
   theme, controls and original reading layout. No new resources or permissions.
 - `CallTaskBindingTest`: port the five upstream ownership/lifetime regressions.

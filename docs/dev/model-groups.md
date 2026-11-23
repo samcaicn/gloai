@@ -93,7 +93,7 @@
 - `core/src/main/kotlin/com/wangzan101/mika/core/agent/ModelPool.kt`：`ModelPool`、`SingleMemberPool`、`GroupPool`、健康/粘性、`FailoverPolicy`。
 - `core/src/main/kotlin/com/wangzan101/mika/core/agent/ModelCaller.kt`：按成员路由、逐个尝试、换成员时准备历史。
 - `app/src/main/java/com/wangzan101/mika/settings/ProviderStore.kt`：组存储、`RoleChoice.Group`、`modelFor` 建池、prune。
-- `app/src/main/java/com/wangzan101/mika/ui/ModelGroupScreen.kt`：组列表和编辑。
+- `app/src/main/java/com/wangzan101/mika/settings/ui/models/ModelGroupScreen.kt`：组列表和编辑。
 
 ## 后续（v2/v3）
 

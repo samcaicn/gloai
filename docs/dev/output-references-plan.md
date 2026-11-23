@@ -81,8 +81,8 @@ git commit -m "feat(markdown): 抽出回复里的 /workspace 引用"
 ### Task 2: 把引用解析成「类型 + 宿主文件」
 
 **Files:**
-- Create: `app/src/main/java/com/wangzan101/mika/ui/WorkspaceRef.kt`（或并入现有 attachment 文件，见下）
-- Test: `app/src/test/java/com/wangzan101/mika/ui/WorkspaceRefTest.kt`
+- Create: `app/src/main/java/com/wangzan101/mika/chat/ui/WorkspaceRef.kt`（或并入现有 attachment 文件，见下）
+- Test: `app/src/test/java/com/wangzan101/mika/chat/ui/WorkspaceRefTest.kt`
 
 **Interfaces:**
 - Consumes: `MarkdownModel.workspaceRefs(markdown)`（Task 1）
@@ -105,7 +105,7 @@ git commit -m "feat(markdown): 抽出回复里的 /workspace 引用"
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `./gradlew :app:testDebugUnitTest --tests "com.wangzan101.mika.ui.WorkspaceRefTest"`
+Run: `./gradlew :app:testDebugUnitTest --tests "com.wangzan101.mika.chat.ui.WorkspaceRefTest"`
 Expected: FAIL（类型/函数未定义）
 
 - [ ] **Step 3: 实现 `resolveWorkspaceRefs`**

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin,coroutines/Flow,Compose,AudioRecord/AudioTrack,既有 calls/voice 底座。
 
-**Spec:** `docs/superpowers/specs/2026-11-22-voice-call-design.md`
+**Spec:** `docs/design/specs/2026-11-22-voice-call-design.md`
 
 ## Global Constraints
 
@@ -139,12 +139,12 @@
 ### Task 7: VoiceCallOverlay 全屏 UI + 入口 + 字符串
 
 **Files:**
-- Create: `app/src/main/java/com/wangzan101/mika/ui/voicecall/VoiceCallOverlay.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/ChatScreen.kt`(输入栏听筒按钮)
+- Create: `app/src/main/java/com/wangzan101/mika/voicecall/ui/VoiceCallOverlay.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/chat/ui/ChatScreen.kt`(输入栏听筒按钮)
 - Modify: `app/src/main/java/com/wangzan101/mika/capsule/CapsuleController.kt` + `CapsuleCardContent.kt`(菜单「语音聊天」)
 - Modify: `app/src/main/java/com/wangzan101/mika/ui/MainActivity.kt`(EXTRA_OPEN_VOICE_CALL 直开)
 - Create: `app/src/main/res/values*/strings_voicecall.xml`(×12 目录)
-- Test: `app/src/androidTest/java/com/wangzan101/mika/ui/voicecall/VoiceCallOverlayTest.kt`
+- Test: `app/src/androidTest/java/com/wangzan101/mika/voicecall/ui/VoiceCallOverlayTest.kt`
 
 **Interfaces:**
 - Consumes: Task 4 的 `VoiceCallState`/`micLevel/speakerLevel`、Task 5 的状态行流、Task 6 的免提。
@@ -160,5 +160,5 @@
 
 - [ ] **Step 1:** `./gradlew :core:test :app:testDebugUnitTest --console=plain -q` 全绿(找 BUILD SUCCESSFUL);TerminalHubTest 单挂且 diff 不碰 app/terminal 时按已知环境抖动处理。
 - [ ] **Step 2:** 金样检查:`./gradlew :core:test --tests '*PromptSurface*' --tests '*PromptLayoutTest*' -q`(无提示词改动则零 diff)。
-- [ ] **Step 3:** 写 `docs/superpowers/acceptance/2026-11-22-voice-call-device-matrix.md`:扬声器/听筒/蓝牙 × 打断/回声、isSilenced、热插拔、来电、焦点被抢、锁屏、语音办事全链路、防误执行四项(伪造/重放/回声/跨轮)——逐项 checkbox,真机验证时逐项勾。
+- [ ] **Step 3:** 写 `docs/design/acceptance/2026-11-22-voice-call-device-matrix.md`:扬声器/听筒/蓝牙 × 打断/回声、isSilenced、热插拔、来电、焦点被抢、锁屏、语音办事全链路、防误执行四项(伪造/重放/回声/跨轮)——逐项 checkbox,真机验证时逐项勾。
 - [ ] **Step 4: Commit** `test(voicecall): 全量回归与真机验收清单`

@@ -1,7 +1,7 @@
 """Optional browser regression, outside the default test run (its name does not match test*.py).
 
 Run it directly after `pip install playwright && playwright install chromium`:
-    python3 tools/mika/tests/browser_desk_updates.py
+    python3 companions/mika/tests/browser_desk_updates.py
 It skips when Playwright or its bundled Chromium is not installed.
 """
 

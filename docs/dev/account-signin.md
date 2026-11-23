@@ -2,7 +2,7 @@
 
 「添加服务商」最上面是「用账号登录 · 不用填 Key」一组：ChatGPT、xAI / Grok、OpenRouter。点一家先弹出说明面板（会发生什么、要注意什么），点了才开始登录；登录成功后打开这一家的详情：账号、状态、可用的模型（可刷新）、设为主模型、退出登录（只清本机）。
 
-「用 ChatGPT 登录」保持原样（`core/chatgpt/`，授权码 + PKCE，本机回调）。这里是另外几家账号登录，以及明确不做的原因。本机回调（`core/oauth/LoopbackCallback.kt`）和 PKCE（`core/oauth/Pkce.kt`）是 ChatGPT 和 OpenRouter 共用的。
+「用 ChatGPT 登录」保持原样（`core/model/chatgpt/`，授权码 + PKCE，本机回调）。这里是另外几家账号登录，以及明确不做的原因。本机回调（`core/model/oauth/LoopbackCallback.kt`）和 PKCE（`core/model/oauth/Pkce.kt`）是 ChatGPT 和 OpenRouter 共用的。
 
 登录、加密保存、刷新、调用各家自己的接口，四步分开。访问令牌、刷新令牌、设备码不进日志、不进诊断信息、不进界面上除用户码以外的文字。会话 JSON 和 API Key 放在同一处（`provider-keys.json`），用同一套加密。
 

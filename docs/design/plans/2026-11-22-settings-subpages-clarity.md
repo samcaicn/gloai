@@ -8,7 +8,7 @@
 
 **Tech Stack:** Jetpack Compose, Kotlin, stringResource / tr 多语言资源（`values*/strings_*.xml`）。
 
-**Spec:** `docs/superpowers/specs/2026-11-22-settings-home-clarity-design.md`（首页设计）；二级页视觉决策见 demo 文件。
+**Spec:** `docs/design/specs/2026-11-22-settings-home-clarity-design.md`（首页设计）；二级页视觉决策见 demo 文件。
 
 ## Global Constraints
 

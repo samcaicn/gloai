@@ -10,10 +10,10 @@
 - [x] 2.2 `test_steer_requires_capability_and_never_falls_back_to_run` 补断言：文案含 `task_steer`，`error.capability` 正确
 - [x] 2.3 新增 export 门禁断言（挂在既有 `test_export_requires_capability_and_unknown_id_is_explicit` 第一段）：文案含 `run_export`
 - [x] 2.4 新增/扩展无 `server_version` 的场景：字段与版本短语不出现、指引仍在
-- [x] 2.5 跑 `tools/mika` 全量 CLI 测试（含既有 `RemoteCliContractTest` 由 cliTest 覆盖）
+- [x] 2.5 跑 `companions/mika` 全量 CLI 测试（含既有 `RemoteCliContractTest` 由 cliTest 覆盖）
 
 ## 3. 文档与验证
 
-- [x] 3.1 `tools/mika/SKILL.md`：错误表 `incompatible_api` 行改为配对指引；`--request-id` 段补「手机报 incompatible_api 时可去掉该参数照常提交」一句
-- [x] 3.2 本地跑 CI 四组对应项：`python3 -m unittest discover -s tools/mika`、`:core:test`、`:core:cliTest`（cliTest 覆盖真实 CLI×真实服务契约）
+- [x] 3.1 `companions/mika/SKILL.md`：错误表 `incompatible_api` 行改为配对指引；`--request-id` 段补「手机报 incompatible_api 时可去掉该参数照常提交」一句
+- [x] 3.2 本地跑 CI 四组对应项：`python3 -m unittest discover -s companions/mika`、`:core:test`、`:core:cliTest`（cliTest 覆盖真实 CLI×真实服务契约）
 - [ ] 3.3 开分支 `fix/314-cli-version-mismatch-errors`，中文提交，PR 关联 #314，正文附实测错误输出样例

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin,JUnit4,Gradle(`:core` 纯 JVM 模块)。
 
-**Spec:** `docs/superpowers/specs/2026-11-21-do-each-adoption-design.md`
+**Spec:** `docs/design/specs/2026-11-21-do-each-adoption-design.md`
 
 ## Global Constraints
 
@@ -32,9 +32,9 @@
 ### Task 1: 复活 same_state / state_cycle 守卫
 
 **Files:**
-- Modify: `core/src/main/kotlin/com/wangzan101/mika/core/guard/OperationGuards.kt`(frame() 169-189 行区域)
-- Modify: `core/src/main/kotlin/com/wangzan101/mika/core/guard/GuardRules.kt`(cycleLadder 57 行 + 类注释兜圈行)
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/guard/OperationGuardsTest.kt`(114-183 行的三个测试)
+- Modify: `core/src/main/kotlin/com/wangzan101/mika/core/safety/guard/OperationGuards.kt`(frame() 169-189 行区域)
+- Modify: `core/src/main/kotlin/com/wangzan101/mika/core/safety/guard/GuardRules.kt`(cycleLadder 57 行 + 类注释兜圈行)
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/safety/guard/OperationGuardsTest.kt`(114-183 行的三个测试)
 
 **Interfaces:**
 - Consumes: 现有 `OperationGuards.frame(id: String, hash: Long): List<GuardVerdict>`、`GuardRules.cycle(trail: List<Long>): Cycle?`、`GuardVerdict(code, severity, evidence, nudge)`。
@@ -129,7 +129,7 @@ Expected: PASS(含保留的 `backAndForth…`、`manyActionsWithoutANewScreen…
 - [ ] **Step 6: Commit**
 
 ```bash
-git add core/src/main/kotlin/com/wangzan101/mika/core/guard/OperationGuards.kt core/src/main/kotlin/com/wangzan101/mika/core/guard/GuardRules.kt core/src/test/kotlin/com/wangzan101/mika/core/guard/OperationGuardsTest.kt
+git add core/src/main/kotlin/com/wangzan101/mika/core/safety/guard/OperationGuards.kt core/src/main/kotlin/com/wangzan101/mika/core/safety/guard/GuardRules.kt core/src/test/kotlin/com/wangzan101/mika/core/safety/guard/OperationGuardsTest.kt
 git commit -m "fix(guard): 接回 same_state/state_cycle 判定,兜圈提醒首级 2→3"
 ```
 

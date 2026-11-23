@@ -8,7 +8,7 @@ Requires Python 3.10+, a Feishu enterprise custom app, and a Mika phone exposing
 
 ```bash
 # From a repository checkout; pipx keeps the optional SDK dependencies isolated.
-pipx install ./tools/mika-feishu
+pipx install ./companions/mika-feishu
 mika-feishu setup
 mika-feishu doctor
 mika-feishu run
@@ -19,9 +19,9 @@ mika-feishu run
 ## Development
 
 ```bash
-python3 -m venv tools/mika-feishu/.venv
-tools/mika-feishu/.venv/bin/python -m pip install -e ./tools/mika-feishu
-tools/mika-feishu/.venv/bin/python -m unittest discover -s tools/mika-feishu/tests -v
+python3 -m venv companions/mika-feishu/.venv
+companions/mika-feishu/.venv/bin/python -m pip install -e ./companions/mika-feishu
+companions/mika-feishu/.venv/bin/python -m unittest discover -s companions/mika-feishu/tests -v
 ```
 
 On Windows, use `tools\mika-feishu\.venv\Scripts\python.exe`. Tests use fake phone HTTP endpoints and fake registration responses. They do not register real applications, send Feishu messages or execute phone tasks. A CI matrix covers Linux, macOS and Windows.

@@ -1,6 +1,6 @@
 ## Context
 
-CLI（`tools/mika/scripts/mika_cli.py`，纯 Python 标准库）通过 `GET /api/v1` 发现手机能力：`server_version` + `capabilities`（`tasks` / `task_recovery` / `task_steer` / `run_export` / `task_files`…）。四处门禁在能力缺失时抛 `CliError("incompatible_api", …)`，但文案只有一句「update the phone app」，且不带结构化字段——#314 的桥接用户只能靠错误码盲猜降级路径。
+CLI（`companions/mika/scripts/mika_cli.py`，纯 Python 标准库）通过 `GET /api/v1` 发现手机能力：`server_version` + `capabilities`（`tasks` / `task_recovery` / `task_steer` / `run_export` / `task_files`…）。四处门禁在能力缺失时抛 `CliError("incompatible_api", …)`，但文案只有一句「update the phone app」，且不带结构化字段——#314 的桥接用户只能靠错误码盲猜降级路径。
 
 约束：**不碰模拟器场景本身**（维护者分诊圈定）；不动 App 侧（旧 APK 无法追改，新 App 的 capabilities 广播已正确）；CLI 面向代理/桥接，报错保持英文、stdout 只有 JSON 的既有约定不变。
 

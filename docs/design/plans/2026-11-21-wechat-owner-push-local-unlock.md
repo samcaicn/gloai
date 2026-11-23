@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin,coroutines,Jetpack Compose,既有 Outbox/WechatStore/TaskRelock 底座。
 
-**Spec:** `docs/superpowers/specs/2026-11-21-wechat-owner-push-local-unlock-design.md`
+**Spec:** `docs/design/specs/2026-11-21-wechat-owner-push-local-unlock-design.md`
 **调研底稿(接口与护栏细节):** 会话内调研笔记(不入库);所需接口与护栏已全部抄入上方 Spec,以 Spec 为准
 
 ## Global Constraints
@@ -33,11 +33,11 @@
 ### Task 1: F1 core——WechatOwnerCapability 与意图闸门
 
 **Files:**
-- Create: `core/src/main/kotlin/com/wangzan101/mika/core/wechat/WechatOwnerCapability.kt`
+- Create: `core/src/main/kotlin/com/wangzan101/mika/core/cap/wechat/WechatOwnerCapability.kt`
 - Create: `core/src/main/resources/prompts/tools/wechat_send_owner.md`
 - Modify: `core/src/main/kotlin/com/wangzan101/mika/core/tool/AgentTool.kt`(Verb 枚举)
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/wechat/WechatOwnerRequestTest.kt`
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/wechat/WechatOwnerToolTest.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/cap/wechat/WechatOwnerRequestTest.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/cap/wechat/WechatOwnerToolTest.kt`
 
 **Interfaces:**
 - Produces(后续任务依赖,签名钉死):
@@ -90,7 +90,7 @@ WechatOwnerToolTest:port 为 null 时 tools() 为空;port 给假实现时 tools(
 - Modify: `app/src/main/java/com/wangzan101/mika/wechat/WechatChannel.kt`(文本路径发送前补 accepts 复查)
 - Modify: `core/src/main/kotlin/com/wangzan101/mika/core/assembly/TaskTools.kt`(toolDispatcher 加 wechatOwner 参数 + provider 登记)
 - Modify: `app/src/main/java/com/wangzan101/mika/task/TaskRun.kt`(工具装配处门控注入)
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/ChatViewModel.kt`(ToolLabels +1 行)
+- Modify: `app/src/main/java/com/wangzan101/mika/chat/ui/ChatViewModel.kt`(ToolLabels +1 行)
 - Modify: `app/src/main/res/values*/strings_tools.xml`(11 个目录,各 +1 条)
 - Test: `app/src/test/java/com/wangzan101/mika/wechat/WechatOwnerSenderTest.kt`
 - Modify: `app/src/test/java/com/wangzan101/mika/wechat/WechatStoreTest.kt`(+1)、ToolRiskTest 白名单
@@ -142,7 +142,7 @@ WechatOwnerToolTest:port 为 null 时 tools() 为空;port 给假实现时 tools(
 - Modify: `app/src/main/java/com/wangzan101/mika/settings/DeviceAccessSettings.kt`(config 加字段、setLocalEnabled、beginLocalAttempt、持久化)
 - Modify: `app/src/main/java/com/wangzan101/mika/task/TaskUnlockPolicy.kt`(加 localUnlockEnabled 参数 + Ui 分支)
 - Modify: `app/src/main/java/com/wangzan101/mika/task/TaskRun.kt`(解锁块按来源选 unlockLocal;失败文案三分支)
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/DeviceAccessSection.kt`(加 localTasks 变体)
+- Modify: `app/src/main/java/com/wangzan101/mika/device/ui/DeviceAccessSection.kt`(加 localTasks 变体)
 - Modify: 设置「任务运行」页(`SettingsSubPages.DuringWorkScreen` 与 `SettingsScreen`,挂本机开关)
 - Modify: `app/src/main/res/values*/strings_device_access.xml`(11 目录,各 +5 键:device_local_group/title/sub/foot/unlock_failed)
 - Test: `core/src/test/kotlin/com/wangzan101/mika/core/device/DeviceAccessTest.kt`(+3)

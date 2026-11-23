@@ -12,7 +12,7 @@ DIST = os.path.join(ROOT, "dist")
 def build() -> int:
     os.makedirs(DIST, exist_ok=True)
     plugins = [d for d in os.listdir(ROOT)
-               if os.path.isdir(os.path.join(ROOT, d)) and not d.startswith(".") and d != "dist"]
+               if os.path.isdir(os.path.join(ROOT, d)) and not d.startswith(".") and d not in ("dist", "examples")]
     for p in sorted(plugins):
         src = os.path.join(ROOT, p)
         manifest_path = os.path.join(src, "manifest.json")

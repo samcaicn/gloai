@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, Android, Compose, StateFlow, kotlinx.serialization, OkHttp, Android `SpeechRecognizer` / `TextToSpeech`, JUnit, MockWebServer, existing `KeyCipher`.
 
-**Spec:** `docs/superpowers/specs/2026-11-22-voice-model-integration-design.md`
+**Spec:** `docs/design/specs/2026-11-22-voice-model-integration-design.md`
 
 ## Global Constraints
 
@@ -234,8 +234,8 @@ git commit -m "feat(voice): migrate legacy speech models without loss"
 **Files:**
 - Create: `app/src/main/java/com/wangzan101/mika/voice/model/SttSelectionController.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/voice/VoiceInput.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/SpeechModelScreen.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/ModelSetupViewModel.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/voice/ui/SpeechModelScreen.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/settings/ui/models/ModelSetupViewModel.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/task/TaskRun.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/media/AndroidTranscribePort.kt`
 - Test: `app/src/test/java/com/wangzan101/mika/voice/VoiceInputUnifiedTest.kt`
@@ -279,7 +279,7 @@ Expected: PASS. The explicit-protocol test must show no silence request and no p
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/wangzan101/mika/voice app/src/main/java/com/wangzan101/mika/ui/SpeechModelScreen.kt app/src/main/java/com/wangzan101/mika/ui/ModelSetupViewModel.kt app/src/main/java/com/wangzan101/mika/task/TaskRun.kt app/src/main/java/com/wangzan101/mika/media/AndroidTranscribePort.kt app/src/test/java/com/wangzan101/mika/voice app/src/test/java/com/wangzan101/mika/media/AndroidTranscribePortTest.kt
+git add app/src/main/java/com/wangzan101/mika/voice app/src/main/java/com/wangzan101/mika/voice/ui/SpeechModelScreen.kt app/src/main/java/com/wangzan101/mika/settings/ui/models/ModelSetupViewModel.kt app/src/main/java/com/wangzan101/mika/task/TaskRun.kt app/src/main/java/com/wangzan101/mika/media/AndroidTranscribePort.kt app/src/test/java/com/wangzan101/mika/voice app/src/test/java/com/wangzan101/mika/media/AndroidTranscribePortTest.kt
 git commit -m "feat(voice): use catalog-backed speech recognition"
 ```
 
@@ -292,7 +292,7 @@ git commit -m "feat(voice): use catalog-backed speech recognition"
 - Modify: `app/src/main/java/com/wangzan101/mika/settings/VoiceSettings.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/MikaApp.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/task/TaskRun.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/VoiceModelScreen.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/voice/ui/VoiceModelScreen.kt`
 - Test: `app/src/test/java/com/wangzan101/mika/voice/model/TtsSelectionControllerTest.kt`
 - Test: `app/src/test/java/com/wangzan101/mika/media/ReadAloudUnifiedTest.kt`
 
@@ -330,7 +330,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/wangzan101/mika/voice/model app/src/main/java/com/wangzan101/mika/settings/VoiceSettings.kt app/src/main/java/com/wangzan101/mika/MikaApp.kt app/src/main/java/com/wangzan101/mika/task/TaskRun.kt app/src/main/java/com/wangzan101/mika/ui/VoiceModelScreen.kt app/src/test/java/com/wangzan101/mika/voice/model app/src/test/java/com/wangzan101/mika/settings/VoiceSettingsTest.kt app/src/test/java/com/wangzan101/mika/media
+git add app/src/main/java/com/wangzan101/mika/voice/model app/src/main/java/com/wangzan101/mika/settings/VoiceSettings.kt app/src/main/java/com/wangzan101/mika/MikaApp.kt app/src/main/java/com/wangzan101/mika/task/TaskRun.kt app/src/main/java/com/wangzan101/mika/voice/ui/VoiceModelScreen.kt app/src/test/java/com/wangzan101/mika/voice/model app/src/test/java/com/wangzan101/mika/settings/VoiceSettingsTest.kt app/src/test/java/com/wangzan101/mika/media
 git commit -m "feat(voice): use catalog-backed speech synthesis"
 ```
 
@@ -342,8 +342,8 @@ git commit -m "feat(voice): use catalog-backed speech synthesis"
 - Create: `app/src/main/java/com/wangzan101/mika/voice/model/RealtimeSelectionController.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/calls/CallRuntime.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/calls/CallSettings.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/CallSettingsScreen.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/voicecall/VoiceCallOverlay.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/calls/ui/CallSettingsScreen.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/voicecall/ui/VoiceCallOverlay.kt`
 - Test: `app/src/test/java/com/wangzan101/mika/voice/model/RealtimeSelectionControllerTest.kt`
 - Test: `app/src/test/java/com/wangzan101/mika/calls/CallRealtimeUnifiedTest.kt`
 
@@ -372,7 +372,7 @@ Expected: PASS, including preservation and exact ownership of all audio verifica
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/wangzan101/mika/voice/model app/src/main/java/com/wangzan101/mika/calls app/src/main/java/com/wangzan101/mika/ui/CallSettingsScreen.kt app/src/main/java/com/wangzan101/mika/ui/voicecall/VoiceCallOverlay.kt app/src/test/java/com/wangzan101/mika/voice/model app/src/test/java/com/wangzan101/mika/calls
+git add app/src/main/java/com/wangzan101/mika/voice/model app/src/main/java/com/wangzan101/mika/calls app/src/main/java/com/wangzan101/mika/calls/ui/CallSettingsScreen.kt app/src/main/java/com/wangzan101/mika/voicecall/ui/VoiceCallOverlay.kt app/src/test/java/com/wangzan101/mika/voice/model app/src/test/java/com/wangzan101/mika/calls
 git commit -m "feat(voice): use catalog-backed realtime models"
 ```
 
@@ -383,19 +383,19 @@ git commit -m "feat(voice): use catalog-backed realtime models"
 **Files:**
 - Create: `app/src/main/java/com/wangzan101/mika/voice/model/VoiceAccountManager.kt`
 - Create: `app/src/main/java/com/wangzan101/mika/voice/model/VoiceModelProbe.kt`
-- Create: `docs/superpowers/prototypes/2026-11-22-voice-catalog.html` (local approval prototype, not shipped)
-- Create: `app/src/main/java/com/wangzan101/mika/ui/VoiceCatalogViewModel.kt`
-- Create: `app/src/main/java/com/wangzan101/mika/ui/VoiceCatalogScreen.kt`
+- Create: `docs/design/prototypes/2026-11-22-voice-catalog.html` (local approval prototype, not shipped)
+- Create: `app/src/main/java/com/wangzan101/mika/voice/ui/VoiceCatalogViewModel.kt`
+- Create: `app/src/main/java/com/wangzan101/mika/voice/ui/VoiceCatalogScreen.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/MikaApp.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/ui/Navigation.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/ui/MainActivity.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/ModelsScreen.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/ModelSetupViewModel.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/settings/ui/models/ModelsScreen.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/settings/ui/models/ModelSetupViewModel.kt`
 - Modify: `app/src/main/res/values/strings.xml` and every translated values file
 - Test: `app/src/test/java/com/wangzan101/mika/voice/model/VoiceAccountManagerTest.kt`
 - Test: `app/src/test/java/com/wangzan101/mika/voice/model/VoiceModelProbeTest.kt`
-- Test: `app/src/test/java/com/wangzan101/mika/ui/VoiceCatalogViewModelTest.kt`
-- Test: `app/src/androidTest/java/com/wangzan101/mika/ui/VoiceCatalogScreenTest.kt`
+- Test: `app/src/test/java/com/wangzan101/mika/voice/ui/VoiceCatalogViewModelTest.kt`
+- Test: `app/src/androidTest/java/com/wangzan101/mika/voice/ui/VoiceCatalogScreenTest.kt`
 
 **Interfaces:**
 - Consumes: Tasks 1–6.
@@ -428,7 +428,7 @@ Also test cancellation, an STT probe sending PCM from a fake microphone rather t
 
 - [ ] **Step 3: Run new tests and verify they fail**
 
-Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.voice.model.VoiceAccountManagerTest' --tests 'com.wangzan101.mika.voice.model.VoiceModelProbeTest' --tests 'com.wangzan101.mika.ui.VoiceCatalogViewModelTest'`  
+Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.voice.model.VoiceAccountManagerTest' --tests 'com.wangzan101.mika.voice.model.VoiceModelProbeTest' --tests 'com.wangzan101.mika.voice.ui.VoiceCatalogViewModelTest'`  
 Expected: FAIL because account management, probes and the management ViewModel do not exist.
 
 - [ ] **Step 4: Implement account management and probes**
@@ -445,18 +445,18 @@ Initialize the catalog and run `migrateIfNeeded()` in `MikaApp.onCreate` before 
 
 - [ ] **Step 6: Run management, UI-copy and full voice regressions**
 
-Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.voice.model.*' --tests 'com.wangzan101.mika.ui.VoiceCatalogViewModelTest' --tests 'com.wangzan101.mika.ui.ModelSetupViewModelTest' --tests 'com.wangzan101.mika.voice.*' --tests 'com.wangzan101.mika.voicecall.*' && python3 tools/i18n/translations.py check && ./gradlew :app:assembleDebugAndroidTest`  
+Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.voice.model.*' --tests 'com.wangzan101.mika.voice.ui.VoiceCatalogViewModelTest' --tests 'com.wangzan101.mika.settings.ui.models.ModelSetupViewModelTest' --tests 'com.wangzan101.mika.voice.*' --tests 'com.wangzan101.mika.voicecall.*' && python3 tools/i18n/translations.py check && ./gradlew :app:assembleDebugAndroidTest`  
 Expected: PASS; voice-only save issues no chat request and late/cancelled probes cannot update new configuration.
 
 - [ ] **Step 7: Run the Compose test on an available Android device**
 
-Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.ui.VoiceCatalogScreenTest`  
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.voice.ui.VoiceCatalogScreenTest`  
 Expected: add/edit/delete and all capability badges work; if no device is connected, record NOT RUN rather than claiming device verification.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add docs/superpowers/prototypes/2026-11-22-voice-catalog.html app/src/main/java/com/wangzan101/mika/voice/model app/src/main/java/com/wangzan101/mika/ui app/src/main/java/com/wangzan101/mika/MikaApp.kt app/src/main/res app/src/test/java/com/wangzan101/mika/voice/model app/src/test/java/com/wangzan101/mika/ui app/src/androidTest/java/com/wangzan101/mika/ui/VoiceCatalogScreenTest.kt
+git add docs/design/prototypes/2026-11-22-voice-catalog.html app/src/main/java/com/wangzan101/mika/voice/model app/src/main/java/com/wangzan101/mika/ui app/src/main/java/com/wangzan101/mika/MikaApp.kt app/src/main/res app/src/test/java/com/wangzan101/mika/voice/model app/src/test/java/com/wangzan101/mika/ui app/src/androidTest/java/com/wangzan101/mika/voice/ui/VoiceCatalogScreenTest.kt
 git commit -m "feat(voice): manage all speech models in one catalog"
 ```
 
@@ -519,15 +519,15 @@ git commit -m "feat(voice): add Android system speech synthesis"
 - Modify: `app/src/main/java/com/wangzan101/mika/voice/Transcriber.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/settings/ModelOptions.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/settings/ProviderStore.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/ModelSetupViewModel.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/ModelsScreen.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/ModelSetupScreen.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/settings/ui/models/ModelSetupViewModel.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/settings/ui/models/ModelsScreen.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/settings/ui/models/ModelSetupScreen.kt`
 - Modify: `docs/dev/architecture.md`
 - Test: `app/src/test/java/com/wangzan101/mika/voice/TranscriberTest.kt`
 - Test: `app/src/test/java/com/wangzan101/mika/settings/ProviderStoreTest.kt`
 - Test: `app/src/test/java/com/wangzan101/mika/settings/ProviderStoreGroupTest.kt`
-- Test: `app/src/test/java/com/wangzan101/mika/ui/ModelSetupViewModelTest.kt`
-- Test: `app/src/androidTest/java/com/wangzan101/mika/ui/ModelSetupScreenTest.kt`
+- Test: `app/src/test/java/com/wangzan101/mika/settings/ui/models/ModelSetupViewModelTest.kt`
+- Test: `app/src/androidTest/java/com/wangzan101/mika/settings/ui/models/ModelSetupScreenTest.kt`
 
 **Interfaces:**
 - Consumes: all previous tasks and their green migrated paths.
@@ -539,7 +539,7 @@ Add tests proving there is no `Transcriber.detect` entry point, no model-name sp
 
 - [ ] **Step 2: Run cleanup guards and verify they fail**
 
-Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.voice.TranscriberTest' --tests 'com.wangzan101.mika.settings.ProviderStoreTest' --tests 'com.wangzan101.mika.settings.ProviderStoreGroupTest' --tests 'com.wangzan101.mika.ui.ModelSetupViewModelTest'`  
+Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.voice.TranscriberTest' --tests 'com.wangzan101.mika.settings.ProviderStoreTest' --tests 'com.wangzan101.mika.settings.ProviderStoreGroupTest' --tests 'com.wangzan101.mika.settings.ui.models.ModelSetupViewModelTest'`  
 Expected: FAIL while legacy runtime calls remain.
 
 - [ ] **Step 3: Remove obsolete runtime rules and update architecture documentation**
@@ -553,7 +553,7 @@ Expected: all tasks `BUILD SUCCESSFUL`; translation check exits 0. Any failure i
 
 - [ ] **Step 5: Run the targeted Android regression set**
 
-Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.ui.VoiceCatalogScreenTest,com.wangzan101.mika.voice.SystemTtsDeviceTest,com.wangzan101.mika.ui.VoiceHoldTest,com.wangzan101.mika.ui.voicecall.VoiceCallOverlayTest,com.wangzan101.mika.ui.ModelSetupScreenTest`  
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.voice.ui.VoiceCatalogScreenTest,com.wangzan101.mika.voice.SystemTtsDeviceTest,com.wangzan101.mika.voice.ui.VoiceHoldTest,com.wangzan101.mika.voicecall.ui.VoiceCallOverlayTest,com.wangzan101.mika.settings.ui.models.ModelSetupScreenTest`  
 Expected: PASS on a real Android device. Record NOT RUN if no device is available; do not use emulator-only behavior to change implementation.
 
 - [ ] **Step 6: Perform the migration and protocol smoke matrix on the real test phone**
@@ -569,6 +569,6 @@ Expected: no whitespace errors; no changes outside this feature; no legacy data 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add app/src/main/java/com/wangzan101/mika/voice app/src/main/java/com/wangzan101/mika/settings app/src/main/java/com/wangzan101/mika/ui app/src/test app/src/androidTest docs/dev/architecture.md docs/superpowers/specs/2026-11-22-voice-model-integration-design.md docs/superpowers/plans/2026-11-22-voice-model-integration.md
+git add app/src/main/java/com/wangzan101/mika/voice app/src/main/java/com/wangzan101/mika/settings app/src/main/java/com/wangzan101/mika/ui app/src/test app/src/androidTest docs/dev/architecture.md docs/design/specs/2026-11-22-voice-model-integration-design.md docs/design/plans/2026-11-22-voice-model-integration.md
 git commit -m "refactor(voice): retire legacy speech model rules"
 ```

@@ -1,6 +1,6 @@
 # 语音级联（听 → 想 → 说）实施计划
 
-原型：`docs/superpowers/prototypes/2026-11-23-voice-listen-speak.html`（已获批）。
+原型：`docs/design/prototypes/2026-11-23-voice-listen-speak.html`（已获批）。
 
 ## 目标
 

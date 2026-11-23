@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin、Jetpack Compose、Android Compose UI instrumentation tests。
 
-**Spec:** `docs/superpowers/specs/2026-11-22-settings-home-clarity-design.md`
+**Spec:** `docs/design/specs/2026-11-22-settings-home-clarity-design.md`
 
 ## Global Constraints
 
@@ -30,8 +30,8 @@
 ### Task 1: 首页静态副标题精简
 
 **Files:**
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/SettingsScreen.kt:477-580,714-727`
-- Test: `app/src/androidTest/java/com/wangzan101/mika/ui/SettingsScreenTest.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/settings/ui/SettingsScreen.kt:477-580,714-727`
+- Test: `app/src/androidTest/java/com/wangzan101/mika/settings/ui/SettingsScreenTest.kt`
 
 **Interfaces:**
 - Consumes: 现有 `SettingsContent`、`StatusSummary`、`ListRow`、`StateCard` 接口。
@@ -46,7 +46,7 @@
 Run:
 
 ```bash
-ANDROID_SERIAL=A94VUT2C28001694 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.ui.SettingsScreenTest
+ANDROID_SERIAL=A94VUT2C28001694 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.settings.ui.SettingsScreenTest
 ```
 
 Expected: 新增测试因首页仍显示静态副标题而失败。
@@ -60,7 +60,7 @@ Expected: 新增测试因首页仍显示静态副标题而失败。
 Run:
 
 ```bash
-ANDROID_SERIAL=A94VUT2C28001694 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.ui.SettingsScreenTest
+ANDROID_SERIAL=A94VUT2C28001694 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.settings.ui.SettingsScreenTest
 ```
 
 Expected: `SettingsScreenTest` 全部通过，包括新增精简测试、原导航测试和异常状态测试。

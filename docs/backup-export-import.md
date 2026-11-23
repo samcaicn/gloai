@@ -45,7 +45,7 @@ accessibility service back on.
 - `app/src/main/java/com/wangzan101/mika/backup/BackupPrefs.kt`: the
   SharedPreferences values that are stored as base64 ciphertext, and the XML
   transform that decrypts them on export and re-encrypts them on import.
-- `app/src/main/java/com/wangzan101/mika/ui/BackupScreen.kt`: the Settings
+- `app/src/main/java/com/wangzan101/mika/backup/ui/BackupScreen.kt`: the Settings
   screen (export via the system file picker, import with a Replace all
   confirmation when data already exists).
 - `app/src/test/java/com/wangzan101/mika/backup/BackupEngineTest.kt`:

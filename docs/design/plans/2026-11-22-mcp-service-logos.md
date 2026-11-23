@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3（生成脚本）、kotlinx.serialization（解析）、Compose `PathParser`/`ImageVector`（渲染）。
 
-**Spec:** `docs/superpowers/specs/2026-11-22-mcp-service-logos-design.md`
+**Spec:** `docs/design/specs/2026-11-22-mcp-service-logos-design.md`
 
 ## Global Constraints
 
@@ -78,8 +78,8 @@ git commit -m "feat(mcp): 生成服务品牌 logo 资产(mcp-logos.json)"
 ### Task 2: `McpLogos` 模型 + 解析 + ImageVector 构建
 
 **Files:**
-- Create: `app/src/main/java/com/wangzan101/mika/ui/McpLogos.kt`
-- Test: `app/src/test/java/com/wangzan101/mika/ui/McpLogosTest.kt`
+- Create: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpLogos.kt`
+- Test: `app/src/test/java/com/wangzan101/mika/mcp/ui/McpLogosTest.kt`
 
 **Interfaces:**
 - Consumes: 资产 `mcp/mcp-logos.json`（Task 1 形状）。
@@ -97,7 +97,7 @@ git commit -m "feat(mcp): 生成服务品牌 logo 资产(mcp-logos.json)"
 
 - [ ] **Step 2: 运行确认失败**
 
-Run: `./gradlew :app:testDebugUnitTest --tests com.wangzan101.mika.ui.McpLogosTest`
+Run: `./gradlew :app:testDebugUnitTest --tests com.wangzan101.mika.mcp.ui.McpLogosTest`
 Expected: FAIL（`McpLogos` / `McpLogoData` 未定义）。
 
 - [ ] **Step 3: 实现 `McpLogos.kt`**
@@ -106,13 +106,13 @@ Expected: FAIL（`McpLogos` / `McpLogoData` 未定义）。
 
 - [ ] **Step 4: 运行确认通过**
 
-Run: `./gradlew :app:testDebugUnitTest --tests com.wangzan101.mika.ui.McpLogosTest`
+Run: `./gradlew :app:testDebugUnitTest --tests com.wangzan101.mika.mcp.ui.McpLogosTest`
 Expected: PASS。
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/wangzan101/mika/ui/McpLogos.kt app/src/test/java/com/wangzan101/mika/ui/McpLogosTest.kt
+git add app/src/main/java/com/wangzan101/mika/mcp/ui/McpLogos.kt app/src/test/java/com/wangzan101/mika/mcp/ui/McpLogosTest.kt
 git commit -m "feat(mcp): McpLogos 解析并懒加载品牌 logo 为 ImageVector"
 ```
 
@@ -149,9 +149,9 @@ git commit -m "feat(ui): IconTile/ListRow 支持品牌自着色浅色 tile"
 ### Task 4: 三个页面接入 logo
 
 **Files:**
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/McpCatalogScreen.kt`（第 170 行附近的 preset 行）
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/McpServersScreen.kt`（第 111 行 server 行）
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/McpServerManageScreen.kt`（第 94 行状态行）
+- Modify: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpCatalogScreen.kt`（第 170 行附近的 preset 行）
+- Modify: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpServersScreen.kt`（第 111 行 server 行）
+- Modify: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpServerManageScreen.kt`（第 94 行状态行）
 
 **Interfaces:**
 - Consumes: `McpLogos.load(context)`、`McpLogos.logo(id)`、`ListRow(..., brand = ...)`。
@@ -175,7 +175,7 @@ Expected: BUILD SUCCESSFUL（既有 catalog 测试不回归）。
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/wangzan101/mika/ui/McpCatalogScreen.kt app/src/main/java/com/wangzan101/mika/ui/McpServersScreen.kt app/src/main/java/com/wangzan101/mika/ui/McpServerManageScreen.kt
+git add app/src/main/java/com/wangzan101/mika/mcp/ui/McpCatalogScreen.kt app/src/main/java/com/wangzan101/mika/mcp/ui/McpServersScreen.kt app/src/main/java/com/wangzan101/mika/mcp/ui/McpServerManageScreen.kt
 git commit -m "feat(mcp): 目录/列表/管理页显示服务品牌 logo"
 ```
 

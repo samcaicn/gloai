@@ -22,10 +22,10 @@
 1. 生成 zip：
 
    ```bash
-   python examples/plugins/com.example.feishu/build.py
+   python plugins/examples/com.example.feishu/build.py
    ```
 
-   产物在 `examples/plugins/com.example.feishu/dist/com.example.feishu-skill-0.1.0.zip`。
+   产物在 `plugins/examples/com.example.feishu/dist/com.example.feishu-skill-0.1.0.zip`。
 
 2. 在 App 里打开 设置 › 高级 › 插件 › 安装插件，选这个 zip。
 3. 启用后，下一次任务里 `skill_search` 能搜到 `com.example.feishu/feishu`，`skill_read` 能读，正文前会带「第三方插件技能」标记。

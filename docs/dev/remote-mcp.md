@@ -1,13 +1,13 @@
 # 自托管远程 CLI / MCP
 
-首版范围：单用户、单设备、单网关进程。网关提供 HTTPS CLI / MCP 转发，手机主动连接 WSS；不需要手机公网入站端口或额外 VPN。部署代码与英文说明见 [tools/relay/README.md](../../tools/relay/README.md)。
+首版范围：单用户、单设备、单网关进程。网关提供 HTTPS CLI / MCP 转发，手机主动连接 WSS；不需要手机公网入站端口或额外 VPN。部署代码与英文说明见 [companions/relay/README.md](../../companions/relay/README.md)。
 
 ## 部署与配对
 
 准备指向服务器的域名、Docker Compose、TCP 80/443 入站。不要把网关 HTTP 8787 端口直接发布到公网。
 
 ```sh
-cd tools/relay
+cd companions/relay
 cp .env.example .env
 # 编辑 .env，设置 MIKA_DOMAIN，仅填写自己的域名，不带协议或路径
 docker compose build
@@ -24,7 +24,7 @@ chmod 600 owner-key
 
 ### 服务器已有 Nginx
 
-80/443 已被现有 Nginx 使用时，改用独立的 [compose.nginx.yaml](../../tools/relay/compose.nginx.yaml)，不要与默认 Compose 文件合并。配置同一份 .env，以固定项目名执行：
+80/443 已被现有 Nginx 使用时，改用独立的 [compose.nginx.yaml](../../companions/relay/compose.nginx.yaml)，不要与默认 Compose 文件合并。配置同一份 .env，以固定项目名执行：
 
 ```sh
 docker compose -p mika-relay -f compose.nginx.yaml build
@@ -34,7 +34,7 @@ docker compose -p mika-relay -f compose.nginx.yaml cp relay:/data/owner-key ./ow
 chmod 600 owner-key
 ```
 
-网关仅发布到服务器 127.0.0.1:18787；Nginx 须在同一台主机。将 [nginx.conf.example](../../tools/relay/nginx.conf.example) 中的域名和证书路径改为实际值，作为独立虚拟主机配置加入现有 http 配置。证书须覆盖该域名，并已有续期及续期后平滑加载安排。先检查域名、map 名称和 18787 端口没有冲突，再 nginx -t，通过后平滑 reload；失败时只撤回新配置。示例保留 WebSocket 升级，关闭缓冲、代理重试和转发请求的访问日志。
+网关仅发布到服务器 127.0.0.1:18787；Nginx 须在同一台主机。将 [nginx.conf.example](../../companions/relay/nginx.conf.example) 中的域名和证书路径改为实际值，作为独立虚拟主机配置加入现有 http 配置。证书须覆盖该域名，并已有续期及续期后平滑加载安排。先检查域名、map 名称和 18787 端口没有冲突，再 nginx -t，通过后平滑 reload；失败时只撤回新配置。示例保留 WebSocket 升级，关闭缓冲、代理重试和转发请求的访问日志。
 
 后续所有 Compose 命令沿用相同项目名和 -f 参数。回滚时禁用新虚拟主机，校验并平滑加载 Nginx，再 docker compose -p mika-relay -f compose.nginx.yaml down；保留数据卷。不要改为公网绑定后端端口，也不要在此部署中启动默认 Compose 文件的 Caddy。
 
@@ -89,7 +89,7 @@ mika --url https://mika.example.com --token-file /path/to/token task list --limi
 ## 验证与运维
 
 ```sh
-cd tools/relay
+cd companions/relay
 go test -race ./...
 go vet ./...
 cd ../..

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, Jetpack Compose, JUnit4, Gradle(`:core` 纯 JVM,`:app` unit/androidTest)。
 
-**Spec:** `docs/superpowers/specs/2026-11-22-teach-auto-summary-design.md`
+**Spec:** `docs/design/specs/2026-11-22-teach-auto-summary-design.md`
 
 ## Global Constraints
 
@@ -55,8 +55,8 @@
 ### Task 2: 路线折叠(确定性)
 
 **Files:**
-- Create: `core/src/main/kotlin/com/wangzan101/mika/core/teach/TeachRoute.kt`
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/teach/TeachRouteTest.kt`
+- Create: `core/src/main/kotlin/com/wangzan101/mika/core/learn/teach/TeachRoute.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/learn/teach/TeachRouteTest.kt`
 
 **Interfaces:**
 - Consumes: `TeachStep(id, atMs, packageName, window, kind, nodeName, viewId, insufficient, sensitiveOmitted, needsClarification, ...)`、`TeachKind`、现有 `teachLine(step)`。
@@ -98,7 +98,7 @@
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `./gradlew :core:test --tests 'com.wangzan101.mika.core.teach.TeachRouteTest'`
+Run: `./gradlew :core:test --tests 'com.wangzan101.mika.core.learn.teach.TeachRouteTest'`
 Expected: FAIL,`TeachRoute` 未定义。
 
 - [ ] **Step 3: 实现 `TeachRoute.fold`**
@@ -112,7 +112,7 @@ Run: 同 Step 2。Expected: PASS。
 - [ ] **Step 5: 提交**
 
 ```bash
-git add core/src/main/kotlin/com/wangzan101/mika/core/teach/TeachRoute.kt core/src/test/kotlin/com/wangzan101/mika/core/teach/TeachRouteTest.kt
+git add core/src/main/kotlin/com/wangzan101/mika/core/learn/teach/TeachRoute.kt core/src/test/kotlin/com/wangzan101/mika/core/learn/teach/TeachRouteTest.kt
 git commit -m "feat(teach): fold launcher steps into direct app launches"
 ```
 
@@ -121,9 +121,9 @@ git commit -m "feat(teach): fold launcher steps into direct app launches"
 ### Task 3: 提示词与草稿改用折叠路线
 
 **Files:**
-- Modify: `core/src/main/kotlin/com/wangzan101/mika/core/teach/Teach.kt:312-421`(`TeachDraft`)
+- Modify: `core/src/main/kotlin/com/wangzan101/mika/core/learn/teach/Teach.kt:312-421`(`TeachDraft`)
 - Modify: `core/src/main/resources/prompts/roles/teach_skill.md`
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/teach/TeachDraftTest.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/learn/teach/TeachDraftTest.kt`
 
 **Interfaces:**
 - Consumes: Task 2 的 `TeachRoute / RouteStep / RouteApp`。
@@ -163,7 +163,7 @@ git commit -m "feat(teach): fold launcher steps into direct app launches"
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `./gradlew :core:test --tests 'com.wangzan101.mika.core.teach.TeachDraftTest'`
+Run: `./gradlew :core:test --tests 'com.wangzan101.mika.core.learn.teach.TeachDraftTest'`
 Expected: FAIL(编译错:签名不匹配)。
 
 - [ ] **Step 3: 改 `request` 与 `assemble`**
@@ -192,7 +192,7 @@ Run: 同 Step 2。Expected: PASS。
 - [ ] **Step 6: 提交**
 
 ```bash
-git add core/src/main/kotlin/com/wangzan101/mika/core/teach/Teach.kt core/src/main/resources/prompts/roles/teach_skill.md core/src/test/kotlin/com/wangzan101/mika/core/teach/TeachDraftTest.kt
+git add core/src/main/kotlin/com/wangzan101/mika/core/learn/teach/Teach.kt core/src/main/resources/prompts/roles/teach_skill.md core/src/test/kotlin/com/wangzan101/mika/core/learn/teach/TeachDraftTest.kt
 git commit -m "feat(teach): summarize demonstrated routes with direct actions"
 ```
 
@@ -203,9 +203,9 @@ git commit -m "feat(teach): summarize demonstrated routes with direct actions"
 **Files:**
 - Create: `app/src/main/java/com/wangzan101/mika/teach/TeachApps.kt`
 - Modify: `app/src/main/java/com/wangzan101/mika/teach/TeachRuntime.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/TeachScreen.kt`(只改调用点,保证能编译;版式在 Task 5 重做)
-- Create: `core/src/main/kotlin/com/wangzan101/mika/core/teach/TeachPending.kt`
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/teach/TeachPendingTest.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/teach/ui/TeachScreen.kt`(只改调用点,保证能编译;版式在 Task 5 重做)
+- Create: `core/src/main/kotlin/com/wangzan101/mika/core/learn/teach/TeachPending.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/learn/teach/TeachPendingTest.kt`
 
 **Interfaces:**
 - Consumes: Task 2/3;`PersonalSkills.drafts()[id]`、`approve(id)`、`reject(id)`;`ConfirmationNotifier.appLabel(context, pkg)`。
@@ -252,7 +252,7 @@ Expected: BUILD SUCCESSFUL。
 - [ ] **Step 6: 提交**
 
 ```bash
-git add app/src/main/java/com/wangzan101/mika/teach/TeachApps.kt app/src/main/java/com/wangzan101/mika/teach/TeachRuntime.kt app/src/main/java/com/wangzan101/mika/ui/TeachScreen.kt core/src/main/kotlin/com/wangzan101/mika/core/teach/TeachPending.kt core/src/test/kotlin/com/wangzan101/mika/core/teach/TeachPendingTest.kt
+git add app/src/main/java/com/wangzan101/mika/teach/TeachApps.kt app/src/main/java/com/wangzan101/mika/teach/TeachRuntime.kt app/src/main/java/com/wangzan101/mika/teach/ui/TeachScreen.kt core/src/main/kotlin/com/wangzan101/mika/core/learn/teach/TeachPending.kt core/src/test/kotlin/com/wangzan101/mika/core/learn/teach/TeachPendingTest.kt
 git commit -m "feat(teach): summarize automatically after demonstration"
 ```
 
@@ -261,7 +261,7 @@ git commit -m "feat(teach): summarize automatically after demonstration"
 ### Task 5: 页面改版与文案
 
 **Files:**
-- Rewrite: `app/src/main/java/com/wangzan101/mika/ui/TeachScreen.kt`
+- Rewrite: `app/src/main/java/com/wangzan101/mika/teach/ui/TeachScreen.kt`
 - Modify: `app/src/main/res/values*/strings_teach.xml`(12 个文件)
 - Test: `app/src/androidTest/java/com/wangzan101/mika/ui/TeachScreenTest.kt`(新建)
 
@@ -333,7 +333,7 @@ Run: `./gradlew :app:testDebugUnitTest` → PASS(含 `StringResourcesTest`)。
 - [ ] **Step 5: 提交**
 
 ```bash
-git add app/src/main/java/com/wangzan101/mika/ui/TeachScreen.kt app/src/main/res/values*/strings_teach.xml app/src/androidTest/java/com/wangzan101/mika/ui/TeachScreenTest.kt
+git add app/src/main/java/com/wangzan101/mika/teach/ui/TeachScreen.kt app/src/main/res/values*/strings_teach.xml app/src/androidTest/java/com/wangzan101/mika/ui/TeachScreenTest.kt
 git commit -m "feat(teach): show an auto-written skill instead of raw steps"
 ```
 
@@ -370,7 +370,7 @@ git commit -m "feat(teach): show an auto-written skill instead of raw steps"
 - [x] **Step 5: 回归**
 
 Run: `./gradlew :core:test :app:testDebugUnitTest` → PASS。
-Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.ui.TeachScreenTest,com.wangzan101.mika.ui.ChatAttachmentsTest` → PASS。
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.ui.TeachScreenTest,com.wangzan101.mika.chat.ui.ChatAttachmentsTest` → PASS。
 Run: `./gradlew :app:compileDebugKotlin :app:compileDebugAndroidTestKotlin` → PASS。
 不做全量 connectedAndroidTest。
 

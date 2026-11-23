@@ -1,6 +1,6 @@
 """Run against a disposable arm64 emulator with the debug and Android test APKs installed.
 
-    python3 tools/mika/tests/browser_phone_files.py --device emulator-5554
+    python3 companions/mika/tests/browser_phone_files.py --device emulator-5554
 
 The browser launches the ordinary ADB desk. The on-device test supplies only the
 model replies; Android imports the attachment and exports the real result file.

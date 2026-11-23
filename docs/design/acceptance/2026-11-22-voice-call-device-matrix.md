@@ -1,7 +1,7 @@
 # 应用内实时语音通话 · 真机验收清单
 
 日期:2026-11-22
-范围:`worktree-voice-call` 分支(设计见 `docs/superpowers/specs/2026-11-22-voice-call-design.md`)。
+范围:`worktree-voice-call` 分支(设计见 `docs/design/specs/2026-11-22-voice-call-design.md`)。
 用法:真机逐项执行,通过打 `[x]`,不通过记下现象与机型/安卓版本。**任一项不通过都算这一版不达验收。**
 
 前置:设置里配好实时语音凭据(与 AI 电话同一份);授予麦克风权限。

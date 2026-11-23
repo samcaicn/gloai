@@ -87,7 +87,7 @@ vllm serve Qwen/Qwen3-ASR-1.7B --host 127.0.0.1 --port 10098 \
 
 ## 入口与配置
 
-设置 › 模型 › 语音转文字里「边说边转的语音服务」一组，豆包下面一行「千问实时语音识别」。它的设置页（`app/ui/LiveSpeechSetup.kt`）顶上三个分页并排：「自建」「百炼·北京」「百炼·新加坡」，各管各的设置，打开时停在正在用（或上次用）的那个（`FunAsrTab.of`）。没设置过时点这一行进设置页；设置过以后点圆圈就沿用上次那种（`SpeechSettings.lastLive`：自建的地址，或百炼某个地域的模型和业务空间；那种用不了了就进设置页），右边「设置」进去改。行上第二行写正在用的是哪种，如「自建 · 192.168.1.10:10095」「百炼·北京 · fun-asr-realtime」。
+设置 › 模型 › 语音转文字里「边说边转的语音服务」一组，豆包下面一行「千问实时语音识别」。它的设置页（`app/voice/ui/LiveSpeechSetup.kt`）顶上三个分页并排：「自建」「百炼·北京」「百炼·新加坡」，各管各的设置，打开时停在正在用（或上次用）的那个（`FunAsrTab.of`）。没设置过时点这一行进设置页；设置过以后点圆圈就沿用上次那种（`SpeechSettings.lastLive`：自建的地址，或百炼某个地域的模型和业务空间；那种用不了了就进设置页），右边「设置」进去改。行上第二行写正在用的是哪种，如「自建 · 192.168.1.10:10095」「百炼·北京 · fun-asr-realtime」。
 
 - **自建**：页上写明支持 Fun-ASR-Nano 和 Qwen3-ASR，「部署说明」一行打开本文档（`FunAsrProtocol.DEPLOY_GUIDE`）。填服务地址。只写「主机」或「主机:端口」时按 `ws://` 补全，没写端口补 10095（Fun-ASR 仓库里 serve_realtime_ws.py 的默认端口）；`http(s)://` 换成 `ws(s)://`，带账号密码的地址不收（`FunAsrProtocol.normalize`）。地址不是密钥，存在选择 JSON 里（`SpeechChoice.FunAsr`），另记一份（`SpeechSettings.funAsrUrl`），换去别的再回来时预填。
 - **百炼·北京 / 百炼·新加坡**：北京和新加坡的 API Key 不通用，每个地域各存一份 Key、上次的模型和业务空间 ID。Key 用 `KeyCipher` 加密单独存（和豆包凭据同一个 Keystore alias、不同的键），不回填；已存时留空沿用，只换模型或业务空间。模型列出 `fun-asr-realtime`（默认）、`paraformer-realtime-v2`、`qwen-audio-3.1-asr-flash-message`，也能手填同一套 run-task 协议的别的模型（只收字母、数字和 `.-_`）。业务空间 ID 可选：填了连它的专属接入点 `wss://<业务空间>.<地域>.maas.aliyuncs.com/api-ws/v1/inference`（地域段是 `cn-beijing` 或 `ap-southeast-1`，文档推荐），不填连通用接入点 `dashscope.aliyuncs.com` / `dashscope-intl.aliyuncs.com`（仍可用）；ID 去掉空白转小写，没带 `llm-` 前缀时补上（控制台里的 ID 以它开头），只收字母、数字和连字符（拼进主机名，`BailianProtocol.workspace`），页上写出这次会连的地址。选择 JSON 只有模型、地域和业务空间 ID（`SpeechChoice.Bailian`）。删除某个地域的 Key 时，正在用这个地域就关掉语音输入。

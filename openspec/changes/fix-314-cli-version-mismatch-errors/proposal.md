@@ -6,7 +6,7 @@
 
 - CLI 四处能力门禁（`--request-id`→`task_recovery`、`steer`→`task_steer`、`export`→`run_export`、附件/下载→`task_files`）触发 `incompatible_api` 时，报错文案统一为「手机 Mika 版本（已知时）+ 缺失能力名 + 可执行补救」；`--request-id` 的补救必须写明可去掉该参数照常提交。
 - 错误 JSON（`--json` 输出与退出码 2 的 stderr）新增结构化字段 `capability`、`server_version`（已知时），桥接程序可据此自动降级（#314 报告人正是靠错误码分支绕过的）。
-- `tools/mika/SKILL.md` 错误表中 `incompatible_api` 一行同步为配对指引（能力 → 需更新手机 App / 或去掉参数重试）。
+- `companions/mika/SKILL.md` 错误表中 `incompatible_api` 一行同步为配对指引（能力 → 需更新手机 App / 或去掉参数重试）。
 - 旧 CLI 不认 `--request-id`（argparse 拒绝）方向：已发布的旧 CLI 无法追改，只在 SKILL.md 配对说明中写明，不改代码。
 
 ## Capabilities
@@ -20,7 +20,7 @@
 
 ## Impact
 
-- `tools/mika/scripts/mika_cli.py`：新增 `incompatible(info, capability, remedy)` 辅助函数；替换 4 处门禁的 `CliError` 构造（`run_with_files`、`execute` 的 steer/export 分支、`require_files`）。`discover()` 404 / api_version 不符两条路径保持原文案（此时无 server_version 可报）。
-- `tools/mika/tests/test_mika_cli.py`：既有 3 处 `incompatible_api` 断言补文案与结构化字段检查；新增 export 门禁文案断言。
-- `tools/mika/SKILL.md`：错误表 1 行 + `--request-id` 段落 1 句。
+- `companions/mika/scripts/mika_cli.py`：新增 `incompatible(info, capability, remedy)` 辅助函数；替换 4 处门禁的 `CliError` 构造（`run_with_files`、`execute` 的 steer/export 分支、`require_files`）。`discover()` 404 / api_version 不符两条路径保持原文案（此时无 server_version 可报）。
+- `companions/mika/tests/test_mika_cli.py`：既有 3 处 `incompatible_api` 断言补文案与结构化字段检查；新增 export 门禁文案断言。
+- `companions/mika/SKILL.md`：错误表 1 行 + `--request-id` 段落 1 句。
 - 不改 App 侧（Kotlin）：API 已正确广播 capabilities，旧 APK 无法追改；`RemoteCliContractTest` 走的happy path 不受影响。

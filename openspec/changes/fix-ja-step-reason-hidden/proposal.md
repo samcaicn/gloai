@@ -3,7 +3,7 @@
 v0.1.50 的 #765（f010acab）在同一个提交里加了两件互相抵消的事：
 
 1. `SystemPrompt.languageDirective("ja")` 指示模型「すべての思考、進捗メモ、ツールの理由…は日本語で」——日语界面下步骤用意（reason）按指令用日语写；
-2. `ChatViewModel.StepRow.shouldHideRawReason`（app/src/main/java/com/wangzan101/mika/ui/ChatViewModel.kt:142）为了"非中文界面下模型不守指令写中文时别突兀"，对**任何**含 U+4E00–9FA5 汉字的用意整条隐藏、回退到本地化动作标题。
+2. `ChatViewModel.StepRow.shouldHideRawReason`（app/src/main/java/com/wangzan101/mika/chat/ui/ChatViewModel.kt:142）为了"非中文界面下模型不守指令写中文时别突兀"，对**任何**含 U+4E00–9FA5 汉字的用意整条隐藏、回退到本地化动作标题。
 
 判别式只有汉字区间一个信号，而**日语书面语几乎每句都含汉字**（検索、設定、連絡先……只有假名才能区分日/中）。结果：日语界面的用户几乎永远看不到模型的步骤解释——模型越守指令，信息丢得越干净。日语之外的语言不受影响（韩语谚文、西文都不在汉字区间；中文界面恒显示）。
 

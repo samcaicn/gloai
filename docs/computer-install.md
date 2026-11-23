@@ -20,18 +20,18 @@ Agent 想走固定的最短路径：见 [Agent 快速路径](agent-quickstart.md
 需要 Python 3.10+、Git 和 pipx；ADB 连接还需要 Android platform-tools。安装：
 
 ```bash
-pipx install 'git+https://github.com/wangzan101/Mika.git@<tag>#subdirectory=tools/mika'
+pipx install 'git+https://github.com/wangzan101/Mika.git@<tag>#subdirectory=companions/mika'
 mika --version
 ```
 
-pipx 里的包名是 `mika-phone-cli`，命令是 `mika`。CLI 有自己的版本号，和 APK 版本不同。已有仓库检出时，也可以在仓库根目录 `pipx install ./tools/mika`，或者不安装、直接运行 `python3 tools/mika/scripts/mika_cli.py`（Windows 用 `py -3`）。
+pipx 里的包名是 `mika-phone-cli`，命令是 `mika`。CLI 有自己的版本号，和 APK 版本不同。已有仓库检出时，也可以在仓库根目录 `pipx install ./companions/mika`，或者不安装、直接运行 `python3 companions/mika/scripts/mika_cli.py`（Windows 用 `py -3`）。
 
 ## CLI：升级、回退和卸载
 
 升级换成新的 `<tag>`，回退换成原来的 `<tag>`，用 `--force` 覆盖安装：
 
 ```bash
-pipx install --force 'git+https://github.com/wangzan101/Mika.git@<tag>#subdirectory=tools/mika'
+pipx install --force 'git+https://github.com/wangzan101/Mika.git@<tag>#subdirectory=companions/mika'
 ```
 
 `pipx upgrade` 不会切换到别的 tag，换版本时用上面的命令。卸载：
@@ -42,10 +42,10 @@ pipx uninstall mika-phone-cli
 
 ## Skill：安装
 
-Skill 就是仓库里的 `tools/mika` 文件夹：`SKILL.md` 告诉 Agent 怎么用，`scripts/mika_cli.py` 是自带的 CLI，只依赖 Python 3.10+（ADB 连接另需 platform-tools）。
+Skill 就是仓库里的 `companions/mika` 文件夹：`SKILL.md` 告诉 Agent 怎么用，`scripts/mika_cli.py` 是自带的 CLI，只依赖 Python 3.10+（ADB 连接另需 platform-tools）。
 
 1. 在 [最新 release](https://github.com/wangzan101/Mika/releases/latest) 下载 **Source code (zip)** 并解压。
-2. 把其中**整个** `tools/mika` 文件夹复制到你的 Agent 的技能目录（位置见该 Agent 自己的说明）。结果应该是 `<技能目录>/mika/SKILL.md`，不要多嵌套一层 `mika`。
+2. 把其中**整个** `companions/mika` 文件夹复制到你的 Agent 的技能目录（位置见该 Agent 自己的说明）。结果应该是 `<技能目录>/mika/SKILL.md`，不要多嵌套一层 `mika`。
 3. 检查自带脚本能运行：
 
    ```bash
@@ -58,7 +58,7 @@ Skill 就是仓库里的 `tools/mika` 文件夹：`SKILL.md` 告诉 Agent 怎么
 
 ## Skill：升级、回退和卸载
 
-- **升级或回退**：把旧的 `mika` 文件夹移到技能目录之外备份，再复制目标版本的整个 `tools/mika` 文件夹，不要在旧文件夹上合并复制。
+- **升级或回退**：把旧的 `mika` 文件夹移到技能目录之外备份，再复制目标版本的整个 `companions/mika` 文件夹，不要在旧文件夹上合并复制。
 - **卸载**：只删除技能目录里的 `mika` 文件夹。
 
 改完都要重开 Agent 会话。

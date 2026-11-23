@@ -11,9 +11,9 @@ build.py              打 zip（只用 Python 标准库）
 ## 构建
 
 ```bash
-python examples/plugins/com.example.feishu/build.py
+python plugins/examples/com.example.feishu/build.py
 # 只打技能版:
-python examples/plugins/com.example.feishu/build.py --only skill
+python plugins/examples/com.example.feishu/build.py --only skill
 ```
 
 zip 条目统一用 `/`，只包含 manifest、`skills/` 和（工具版的）`scripts/`。
@@ -39,7 +39,7 @@ zip 条目统一用 `/`，只包含 manifest、`skills/` 和（工具版的）`s
 
 ```bash
 echo '{"webhook":"https://open.feishu.cn/open-apis/bot/v2/hook/xxx","text":"来自 Mika 的测试"}' \
-  | python examples/plugins/com.example.feishu/scripts/send.py
+  | python plugins/examples/com.example.feishu/scripts/send.py
 ```
 
 真实 webhook 会真的发消息；先确认目标和内容。脚本不打印 webhook/secret，失败时最后一行是 `{"ok": false, "error": ...}`。

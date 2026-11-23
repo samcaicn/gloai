@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin、kotlinx.serialization、OkHttp、Compose、现有 Linux 沙箱、JUnit/MockWebServer、本地 HTML 原型。
 
-**Spec:** `docs/superpowers/specs/2026-11-22-mcp-service-catalog-design.md`
+**Spec:** `docs/design/specs/2026-11-22-mcp-service-catalog-design.md`
 
 ## Global Constraints
 
@@ -36,7 +36,7 @@
 ### Task 1: 本地 UI 原型与确认门
 
 **Files:**
-- Create: `docs/superpowers/prototypes/2026-11-22-mcp-service-catalog.html`
+- Create: `docs/design/prototypes/2026-11-22-mcp-service-catalog.html`
 
 **Interfaces:**
 - Produces: 用户确认的 MCP 首页、目录、详情/连接、成功、失败、管理和自定义页面布局;Task 8–9 只实现已确认原型。
@@ -57,7 +57,7 @@ Expected: 所有状态可达,预设流程不出现 URL/transport,自定义入口
 - [ ] **Step 4: Commit**
 
 ```bash
-git add docs/superpowers/specs/2026-11-22-mcp-service-catalog-design.md docs/superpowers/plans/2026-11-22-mcp-service-catalog.md docs/superpowers/prototypes/2026-11-22-mcp-service-catalog.html
+git add docs/design/specs/2026-11-22-mcp-service-catalog-design.md docs/design/plans/2026-11-22-mcp-service-catalog.md docs/design/prototypes/2026-11-22-mcp-service-catalog.html
 git commit -m "docs: design and prototype guided MCP service connections"
 ```
 
@@ -328,14 +328,14 @@ git commit -m "feat(mcp): bundle the complete guided service catalog"
 ### Task 8: 目录浏览与引导式连接 UI
 
 **Files:**
-- Create: `app/src/main/java/com/wangzan101/mika/ui/McpCatalogScreen.kt`
-- Create: `app/src/main/java/com/wangzan101/mika/ui/McpConnectScreen.kt`
-- Create: `app/src/main/java/com/wangzan101/mika/ui/McpConnectorState.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/McpServersScreen.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/SettingsScreen.kt`
+- Create: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpCatalogScreen.kt`
+- Create: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpConnectScreen.kt`
+- Create: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpConnectorState.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpServersScreen.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/settings/ui/SettingsScreen.kt`
 - Modify: `app/src/main/res/values*/strings_settings.xml` 与必要的 `strings_mcp.xml`
-- Create: `app/src/test/java/com/wangzan101/mika/ui/McpConnectorStateTest.kt`
-- Modify: `app/src/androidTest/java/com/wangzan101/mika/ui/SettingsScreenTest.kt`
+- Create: `app/src/test/java/com/wangzan101/mika/mcp/ui/McpConnectorStateTest.kt`
+- Modify: `app/src/androidTest/java/com/wangzan101/mika/settings/ui/SettingsScreenTest.kt`
 
 **Interfaces:**
 - Consumes: Task 1 已确认原型;Task 4/6 的连接与确认 API;Task 7 的目录。
@@ -348,7 +348,7 @@ UI tests 覆盖:空状态进入目录、搜索/分类、预设页无 URL/transpo
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.ui.McpConnectorStateTest' :app:compileDebugAndroidTestKotlin`
+Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.mcp.ui.McpConnectorStateTest' :app:compileDebugAndroidTestKotlin`
 Expected: FAIL, 状态机和页面不存在。
 
 - [ ] **Step 3: Implement the approved prototype with existing Compose components**
@@ -357,26 +357,26 @@ Expected: FAIL, 状态机和页面不存在。
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.ui.McpConnectorStateTest' :app:assembleDebugAndroidTest -PdevInstall`
+Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.mcp.ui.McpConnectorStateTest' :app:assembleDebugAndroidTest -PdevInstall`
 Expected: PASS/构建成功;新增字符串完整性测试通过。
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/wangzan101/mika/ui app/src/main/java/com/wangzan101/mika/ui/SettingsScreen.kt app/src/main/res app/src/test/java/com/wangzan101/mika/ui/McpConnectorStateTest.kt app/src/androidTest/java/com/wangzan101/mika/ui/SettingsScreenTest.kt
+git add app/src/main/java/com/wangzan101/mika/ui app/src/main/java/com/wangzan101/mika/settings/ui/SettingsScreen.kt app/src/main/res app/src/test/java/com/wangzan101/mika/mcp/ui/McpConnectorStateTest.kt app/src/androidTest/java/com/wangzan101/mika/settings/ui/SettingsScreenTest.kt
 git commit -m "feat(mcp): add guided service catalog connections"
 ```
 
 ### Task 9: 服务管理与完整自定义页面
 
 **Files:**
-- Create: `app/src/main/java/com/wangzan101/mika/ui/McpServerManageScreen.kt`
-- Create: `app/src/main/java/com/wangzan101/mika/ui/McpCustomServerScreen.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/McpServersScreen.kt`
-- Modify: `app/src/main/java/com/wangzan101/mika/ui/McpConnectorState.kt`
+- Create: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpServerManageScreen.kt`
+- Create: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpCustomServerScreen.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpServersScreen.kt`
+- Modify: `app/src/main/java/com/wangzan101/mika/mcp/ui/McpConnectorState.kt`
 - Modify: `app/src/main/res/values*/strings_settings.xml`
-- Modify: `app/src/test/java/com/wangzan101/mika/ui/McpConnectorStateTest.kt`
-- Modify: `app/src/androidTest/java/com/wangzan101/mika/ui/SettingsScreenTest.kt`
+- Modify: `app/src/test/java/com/wangzan101/mika/mcp/ui/McpConnectorStateTest.kt`
+- Modify: `app/src/androidTest/java/com/wangzan101/mika/settings/ui/SettingsScreenTest.kt`
 
 **Interfaces:**
 - Produces: 管理动作 `test`、`setEnabled`、`reauthorize`、`replaceSecrets`、`delete`;自定义仍产出原 `McpServerConfig`,并支持全部已有高级字段。
@@ -387,7 +387,7 @@ git commit -m "feat(mcp): add guided service catalog connections"
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.ui.McpConnectorStateTest' :app:compileDebugAndroidTestKotlin`
+Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.mcp.ui.McpConnectorStateTest' :app:compileDebugAndroidTestKotlin`
 Expected: FAIL, 管理/自定义页面未完成。
 
 - [ ] **Step 3: Implement management and custom flows**
@@ -396,13 +396,13 @@ Expected: FAIL, 管理/自定义页面未完成。
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.ui.McpConnectorStateTest' :app:assembleDebugAndroidTest -PdevInstall`
+Run: `./gradlew :app:testDebugUnitTest --tests 'com.wangzan101.mika.mcp.ui.McpConnectorStateTest' :app:assembleDebugAndroidTest -PdevInstall`
 Expected: PASS/构建成功。
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/wangzan101/mika/ui app/src/main/res app/src/test/java/com/wangzan101/mika/ui/McpConnectorStateTest.kt app/src/androidTest/java/com/wangzan101/mika/ui/SettingsScreenTest.kt
+git add app/src/main/java/com/wangzan101/mika/ui app/src/main/res app/src/test/java/com/wangzan101/mika/mcp/ui/McpConnectorStateTest.kt app/src/androidTest/java/com/wangzan101/mika/settings/ui/SettingsScreenTest.kt
 git commit -m "feat(mcp): complete service management and custom setup"
 ```
 
