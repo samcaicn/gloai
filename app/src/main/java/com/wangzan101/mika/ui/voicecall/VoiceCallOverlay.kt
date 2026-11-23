@@ -1,5 +1,6 @@
 package com.wangzan101.mika.ui.voicecall
 
+import com.wangzan101.mika.core.frontdesk.DeskTaskPhase
 import android.text.format.DateFormat
 import android.view.View
 import android.view.ViewParent
@@ -108,7 +109,7 @@ fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit) {
         val muted by session.muted.collectAsState()
         val micLevel by session.micLevel.collectAsState()
         val speakerLevel by session.speakerLevel.collectAsState()
-        val busy by call.route.busy.collectAsState()
+        val busy by call.busy.collectAsState()
         val items by call.feed.items.collectAsState()
         val device by call.audioRoute.route.collectAsState()
         val clock = rememberCallClock(state)
@@ -373,7 +374,7 @@ private fun SaidBubble(item: VoiceCallFeedItem.Said, max: androidx.compose.ui.un
     }
 }
 
-/** 办事步骤卡:前面的步骤都打勾,最后一步在办时转圈、办完时打勾。 */
+/** 前台派出的一件任务:标题和此刻的阶段,前面的步骤都打勾,最后一步在办时转圈、办完时打勾。 */
 @Composable
 private fun TaskCard(item: VoiceCallFeedItem.Task) {
     val c = MikaTheme.colors
@@ -381,10 +382,16 @@ private fun TaskCard(item: VoiceCallFeedItem.Task) {
         Modifier.fillMaxWidth().background(c.surface, MikaShapes.Card).border(1.dp, c.hair, MikaShapes.Card)
             .padding(horizontal = 14.dp, vertical = 12.dp).animateContentSize().testTag("voicecall-task"),
     ) {
-        Text(
-            stringResource(if (item.running) R.string.voicecall_task_running else R.string.voicecall_task_done),
-            style = MikaType.Label, color = c.ink2,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                item.title, style = MikaType.Label, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            Text(
+                stringResource(phaseText(item.phase)), style = MikaType.Label, color = c.ink2,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
         item.steps.forEachIndexed { index, step ->
             val running = item.running && index == item.steps.lastIndex
             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -653,4 +660,13 @@ fun VoiceCallGate(
             }
         }
     }
+}
+
+/** 任务卡上阶段那几个字。 */
+private fun phaseText(phase: DeskTaskPhase): Int = when (phase) {
+    DeskTaskPhase.Running, DeskTaskPhase.Queued -> R.string.voicecall_task_running
+    DeskTaskPhase.NeedsYou -> R.string.voicecall_see_task_page
+    DeskTaskPhase.Done -> R.string.voicecall_task_done
+    DeskTaskPhase.Failed -> R.string.voicecall_task_failed
+    DeskTaskPhase.Cancelled -> R.string.voicecall_task_cancelled
 }

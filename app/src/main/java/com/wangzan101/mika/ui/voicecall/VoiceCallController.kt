@@ -27,10 +27,13 @@ import com.wangzan101.mika.calls.VolcRealtimeClient
 import com.wangzan101.mika.calls.VolcRealtimeConfig
 import com.wangzan101.mika.calls.VolcRealtimeCredentials
 import com.wangzan101.mika.calls.VolcRealtimeException
-import com.wangzan101.mika.calls.VolcRealtimeProtocol
-import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn as ChatTurn
+import com.wangzan101.mika.core.frontdesk.DeskPrompt
+import com.wangzan101.mika.core.frontdesk.DeskTaskPhase
+import com.wangzan101.mika.core.frontdesk.DeskToolSet
+import com.wangzan101.mika.core.frontdesk.DeskTools
 import com.wangzan101.mika.core.frontdesk.LlmBrain
+import com.wangzan101.mika.frontdesk.DeskRegistry
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.ui.findActivity
 import com.wangzan101.mika.voice.cascade.CallUse
@@ -42,27 +45,31 @@ import com.wangzan101.mika.voicecall.AndroidVoiceCallAudio
 import com.wangzan101.mika.voicecall.EndReason
 import com.wangzan101.mika.voicecall.VoiceCallAudioRoute
 import com.wangzan101.mika.voicecall.VoiceCallFeed
-import com.wangzan101.mika.voicecall.VoiceCallRoute
+import com.wangzan101.mika.voicecall.ECHO_WINDOW_CAPACITY_CHARS
+import com.wangzan101.mika.voicecall.RingBuffer
+import com.wangzan101.mika.voicecall.VoiceCallRequest
 import com.wangzan101.mika.voicecall.VoiceCallSession
 import com.wangzan101.mika.voicecall.VoiceCallState
-import com.wangzan101.mika.voicecall.VoiceCallTaskLauncher
 import com.wangzan101.mika.voicecall.VoiceCallTranscript
-import com.wangzan101.mika.voicecall.typedResultText
+import com.wangzan101.mika.voicecall.VoiceDeskBridge
+import com.wangzan101.mika.voicecall.deskReportSpeech
+import com.wangzan101.mika.voicecall.typedDeskResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import kotlinx.serialization.json.JsonPrimitive
 
-/** 一通通话的页面侧持有物:会话、路由、免提、转写、上屏的对话流,以及页面此刻显不显。 */
+/** 一通通话的页面侧持有物:会话、前台有没有任务在办([busy])、免提、转写、上屏的对话流,以及页面此刻显不显。 */
 @Stable
 class VoiceCallHolder(
     val session: VoiceCallSession,
-    val route: VoiceCallRoute,
+    val busy: StateFlow<Boolean>,
     val audioRoute: VoiceCallAudioRoute,
     val transcript: VoiceCallTranscript,
     val feed: VoiceCallFeed,
@@ -78,8 +85,8 @@ sealed interface VoiceCallStage {
 
 /**
  * 通话页的装配与状态控制。生产依赖全部注入([deps]);一通电话从 [start] 开始:
- * 缺凭据/缺权限先进门禁,齐了才建会话。装配方不在会话事件循环里 await 路由:
- * onVoiceRequest 一律 `scope.launch { route.execute(...) }`。
+ * 缺凭据/缺权限先进门禁,齐了才建会话。通话接着这条会话的前台:模型调的前台工具由 [VoiceDeskBridge] 执行,
+ * 一律在通话协程域里 launch,不在会话事件循环里等;后台任务的汇报由前台交回通话说出来。
  */
 @Stable
 class VoiceCallController(
@@ -91,7 +98,9 @@ class VoiceCallController(
     var stage by mutableStateOf<VoiceCallStage?>(null)
         private set
 
-    private var currentRealtime: CallRealtimeSession? = null
+    @Volatile private var currentRealtime: CallRealtimeSession? = null
+    /** 这通电话接在前台上的句柄;拆通话时关掉,之后的汇报交给兜底(写回会话、发通知)。 */
+    private var deskAttachment: AutoCloseable? = null
     private var callScope: CoroutineScope? = null
 
     /** After migration both entry points resolve the active model through this one controller. */
@@ -117,6 +126,8 @@ class VoiceCallController(
         callScope?.cancel()
         callScope = null
         currentRealtime = null
+        deskAttachment?.close()
+        deskAttachment = null
     }
 
     /** 入口(听筒按钮/胶囊菜单/直开 extra):活的通话只重新亮出,终态的换新一通。 */
@@ -226,36 +237,22 @@ class VoiceCallController(
             stage = VoiceCallStage.Gate(VoiceCallGateStage.UnsupportedProtocol)
             return
         }
-        val originConversation = deps.conversationId()
+        // 通话接着发起它的会话;从胶囊直开没有会话时新开一条,任务和转写都挂在它下面。
+        val conversation = deps.conversationId() ?: deps.newConversation()
         val transcript = VoiceCallTranscript(
-            conversationId = { originConversation },
+            conversationId = { conversation },
             appendTurn = deps.appendTurn,
         )
         val feed = VoiceCallFeed()
-        // 路由的回调要回头告诉会话(打字结果已显示),会话又要路由来派发请求:先声明,下面建好
+        val desk = deps.desks.desk(conversation)
+        val echoWindow = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
+        val gate = VoiceCallRequest(echoWindow)
+        val executor = deps.desks.executor(conversation, gate::verified)
+        val bridge = VoiceDeskBridge(desk, executor, { currentRealtime }, ::deskReportSpeech, onSpoken = echoWindow::append)
+        // 会话的回调要回头告诉会话(打字结果已显示):先声明,下面建好
         lateinit var session: VoiceCallSession
         val callScope = CoroutineScope(SupervisorJob(deps.scope.coroutineContext[kotlinx.coroutines.Job]) + Dispatchers.Default)
         this.callScope = callScope
-        val route = VoiceCallRoute(
-            launcher = deps.launcher,
-            runState = deps.runState,
-            sendResult = { callId, text ->
-                if (callId.startsWith(VoiceCallSession.TYPED_CALL_PREFIX)) {
-                    // 打字的请求模型侧没有 function_call,结果回本地:进转写(答),面板状态行已由路由自己上过
-                    typedResultText(text).let {
-                        transcript.onAssistant(it)
-                        feed.onAssistant(it, isFinal = true)
-                    }
-                    session.onLocalReply()
-                } else {
-                    currentRealtime?.sendToolResult(callId, buildJsonObject {
-                        put("status", "completed")
-                        put("result", text)
-                    })
-                }
-            },
-            cancelTask = deps.cancelTask,
-        )
         session = VoiceCallSession(
             scope = callScope,
             audio = AndroidVoiceCallAudio(deps.context),
@@ -265,9 +262,11 @@ class VoiceCallController(
                     return@connect try {
                         cascade.open(
                             CallUse.InApp,
-                            VolcRealtimeProtocol.AGENT_TOOLS_PROMPT.trim(),
-                            listOf(LlmBrain.toolSpec(VolcRealtimeProtocol.mikaRequestTool())),
+                            DeskPrompt.user(spoken = true),
+                            DeskTools.specs(DeskToolSet.User).map(LlmBrain::toolSpec),
                             language = null,
+                            prior = deps.turns(conversation),
+                            background = deps.desks.background(conversation),
                         ).also { currentRealtime = it }
                     } catch (e: VoiceModelError) {
                         throw VolcRealtimeException(VolcRealtimeException.Kind.AUTH)
@@ -276,9 +275,12 @@ class VoiceCallController(
                 val profile = profile!!
                 val credentials = activeCredentials(profile)
                     ?: throw VolcRealtimeException(VolcRealtimeException.Kind.AUTH)
+                // 实时模型没有每轮的背景附注:开场时把任务板放进说明,之后的变化由前台汇报念给它听。
+                val board = deps.desks.background(conversation).render("").orEmpty().take(MAX_OPENING_BOARD_CHARS)
                 VolcRealtimeClient(endpoint = profile.endpoint).connect(
                     credentials,
                     VolcRealtimeConfig(
+                        systemPrompt = board,
                         speaker = profile.speaker,
                         model = profile.model,
                         agentTools = true,
@@ -287,8 +289,26 @@ class VoiceCallController(
                 ).also { currentRealtime = it }
             },
             greeting = tr(R.string.voicecall_greeting),
-            onVoiceRequest = { callId, text -> callScope.launch { route.execute(callId, text) } },
-            onBargeIn = route::onBargeIn,
+            echoWindow = echoWindow,
+            requestGate = gate,
+            onDeskCall = { callId, name, args ->
+                callScope.launch {
+                    val result = bridge.onFunctionCall(callId, name, args)
+                    startedTask(result)?.let(transcript::onTask)
+                }
+            },
+            onTypedText = { text ->
+                callScope.launch {
+                    // 实时会话不收文字:打的字原样派成一件任务,结果在本地说一句
+                    val result = bridge.dispatchTyped(text)
+                    startedTask(result)?.let(transcript::onTask)
+                    typedDeskResult(result).let {
+                        transcript.onAssistant(it)
+                        feed.onAssistant(it, isFinal = true)
+                    }
+                    session.onLocalReply()
+                }
+            },
             onUserTranscript = { text, isFinal ->
                 feed.onUser(text, isFinal)
                 if (isFinal) transcript.onUser(text)
@@ -308,9 +328,25 @@ class VoiceCallController(
             session.end(EndReason.Hangup)
             return
         }
-        // 办事状态进对话流:busy 起落开/收步骤卡,状态行变化加步骤
-        callScope.launch { combine(route.busy, route.lines, ::Pair).collect { (busy, lines) -> feed.onTask(busy, lines) } }
-        stage = VoiceCallStage.InCall(VoiceCallHolder(session, route, VoiceCallAudioRoute(deps.context), transcript, feed))
+        deskAttachment = bridge.attach()
+        // 前台的任务板进对话流:每件任务一张卡,进展加步骤
+        callScope.launch { desk.active.collect(feed::onTasks) }
+        val busy = desk.active
+            .map { views -> views.any { it.state == DeskTaskPhase.Running || it.state == DeskTaskPhase.Queued } }
+            .stateIn(callScope, SharingStarted.Eagerly, false)
+        stage = VoiceCallStage.InCall(VoiceCallHolder(session, busy, VoiceCallAudioRoute(deps.context), transcript, feed))
+    }
+
+    /** 派单结果里开始或排上队的任务编号;别的结果为 null。 */
+    private fun startedTask(result: kotlinx.serialization.json.JsonObject): String? {
+        val status = (result["status"] as? JsonPrimitive)?.content
+        if (status != "started" && status != "queued") return null
+        return (result["task_id"] as? JsonPrimitive)?.content
+    }
+
+    private companion object {
+        /** 实时会话开场说明里任务板最多放这么多字(说明总长有上限)。 */
+        const val MAX_OPENING_BOARD_CHARS = 4_000
     }
 }
 
@@ -323,10 +359,13 @@ class VoiceCallDeps(
     val profile: () -> CallVoiceProfile,
     val credentials: (String) -> VolcRealtimeCredentials?,
     val foregroundResumed: StateFlow<Boolean>,
-    val launcher: VoiceCallTaskLauncher,
-    val runState: (String) -> StateFlow<TaskState>?,
-    val cancelTask: (String) -> Unit,
+    /** 各会话的前台:通话接着发起会话的那一个。 */
+    val desks: DeskRegistry,
     val conversationId: () -> String?,
+    /** 新开一条会话(从胶囊直开、没有发起会话时),返回它的编号。 */
+    val newConversation: () -> String,
+    /** 一条会话已有的轮次,标准模式开场时给思考模型接上前文。 */
+    val turns: (String) -> List<ChatTurn>,
     val appendTurn: suspend (String, ChatTurn) -> Unit,
     val attachService: (VoiceCallSession) -> Boolean,
 )

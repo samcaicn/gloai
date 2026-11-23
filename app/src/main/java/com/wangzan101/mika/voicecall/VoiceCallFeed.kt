@@ -1,5 +1,7 @@
 package com.wangzan101.mika.voicecall
 
+import com.wangzan101.mika.core.frontdesk.DeskTaskPhase
+import com.wangzan101.mika.core.frontdesk.DeskTaskView
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -9,19 +11,28 @@ sealed interface VoiceCallFeedItem {
 
     data class Said(override val id: Long, val speaker: Speaker, val text: String, val partial: Boolean) : VoiceCallFeedItem
 
-    /** 一次办事:步骤按出现顺序排,最后一条是当前这步;[running] 为 false 时已办完(成败看最后一步的话)。 */
-    data class Task(override val id: Long, val steps: List<String>, val running: Boolean) : VoiceCallFeedItem
+    /** 前台派出的一件任务:步骤按出现顺序排,最后一条是当前这步;[phase] 是任务此刻所处的阶段。 */
+    data class Task(
+        override val id: Long,
+        val taskId: String,
+        val title: String,
+        val steps: List<String>,
+        val phase: DeskTaskPhase,
+    ) : VoiceCallFeedItem {
+        /** 还没收尾(在做、排队、等你处理)。 */
+        val running: Boolean get() = phase == DeskTaskPhase.Running || phase == DeskTaskPhase.Queued || phase == DeskTaskPhase.NeedsYou
+    }
 
     enum class Speaker { User, Mika }
 }
 
 /**
- * 通话页的对话流:把会话的转写(含说到一半的)和路由的办事状态排成一列,给页面直接画气泡。
+ * 通话页的对话流:把会话的转写(含说到一半的)和前台派出的任务排成一列,给页面直接画气泡。
  * 只管显示,不写存储(写回聊天是 [VoiceCallTranscript] 的事)。各回调可能来自不同线程,内部加锁。
  *
  * - 你说的:partial 段落替换同一条,final 落定。
  * - Mika 说的:草稿逐段替换同一条,final(或被打断时的 non-final)落定。
- * - 办事:路由 busy 起来开一张卡,之后每出现一行新状态就加一步,busy 落下卡片收尾。
+ * - 办事:前台派出的每件任务一张卡,见 [onTasks]。
  */
 class VoiceCallFeed(private val maxItems: Int = MAX_ITEMS) {
     private val _items = MutableStateFlow<List<VoiceCallFeedItem>>(emptyList())
@@ -29,8 +40,8 @@ class VoiceCallFeed(private val maxItems: Int = MAX_ITEMS) {
 
     private val lock = Any()
     private var nextId = 0L
-    private var openTaskId: Long? = null
-    private var taskBaseline: List<String> = emptyList()
+    /** 第一次收到任务板时已收尾的任务编号(之前派的,不上卡);还没收到过时为 null。 */
+    private var ignored: Set<String>? = null
 
     fun onUser(text: String, isFinal: Boolean) = said(VoiceCallFeedItem.Speaker.User, text, partial = !isFinal)
 
@@ -40,33 +51,27 @@ class VoiceCallFeed(private val maxItems: Int = MAX_ITEMS) {
     @Suppress("UNUSED_PARAMETER")
     fun onAssistant(text: String, isFinal: Boolean) = said(VoiceCallFeedItem.Speaker.Mika, text, partial = false)
 
-    /** 路由的办事状态:[busy] 是否在办,[lines] 是路由滚动的状态行(新的在最后)。 */
-    fun onTask(busy: Boolean, lines: List<String>) = synchronized(lock) {
-        val open = openTaskId
-        if (open == null) {
-            if (!busy) return@synchronized
-            // 开卡时的状态行是上一次办事留下的,不算这次的步骤
-            taskBaseline = lines
-            val id = nextId++
-            openTaskId = id
-            publish(_items.value + VoiceCallFeedItem.Task(id, emptyList(), running = true))
-            return@synchronized
+    /**
+     * 前台这次对话的任务板:每件任务一张卡(按任务编号),第一次出现时排到对话流末尾,
+     * 之后每出现一句新进展加一步、阶段跟着变。第一次收到时已经收尾的是之前派的旧任务,不上卡。
+     */
+    fun onTasks(views: List<DeskTaskView>) {
+        synchronized(lock) {
+            val baseline = ignored ?: views.filter { it.state in ENDED }.map { it.taskId }.toSet().also { ignored = it }
+            var current = _items.value
+            for (view in views.filter { it.taskId !in baseline }) current = withTask(current, view)
+            if (current !== _items.value) publish(current)
         }
-        var current = _items.value
-        val latest = lines.lastOrNull()
-        if (lines != taskBaseline && latest != null) {
-            taskBaseline = lines
-            current = current.map { item ->
-                if (item is VoiceCallFeedItem.Task && item.id == open && item.steps.lastOrNull() != latest) {
-                    item.copy(steps = item.steps + latest)
-                } else item
-            }
-        }
-        if (!busy) {
-            openTaskId = null
-            current = current.map { if (it is VoiceCallFeedItem.Task && it.id == open) it.copy(running = false) else it }
-        }
-        publish(current)
+    }
+
+    private fun withTask(current: List<VoiceCallFeedItem>, view: DeskTaskView): List<VoiceCallFeedItem> {
+        val seen = (view.recent + listOfNotNull(view.line)).distinct()
+        val index = current.indexOfFirst { it is VoiceCallFeedItem.Task && it.taskId == view.taskId }
+        if (index < 0) return current + VoiceCallFeedItem.Task(nextId++, view.taskId, view.title, seen, view.state)
+        val card = current[index] as VoiceCallFeedItem.Task
+        val steps = card.steps + seen.filter { it !in card.steps }
+        if (steps == card.steps && view.state == card.phase) return current
+        return current.toMutableList().also { it[index] = card.copy(steps = steps, phase = view.state) }
     }
 
     private fun said(speaker: VoiceCallFeedItem.Speaker, text: String, partial: Boolean) {
@@ -92,5 +97,6 @@ class VoiceCallFeed(private val maxItems: Int = MAX_ITEMS) {
 
     companion object {
         const val MAX_ITEMS = 80
+        private val ENDED = setOf(DeskTaskPhase.Done, DeskTaskPhase.Failed, DeskTaskPhase.Cancelled)
     }
 }

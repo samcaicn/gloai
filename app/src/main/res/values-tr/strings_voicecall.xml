@@ -53,4 +53,5 @@
     <string name="voicecall_connected_at">Bağlandı · %1$s</string>
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">Sohbete dön</string>
+    <string name="voicecall_desk_report">%1$s hakkında: %2$s</string>
 </resources>

@@ -167,4 +167,18 @@ class VoiceCallTranscriptTest {
         job.join()
         assertEquals(listOf("第一句", "第二句"), appended)
     }
+
+    @Test
+    fun `派了任务的轮次带上任务编号写回,没等来回答也写`() = runTest {
+        val h = Harness()
+        h.transcript.onTask("t0") // 还没有当轮:忽略
+        h.transcript.onUser("帮我订明晚的日料")
+        h.transcript.onTask("t1")
+        h.transcript.onTask("t1")
+        h.transcript.onUser("再查一下天气")
+        h.transcript.onTask("t2") // 派出去就挂了,这句没等来回答
+        h.transcript.close()
+        assertEquals(listOf(listOf("t1"), listOf("t2")), h.appended.map { it.second.deskTasks })
+        assertEquals(listOf("帮我订明晚的日料", "再查一下天气"), h.appended.map { it.second.userText })
+    }
 }

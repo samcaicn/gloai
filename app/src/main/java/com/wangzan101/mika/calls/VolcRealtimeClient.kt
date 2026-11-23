@@ -249,6 +249,12 @@ class VolcRealtimeSession internal constructor(
         return send(if (openAi) OpenAiCallProtocol.greeting(text) else VolcRealtimeProtocol.greeting(nextId(), text))
     }
 
+    /** 前台的汇报:代码拼好的一句话原样念出(和开场白同一条路)。 */
+    @Synchronized override fun sendNotice(text: String): Boolean {
+        if (phase != Phase.ACTIVE || text.isBlank() || text.length > VolcRealtimeProtocol.MAX_TOOL_RESULT_CHARS) return false
+        return send(if (openAi) OpenAiCallProtocol.greeting(text) else VolcRealtimeProtocol.greeting(nextId(), text))
+    }
+
     @Synchronized override fun setMuted(muted: Boolean): Boolean {
         if (phase != Phase.ACTIVE) return false
         if (this.muted == muted) return true
@@ -552,8 +558,8 @@ class VolcRealtimeSession internal constructor(
                 stale -> "stale_response"
                 name == VolcRealtimeProtocol.DTMF_FUNCTION && config.enablePhoneDtmf ->
                     if (arguments == null || !VolcRealtimeProtocol.validDtmfArguments(arguments)) "invalid_arguments" else null
-                name == VolcRealtimeProtocol.MIKA_REQUEST_FUNCTION && config.agentTools ->
-                    if (arguments == null || !VolcRealtimeProtocol.validAgentArguments(arguments)) "invalid_arguments" else null
+                name in VolcRealtimeProtocol.deskToolNames && config.agentTools ->
+                    if (arguments == null || !VolcRealtimeProtocol.validDeskArguments(name!!, arguments)) "invalid_arguments" else null
                 else -> "unsupported_tool"
             }
             if (error != null) {

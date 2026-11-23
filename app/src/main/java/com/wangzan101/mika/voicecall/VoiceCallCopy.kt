@@ -1,12 +1,16 @@
 package com.wangzan101.mika.voicecall
 
 import com.wangzan101.mika.R
+import com.wangzan101.mika.core.frontdesk.DESK_RESULT_MAX_CHARS
+import com.wangzan101.mika.core.frontdesk.DeskReport
+import com.wangzan101.mika.frontdesk.DeskNotifier
 import com.wangzan101.mika.i18n.tr
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * 通话页的文案映射:每类错误、每种结束原因各占一条独立说法;RESUMED 超时落的
- * Ended(Background) 在这里翻成「请回到前台」。打字请求(合成 callId,模型侧没有 function_call)
- * 的结果回到本地:路由的模型指令文案换成本地说法,任务自己的答案/原因原样透传。
+ * Ended(Background) 在这里翻成「请回到前台」。前台的汇报、打字直接派单的结果也在这里变成本地说法。
  */
 
 fun voiceCallErrorText(error: VoiceCallError): String = tr(
@@ -42,13 +46,13 @@ fun voiceCallStatusText(state: VoiceCallState): String = when (state) {
     is VoiceCallState.Failed -> voiceCallErrorText(state.error)
 }
 
-/** 打字请求的结果文本:路由常量是给模型的英文指令,落本地换成本地说法;其余(任务的答案/原因)原样。 */
-fun typedResultText(text: String): String = when (text) {
-    VoiceCallRoute.RESULT_BUSY -> tr(R.string.voicecall_task_running)
-    VoiceCallRoute.RESULT_START_FAILURE -> tr(R.string.voicecall_task_failed)
-    VoiceCallRoute.RESULT_NEEDS_USER -> tr(R.string.voicecall_see_task_page)
-    VoiceCallRoute.RESULT_CANCELLED -> tr(R.string.voicecall_task_cancelled)
-    VoiceCallRoute.RESULT_DONE_FALLBACK -> tr(R.string.voicecall_task_done)
-    VoiceCallRoute.RESULT_FAILED_FALLBACK -> tr(R.string.voicecall_task_failed)
-    else -> text
-}
+/** 前台汇报在通话里说的那句:「某某那件,办好了:……」;正文最多 [DESK_RESULT_MAX_CHARS] 字。 */
+fun deskReportSpeech(report: DeskReport): String =
+    tr(R.string.voicecall_desk_report, report.title, DeskNotifier.line(report.event).take(DESK_RESULT_MAX_CHARS))
+
+/** 打字直接派单的结果回到本地:派出去了说「正在处理」(之后的进展照常由前台汇报),没派成说「没办成」。 */
+fun typedDeskResult(result: JsonObject): String =
+    when ((result["status"] as? JsonPrimitive)?.content) {
+        "started", "queued", "already_dispatched" -> tr(R.string.voicecall_task_running)
+        else -> tr(R.string.voicecall_task_failed)
+    }

@@ -17,8 +17,8 @@ class VoiceCallTranscript(
     private val appendTurn: suspend (conversationId: String, turn: ChatTurn) -> Unit,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
-    /** 一轮问答:用户问的、助手答的(多段按行拼)、问的时刻(毫秒)。 */
-    data class Turn(val question: String, val answer: String, val at: Long)
+    /** 一轮问答:用户问的、助手答的(多段按行拼)、问的时刻(毫秒)、这轮前台派出的任务编号。 */
+    data class Turn(val question: String, val answer: String, val at: Long, val tasks: List<String> = emptyList())
 
     private val lock = Any()
     private val done = mutableListOf<Turn>()
@@ -46,6 +46,15 @@ class VoiceCallTranscript(
         }
     }
 
+    /** 这一轮前台派出了一件任务:记在当轮上,写回后会话重开时能接回它。没有当轮时忽略。 */
+    fun onTask(taskId: String) {
+        synchronized(lock) {
+            if (closed) return
+            val current = open ?: return
+            if (taskId !in current.tasks) open = current.copy(tasks = current.tasks + taskId)
+        }
+    }
+
     /** 截至此刻的全部轮次,含还没等来回答的那一轮。 */
     fun turns(): List<Turn> = synchronized(lock) { done + listOfNotNull(open) }
 
@@ -53,7 +62,8 @@ class VoiceCallTranscript(
      * 会话结束写回:把有问有答的轮次逐条写进发起会话,只写一次——
      * 重复结束不再写;收尾在通话协程域被取消时也照常写完(NonCancellable),
      * 装配方在通话收尾的 finally 里直接调即可。空问轮(只有助手说过话,如纯问候)不写;
-     * 有问无答的轮次(没等来回答就挂了)也不写——空 outcome 的聊天气泡没有意义。
+     * 有问无答、也没派任务的轮次(没等来回答就挂了)也不写——空 outcome 的聊天气泡没有意义;
+     * 派了任务的轮次照写,带上任务编号。
      */
     suspend fun close() {
         val (snapshot, id) = synchronized(lock) {
@@ -63,8 +73,11 @@ class VoiceCallTranscript(
         }
         if (id == null) return
         withContext(NonCancellable) {
-            snapshot.filter { it.question.isNotBlank() && it.answer.isNotBlank() }.forEach { turn ->
-                appendTurn(id, ChatTurn(userText = turn.question, outcome = turn.answer, status = "succeeded", atMs = turn.at))
+            snapshot.filter { it.question.isNotBlank() && (it.answer.isNotBlank() || it.tasks.isNotEmpty()) }.forEach { turn ->
+                appendTurn(
+                    id,
+                    ChatTurn(userText = turn.question, outcome = turn.answer, status = "succeeded", atMs = turn.at, deskTasks = turn.tasks),
+                )
             }
         }
     }

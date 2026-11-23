@@ -1,8 +1,13 @@
 package com.wangzan101.mika.voicecall
 
+import com.wangzan101.mika.core.frontdesk.DESK_RESULT_MAX_CHARS
+import com.wangzan101.mika.core.frontdesk.DeskEvent
+import com.wangzan101.mika.core.frontdesk.DeskReport
 import com.wangzan101.mika.i18n.ChineseTexts
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -46,15 +51,20 @@ class VoiceCallCopyTest {
     }
 
     @Test
-    fun `打字请求的结果回到本地——路由的模型指令文案换成本地说法`() {
-        assertEquals("正在处理", typedResultText(VoiceCallRoute.RESULT_BUSY))
-        assertEquals("没办成", typedResultText(VoiceCallRoute.RESULT_START_FAILURE))
-        assertEquals("需要你在任务页处理，去任务页看看", typedResultText(VoiceCallRoute.RESULT_NEEDS_USER))
-        assertEquals("已取消", typedResultText(VoiceCallRoute.RESULT_CANCELLED))
-        assertEquals("已完成", typedResultText(VoiceCallRoute.RESULT_DONE_FALLBACK))
-        assertEquals("没办成", typedResultText(VoiceCallRoute.RESULT_FAILED_FALLBACK))
-        // 任务自己的答案/原因原样透传
-        assertEquals("明天晴天，最高 25 度", typedResultText("明天晴天，最高 25 度"))
-        assertNotEquals(VoiceCallRoute.RESULT_BUSY, typedResultText(VoiceCallRoute.RESULT_BUSY))
+    fun `前台汇报说成一句话,正文截到上限`() {
+        assertEquals("订日料那件，办好了：七点两位", deskReportSpeech(DeskReport(DeskEvent.Succeeded("t1", "七点两位"), "订日料")))
+        assertEquals("订日料那件，在问你：几点？", deskReportSpeech(DeskReport(DeskEvent.NeedsAnswer("t1", "几点？", null), "订日料")))
+        val long = deskReportSpeech(DeskReport(DeskEvent.Succeeded("t1", "字".repeat(DESK_RESULT_MAX_CHARS)), "订日料"))
+        assertTrue(long.length <= "订日料那件，".length + DESK_RESULT_MAX_CHARS)
+    }
+
+    @Test
+    fun `打字派单的结果回到本地`() {
+        fun result(status: String) = buildJsonObject { put("status", status) }
+        assertEquals("正在处理", typedDeskResult(result("started")))
+        assertEquals("正在处理", typedDeskResult(result("queued")))
+        assertEquals("正在处理", typedDeskResult(result("already_dispatched")))
+        assertEquals("没办成", typedDeskResult(result("failed")))
+        assertEquals("没办成", typedDeskResult(result("rejected")))
     }
 }

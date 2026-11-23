@@ -87,6 +87,8 @@ class CascadeVoiceSession internal constructor(
     @Volatile private var reply: Job? = null
     // Keep cancelled replies until they finish, even if a replacement is itself interrupted while waiting.
     private val replyJobs = mutableSetOf<Job>() // guarded by lock
+    // 等着说的后台消息:手上的回复说完才轮到,用户插话也不丢。guarded by lock
+    private val notices = ArrayDeque<String>()
     @Volatile private var audibleUntil = 0L
     private val failures = AtomicInteger(0)
     private val callIds = AtomicInteger(0)
@@ -150,6 +152,21 @@ class CascadeVoiceSession internal constructor(
         val name = orphanedTools.remove(callId) ?: return false
         // The reply that asked has been talked over; answer the result as a turn of its own.
         startReply { brain.lateResult(name, result, it) }
+        return true
+    }
+
+    override fun sendNotice(text: String): Boolean {
+        if (closed || text.isBlank()) return false
+        synchronized(lock) {
+            notices.addLast(text)
+            nextNotice()
+        }
+        return true
+    }
+
+    override fun sendUserText(text: String): Boolean {
+        if (closed || text.isBlank()) return false
+        startReply { brain.reply(text, it) }
         return true
     }
 
@@ -281,10 +298,17 @@ class CascadeVoiceSession internal constructor(
         audibleUntil = 0
     }
 
-    private fun startReply(block: suspend (ReplyContext) -> Unit) {
+    /** 没在回复时说下一条后台消息;正在回复就等它结束(结束时会再来叫)。Called under [lock]. */
+    private fun nextNotice() {
+        if (closed || reply?.isActive == true) return
+        val text = notices.removeFirstOrNull() ?: return
+        startReply(interruptCurrent = false) { brain.notice(text, it) }
+    }
+
+    private fun startReply(interruptCurrent: Boolean = true, block: suspend (ReplyContext) -> Unit) {
         synchronized(lock) {
             // The new reply waits for the old one to unwind (it closes its tool calls in the brain's history).
-            interrupt()
+            if (interruptCurrent) interrupt()
             val previous = replyJobs.toList()
             val next = scope.launch {
                 previous.forEach { it.join() }
@@ -297,7 +321,12 @@ class CascadeVoiceSession internal constructor(
                 }
             }
             replyJobs += next
-            next.invokeOnCompletion { synchronized(lock) { replyJobs.remove(next) } }
+            next.invokeOnCompletion {
+                synchronized(lock) {
+                    replyJobs.remove(next)
+                    nextNotice()
+                }
+            }
             reply = next
         }
     }

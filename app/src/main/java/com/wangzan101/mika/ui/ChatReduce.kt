@@ -12,6 +12,7 @@ import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.task.TaskGate
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.frontdesk.DeskNotifier
 import com.wangzan101.mika.task.SteerNote
 import com.wangzan101.mika.task.SteerState
 import kotlinx.coroutines.flow.map
@@ -142,6 +143,8 @@ internal object ChatReduce {
     internal fun fromTurn(t: Turn): Exchange {
         val status = when (t.status) {
             "succeeded" -> answerParts(t.outcome).let { (a, e) -> ExchangeStatus.Done(a, e) }
+            // 前台没有入口在线时写回的一行汇报,是一句正常的回话。
+            DeskNotifier.STATUS -> answerParts(t.outcome).let { (a, e) -> ExchangeStatus.Done(a, e) }
             "unverified" -> answerParts(t.outcome).let { (a, e) -> ExchangeStatus.Done(a, e, verified = false, note = t.note, unconfirmed = t.unconfirmed) }
             "cancelled" -> {
                 val rawSummary = Conversation.stopSummary(t)

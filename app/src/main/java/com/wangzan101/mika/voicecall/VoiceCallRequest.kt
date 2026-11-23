@@ -4,7 +4,7 @@ package com.wangzan101.mika.voicecall
 const val ECHO_WINDOW_CAPACITY_CHARS = 500
 
 /**
- * 语音请求执行安全闸:实时会话里模型通过 mika_request 提交的请求,必须先过这五条规则才允许执行,
+ * 语音请求执行安全闸:通话里模型调前台工具时带的用户原话(words),必须先过这五条规则才允许执行,
  * 宁可拒执行,不可误执行。
  *
  * ① 无当轮转写 → Reject;② callId 已见过(含跨轮重放)→ Reject;③ utterance 归一化后不是当轮转写
@@ -22,6 +22,24 @@ class VoiceCallRequest(
 
     /** 当轮用户转写,只留最新一条;Accept 时一次性消费。 */
     private var currentTranscript: String? = null
+
+    /** 最近放行过的原话(过闸的转写、用户打的字),前台执行工具时据此核对;只留最近 [ACCEPTED_KEPT] 条。 */
+    private val accepted = ArrayDeque<String>()
+
+    /** 这句话是不是最近放行过的用户原话。 */
+    @Synchronized
+    fun verified(text: String): Boolean = text in accepted
+
+    /** 用户打的字本就是亲述(闸防的是模型伪造),直接记成放行过的原话。 */
+    @Synchronized
+    fun acceptTyped(text: String) {
+        remember(text)
+    }
+
+    private fun remember(text: String) {
+        accepted.addLast(text)
+        while (accepted.size > ACCEPTED_KEPT) accepted.removeFirst()
+    }
 
     /** 登记当轮 final+complete 的用户转写;新一轮覆盖旧转写。 */
     @Synchronized
@@ -48,7 +66,12 @@ class VoiceCallRequest(
             return VoiceCallDecision.Reject
         }
         currentTranscript = null
+        remember(transcript)
         return VoiceCallDecision.Accept(transcript)
+    }
+
+    private companion object {
+        const val ACCEPTED_KEPT = 16
     }
 }
 

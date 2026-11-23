@@ -1,20 +1,20 @@
 package com.wangzan101.mika.voice.cascade
 
 import android.content.Context
+import android.util.Log
+import com.wangzan101.mika.core.agent.Turn
+import com.wangzan101.mika.core.frontdesk.DeskBackground
 import com.wangzan101.mika.core.frontdesk.LlmBrain
 import com.wangzan101.mika.core.model.ChatModel
-import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.model.TtsCapabilities
 import com.wangzan101.mika.core.model.TtsRequest
-import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.frontdesk.deskModel
 import com.wangzan101.mika.settings.VoiceSettings
-import com.wangzan101.mika.settings.modelFor
 import com.wangzan101.mika.voice.Pcm16
 import com.wangzan101.mika.voice.model.CallEngine
 import com.wangzan101.mika.voice.model.SttSelection
 import com.wangzan101.mika.voice.model.SttSelectionController
-import com.wangzan101.mika.voice.model.ThinkModel
 import com.wangzan101.mika.voice.model.VoiceErrorCategory
 import com.wangzan101.mika.voice.model.VoiceModelEnvironment
 import com.wangzan101.mika.voice.model.VoiceModelError
@@ -58,13 +58,8 @@ class CascadeEngine(private val context: Context, private val environment: Voice
         selections.callTtsVoice.takeIf { use == CallUse.Phone && selections.callTts != null && it.isNotBlank() }
             ?: VoiceSettings.get(context).state.value.voice.takeIf { it.isNotBlank() && !(use == CallUse.Phone && selections.callTts != null) }
 
-    private fun thinkModel(): ChatModel? {
-        val store = ProviderStore.get(context)
-        return when (selections.think) {
-            ThinkModel.Light -> store.modelFor(ModelRole.Light) ?: store.modelFor(ModelRole.Main)
-            ThinkModel.Main -> store.modelFor(ModelRole.Main)
-        }
-    }
+    /** 和前台用同一个思考模型(见 [deskModel])。 */
+    private fun thinkModel(): ChatModel? = deskModel(context)
 
     /** The first thing missing, or null when a standard call can start. Reads no secrets. */
     fun blocker(use: CallUse): StandardBlocker? {
@@ -86,9 +81,17 @@ class CascadeEngine(private val context: Context, private val environment: Voice
     /**
      * Opens a standard call. [instructions] are the call's own rules (phone policy, or the in-app voice rules);
      * [tools] are offered to the thinking model and surface as function calls. Throws [VoiceModelError] when
-     * something is missing.
+     * something is missing. [prior] seeds the thinking model's history with the conversation so far (only when the
+     * brain has none yet); [background] is fetched before every model call (the front desk's task board and memory).
      */
-    fun open(use: CallUse, instructions: String, tools: List<ToolSpec>, language: String?): CascadeVoiceSession {
+    fun open(
+        use: CallUse,
+        instructions: String,
+        tools: List<ToolSpec>,
+        language: String?,
+        prior: List<Turn> = emptyList(),
+        background: DeskBackground? = null,
+    ): CascadeVoiceSession {
         blocker(use)?.let { throw VoiceModelError.IncompleteConfig("Standard call is not ready: $it") }
         val listen = listenRef(use)!!
         val speakRef = speakRef(use)!!
@@ -96,7 +99,10 @@ class CascadeEngine(private val context: Context, private val environment: Voice
         val tts = environment.tts.createTts(context, speakRef, TtsCapabilities())
         val voice = voice(use)
         val speed = VoiceSettings.get(context).state.value.speed.takeIf { it > 0f && it != 1f }
-        val brain = LlmBrain(think, LlmBrain.SPOKEN_STYLE + "\n\n" + instructions, tools)
+        // 口语说明只放一次:前台的口语提示词自己已经带着。
+        val system = if (instructions.startsWith(LlmBrain.SPOKEN_STYLE)) instructions else LlmBrain.SPOKEN_STYLE + "\n\n" + instructions
+        val brain = LlmBrain(think, system, tools, background = background, log = { Log.w(TAG, it) })
+        brain.seed(prior)
         val s = selections
         return CascadeVoiceSession(
             brain = brain,
@@ -110,5 +116,9 @@ class CascadeEngine(private val context: Context, private val environment: Voice
             silenceMs = s.silenceMs.coerceIn(VoiceSelections.MIN_SILENCE_MS, VoiceSelections.MAX_SILENCE_MS),
             bargeIn = s.bargeIn,
         )
+    }
+
+    private companion object {
+        const val TAG = "MikaCascade"
     }
 }

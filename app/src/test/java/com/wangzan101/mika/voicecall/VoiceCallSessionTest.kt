@@ -4,6 +4,12 @@ import android.media.MediaRecorder
 import com.wangzan101.mika.calls.CallRealtimeSession
 import com.wangzan101.mika.calls.VolcRealtimeEvent
 import com.wangzan101.mika.calls.VolcRealtimeException
+import com.wangzan101.mika.core.agent.TaskState
+import com.wangzan101.mika.core.frontdesk.DeskLedger
+import com.wangzan101.mika.core.frontdesk.DeskToolExecutor
+import com.wangzan101.mika.core.frontdesk.DeskTools
+import com.wangzan101.mika.core.frontdesk.FrontDesk
+import com.wangzan101.mika.core.frontdesk.ReportPolicy
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +21,7 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.currentTime
@@ -99,6 +106,13 @@ class VoiceCallSessionTest {
             toolResults += callId to result
             return true
         }
+        var acceptsText = false
+        val texts = mutableListOf<String>()
+        override fun sendUserText(text: String): Boolean {
+            if (!acceptsText) return false
+            texts += text
+            return true
+        }
         override fun close() { closed = true }
     }
 
@@ -107,10 +121,12 @@ class VoiceCallSessionTest {
         greeting: String = GREETING,
         timeLimitMs: Long = 600_000L,
         connect: suspend (Int) -> CallRealtimeSession,
-        onVoiceRequest: (String, String) -> Unit = { _, _ -> },
-        onBargeIn: () -> Unit = {},
+        onDeskCall: (String, String, JsonObject) -> Unit = { _, _, _ -> },
+        onTypedText: (String) -> Unit = {},
         clockNanos: () -> Long,
         nowMillis: () -> Long,
+        echoWindow: RingBuffer<String> = RingBuffer(ECHO_WINDOW_CAPACITY_CHARS),
+        requestGate: VoiceCallRequest = VoiceCallRequest(echoWindow),
     ) {
         val audio = FakeAudio()
         val rt = FakeRealtime()
@@ -124,8 +140,10 @@ class VoiceCallSessionTest {
             foregroundResumed = foreground,
             connect = connect,
             greeting = greeting,
-            onVoiceRequest = onVoiceRequest,
-            onBargeIn = onBargeIn,
+            echoWindow = echoWindow,
+            requestGate = requestGate,
+            onDeskCall = onDeskCall,
+            onTypedText = onTypedText,
             onUserTranscript = { text, isFinal -> userTranscripts += text to isFinal },
             onAssistantTranscript = { text, isFinal -> assistantTranscripts += text to isFinal },
             onAssistantDraft = { assistantDrafts += it },
@@ -140,11 +158,11 @@ class VoiceCallSessionTest {
         greeting: String = GREETING,
         timeLimitMs: Long = 600_000L,
         connect: suspend (Int) -> CallRealtimeSession,
-        onVoiceRequest: (String, String) -> Unit = { _, _ -> },
-        onBargeIn: () -> Unit = {},
+        onDeskCall: (String, String, JsonObject) -> Unit = { _, _, _ -> },
+        onTypedText: (String) -> Unit = {},
         clockNanos: () -> Long,
         nowMillis: () -> Long,
-    ) = Harness(scope, greeting, timeLimitMs, connect, onVoiceRequest, onBargeIn, clockNanos, nowMillis)
+    ) = Harness(scope, greeting, timeLimitMs, connect, onDeskCall, onTypedText, clockNanos, nowMillis)
 
     private fun reachActive(h: Harness, scope: kotlinx.coroutines.test.TestScope) {
         h.audio.offerChunk()
@@ -153,8 +171,10 @@ class VoiceCallSessionTest {
     }
 
     private fun requestCall(callId: String, utterance: String) = VolcRealtimeEvent.FunctionCall(
-        callId, "mika_request", buildJsonObject { put("utterance", utterance) },
+        callId, DeskTools.DISPATCH, buildJsonObject { put("words", utterance); put("title", "t") },
     )
+
+    private fun JsonObject.words() = getValue("words").jsonPrimitive.content
 
     @Test fun `starts in connecting state`() = runTest {
         val h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { throw AssertionError("unused") })
@@ -440,9 +460,8 @@ class VoiceCallSessionTest {
     }
 
     @Test fun `barge in invalidates queued audio and interrupts playback`() = runTest {
-        val bargeIns = mutableListOf<Unit>()
         lateinit var h: Harness
-        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onBargeIn = { bargeIns += Unit })
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt })
         runCurrent()
         reachActive(h, this)
         h.audio.writeGate = CompletableDeferred()
@@ -456,7 +475,6 @@ class VoiceCallSessionTest {
         h.rt.emit(VolcRealtimeEvent.UserSpeaking)
         runCurrent()
         assertEquals(1, h.audio.interruptCount)
-        assertEquals(1, bargeIns.size)
         assertEquals(0f, h.session.speakerLevel.value, 0.001f)
         h.audio.writeGate?.complete(Unit)
         runCurrent()
@@ -548,7 +566,7 @@ class VoiceCallSessionTest {
     @Test fun `matching final transcript authorizes the voice request`() = runTest {
         val requests = mutableListOf<Pair<String, String>>()
         lateinit var h: Harness
-        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onVoiceRequest = { id, text -> requests += id to text })
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onDeskCall = { id, _, args -> requests += id to args.words() })
         runCurrent()
         reachActive(h, this)
         h.rt.emit(VolcRealtimeEvent.UserTranscript("打开微信", isFinal = true))
@@ -562,7 +580,7 @@ class VoiceCallSessionTest {
     @Test fun `function call without a transcript is rejected with retry guidance`() = runTest {
         val requests = mutableListOf<Pair<String, String>>()
         lateinit var h: Harness
-        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onVoiceRequest = { id, text -> requests += id to text })
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onDeskCall = { id, _, args -> requests += id to args.words() })
         runCurrent()
         reachActive(h, this)
         h.rt.emit(requestCall("c1", "打开微信"))
@@ -577,7 +595,7 @@ class VoiceCallSessionTest {
     @Test fun `partial or incomplete transcripts never authorize`() = runTest {
         val requests = mutableListOf<Pair<String, String>>()
         lateinit var h: Harness
-        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onVoiceRequest = { id, text -> requests += id to text })
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onDeskCall = { id, _, args -> requests += id to args.words() })
         runCurrent()
         reachActive(h, this)
         h.rt.emit(VolcRealtimeEvent.UserTranscript("打开微信", isFinal = false))
@@ -596,7 +614,7 @@ class VoiceCallSessionTest {
     @Test fun `assistant speech echoed back as a user request is rejected`() = runTest {
         val requests = mutableListOf<Pair<String, String>>()
         lateinit var h: Harness
-        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onVoiceRequest = { id, text -> requests += id to text })
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onDeskCall = { id, _, args -> requests += id to args.words() })
         runCurrent()
         reachActive(h, this)
         h.rt.emit(VolcRealtimeEvent.AssistantTranscript("今天天气不错"))
@@ -611,7 +629,7 @@ class VoiceCallSessionTest {
     @Test fun `the greeting feeds the echo window`() = runTest {
         val requests = mutableListOf<Pair<String, String>>()
         lateinit var h: Harness
-        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onVoiceRequest = { id, text -> requests += id to text })
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onDeskCall = { id, _, args -> requests += id to args.words() })
         runCurrent()
         reachActive(h, this)
         h.rt.emit(VolcRealtimeEvent.UserTranscript(GREETING, isFinal = true))
@@ -624,7 +642,7 @@ class VoiceCallSessionTest {
     @Test fun `the gate survives a retry and replays stay rejected`() = runTest {
         val requests = mutableListOf<Pair<String, String>>()
         lateinit var h: Harness
-        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onVoiceRequest = { id, text -> requests += id to text })
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onDeskCall = { id, _, args -> requests += id to args.words() })
         runCurrent()
         reachActive(h, this)
         h.rt.emit(VolcRealtimeEvent.UserTranscript("打开微信", isFinal = true))
@@ -662,26 +680,87 @@ class VoiceCallSessionTest {
         assertEquals(VoiceCallState.Ended(EndReason.Hangup), h.session.state.value)
     }
 
-    @Test fun `typed text dispatches as a verified request and lands in the transcript`() = runTest {
-        val requests = mutableListOf<Pair<String, String>>()
+    @Test fun `typed text goes to a session that takes text, else to the typed fallback`() = runTest {
+        val typed = mutableListOf<String>()
         lateinit var h: Harness
-        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onVoiceRequest = { id, text -> requests += id to text })
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onTypedText = { typed += it })
         runCurrent()
         reachActive(h, this)
         h.session.sendUserText(" 查一下天气 ")
-        assertEquals(listOf("typed-1" to "查一下天气"), requests)
+        // 会话不收文字(实时模式):交给装配方直接派单
+        assertEquals(listOf("查一下天气"), typed)
         assertEquals(listOf("查一下天气" to true), h.userTranscripts)
         h.session.sendUserText("   ")
         h.session.sendUserText("")
-        assertEquals("空白不派发", listOf("typed-1" to "查一下天气"), requests)
+        assertEquals("空白不派发", listOf("查一下天气"), typed)
+        // 会话收文字(标准模式):当一句话交给它回,不走兜底
+        h.rt.acceptsText = true
         h.session.sendUserText("再定个闹钟")
-        assertEquals(listOf("typed-1" to "查一下天气", "typed-2" to "再定个闹钟"), requests)
+        assertEquals(listOf("再定个闹钟"), h.rt.texts)
+        assertEquals(listOf("查一下天气"), typed)
+    }
+
+    @Test fun `a tool call about typed text passes the gate`() = runTest {
+        val requests = mutableListOf<Pair<String, String>>()
+        lateinit var h: Harness
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onDeskCall = { id, _, args -> requests += id to args.words() })
+        runCurrent()
+        reachActive(h, this)
+        h.rt.acceptsText = true
+        h.session.sendUserText("帮我订明晚的日料")
+        h.rt.emit(requestCall("c1", "订明晚的日料"))
+        runCurrent()
+        // 放行后原话换成当轮完整的话
+        assertEquals(listOf("c1" to "帮我订明晚的日料"), requests)
+    }
+
+    @Test fun `a tool without words skips the gate`() = runTest {
+        val calls = mutableListOf<String>()
+        lateinit var h: Harness
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onDeskCall = { _, name, _ -> calls += name })
+        runCurrent()
+        reachActive(h, this)
+        h.rt.emit(VolcRealtimeEvent.FunctionCall("c1", DeskTools.CANCEL, buildJsonObject { put("task_id", "t1") }))
+        h.rt.emit(VolcRealtimeEvent.FunctionCall("c2", "send_dtmf", buildJsonObject { put("digits", "1") }))
+        runCurrent()
+        assertEquals("不认识的工具不交出去", listOf(DeskTools.CANCEL), calls)
+    }
+
+    @Test fun `barge in interrupts speech but never cancels a desk task`() = runTest {
+        val port = FakeDeskPort()
+        val ledger = DeskLedger()
+        val desk = FrontDesk("p", backgroundScope, port, ledger, ReportPolicy({ currentTime }), FakeDeskSink())
+        val echo = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
+        val gate = VoiceCallRequest(echo)
+        val executor = DeskToolExecutor(port, ledger, gate::verified, { currentTime }, "p") { desk.track(it.taskId, it.title) }
+        lateinit var h: Harness
+        lateinit var bridge: VoiceDeskBridge
+        h = Harness(
+            backgroundScope, connect = { h.rt }, echoWindow = echo, requestGate = gate,
+            onDeskCall = { id, name, args -> backgroundScope.launch { bridge.onFunctionCall(id, name, args) } },
+            clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime },
+        )
+        bridge = VoiceDeskBridge(desk, executor, { h.rt }, { it.title })
+        bridge.attach()
+        runCurrent()
+        reachActive(h, this)
+        h.rt.emit(VolcRealtimeEvent.UserTranscript("帮我订明晚的日料", isFinal = true))
+        h.rt.emit(requestCall("c1", "帮我订明晚的日料"))
+        runCurrent()
+        assertEquals("started", h.rt.toolResults.single().second.getValue("status").jsonPrimitive.content)
+        h.rt.emit(VolcRealtimeEvent.Audio(ByteArray(480)))
+        h.rt.emit(VolcRealtimeEvent.UserSpeaking)
+        h.rt.emit(VolcRealtimeEvent.AssistantInterrupted)
+        runCurrent()
+        assertTrue(h.audio.interruptCount >= 1)
+        assertTrue("插话不取消后台任务", port.cancels.isEmpty())
+        assertTrue(port.states.getValue("t1").value is TaskState.Running)
     }
 
     @Test fun `typed text is ignored outside the active state`() = runTest {
         val requests = mutableListOf<Pair<String, String>>()
         lateinit var h: Harness
-        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onVoiceRequest = { id, text -> requests += id to text })
+        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt }, onDeskCall = { id, _, args -> requests += id to args.words() })
         runCurrent() // MicCheck,还没接通
         h.session.sendUserText("喂")
         reachActive(h, this)

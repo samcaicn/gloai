@@ -82,7 +82,6 @@ import com.wangzan101.mika.ui.theme.systemBarsFor
 import com.wangzan101.mika.ui.voicecall.VoiceCallDeps
 import com.wangzan101.mika.ui.voicecall.VoiceCallHost
 import com.wangzan101.mika.voicecall.VoiceCallService
-import com.wangzan101.mika.voicecall.VoiceCallTaskLauncher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -463,14 +462,10 @@ private fun MikaRoot(
             profile = { app.calls.activeVoiceProfile() },
             credentials = { app.calls.voiceProfiles.credentials(it) },
             foregroundResumed = voiceCallResumed,
-            launcher = VoiceCallTaskLauncher { goal ->
-                ConversationStore.shared(context).newConversation().also { id ->
-                    TaskService.start(context, goal, id)
-                }
-            },
-            runState = { app.taskState.run(it)?.state },
-            cancelTask = { id -> app.taskState.run(id)?.key?.let { TaskService.cancel(context, it) } },
+            desks = app.desks,
             conversationId = { app.chat.ui.value.conversationId },
+            newConversation = { ConversationStore.shared(context).newConversation() },
+            turns = { ConversationStore.shared(context).turns(it) },
             appendTurn = { id, turn -> ConversationStore.shared(context).append(id, turn) },
             attachService = { VoiceCallService.attach(context, it) },
         )

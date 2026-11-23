@@ -53,4 +53,5 @@
     <string name="voicecall_connected_at">연결됨 · %1$s</string>
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">채팅으로 돌아가기</string>
+    <string name="voicecall_desk_report">%1$s 건은 %2$s</string>
 </resources>

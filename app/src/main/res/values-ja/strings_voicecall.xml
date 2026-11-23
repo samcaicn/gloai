@@ -53,4 +53,5 @@
     <string name="voicecall_connected_at">接続 · %1$s</string>
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">チャットに戻る</string>
+    <string name="voicecall_desk_report">%1$sの件、%2$s</string>
 </resources>

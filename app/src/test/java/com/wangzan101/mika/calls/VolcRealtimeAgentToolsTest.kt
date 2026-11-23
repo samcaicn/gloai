@@ -1,5 +1,8 @@
 package com.wangzan101.mika.calls
 
+import com.wangzan101.mika.core.frontdesk.DeskPrompt
+import com.wangzan101.mika.core.frontdesk.DeskToolSet
+import com.wangzan101.mika.core.frontdesk.DeskTools
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -25,19 +28,15 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.*
 import org.junit.Test
 
-/** Local real WebSocket tests for mika_request registration; no credentials, provider calls or carrier calls. */
+/** Local real WebSocket tests for front desk tool registration; no credentials, provider calls or carrier calls. */
 class VolcRealtimeAgentToolsTest {
-    @Test fun toolDefinitionRequiresTheCompleteUtterance() {
-        val tool = VolcRealtimeProtocol.mikaRequestTool()
-        assertEquals("function", tool.getValue("type").jsonPrimitive.content)
-        assertEquals("mika_request", tool.getValue("name").jsonPrimitive.content)
-        assertTrue(tool.getValue("description").jsonPrimitive.content.isNotBlank())
-        val schema = tool.getValue("parameters").jsonObject
-        assertEquals("object", schema.getValue("type").jsonPrimitive.content)
-        assertEquals(listOf(JsonPrimitive("utterance")), schema.getValue("required").jsonArray)
-        val utterance = schema.getValue("properties").jsonObject.getValue("utterance").jsonObject
-        assertEquals("string", utterance.getValue("type").jsonPrimitive.content)
-        assertEquals("false", schema.getValue("additionalProperties").jsonPrimitive.content)
+    @Test fun deskToolsAreTheUserSetAndWordsGetAFullUtterance() {
+        assertEquals(DeskTools.specs(DeskToolSet.User).map { it.getValue("name").jsonPrimitive.content }.toSet(), VolcRealtimeProtocol.deskToolNames)
+        for (name in listOf(DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER)) {
+            assertEquals(VolcRealtimeProtocol.MAX_UTTERANCE_CHARS, VolcRealtimeProtocol.maxArgumentCharsFor(name))
+        }
+        assertEquals(VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS, VolcRealtimeProtocol.maxArgumentCharsFor(DeskTools.CANCEL))
+        assertEquals(VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS, VolcRealtimeProtocol.maxArgumentCharsFor("send_dtmf"))
     }
 
     @Test fun disabledAgentToolsSendNoUpdateAndKeepInstructionsUntouched() = runBlocking {
@@ -53,7 +52,7 @@ class VolcRealtimeAgentToolsTest {
         }
     }
 
-    @Test fun enabledAgentToolsRegisterMikaRequestAndWaitForTheAck() = runBlocking {
+    @Test fun enabledAgentToolsRegisterDeskToolsAndWaitForTheAck() = runBlocking {
         fixture(autoAck = false) {
             val connecting = async {
                 client.connect(credentials, VolcRealtimeConfig(systemPrompt = "照着说。", agentTools = true))
@@ -62,43 +61,38 @@ class VolcRealtimeAgentToolsTest {
             assertEquals("session.create", create.type)
             val created = create.getValue("session").jsonObject
             val instructions = created.getValue("instructions").jsonPrimitive.content
-            assertTrue(instructions.startsWith("照着说。"))
-            // The constraint section: one mika_request per complete utterance, otherwise silent,
-            // and the tool result is repeated exactly once.
-            assertTrue(instructions.contains("mika_request"))
-            assertTrue(instructions.contains("沉默"))
-            assertTrue(instructions.contains("复述"))
+            // 前台说明在前,开场的任务板接在后面。
+            assertTrue(instructions.startsWith(DeskPrompt.user(spoken = true)))
+            assertTrue(instructions.endsWith("照着说。"))
             assertFalse(created.containsKey("tools"))
             peer().send("""{"type":"session.created","session":{"id":"local"}}""")
             val update = nextMessage()
             assertEquals("session.update", update.type)
             val tools = update.getValue("session").jsonObject.getValue("tools").jsonArray
-            assertEquals(1, tools.size)
-            val tool = tools.single().jsonObject
-            assertEquals("function", tool.getValue("type").jsonPrimitive.content)
-            assertEquals("mika_request", tool.getValue("name").jsonPrimitive.content)
-            assertEquals(
-                listOf(JsonPrimitive("utterance")),
-                tool.getValue("parameters").jsonObject.getValue("required").jsonArray,
-            )
+            assertEquals(JsonArray(DeskTools.specs(DeskToolSet.User)), tools)
             assertFalse(connecting.isCompleted)
             // event_id identifies this server event; it need not echo the request ID.
             peer().send("""{"type":"session.updated","event_id":"server-generated-update-event"}""")
             val session = withTimeout(3_000) { connecting.await() }
             assertTrue(session.sendGreeting("你好"))
             assertEquals("speech_text_buffer.commit", nextMessage().type)
+            // 前台汇报走同一条路,原样念出代码拼好的一句话。
+            assertTrue(session.sendNotice("订日料那件，办好了"))
+            val notice = nextMessage()
+            assertEquals("speech_text_buffer.commit", notice.type)
+            assertEquals("订日料那件，办好了", notice.getValue("text").jsonPrimitive.content)
+            assertFalse(session.sendNotice(""))
             finish(session)
         }
     }
 
-    @Test fun blankPromptStillCarriesTheConstraintSection() = runBlocking {
+    @Test fun blankPromptStillCarriesTheDeskPrompt() = runBlocking {
         fixture {
             val session = client.connect(credentials, VolcRealtimeConfig(agentTools = true))
             val create = nextMessage()
             assertEquals("session.create", create.type)
             val instructions = create.getValue("session").jsonObject.getValue("instructions").jsonPrimitive.content
-            assertTrue(instructions.contains("mika_request"))
-            assertTrue(instructions.contains("沉默"))
+            assertEquals(DeskPrompt.user(spoken = true), instructions)
             assertEquals("session.update", nextMessage().type)
             finish(session)
         }
@@ -116,7 +110,7 @@ class VolcRealtimeAgentToolsTest {
             // tools is a complete replacement on the wire, so one update must carry the whole set.
             val names = update.getValue("session").jsonObject.getValue("tools").jsonArray
                 .map { it.jsonObject.getValue("name").jsonPrimitive.content }
-            assertEquals(listOf("send_dtmf", "mika_request"), names)
+            assertEquals(listOf("send_dtmf") + DeskTools.specs(DeskToolSet.User).map { it.getValue("name").jsonPrimitive.content }, names)
             assertTrue(messages.tryReceive().isFailure)
             finish(session)
         }
@@ -129,18 +123,18 @@ class VolcRealtimeAgentToolsTest {
         assertTrue(error is IllegalArgumentException)
     }
 
-    @Test fun mikaRequestCallsArriveWithFullLengthUtterancesAndGetResults() = runBlocking {
+    @Test fun dispatchCallsArriveWithFullLengthWordsAndGetResults() = runBlocking {
         fixture {
             val session = connectAgent()
             val events = Channel<VolcRealtimeEvent>(32)
             val collector = async { session.events.collect { events.send(it) } }
             // Longer than the 256-char DTMF argument cap, well within the 4096-char utterance cap.
             val utterance = "把这段话完整交给任务系统执行" + "，一字不落".repeat(500)
-            peer().send(functionFrame(item("call-1", "mika_request", """{"utterance":"$utterance"}""")))
+            peer().send(functionFrame(item("call-1", DeskTools.DISPATCH, """{"words":"$utterance","title":"转交"}""")))
             val call = nextEvent(events) as VolcRealtimeEvent.FunctionCall
             assertEquals("call-1", call.callId)
-            assertEquals("mika_request", call.name)
-            assertEquals(utterance, call.arguments.getValue("utterance").jsonPrimitive.content)
+            assertEquals(DeskTools.DISPATCH, call.name)
+            assertEquals(utterance, call.arguments.getValue("words").jsonPrimitive.content)
             assertTrue(session.sendToolResult("call-1", buildJsonObject { put("ok", true); put("text", "已转交") }))
             val returned = nextMessage()
             assertEquals("conversation.item.create", returned.type)
@@ -151,15 +145,18 @@ class VolcRealtimeAgentToolsTest {
         }
     }
 
-    @Test fun oversizedOrMalformedMikaRequestArgumentsAreAnsweredWithErrors() = runBlocking {
+    @Test fun oversizedOrMalformedDeskArgumentsAreAnsweredWithErrors() = runBlocking {
         fixture {
             val session = connectAgent()
             val events = Channel<VolcRealtimeEvent>(32)
             val collector = async { session.events.collect { events.send(it) } }
             val cases = listOf(
-                item("huge", "mika_request", """{"utterance":"${"字".repeat(4_200)}"}"""),
-                item("empty", "mika_request", """{"utterance":""}"""),
-                item("extra", "mika_request", """{"utterance":"帮我订个闹钟","note":"x"}"""),
+                item("huge", DeskTools.DISPATCH, """{"words":"${"字".repeat(4_200)}","title":"x"}"""),
+                item("empty", DeskTools.DISPATCH, """{"words":"","title":"x"}"""),
+                item("missing", DeskTools.ANSWER, """{"words":"七点"}"""),
+                item("extra", DeskTools.DISPATCH, """{"words":"帮我订个闹钟","title":"x","foo":"x"}"""),
+                item("number", DeskTools.CANCEL, """{"task_id":1}"""),
+                item("old", "mika_request", """{"utterance":"帮我订个闹钟"}"""),
                 item("dtmf", "send_dtmf", """{"digits":"1"}"""),
                 item("other", "dial_number", """{"number":"123"}"""),
             )

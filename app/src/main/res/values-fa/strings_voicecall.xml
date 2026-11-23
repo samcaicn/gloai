@@ -53,4 +53,5 @@
     <string name="voicecall_connected_at">وصل شد · %1$s</string>
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">بازگشت به گفتگو</string>
+    <string name="voicecall_desk_report">درباره‌ی %1$s: %2$s</string>
 </resources>

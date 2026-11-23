@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -49,7 +50,8 @@ enum class VoiceCallError { Auth, ConnectTimeout, Disconnected, RateLimited, Pro
  * 云端问候语(每会话只播一次)→ Active。
  *
  * Active 后三路并行:事件消费(下行音频进 20 秒上限的 [CallPlaybackQueue];barge-in 代次作废 + 硬件 flush;
- * mika_request 先登记当轮转写再过安全闸)、采集上行(20ms 帧绝对 deadline pacing)、10 分钟上限。
+ * 前台工具调用凡带用户原话的,先登记当轮转写再过安全闸)、采集上行(20ms 帧绝对 deadline pacing)、10 分钟上限。
+ * 用户插话只打断助手正在说的话,不碰后台任务。
  * 收尾幂等:挂断/结束/失败统一走 finally 释放焦点、采集、播放与实时会话;外部取消不算失败。
  *
  * 安全闸([requestGate])每会话新建、跨重试不重置:callId 一次性要扛住重连重放。
@@ -62,8 +64,10 @@ class VoiceCallSession(
     private val greeting: String,
     private val echoWindow: RingBuffer<String> = RingBuffer(ECHO_WINDOW_CAPACITY_CHARS),
     private val requestGate: VoiceCallRequest = VoiceCallRequest(echoWindow),
-    private val onVoiceRequest: (callId: String, text: String) -> Unit = { _, _ -> },
-    private val onBargeIn: () -> Unit = {},
+    /** 模型调的前台工具(带原话的已过安全闸,原话换成放行的当轮转写);装配方执行后用同一 callId 回结果。 */
+    private val onDeskCall: (callId: String, name: String, args: JsonObject) -> Unit = { _, _, _ -> },
+    /** 打的字会话接不了(实时会话不收文字)时交给装配方直接派单,结果在本地显示。 */
+    private val onTypedText: (text: String) -> Unit = {},
     private val onUserTranscript: (text: String, isFinal: Boolean) -> Unit = { _, _ -> },
     private val onAssistantTranscript: (text: String, isFinal: Boolean) -> Unit = { _, _ -> },
     /** 助手这一轮到目前为止的文字(逐段累积),供通话页实时显示;落定仍走 [onAssistantTranscript]。 */
@@ -115,21 +119,24 @@ class VoiceCallSession(
         _turn.compareAndSet(VoiceCallTurn.Thinking, VoiceCallTurn.Listening)
     }
 
-    private var typedCount = 0
+    /** 此刻接通的会话;没接通时为 null。 */
+    @Volatile private var live: CallRealtimeSession? = null
 
     /**
-     * 通话面板的文字输入:打字与说话同路——登记进转写(问),并以合成 callId([TYPED_CALL_PREFIX]+序号)
-     * 直接派发给语音请求处理。打字本就是用户亲述,不过安全闸(闸防的是模型伪造);装配方对
-     * 合成 callId 的结果回本地(进转写/面板),协议层没有它登记的 callId。仅 Active 态受理,空白忽略。
+     * 通话面板的文字输入:打字与说话同路——登记进转写(问),也登记成当轮转写(之后模型据此调工具照样过闸)。
+     * 会话能接文字(标准模式)就当一句话交给它回;接不了(实时模式)就把这段字记成用户亲述的原话,
+     * 交给 [onTypedText] 直接派单。仅 Active 态受理,空白忽略。
      */
     fun sendUserText(text: String) {
         val clean = text.trim()
         if (clean.isEmpty()) return
         if (_state.value !is VoiceCallState.Active) return
-        val callId = TYPED_CALL_PREFIX + (++typedCount)
         onUserTranscript(clean, true)
         _turn.value = VoiceCallTurn.Thinking
-        onVoiceRequest(callId, clean)
+        requestGate.onUserTranscript(clean)
+        if (live?.sendUserText(clean) == true) return
+        requestGate.acceptTyped(clean)
+        onTypedText(clean)
     }
 
     /**
@@ -218,6 +225,7 @@ class VoiceCallSession(
             playTone()
             greetOnce(realtime)
             _state.value = VoiceCallState.Active(nowMillis())
+            live = realtime
             runActive(realtime)
         } catch (cancelled: CancellationException) {
             throw cancelled // 外部取消不是失败,终态由取消方决定
@@ -230,6 +238,7 @@ class VoiceCallSession(
             fail(VoiceCallError.Provider, attempt)
         } finally {
             audio.onFocusLost = null
+            live = null
             runCatching { realtime?.close() }
             audio.stopCapture()
             audio.stopPlayback()
@@ -341,7 +350,6 @@ class VoiceCallSession(
                     _speakerLevel.value = 0f
                     flushAssistantText(final = false)
                     listen()
-                    onBargeIn()
                 }
                 is VolcRealtimeEvent.UserTranscript -> {
                     onUserTranscript(event.text, event.isFinal)
@@ -369,15 +377,18 @@ class VoiceCallSession(
         throw VolcRealtimeException(VolcRealtimeException.Kind.NETWORK)
     }
 
+    /** 带原话(words)的前台工具先过安全闸,放行后原话换成当轮转写原文;不带原话的(取消)直接交出去。 */
     private fun handleFunctionCall(realtime: CallRealtimeSession, event: VolcRealtimeEvent.FunctionCall) {
-        if (event.name != VolcRealtimeProtocol.MIKA_REQUEST_FUNCTION) return
-        val utterance = (event.arguments["utterance"] as? JsonPrimitive)?.takeIf { it.isString }?.content.orEmpty()
+        if (event.name !in VolcRealtimeProtocol.deskToolNames) return
+        val words = event.arguments["words"] ?: return onDeskCall(event.callId, event.name, event.arguments)
+        val utterance = (words as? JsonPrimitive)?.takeIf { it.isString }?.content.orEmpty()
         when (val decision = requestGate.offer(event.callId, utterance)) {
-            is VoiceCallDecision.Accept -> onVoiceRequest(event.callId, decision.text)
+            is VoiceCallDecision.Accept ->
+                onDeskCall(event.callId, event.name, JsonObject(event.arguments + ("words" to JsonPrimitive(decision.text))))
             VoiceCallDecision.Reject -> realtime.sendToolResult(event.callId, buildJsonObject {
                 put("status", "rejected")
-                put("reason", "utterance_not_verified")
-                put("next", "Do not act on this request. Only if the user says it again as a new utterance, call mika_request once more with it; the retry must use the new call_id.")
+                put("reason", "words_not_verified")
+                put("next", "Do not act on this. Only if the user says it again as a new utterance, call the tool once more with their words; the retry must use the new call_id.")
             })
         }
     }
@@ -467,7 +478,6 @@ class VoiceCallSession(
     private class VoiceCallFailure(val error: VoiceCallError) : Exception()
 
     companion object {
-        const val TYPED_CALL_PREFIX = "typed-"
         const val MAX_CALL_DURATION_MS = 10 * 60_000L
         const val RESUMED_TIMEOUT_MS = 3_000L
         const val MIC_CHECK_TIMEOUT_MS = 3_000L

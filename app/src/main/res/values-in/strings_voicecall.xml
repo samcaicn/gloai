@@ -53,4 +53,5 @@
     <string name="voicecall_connected_at">Tersambung · %1$s</string>
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">Kembali ke obrolan</string>
+    <string name="voicecall_desk_report">Soal %1$s: %2$s</string>
 </resources>
