@@ -217,7 +217,9 @@ class ChatScreenDeviceTest {
         compose.onNodeWithText("看了设置").assertExists()
         compose.onNodeWithText(ChatCopy.BACKGROUND_NOTE).assertExists()
         compose.onNodeWithText("先打开系统设置").assertExists()
-        compose.onNodeWithText(ChatCopy.placeholder(ComposerMode.Busy, hasHistory = true)).assertExists()
+        // 能按住说话的机器上输入栏显示语音版灰字,否则是打字版;两种都表示「此刻可以补充」
+        compose.onNode(hasText(ChatCopy.placeholder(ComposerMode.Busy, hasHistory = true)) or
+            hasText(ChatCopy.voicePlaceholder(ComposerMode.Busy), substring = true)).assertExists()
         assertTrue(vm.ui.value.pip.visible)
         shot("03-running-collapsed")
 
@@ -265,19 +267,19 @@ class ChatScreenDeviceTest {
         model.answer("脚本演示:电池信息在「设置 › 电池」里。")
         awaitState { it is TaskState.Succeeded }
         compose.waitForIdle()
-        compose.onNodeWithText("来源", substring = true).assertExists()
+        assertTrue(compose.onAllNodesWithContentDescription("来源", substring = true).fetchSemanticsNodes().isNotEmpty())
         // 取消的那一问和办成的这一问各有一个「查看过程」
-        assertEquals(2, compose.onAllNodesWithText("查看过程").fetchSemanticsNodes().size)
+        assertEquals(2, compose.onAllNodesWithContentDescription("查看过程").fetchSemanticsNodes().size)
         shot("07-done")
 
-        // 侧栏:对话页上返回(侧滑)先打开侧栏;五个入口和最近的对话
-        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        // 侧栏:点「菜单」打开(侧栏关着时返回交回系统,不再当作打开菜单);侧栏只留主线:搜索、项目、最近的对话、设置
+        compose.onNodeWithContentDescription("菜单").performClick()
         compose.waitForIdle()
         compose.onNodeWithTag("drawer").assertIsDisplayed()
-        compose.onNodeWithText("定时任务").assertIsDisplayed()
-        compose.onNodeWithText("记忆与技能").assertIsDisplayed()
-        compose.onNodeWithText("浏览器").assertIsDisplayed()
+        compose.onNodeWithTag("drawer-search").assertIsDisplayed()
+        compose.onNodeWithText("项目").assertIsDisplayed()
         compose.onNodeWithText("最近").assertIsDisplayed()
+        compose.onNodeWithText("设置").assertIsDisplayed()
         shot("08-drawer")
     }
 

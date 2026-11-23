@@ -50,18 +50,32 @@ internal class TextInput(private val screen: AndroidScreen) {
     }
     internal suspend fun typeField(found: AndroidScreen.Field.Found, text: String): ActionResult {
         var field = found.node
-        val original = AndroidScreen.FieldShape.of(field)
+        var original = AndroidScreen.FieldShape.of(field)
         var focusUncertain = false
+        var replaced = false
         if (!field.isFocused) {
             field.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
             field.refresh()
             // ACTION_FOCUS 的返回值和焦点标志都可能不可靠:没确认拿到焦点时,再按普通输入框点一下。
             if (!field.isFocused) {
+                val focusedBefore = screen.focusedEditable()
                 screen.withEventClock { clock ->
                     clock.mark()
                     screen.click(field).also { if (it) clock.awaitQuiet(AndroidScreen.QUIET_MS, AndroidScreen.FOCUS_WAIT_MS) }
                 }
-                screen.focusedEditable()?.takeIf { screen.sameField(original, it) }?.let { field = it }
+                val now = screen.focusedEditable()
+                when {
+                    now == null -> Unit
+                    screen.sameField(original, now) -> field = now
+                    // 点了以后原框不在了,同一 App 里新冒出一个拿着焦点的框(搜索栏点一下跳到独立搜索页就是这样):
+                    // 和点输入入口一样改写这个新框;原框还在屏上时不换,免得写进别的框
+                    now != focusedBefore && now.packageName == field.packageName &&
+                        !(field.refresh() && screen.visibleInputTarget(field)) -> {
+                        field = now
+                        original = AndroidScreen.FieldShape.of(now)
+                        replaced = true
+                    }
+                }
             }
             // SET_TEXT 不要求焦点,仍可以尝试;最后以读回核对为准,但把焦点未确认如实带给调用方。
             focusUncertain = !field.isFocused
@@ -118,6 +132,7 @@ internal class TextInput(private val screen: AndroidScreen) {
         )
         val hint = listOfNotNull(
             AndroidScreen.HINT_TAPPED_TO_FOCUS.takeIf { found.tapped },
+            AndroidScreen.HINT_FIELD_REPLACED.takeIf { replaced },
             AndroidScreen.HINT_FOCUS_UNCONFIRMED.takeIf { focusUncertain },
             AndroidScreen.HINT_READBACK_FROZEN.takeIf { frozen },
             AndroidScreen.HINT_PASTE_UNAVAILABLE.takeIf { pasteUnavailable },

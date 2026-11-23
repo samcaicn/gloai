@@ -7,7 +7,9 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -76,8 +78,8 @@ class RunTimelineDeviceTest {
         assertNotNull(pollUntil(15_000) { DeviceTaskState.state.value as? TaskState.Succeeded })
         assertNotNull(pollUntil(15_000) { DeviceTaskState.busy.value.takeIf { !it } })
 
-        compose.waitUntil(10_000) { compose.onAllNodesWithText("查看过程").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("查看过程").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithContentDescription("查看过程").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithContentDescription("查看过程").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithText("第 1 步").fetchSemanticsNodes().isNotEmpty() }
 
         compose.onNodeWithText("共 3 步").assertExists()
@@ -85,10 +87,12 @@ class RunTimelineDeviceTest {
         compose.onNodeWithText("第 4 步").assertDoesNotExist()
         compose.onNodeWithText("办成了").assertExists()
 
-        compose.onAllNodesWithText("看当时的画面")[0].performClick()
-        compose.waitUntil(10_000) {
-            compose.onAllNodes(hasContentDescription("的画面", substring = true)).fetchSemanticsNodes().size == 1
-        }
-        compose.onAllNodes(hasText("收起画面")).fetchSemanticsNodes().let { assertTrue(it.size == 1) }
+        // 当时的画面跟在步骤里:点开「看看设置首页」那一步就显示,再点收起
+        val shots = hasContentDescription("的画面", substring = true)
+        compose.onAllNodes(shots).fetchSemanticsNodes().let { assertTrue(it.isEmpty()) }
+        compose.onNodeWithText("第 2 步").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodes(shots).fetchSemanticsNodes().size == 1 }
+        compose.onNodeWithText("第 2 步").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodes(shots).fetchSemanticsNodes().isEmpty() }
     }
 }

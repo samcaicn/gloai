@@ -113,8 +113,11 @@ class MikarunDeviceTest {
 
     @Test
     fun netOnAllowsTcp() {
-        assumeTrue("device has no network", hostReaches("1.1.1.1", 80))
-        val script = "printf 'HEAD / HTTP/1.0\\r\\n\\r\\n' | nc -w 3 1.1.1.1 80"
+        // 有的网络让 TCP 连上却不回应答:先在沙箱外挑一个真能拿到 HTTP 回复的地址,再让沙箱里连同一个
+        val host = HTTP_PROBES.firstOrNull(::hostAnswersHttp)
+        assumeTrue("no probe host answers HTTP on this network", host != null)
+        // busybox nc 读到标准输入结束就退出,不等回应:发完请求后让输入再开 3 秒,慢一点的服务器也来得及回
+        val script = "(printf 'HEAD / HTTP/1.0\\r\\n\\r\\n'; sleep 3) | nc -w 3 $host 80"
         val r = run(launcher("--timeout", "20", "--net", "on") + proot("/bin/sh", "-c", script))
         assertTrue(r.output, r.output.contains("HTTP/"))
     }
@@ -130,7 +133,7 @@ class MikarunDeviceTest {
     fun selfTestReportsSeccomp() {
         val r = run(listOf(SandboxSmokeTest.lib("libmikarun.so"), "--self-test"))
         assertEquals(r.output, 0, r.exitCode)
-        assertEquals(listOf("mikarun ok", "seccomp ok"), r.output.trim().lines())
+        assertEquals(listOf("mikarun ok", "seccomp ok", "pty ok"), r.output.trim().lines())
     }
 
     @Test
@@ -199,14 +202,22 @@ class MikarunDeviceTest {
         }
     }
 
-    private fun hostReaches(host: String, port: Int): Boolean = runCatching {
-        Socket().use { it.connect(InetSocketAddress(host, port), 3_000) }
-    }.isSuccess
+    /** 沙箱外直接发一个 HEAD,拿到「HTTP/」开头的回复才算这个地址可用。 */
+    private fun hostAnswersHttp(host: String): Boolean = runCatching {
+        Socket().use { socket ->
+            socket.connect(InetSocketAddress(host, 80), 3_000)
+            socket.soTimeout = 3_000
+            socket.getOutputStream().write("HEAD / HTTP/1.0\r\n\r\n".toByteArray())
+            socket.getInputStream().bufferedReader().readLine()?.startsWith("HTTP/") == true
+        }
+    }.getOrDefault(false)
 
     private fun shQuote(s: String) = "'" + s.replace("'", "'\\''") + "'"
 
     companion object {
         private const val TAG = "MikarunDeviceTest"
+        /** 按 IP 直连(沙箱里不依赖 DNS)的公共 HTTP 端点,各地网络通的不一样,挑第一个答得上的。 */
+        private val HTTP_PROBES = listOf("1.1.1.1", "223.5.5.5", "1.0.0.1")
 
         @BeforeClass
         @JvmStatic

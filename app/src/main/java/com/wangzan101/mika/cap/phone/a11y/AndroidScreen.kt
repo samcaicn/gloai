@@ -1113,6 +1113,7 @@ class AndroidScreen(
             "so the text may only be displayed and the app may not have received it. Check that the app reacted (e.g. its save button became enabled) " +
             "before relying on it; if it did not, call hand_to_user so the user can type it."
         const val HINT_TAPPED_TO_FOCUS = "The element you gave is not a text field itself, so it was tapped first and the text went into the field that got focus after the tap (often a separate search page). Check which field holds your text before submitting."
+        const val HINT_FIELD_REPLACED = "Tapping the field opened a new input in its place (often a separate search page), so the text went into the field that holds focus now. Check which field holds your text before submitting."
         const val HINT_FOCUS_UNCONFIRMED = "The field did not confirm input focus after both focus and tap, so the text was written directly. Trust the readback verification, not the focus state."
         const val FOCUS_WAIT_MS = 2_000L
         const val SAME_FIELD_SIZE = 0.03

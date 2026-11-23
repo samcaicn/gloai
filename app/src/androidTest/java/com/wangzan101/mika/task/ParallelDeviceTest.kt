@@ -28,7 +28,6 @@ import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 真机测试:开关 parallelTasks 打开时,两个对话的任务同时跑,各占一块虚拟屏。
@@ -39,7 +38,8 @@ class ParallelDeviceTest {
     private val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
     private lateinit var shell: IMikaShell
     private val models = listOf(ScriptedModel(), ScriptedModel())
-    private val handedOut = AtomicInteger()
+    /** 按对话分脚本模型:起标题等也会向工厂要模型,按调用次数分会错位;同一对话(同一会话号)始终拿同一个。 */
+    private val bySession = java.util.concurrent.ConcurrentHashMap<String, ScriptedModel>()
     private lateinit var priorFlags: SpeedFlags
 
     @Before
@@ -53,7 +53,9 @@ class ParallelDeviceTest {
         priorFlags = killRecord.takeIf { it.exists() }?.let { runCatching { SpeedFlags.parse(JSONObject(it.readText()).getString(FLAGS_KEY)) }.getOrNull() }
             ?: flags.speedFlags()
         flags.setSpeed(priorFlags.copy(parallelTasks = true))
-        testTasks.modelFactory = { _, _ -> models[handedOut.getAndIncrement().coerceAtMost(1)] }
+        testTasks.modelFactory = { _, session ->
+            synchronized(bySession) { bySession.getOrPut(session.id) { models[bySession.size.coerceAtMost(1)] } }
+        }
         testTasks.lightModelFactory = { _, _ -> null }
         testTasks.visionModelFactory = { _, _ -> null }
     }
@@ -106,7 +108,7 @@ class ParallelDeviceTest {
         assertEquals(2, b.awaitCall().number)
         val displayA = displayOf(first)
         val displayB = displayOf(second)
-        assertTrue(displayA > 0 && displayB > 0)
+        assertTrue("displays $displayA / $displayB", displayA > 0 && displayB > 0)
         assertNotEquals(displayA, displayB)
         assertTrue(shell.topTaskId(displayA) >= 0)
         assertTrue(shell.topTaskId(displayB) >= 0)

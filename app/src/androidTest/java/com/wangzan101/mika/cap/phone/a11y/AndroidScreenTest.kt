@@ -124,7 +124,7 @@ class AndroidScreenTest {
         val s = openSettings()
         val field = s.elements.first { it.editable }
         val r = ok(screen.typeText(field.ref, s.snapshotId, "蓝牙"))
-        assertEquals(Verification.MATCH, r.verification)
+        assertEquals(r.toString(), Verification.MATCH, r.verification)
         val after = snapUntil { snap -> snap.elements.any { it.editable && it.name == "蓝牙" } }
 
         ok(screen.clearText(after.elements.first { it.editable }.ref, after.snapshotId))
@@ -175,20 +175,21 @@ class AndroidScreenTest {
     }
 
     @Test
-    fun checkScreenDiagnosesBlankAndProtected() = runBlocking<Unit> {
+    fun checkScreenDiagnosesBlankAndSecureCapture() = runBlocking<Unit> {
         val blank = screen.checkScreen()
         assertEquals(ScreenState.BLANK, blank.state)
         assertFalse(blank.needsHuman)
 
         DeviceSupport.startTestActivity(agent.display.displayId, SecureTestActivity::class.java)
         snapUntil { s -> s.packageName == TEST_PACKAGE && s.elements.any { it.name == "secure page" } }
-        val protectedCheck = pollUntil(5_000) {
-            runBlocking { screen.checkScreen() }.takeIf { it.state == ScreenState.PROTECTED }
+        // 虚拟屏上安全窗口合成出来是黑的,但黑像素区分不了「防截屏」和「没合成出内容」:
+        // 只报画面不可用;树读得到(secure page)就走控件,不用人接管
+        val check = pollUntil(5_000) {
+            runBlocking { screen.checkScreen() }.takeIf { it.state == ScreenState.CAPTURE_UNAVAILABLE }
         }
-        assertNotNull("secure page was not diagnosed as protected", protectedCheck)
-        assertTrue(protectedCheck!!.needsHuman)
-        assertTrue(screen.snapshot().protected)
-        assertTrue(screen.isProtected())
+        assertNotNull("secure page was not diagnosed as capture unavailable", check)
+        assertFalse(check!!.needsHuman)
+        assertEquals(TEST_PACKAGE, check.currentApp)
     }
 
     @Test

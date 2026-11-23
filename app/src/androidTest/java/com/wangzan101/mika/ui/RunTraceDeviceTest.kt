@@ -79,6 +79,7 @@ class RunTraceDeviceTest {
                 compose.onNodeWithContentDescription("菜单").performClick()
                 compose.onNodeWithText("设置").performClick()
                 compose.onNodeWithText("记录详细 Trace").assertDoesNotExist()
+                compose.onNode(hasText("高级") and hasClickAction()).performScrollTo().performClick() // 开发者选项归在「高级」里
                 compose.onNodeWithText("开发者选项").performScrollTo().performClick()
                 compose.onNodeWithText("Trace 存储上限").performScrollTo().performClick()
                 compose.onNode(hasSetTextAction()).performTextReplacement("0")
@@ -89,18 +90,24 @@ class RunTraceDeviceTest {
                 assertTrue(com.wangzan101.mika.record.DetailedTraces(app).limitMiB == 37)
                 compose.onNodeWithText("记录详细 Trace").performScrollTo().performClick()
                 assertTrue(app.detailedTraces.enabled)
+                compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() } // 回「高级」
+                compose.awaitOne("开发者选项").assertExists()
                 compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
                 compose.awaitOne("设置").assertExists()
                 compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+                // 设置是从侧栏进的:退出设置回到打开着的侧栏,再返回一次收起它,露出对话页
+                compose.waitUntil(10_000) { compose.onAllNodesWithTag("drawer").fetchSemanticsNodes().isNotEmpty() }
+                compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+                compose.waitUntil(10_000) { runCatching { compose.onNodeWithTag("drawer").assertIsNotDisplayed() }.isSuccess }
                 compose.runOnUiThread {
                     app.chat.newConversation()
                     assertTrue(app.chat.send("请回复完成，TRACE_FIXTURE", Prerequisites.Check(emptyList())))
                 }
-                compose.waitUntil(30_000) { compose.onAllNodesWithText("查看过程").fetchSemanticsNodes().isNotEmpty() }
-                compose.onNodeWithText("查看过程").performSemanticsAction(SemanticsActions.OnClick)
+                compose.waitUntil(30_000) { compose.onAllNodesWithContentDescription("查看过程").fetchSemanticsNodes().isNotEmpty() }
+                compose.onNodeWithContentDescription("查看过程").performSemanticsAction(SemanticsActions.OnClick)
                 compose.waitUntil(15_000) { compose.onAllNodesWithText("运行过程").fetchSemanticsNodes().isNotEmpty() }
-                // 运行过程页先出标题、再读出这次运行的头部:等头部那一行出来
-                compose.waitUntil(10_000) { compose.onAllNodesWithText("导出用量记录").fetchSemanticsNodes().isNotEmpty() }
+                // 运行过程页先出标题、再读出这次运行的头部:等头部里「更多详情」那一行出来
+                compose.waitUntil(10_000) { compose.onAllNodesWithText("更多详情").fetchSemanticsNodes().isNotEmpty() }
                 compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("详细 Trace"))
                 compose.onNodeWithText("详细 Trace").performScrollTo().performClick()
                 // 页面在任务刚开始时就打开了:请求那一行要等这次请求录完、页面重读之后才出来

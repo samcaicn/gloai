@@ -36,7 +36,7 @@ class CapsuleWindowDeviceTest {
         try {
             flags.setQuitRequested(false)
             flags.setCapsuleMode(CapsuleMode.Always)
-            app.capsule.resume()
+            instrumentation.runOnMainSync { app.capsule.resume() } // 胶囊控制器只在主线程上动窗口
             DeviceSupport.startTestActivity(Display.DEFAULT_DISPLAY, GestureTapTestActivity::class.java)
             assertNotNull("test page did not open", pollUntil(5_000) { findText(service, "taps:0") })
             Thread.sleep(300) // 等页面进入动画结束,再记录用于判断残帧的静态基准
@@ -64,7 +64,7 @@ class CapsuleWindowDeviceTest {
             find(service, CardCopy.COLLAPSE)?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             flags.setCapsuleMode(oldMode)
             flags.setQuitRequested(oldQuit)
-            app.capsule.resume()
+            instrumentation.runOnMainSync { app.capsule.resume() } // 胶囊控制器只在主线程上动窗口
             instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
         }
     }
@@ -77,7 +77,7 @@ class CapsuleWindowDeviceTest {
         try {
             flags.setQuitRequested(false)
             flags.setCapsuleMode(CapsuleMode.Always)
-            app.capsule.resume()
+            instrumentation.runOnMainSync { app.capsule.resume() } // 胶囊控制器只在主线程上动窗口
             DeviceSupport.startTestActivity(Display.DEFAULT_DISPLAY, GestureTapTestActivity::class.java)
             assertNotNull("test page did not open", pollUntil(5_000) { findText(service, "taps:0") })
             assertNotNull("idle capsule did not appear", pollUntil(15_000) { find(service, CapsuleCopy.IDLE) })
@@ -99,7 +99,7 @@ class CapsuleWindowDeviceTest {
             find(service, CardCopy.COLLAPSE)?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             flags.setCapsuleMode(oldMode)
             flags.setQuitRequested(oldQuit)
-            app.capsule.resume()
+            instrumentation.runOnMainSync { app.capsule.resume() } // 胶囊控制器只在主线程上动窗口
             instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
         }
     }
