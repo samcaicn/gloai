@@ -1,4 +1,5 @@
 package com.wangzan101.mika.ui
+import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.chat.ConversationSummary
 import com.wangzan101.mika.chat.CurrentChat
 import com.wangzan101.mika.chat.SharedDraft
@@ -33,7 +34,7 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
         if (text == _ui.value.input) return
         val id = session.draftConversation()
         val currentShared = _ui.value.sharedDraft
-        val updatedShared = currentShared?.copy(text = text)?.takeIf { it.text.isNotBlank() || it.attachment != null }
+        val updatedShared = currentShared?.copy(text = text)?.takeIf { it.text.isNotBlank() || it.attachments.isNotEmpty() }
         if (currentShared != null) {
             if (updatedShared == null) sharedDrafts?.clear(id)
             else sharedDrafts?.save(updatedShared)
@@ -68,26 +69,33 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
      * - [inCurrentConversation] 为 true(界面已在后台存活):放入当前已打开的会话;若当前会话已有草稿则挂入 [ChatUi.pendingSharedDraft],
      *   由界面弹窗让用户选择「替换」或「取消」。
      */
-    fun openSharedDraft(prepared: SharedDraft, inCurrentConversation: Boolean = false): Boolean {
+    fun openSharedDraft(
+        prepared: SharedDraft,
+        inCurrentConversation: Boolean = false,
+        rejected: List<AttachmentFailure> = emptyList(),
+        overLimit: Int = 0,
+    ): Boolean {
         val drafts = sharedDrafts ?: return false
         session.refreshParallel()
         if (inCurrentConversation) {
             val hasUnsentDraft = !_ui.value.importing && _ui.value.draft().hasContent
-            if (!hasUnsentDraft) return applySharedDraftToCurrent(prepared)
+            if (!hasUnsentDraft) return applySharedDraftToCurrent(prepared, rejected, overLimit)
             val id = session.draftConversation()
             val pending = prepared.copy(conversationId = id)
-            // Replacing the pending draft and cleaning up its old attachment happen after the new draft is saved.
-            if ((pending.attachment != null && session.sharedAttachments(pending).size != 1) || !drafts.savePending(pending)) {
-                drafts.discard(pending.attachment)
+            // Replacing the pending draft and cleaning up its old attachments happen after the new draft is saved.
+            if ((pending.attachments.isNotEmpty() && session.sharedAttachments(pending).size != pending.attachments.size) || !drafts.savePending(pending)) {
+                drafts.discard(pending.attachments)
                 return false
             }
+            session.pendingSharedFailures = rejected
+            session.pendingSharedOverLimit = overLimit
             _ui.update { it.copy(pendingSharedDraft = pending) }
             return true
         }
         if (pendingStart?.isActive == true &&
             (_ui.value.conversationId == null || _ui.value.exchanges.getOrNull(liveIndex) == null)
         ) {
-            drafts.discard(prepared.attachment)
+            drafts.discard(prepared.attachments)
             return false
         }
         val id = store.newConversation()
@@ -108,7 +116,7 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
                 sharedDraft = draft,
                 input = draft.text,
                 attachments = attachments,
-            )
+            ).copy(rejectedAttachments = rejected, overLimit = overLimit)
         }
         session.markCurrent(CurrentChat.Open(id))
         return true
@@ -117,20 +125,28 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
     /** 用户在替换草稿弹窗里点了「替换」:用待确认的分享内容覆盖当前会话草稿。 */
     fun confirmPendingSharedDraft(): Boolean {
         val pending = _ui.value.pendingSharedDraft ?: return false
-        return applySharedDraftToCurrent(pending)
+        val failures = session.pendingSharedFailures
+        val overLimit = session.pendingSharedOverLimit
+        return applySharedDraftToCurrent(pending, failures, overLimit)
     }
 
     /** 用户在替换草稿弹窗里点了「取消」或关闭弹窗:保留原草稿,清掉这次分享的临时附件副本。 */
     fun cancelPendingSharedDraft() {
         val pending = _ui.value.pendingSharedDraft
+        session.pendingSharedFailures = emptyList()
+        session.pendingSharedOverLimit = 0
         if (pending != null) {
             _ui.update { if (it.pendingSharedDraft == pending) it.copy(pendingSharedDraft = null) else it }
         }
         sharedDrafts?.clearPending()
-        if (pending != null) sharedDrafts?.discard(pending.attachment)
+        if (pending != null) sharedDrafts?.discard(pending.attachments)
     }
 
-    private fun applySharedDraftToCurrent(prepared: SharedDraft): Boolean {
+    private fun applySharedDraftToCurrent(
+        prepared: SharedDraft,
+        rejected: List<AttachmentFailure>,
+        overLimit: Int,
+    ): Boolean {
         val id = _ui.value.conversationId ?: store.newConversation()
         val (draft, attachments) = persistSharedDraft(id, prepared) ?: return false
         cancelPendingSharedDraft()
@@ -143,9 +159,9 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
                 attachments = attachments,
                 sharedDraft = draft,
                 quote = null,
-                rejectedAttachments = emptyList(),
-                overLimit = 0,
-                followUpMode = if (draft.attachment != null && it.composer != ComposerMode.Idle) FollowUpMode.Queue else it.followUpMode,
+                rejectedAttachments = rejected,
+                overLimit = overLimit,
+                followUpMode = if (draft.attachments.isNotEmpty() && it.composer != ComposerMode.Idle) FollowUpMode.Queue else it.followUpMode,
                 pendingSharedDraft = null,
             )
         }
@@ -158,8 +174,8 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
         val drafts = sharedDrafts ?: return null
         val draft = prepared.copy(conversationId = id)
         val attachments = session.sharedAttachments(draft)
-        if ((draft.attachment != null && attachments.size != 1) || !drafts.save(draft)) {
-            drafts.discard(draft.attachment)
+        if ((draft.attachments.isNotEmpty() && attachments.size != draft.attachments.size) || !drafts.save(draft)) {
+            drafts.discard(draft.attachments)
             return null
         }
         return draft to attachments
@@ -169,20 +185,20 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
         val draft = target ?: return
         val isCurrent = _ui.value.sharedDraft == draft || drafts.value[draft.conversationId]?.sharedDraft == draft
         if (!isCurrent) return
-        val sharedUri = draft.attachment?.let(session::attachmentUri)
+        val sharedUris = draft.attachments.mapNotNull(session::attachmentUri).toSet()
         sharedDrafts?.clear(draft.conversationId)
         _ui.update { current ->
             if (current.sharedDraft == draft) current.copy(
                 sharedDraft = null,
                 // 私有分享附件随草稿一起删掉;普通待发附件仍属于全局输入框。
-                attachments = current.attachments.filterNot { it.uri == sharedUri },
+                attachments = current.attachments.filterNot { it.uri in sharedUris },
             ) else current
         }
         drafts.update { saved ->
             val existing = saved[draft.conversationId]
             if (existing?.sharedDraft != draft) saved
             else {
-                val next = existing.copy(sharedDraft = null, attachments = existing.attachments.filterNot { it.uri == sharedUri })
+                val next = existing.copy(sharedDraft = null, attachments = existing.attachments.filterNot { it.uri in sharedUris })
                 if (next.hasContent) saved + (draft.conversationId to next) else saved - draft.conversationId
             }
         }

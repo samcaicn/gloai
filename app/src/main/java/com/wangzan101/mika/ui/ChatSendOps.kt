@@ -72,7 +72,7 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
         if (sent && !sendingAttachments) {
             val shared = ui.sharedDraft
             if (shared != null) {
-                if (shared.attachment == null) {
+                if (shared.attachments.isEmpty()) {
                     vm.drafting.discardSharedDraft(shared)
                 } else {
                     val textCleared = shared.copy(text = "")
@@ -126,8 +126,8 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
         val id = session.draftConversation()
         val submitted = _ui.value.draft()
         val serialBefore = sharedDraftSerial
-        val importingFileName = submitted.sharedDraft?.attachment?.fileName
-        sharedDrafts?.setImporting(importingFileName, true)
+        val importingFileNames = submitted.sharedDraft?.attachments?.map { it.fileName }.orEmpty()
+        sharedDrafts?.setImporting(importingFileNames, true)
         val importedUris = items.map { it.uri }.distinct()
         importedUris.forEach { uri -> libraryImports[uri] = (libraryImports[uri] ?: 0) + 1 }
         _ui.update { it.copy(importing = true, rejectedAttachments = emptyList(), overLimit = 0) }
@@ -164,7 +164,7 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
             } catch (e: Exception) {
                 ImportResult(emptyList(), items.map { it.name })
             } finally {
-                sharedDrafts?.setImporting(importingFileName, false)
+                sharedDrafts?.setImporting(importingFileNames, false)
                 importedUris.forEach { uri ->
                     val count = (libraryImports[uri] ?: 1) - 1
                     if (count == 0) libraryImports.remove(uri) else libraryImports[uri] = count
@@ -279,7 +279,7 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
     fun setFollowUpMode(mode: FollowUpMode) {
         if (_ui.value.importing) return
         if (mode == FollowUpMode.Steer) {
-            _ui.value.sharedDraft?.takeIf { it.attachment != null }?.let(vm.attaching::clearSharedAttachment)
+            _ui.value.sharedDraft?.takeIf { it.attachments.isNotEmpty() }?.let(vm.attaching::clearSharedAttachments)
         }
         _ui.update {
             if (it.followUpMode == mode) it else it.copy(followUpMode = mode,

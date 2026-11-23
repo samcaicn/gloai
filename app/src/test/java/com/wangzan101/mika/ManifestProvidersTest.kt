@@ -194,6 +194,31 @@ class ManifestProvidersTest {
         })
     }
 
+    @Test fun mainActivityAcceptsSingleAndMultipleSharedFiles() {
+        val doc = DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }
+            .newDocumentBuilder().parse(File("src/main/AndroidManifest.xml"))
+        val activities = doc.getElementsByTagName("activity")
+        val main = (0 until activities.length).map { activities.item(it) as Element }
+            .single { it.getAttributeNS(androidNs, "name") == ".ui.MainActivity" }
+        val filters = main.getElementsByTagName("intent-filter")
+        for (actionName in listOf("android.intent.action.SEND", "android.intent.action.SEND_MULTIPLE")) {
+            val matching = (0 until filters.length).map { filters.item(it) as Element }.filter { filter ->
+                val actions = filter.getElementsByTagName("action")
+                (0 until actions.length).any { (actions.item(it) as Element).getAttributeNS(androidNs, "name") == actionName }
+            }
+            assertEquals("Expected one intent-filter for $actionName", 1, matching.size)
+            val filter = matching.single()
+            val categories = filter.getElementsByTagName("category")
+            assertTrue((0 until categories.length).any {
+                (categories.item(it) as Element).getAttributeNS(androidNs, "name") == "android.intent.category.DEFAULT"
+            })
+            val data = filter.getElementsByTagName("data")
+            assertTrue((0 until data.length).any {
+                (data.item(it) as Element).getAttributeNS(androidNs, "mimeType") == "*/*"
+            })
+        }
+    }
+
     /** 内置助手进程按这个全名启动。 */
     @Test
     fun helperEntryClassExists() {

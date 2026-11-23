@@ -48,6 +48,78 @@ class SharedImageDeviceTest {
         checkFileShare(MediaStore.Downloads.EXTERNAL_CONTENT_URI, "清单.txt", "text/plain", "第一项".toByteArray(), "")
     }
 
+    @Test
+    fun multipleMixedFilesShareIntoOnePrivateDraftWithoutStartingTask() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val target = instrumentation.targetContext
+        val app = target.applicationContext as MikaApp
+        val resolver = target.contentResolver
+        val encoded = ByteArrayOutputStream()
+        val bitmap = Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.rgb(12, 160, 90)) }
+        assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, encoded))
+        bitmap.recycle()
+        val photoBytes = encoded.toByteArray()
+        val pdfBytes = "%PDF-1.7\n%%EOF".toByteArray()
+        val photoName = "mika-${SystemClock.elapsedRealtimeNanos()}-multi.png"
+        val pdfName = "mika-${SystemClock.elapsedRealtimeNanos()}-multi.pdf"
+        val photoUri = requireNotNull(resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, photoName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }))
+        val pdfUri = requireNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, pdfName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }))
+        try {
+            resolver.openOutputStream(photoUri, "w")!!.use { it.write(photoBytes) }
+            resolver.update(photoUri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
+            resolver.openOutputStream(pdfUri, "w")!!.use { it.write(pdfBytes) }
+            resolver.update(pdfUri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
+            val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                setPackage(target.packageName)
+                type = "*/*"
+                putExtra(Intent.EXTRA_TEXT, "一起整理这两份材料")
+                putParcelableArrayListExtra(Intent.EXTRA_STREAM, arrayListOf(photoUri, pdfUri))
+                clipData = ClipData.newRawUri(photoName, photoUri).apply { addItem(ClipData.Item(pdfUri)) }
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            assertEquals(MainActivity::class.java.name, intent.resolveActivity(target.packageManager)?.className)
+            val runsBefore = app.taskState.runs.value.map { it.runId.value }.toSet()
+            var received: SharedDraft? = null
+            val scenario = ActivityScenario.launch<MainActivity>(intent)
+            try {
+                val deadline = SystemClock.uptimeMillis() + 15_000
+                while (SystemClock.uptimeMillis() < deadline) {
+                    instrumentation.waitForIdleSync()
+                    received = app.sharedDrafts.readAll().firstOrNull { d ->
+                        d.attachments.map { it.name } == listOf(photoName, pdfName)
+                    }
+                    if (received != null) break
+                    SystemClock.sleep(100)
+                }
+                assertNotNull("The production activity did not save the multi-file draft", received)
+                val draft = requireNotNull(received)
+                assertEquals("一起整理这两份材料", draft.text)
+                assertEquals(2, draft.attachments.size)
+                assertTrue(draft.attachments[0].photo)
+                assertEquals(false, draft.attachments[1].photo)
+                assertArrayEquals(photoBytes, requireNotNull(app.sharedDrafts.attachmentFile(draft.attachments[0].fileName)).readBytes())
+                assertArrayEquals(pdfBytes, requireNotNull(app.sharedDrafts.attachmentFile(draft.attachments[1].fileName)).readBytes())
+                assertEquals(listOf(photoName, pdfName), app.chat.ui.value.attachments.map { it.name })
+                assertEquals("Sharing multiple files must not start a task", runsBefore,
+                    app.taskState.runs.value.map { it.runId.value }.toSet())
+            } finally {
+                received?.let { app.sharedDrafts.clear(it.conversationId) }
+                runCatching { scenario.onActivity { it.finish() } }
+            }
+        } finally {
+            resolver.delete(photoUri, null, null)
+            resolver.delete(pdfUri, null, null)
+        }
+    }
+
     private fun checkFileShare(collection: Uri, name: String, mime: String, bytes: ByteArray, text: String,
         photo: Boolean = false, clipOnly: Boolean = false) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()

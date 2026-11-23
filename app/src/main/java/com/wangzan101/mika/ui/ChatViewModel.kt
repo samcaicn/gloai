@@ -18,6 +18,7 @@ import com.wangzan101.mika.chat.SharedDraftAttachment
 import com.wangzan101.mika.chat.SharedDraftStore
 import com.wangzan101.mika.chat.SharedFile
 import com.wangzan101.mika.chat.WorkspaceResolver
+import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.cap.sandbox.ImportResult
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.TaskState
@@ -360,7 +361,12 @@ class ChatViewModel(
     fun input(text: String) = drafting.input(text)
     internal fun saveDraftTexts(): List<String> = drafting.saveDraftTexts()
     internal fun restoreDraftTexts(saved: List<String>) = drafting.restoreDraftTexts(saved)
-    fun openSharedDraft(prepared: SharedDraft, inCurrentConversation: Boolean = false): Boolean = drafting.openSharedDraft(prepared, inCurrentConversation)
+    fun openSharedDraft(
+        prepared: SharedDraft,
+        inCurrentConversation: Boolean = false,
+        rejected: List<AttachmentFailure> = emptyList(),
+        overLimit: Int = 0,
+    ): Boolean = drafting.openSharedDraft(prepared, inCurrentConversation, rejected, overLimit)
     fun confirmPendingSharedDraft(): Boolean = drafting.confirmPendingSharedDraft()
     fun cancelPendingSharedDraft() = drafting.cancelPendingSharedDraft()
 

@@ -1,5 +1,6 @@
 package com.wangzan101.mika.ui
 import com.wangzan101.mika.chat.SharedDraft
+import com.wangzan101.mika.chat.SharedDraftAttachment
 import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.cap.sandbox.AttachmentFailureReason
 import kotlinx.coroutines.CancellationException
@@ -201,25 +202,44 @@ internal class ChatAttachmentOps(private val vm: ChatViewModel, private val sess
         return !t.full
     }
 
-    fun clearSharedAttachment(draft: SharedDraft) {
+    fun clearSharedAttachments(draft: SharedDraft) {
         val currentText = _ui.value.input
         if (currentText.isBlank()) {
             sharedDrafts?.clear(draft.conversationId)
         } else {
-            val updated = draft.copy(text = currentText, attachment = null)
+            val updated = draft.copy(text = currentText, attachments = emptyList())
             if (sharedDrafts?.save(updated) != true) sharedDrafts?.removeAttachment(draft.conversationId)
         }
         _ui.update { current ->
             if (current.sharedDraft == draft) {
-                current.copy(sharedDraft = draft.copy(text = current.input, attachment = null).takeIf { it.text.isNotBlank() })
+                current.copy(sharedDraft = draft.copy(text = current.input, attachments = emptyList()).takeIf { it.text.isNotBlank() })
+            } else current
+        }
+    }
+
+    private fun removeSharedAttachment(draft: SharedDraft, target: SharedDraftAttachment) {
+        val currentText = _ui.value.input
+        val remaining = draft.attachments.filterNot { it.fileName == target.fileName }
+        val nextShared = draft.copy(text = currentText, attachments = remaining)
+            .takeIf { it.text.isNotBlank() || it.attachments.isNotEmpty() }
+        if (nextShared == null) {
+            sharedDrafts?.clear(draft.conversationId)
+        } else if (sharedDrafts?.save(nextShared) != true) {
+            sharedDrafts?.removeAttachment(draft.conversationId, target.fileName)
+        }
+        _ui.update { current ->
+            if (current.sharedDraft == draft) {
+                current.copy(sharedDraft = draft.copy(text = current.input, attachments = remaining)
+                    .takeIf { it.text.isNotBlank() || it.attachments.isNotEmpty() })
             } else current
         }
     }
 
     fun removeAttachment(uri: String) {
         val draft = _ui.value.sharedDraft
-        if (draft?.attachment != null && session.attachmentUri(draft.attachment) == uri) {
-            clearSharedAttachment(draft)
+        val matched = draft?.attachments?.firstOrNull { session.attachmentUri(it) == uri }
+        if (draft != null && matched != null) {
+            removeSharedAttachment(draft, matched)
         }
         _ui.update { ui -> ui.copy(attachments = ui.attachments.filterNot { it.uri == uri }) }
         session.releaseUnusedLibraryCopies()

@@ -1604,6 +1604,102 @@ class ChatViewModelTest {
         assertFalse(drafts.attachmentFile("shot.jpg")!!.exists())
     }
 
+    @Test fun multiFileSharedDraftSupportsPartialRemovalOverLimitAndSendingAll() = runTest {
+        val conversations = ConversationStore(tmp.newFolder())
+        val drafts = SharedDraftStore(tmp.newFolder())
+        drafts.attachmentFile("a.jpg")!!.writeBytes(byteArrayOf(1, 2))
+        drafts.attachmentFile("b.pdf")!!.writeBytes(byteArrayOf(3, 4, 5))
+        drafts.attachmentFile("c.png")!!.writeBytes(byteArrayOf(6))
+        val imported = mutableListOf<List<String>>()
+        val vm = ChatViewModel(
+            backgroundScope, state, stage, actions, conversations,
+            sharedDrafts = drafts,
+            sharedDraftUri = { "content://mika.shared/${it.fileName}" },
+            importAttachments = { _, uris ->
+                imported += uris
+                ImportResult(listOf("/workspace/inbox/a.jpg" to 2L, "/workspace/inbox/c.png" to 1L), emptyList())
+            },
+        )
+        runCurrent()
+        val a = SharedDraftAttachment("a.jpg", "a.jpg", 2, photo = true)
+        val b = SharedDraftAttachment("b.pdf", "b.pdf", 3, photo = false)
+        val c = SharedDraftAttachment("c.png", "c.png", 1, photo = true)
+        val failure = com.wangzan101.mika.cap.sandbox.AttachmentFailure(
+            "huge.zip", com.wangzan101.mika.cap.sandbox.AttachmentFailureReason.TOO_LARGE,
+        )
+        assertTrue(vm.openSharedDraft(SharedDraft("", "一起看", listOf(a, b, c)), rejected = listOf(failure), overLimit = 2))
+        assertEquals(listOf("a.jpg", "b.pdf", "c.png"), vm.ui.value.attachments.map { it.name })
+        assertEquals(listOf(failure), vm.ui.value.rejectedAttachments)
+        assertEquals(2, vm.ui.value.overLimit)
+
+        // 只移除中间那一个附件:另外两个附件和磁盘副本都保留,重启也能恢复。
+        vm.removeAttachment("content://mika.shared/b.pdf")
+        assertEquals(listOf("a.jpg", "c.png"), vm.ui.value.attachments.map { it.name })
+        assertEquals(listOf(a, c), vm.ui.value.sharedDraft?.attachments)
+        assertFalse(drafts.attachmentFile("b.pdf")!!.exists())
+        assertTrue(drafts.attachmentFile("a.jpg")!!.exists())
+        assertTrue(drafts.attachmentFile("c.png")!!.exists())
+        assertEquals(listOf(a, c), SharedDraftStore(drafts.attachmentFile("a.jpg")!!.parentFile!!).read()?.attachments)
+
+        // 发送剩余两个附件并清掉全部私有副本。
+        assertTrue(vm.send("一起看", ok))
+        runCurrent()
+        assertEquals(listOf(listOf("content://mika.shared/a.jpg", "content://mika.shared/c.png")), imported)
+        assertEquals(listOf("start:一起看\n附件:/workspace/inbox/a.jpg(2 B)\n附件:/workspace/inbox/c.png(1 B)"), calls)
+        assertNull(drafts.read())
+        assertFalse(drafts.attachmentFile("a.jpg")!!.exists())
+        assertFalse(drafts.attachmentFile("c.png")!!.exists())
+    }
+
+    @Test fun multiFilePendingSharePreservesWarningsOnConfirmAndProtectsAllDuringImport() = runTest {
+        val conversations = ConversationStore(tmp.newFolder())
+        val drafts = SharedDraftStore(tmp.newFolder())
+        drafts.attachmentFile("p1.jpg")!!.writeBytes(byteArrayOf(1))
+        drafts.attachmentFile("p2.pdf")!!.writeBytes(byteArrayOf(2))
+        drafts.attachmentFile("n1.jpg")!!.writeBytes(byteArrayOf(3))
+        val releaseImport = CompletableDeferred<Unit>()
+        var bothExisted = false
+        val vm = ChatViewModel(
+            backgroundScope, state, stage, actions, conversations,
+            sharedDrafts = drafts,
+            sharedDraftUri = { "content://mika.shared/${it.fileName}" },
+            importAttachments = { _, _ ->
+                releaseImport.await()
+                bothExisted = drafts.attachmentFile("p1.jpg")!!.exists() && drafts.attachmentFile("p2.pdf")!!.exists()
+                ImportResult(listOf("/workspace/inbox/p1.jpg" to 1L, "/workspace/inbox/p2.pdf" to 1L), emptyList())
+            },
+        )
+        runCurrent()
+        vm.input("已有输入")
+
+        val p1 = SharedDraftAttachment("p1.jpg", "p1.jpg", 1, photo = true)
+        val p2 = SharedDraftAttachment("p2.pdf", "p2.pdf", 1, photo = false)
+        val failure = com.wangzan101.mika.cap.sandbox.AttachmentFailure(
+            "bad.bin", com.wangzan101.mika.cap.sandbox.AttachmentFailureReason.IO_ERROR,
+        )
+        assertTrue(vm.openSharedDraft(SharedDraft("", "新多图", listOf(p1, p2)), inCurrentConversation = true, rejected = listOf(failure), overLimit = 1))
+        assertNotNull(vm.ui.value.pendingSharedDraft)
+        assertTrue(vm.confirmPendingSharedDraft())
+        assertEquals(listOf("p1.jpg", "p2.pdf"), vm.ui.value.attachments.map { it.name })
+        assertEquals(listOf(failure), vm.ui.value.rejectedAttachments)
+        assertEquals(1, vm.ui.value.overLimit)
+
+        // 导入这两个文件期间收到同会话新分享:两个正在导入的副本都不提前删除。
+        assertTrue(vm.send("新多图", ok))
+        assertTrue(vm.ui.value.importing)
+        val n1 = SharedDraftAttachment("n1.jpg", "n1.jpg", 1, photo = true)
+        assertTrue(vm.openSharedDraft(SharedDraft("", "覆盖", listOf(n1)), inCurrentConversation = true))
+        assertTrue(drafts.attachmentFile("p1.jpg")!!.exists())
+        assertTrue(drafts.attachmentFile("p2.pdf")!!.exists())
+
+        releaseImport.complete(Unit)
+        runCurrent()
+        assertTrue(bothExisted)
+        assertFalse(drafts.attachmentFile("p1.jpg")!!.exists())
+        assertFalse(drafts.attachmentFile("p2.pdf")!!.exists())
+        assertTrue(drafts.attachmentFile("n1.jpg")!!.exists())
+    }
+
     @Test fun startWaitsUntilServiceFinishedPreviousTask() = runTest {
         val busy = MutableStateFlow(true)
         val vm = ChatViewModel(backgroundScope, state, stage, actions, ConversationStore(tmp.newFolder()), busy)

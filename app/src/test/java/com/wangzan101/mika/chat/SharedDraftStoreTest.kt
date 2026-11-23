@@ -30,7 +30,7 @@ class SharedDraftStoreTest {
         assertEquals(draft, SharedDraftStore(dir).read())
 
         store.removeAttachment(draft.conversationId)
-        assertEquals(draft.copy(attachment = null), store.read())
+        assertEquals(draft.copy(attachments = emptyList()), store.read())
         assertFalse(store.attachmentFile("one.jpg")!!.exists())
         store.clear(draft.conversationId)
         assertNull(store.read())
@@ -63,7 +63,7 @@ class SharedDraftStoreTest {
         val two = SharedDraft("two", "second", image(store, "two.jpg", byteArrayOf(2)))
         assertTrue(store.save(one))
         assertTrue(store.save(two))
-        val edited = one.copy(text = "edited", attachment = image(store, "replacement.jpg", byteArrayOf(3)))
+        val edited = one.copy(text = "edited", attachments = listOf(image(store, "replacement.jpg", byteArrayOf(3))))
         assertTrue(store.save(edited))
         assertEquals(listOf(edited, two), store.readAll())
         assertEquals(two, store.read())
@@ -185,5 +185,54 @@ class SharedDraftStoreTest {
         }
         assertTrue(cancelled.exceptionOrNull() is CancellationException)
         assertFalse(tmpFile.exists())
+    }
+
+    @Test fun multipleAttachmentsPersistSupportSingleRemovalAndEnforceLimits() {
+        val dir = tmp.newFolder()
+        val store = SharedDraftStore(dir)
+        val photo = image(store, "one.jpg", byteArrayOf(1, 2))
+        val doc = SharedDraftAttachment("two.pdf", "合同.pdf", 3, photo = false).also {
+            store.attachmentFile(it.fileName)!!.writeBytes(byteArrayOf(3, 4, 5))
+        }
+        val audio = SharedDraftAttachment("three.mp3", "录音.mp3", 1, photo = false).also {
+            store.attachmentFile(it.fileName)!!.writeBytes(byteArrayOf(6))
+        }
+        val draft = SharedDraft("c1", "请一起整理", listOf(photo, doc, audio))
+        assertTrue(store.save(draft))
+        assertEquals(draft, SharedDraftStore(dir).read())
+
+        // 只删除其中一个附件时,其余附件和文件保留。
+        store.removeAttachment("c1", doc.fileName)
+        assertEquals(SharedDraft("c1", "请一起整理", listOf(photo, audio)), SharedDraftStore(dir).read())
+        assertFalse(store.attachmentFile(doc.fileName)!!.exists())
+        assertTrue(store.attachmentFile(photo.fileName)!!.exists())
+        assertTrue(store.attachmentFile(audio.fileName)!!.exists())
+
+        // 导入保护覆盖所有附件。
+        store.setImporting(listOf(photo.fileName, audio.fileName), true)
+        store.clear("c1")
+        assertTrue(store.attachmentFile(photo.fileName)!!.exists())
+        assertTrue(store.attachmentFile(audio.fileName)!!.exists())
+        store.setImporting(listOf(photo.fileName, audio.fileName), false)
+        assertFalse(store.attachmentFile(photo.fileName)!!.exists())
+        assertFalse(store.attachmentFile(audio.fileName)!!.exists())
+
+        // 超过上限或重复 fileName 时拒绝保存。
+        val ten = (1..10).map { i -> image(store, "f$i.jpg", byteArrayOf(i.toByte())) }
+        assertFalse(store.save(SharedDraft("c2", "", ten)))
+        assertFalse(store.save(SharedDraft("c2", "", listOf(ten[0], ten[0]))))
+        assertTrue(store.save(SharedDraft("c2", "", ten.take(SharedDraftStore.MAX_ATTACHMENTS))))
+        assertEquals(SharedDraftStore.MAX_ATTACHMENTS, SharedDraftStore(dir).read()?.attachments?.size)
+    }
+
+    @Test fun legacySingleAttachmentJsonStillDecodes() {
+        val dir = tmp.newFolder()
+        val store = SharedDraftStore(dir)
+        val doc = SharedDraftAttachment("legacy.pdf", "旧文档.pdf", 2, photo = false)
+        store.attachmentFile(doc.fileName)!!.writeBytes(byteArrayOf(9, 8))
+        File(dir, "draft.json").writeText(
+            """{"drafts":[{"conversation":"c1","text":"hi","attachment":{"file":"legacy.pdf","name":"旧文档.pdf","size":2,"photo":false}}]}""",
+        )
+        assertEquals(SharedDraft("c1", "hi", listOf(doc)), store.read())
     }
 }

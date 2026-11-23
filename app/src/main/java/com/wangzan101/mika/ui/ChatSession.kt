@@ -1,4 +1,5 @@
 package com.wangzan101.mika.ui
+import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.chat.BranchCopyResult
 import com.wangzan101.mika.chat.CurrentChat
 import com.wangzan101.mika.chat.DeleteBatch
@@ -53,6 +54,8 @@ internal class ChatSession(private val vm: ChatViewModel) {
 
     /** 每次有分享放进当前会话就加一;异步操作靠它分辨草稿是被新分享换掉了,还是用户只改了文字。 */
     var sharedDraftSerial = 0L
+    var pendingSharedFailures: List<AttachmentFailure> = emptyList()
+    var pendingSharedOverLimit: Int = 0
 
     fun draftConversation(): String {
         draftStateChanged = true
@@ -67,7 +70,7 @@ internal class ChatSession(private val vm: ChatViewModel) {
         draftStateChanged = true
         val ui = _ui.value
         val id = ui.conversationId ?: return
-        val shared = ui.sharedDraft?.copy(text = ui.input)?.takeIf { it.text.isNotBlank() || it.attachment != null }
+        val shared = ui.sharedDraft?.copy(text = ui.input)?.takeIf { it.text.isNotBlank() || it.attachments.isNotEmpty() }
         if (ui.sharedDraft != null) {
             if (shared == null) sharedDrafts?.clear(id)
             else sharedDrafts?.save(shared)
@@ -135,9 +138,9 @@ internal class ChatSession(private val vm: ChatViewModel) {
     fun attachmentUri(attachment: SharedDraftAttachment): String? =
         runCatching { sharedDraftUri(attachment) }.getOrNull()?.takeIf { it.isNotEmpty() }
 
-    fun sharedAttachments(draft: SharedDraft) = listOfNotNull(draft.attachment?.let { attachment ->
+    fun sharedAttachments(draft: SharedDraft): List<PendingAttachment> = draft.attachments.mapNotNull { attachment ->
         attachmentUri(attachment)?.let { PendingAttachment(it, attachment.name, attachment.size, attachment.photo) }
-    })
+    }
 
     /** 停止的那一轮:交代还在写时标上「正在整理」;写好了、写不成就去掉。 */
     fun withSummarizing(ex: Exchange, set: Set<String> = summarizing.value): Exchange {
