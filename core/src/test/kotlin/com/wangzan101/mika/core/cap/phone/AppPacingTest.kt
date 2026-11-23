@@ -120,6 +120,16 @@ class AppPacingTest {
         assertFalse(p.capReached("com.slow", capped = true))
     }
 
+    /** 默认不限屏数:读、汇总一类的任务和没人在旁边的任务在限制浏览快慢的 App 里也能做完,只是停得更久。 */
+    @Test fun carefulAppsHaveNoScreenBudgetByDefault() {
+        val p = AppPacing.human(Random(1))
+        assertEquals(null, p.screenCap)
+        repeat(200) { p.noteAction("com.slow", 0, newScreen = true, tempo = AppTempo.CAREFUL, capped = true) }
+        assertEquals(200, p.screensIn("com.slow"))
+        assertFalse(p.capReached("com.slow", capped = true))
+        assertTrue(p.waitBefore(0, 500) > 0)
+    }
+
     @Test fun offNeverWaitsNorCaps() {
         val p = AppPacing.Off
         repeat(50) { p.noteAction("com.slow", 0, newScreen = true, tempo = AppTempo.CAREFUL, capped = true) }

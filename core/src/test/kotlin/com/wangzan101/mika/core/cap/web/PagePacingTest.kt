@@ -133,24 +133,39 @@ class PagePacingTest {
         val p = PagePacing.human(Random(2))
         p.noteLoad("https://shop.example.com/", 0)
         assertTrue(p.noteLoad("https://shop.example.com/2", 1) in limits.firstDwellMs)
-        assertTrue(c.firstDwellMs.first > limits.firstDwellMs.last && c.maxDwellMs > limits.maxDwellMs && c.pageCap < limits.pageCap)
+        assertTrue(c.firstDwellMs.first > limits.firstDwellMs.last && c.maxDwellMs > limits.maxDwellMs)
+    }
+
+    /** 设了上限的节奏:普通网站 [CAP] 页,限制浏览快慢的网站 [CAREFUL_CAP] 页。 */
+    private fun capped(seed: Int) = PagePacing.human(
+        Random(seed), limits = PagePacing.Limits(pageCap = CAP), careful = PagePacing.Limits.CAREFUL.copy(pageCap = CAREFUL_CAP),
+    )
+
+    @Test
+    fun `no page cap by default so reading tasks and unattended runs can finish`() {
+        assertEquals(null, limits.pageCap)
+        assertEquals(null, PagePacing.Limits.CAREFUL.pageCap)
+        val p = PagePacing.human(Random(3))
+        repeat(200) { p.noteLoad("https://jobs.example.com/p$it", it * 1_000L, PlacePace.CAREFUL) }
+        assertFalse(p.capReached("jobs.example.com", PlacePace.CAREFUL))
+        assertFalse(p.capReached("jobs.example.com"))
     }
 
     @Test
     fun `page cap counts pages per site in the task and resets when the user answers`() {
-        val p = PagePacing.human(Random(4))
-        repeat(limits.pageCap - 1) { p.noteLoad("https://shop.example.com/p$it", it * 60_000L) }
+        val p = capped(4)
+        repeat(CAP - 1) { p.noteLoad("https://shop.example.com/p$it", it * 60_000L) }
         assertFalse(p.capReached("shop.example.com"))
         p.noteLoad("https://www.shop.example.com/last", 3_000_000)
         // 过了时间窗的页也算:上限按整个任务数
         assertTrue(p.capReached("m.shop.example.com"))
-        assertEquals(limits.pageCap, p.pagesOn("shop.example.com"))
+        assertEquals(CAP, p.pagesOn("shop.example.com"))
         // 别的网站另算
         assertFalse(p.capReached("news.example.org"))
         p.userAnswered()
         assertFalse(p.capReached("shop.example.com"))
         // 限制浏览快慢的网站上限更低
-        repeat(PagePacing.Limits.CAREFUL.pageCap) { p.noteLoad("https://jobs.example.com/p$it", it.toLong(), PlacePace.CAREFUL) }
+        repeat(CAREFUL_CAP) { p.noteLoad("https://jobs.example.com/p$it", it.toLong(), PlacePace.CAREFUL) }
         assertTrue(p.capReached("jobs.example.com", PlacePace.CAREFUL))
         // 不设节奏时也不设上限
         repeat(50) { PagePacing.Off.noteLoad("https://shop.example.com/p$it", 0) }
@@ -159,9 +174,9 @@ class PagePacingTest {
 
     @Test
     fun `page cap is lifted for a site once an outward action was done there`() {
-        val p = PagePacing.human(Random(5))
-        repeat(limits.pageCap) { p.noteLoad("https://jobs.example.com/p$it", it * 1_000L) }
-        repeat(limits.pageCap) { p.noteLoad("https://shop.example.org/p$it", it * 1_000L) }
+        val p = capped(5)
+        repeat(CAP) { p.noteLoad("https://jobs.example.com/p$it", it * 1_000L) }
+        repeat(CAP) { p.noteLoad("https://shop.example.org/p$it", it * 1_000L) }
         assertTrue(p.capReached("jobs.example.com"))
         p.outwardDone("www.jobs.example.com")
         // 做过对外动作:这个网站(同一可注册域名)不再设上限,停留照旧
@@ -171,9 +186,9 @@ class PagePacingTest {
         assertEquals(d, p.waitBefore("jobs.example.com", 100_000))
         // 用户答话后照样不设;别的网站不受影响
         p.userAnswered()
-        repeat(limits.pageCap * 2) { p.noteLoad("https://jobs.example.com/x$it", 200_000L + it) }
+        repeat(CAP * 2) { p.noteLoad("https://jobs.example.com/x$it", 200_000L + it) }
         assertFalse(p.capReached("jobs.example.com"))
-        repeat(limits.pageCap) { p.noteLoad("https://shop.example.org/y$it", 300_000L + it) }
+        repeat(CAP) { p.noteLoad("https://shop.example.org/y$it", 300_000L + it) }
         assertTrue(p.capReached("shop.example.org"))
     }
 
@@ -262,5 +277,10 @@ class PagePacingTest {
         assertEquals(w2, slept.sum())
         assertTrue(port.calls.size <= 1)
         assertEquals(0, idled)
+    }
+
+    private companion object {
+        const val CAP = 20
+        const val CAREFUL_CAP = 12
     }
 }

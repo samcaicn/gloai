@@ -49,8 +49,9 @@ internal class AppDwell(
     suspend fun before(app: String?, textChars: Int, gate: Boolean, port: ScreenPort? = null): Dwelt {
         if (!paced) return Dwelt(0, 0)
         if (tempoOf(app) == AppTempo.FAST) return Dwelt(0, 0)
-        if (gate && app != null && cappedOf(app) && pacing.capReached(app, true)) {
-            throw PageLimitReached(app, pacing.screensIn(app), pacing.screenCap, PageLimitReached.Scope.APP_SCREENS)
+        val cap = pacing.screenCap
+        if (gate && app != null && cap != null && cappedOf(app) && pacing.capReached(app, true)) {
+            throw PageLimitReached(app, pacing.screensIn(app), cap, PageLimitReached.Scope.APP_SCREENS)
         }
         val wait = pacing.waitBefore(clock(), textChars)
         if (wait <= 0) return Dwelt(0, 0)

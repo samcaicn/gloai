@@ -16,9 +16,10 @@ import com.wangzan101.mika.core.uistate.IdleScroll
  * - 停留从上一个动作做完算起,模型想、读屏花掉的时间都算在内,只补不够的部分。
  * - 这个 App 的实际节奏是 [AppTempo.CAREFUL](设置里像人、按应用覆盖、App 知识说它限制浏览快慢)时按 [careful] 的范围停(更久);
  *   [AppTempo.FAST] 的 App 里做完的动作不记停留,还把之前记下的清掉:里面不等,出去也不补旧的停留。
- * - 限制浏览快慢的 App([capped] 为真:一个任务里换到新的一屏的次数有上限([screenCap]),到了之后 [capReached] 为真,
+ * - 限制浏览快慢的 App([capped] 为真)换到新的一屏的次数照样记;给了 [screenCap] 时一个任务里换屏至多这么多次,到了之后 [capReached] 为真,
  *   调用方不再换屏;用户答过话([userAnswered])后重新计数;本任务在这个 App 里做成过对外动作([outwardDone],发送、提交一类)
- *   之后不再设上限。和网页一页一页看的节奏([com.wangzan101.mika.core.cap.web.PagePacing])是同一套说法。
+ *   之后不再设上限。默认不设上限([screenCap] 为 null):硬停下来问人会让读、汇总一类的任务和没人在旁边的任务做不完,
+ *   被拦的风险靠更久的停留去压。和网页一页一页看的节奏([com.wangzan101.mika.core.cap.web.PagePacing])是同一套说法。
  *
  * [Off] 从不等待,也不设上限(「快」、测试、不需要节奏的调用方用它)。
  */
@@ -26,8 +27,8 @@ class AppPacing(
     private val random: Random?,
     val limits: Limits = Limits(),
     val careful: Limits = Limits.CAREFUL,
-    /** 限制浏览快慢的 App 一个任务里(用户答话之间)最多换到多少次新的一屏。 */
-    val screenCap: Int = CAREFUL_SCREEN_CAP,
+    /** 限制浏览快慢的 App 一个任务里(用户答话之间)最多换到多少次新的一屏;null 为不设上限(默认)。 */
+    val screenCap: Int? = null,
 ) {
     /** 时长单位毫秒。 */
     data class Limits(
@@ -113,7 +114,7 @@ class AppPacing(
     /** [app] 换到新的一屏的次数已到上限([capped] 的 App 才查):再换屏之前要先停下(用户答应了再看)。普通 App、做过对外动作的 App、[Off] 恒为 false。 */
     @Synchronized
     fun capReached(app: String?, capped: Boolean): Boolean =
-        random != null && app != null && capped && app !in outward && screensIn(app) >= screenCap
+        random != null && app != null && capped && app !in outward && screenCap != null && screensIn(app) >= screenCap
 
     /** 本任务在 [app] 里做了一次对外动作(发送、提交):这个 App 余下的时间里不再设屏数上限。 */
     @Synchronized
@@ -128,9 +129,6 @@ class AppPacing(
     private fun limitsFor(tempo: AppTempo) = if (tempo == AppTempo.CAREFUL) careful else limits
 
     companion object {
-        /** 限制浏览快慢的 App 一个任务里最多换到多少次新的一屏(App 里一屏比网页的一页碎:点开、返回各算一次)。 */
-        const val CAREFUL_SCREEN_CAP = 24
-
         /** 从不等待。 */
         val Off = AppPacing(null)
 

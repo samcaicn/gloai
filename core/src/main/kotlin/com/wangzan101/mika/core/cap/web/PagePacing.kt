@@ -15,7 +15,8 @@ import com.wangzan101.mika.core.uistate.PlacePace
  * - 停留从那一页来的时刻算起,模型自己想、读页面花掉的时间都算在内,只补不够的部分;
  * - 网站按可注册域名认(www.example.com 和 m.example.com 是同一个);去另一个网站不等,那边从第一页算起。
  * - 站点知识说这个网站限制浏览快慢([PlacePace.CAREFUL])时,这个网站的页按 [careful] 的范围停留(更久)。
- * - 一个任务里同一个网站来的页数有上限([Limits.pageCap]),到了之后 [capReached] 为真,调用方不再换页;
+ * - 给了页数上限([Limits.pageCap])时,一个任务里同一个网站来的页至多这么多,到了之后 [capReached] 为真,调用方不再换页;
+ *   默认不设(硬停下来问人会让读、汇总一类的任务和没人在旁边的任务做不完,被拦的风险靠停留去压);
  *   用户答过话([userAnswered])后重新计数。上限只管浏览:本任务在这个网站上做过对外动作([outwardDone],发送、提交一类)之后,
  *   这个网站在本任务余下的时间里不再设上限(成批联系、投递要能做到网站自己的上限),停留照旧。
  *
@@ -32,12 +33,12 @@ class PagePacing(private val random: Random?, val limits: Limits = Limits(), val
         val maxDwellMs: Long = 12_000L,
         /** 算「最近看过几页」的时间窗。 */
         val windowMs: Long = 10 * 60_000L,
-        /** 一个任务里(用户答话之间)同一个网站最多来多少页。 */
-        val pageCap: Int = 20,
+        /** 一个任务里(用户答话之间)同一个网站最多来多少页;null 为不设上限(默认)。 */
+        val pageCap: Int? = null,
     ) {
         companion object {
-            /** 限制浏览快慢的网站:每页停得更久、页数上限更低。 */
-            val CAREFUL = Limits(firstDwellMs = 10_000L..16_000L, perPageMs = 600L to 1_000L, maxDwellMs = 30_000L, pageCap = 12)
+            /** 限制浏览快慢的网站:每页停得更久。 */
+            val CAREFUL = Limits(firstDwellMs = 10_000L..16_000L, perPageMs = 600L to 1_000L, maxDwellMs = 30_000L)
         }
     }
 
@@ -75,13 +76,13 @@ class PagePacing(private val random: Random?, val limits: Limits = Limits(), val
     @Synchronized
     fun pagesOn(site: String): Int = key(site)?.let { pages[it] } ?: 0
 
-    /** 按 [pace] 的页数上限。 */
-    fun capFor(pace: PlacePace): Int = limitsFor(pace).pageCap
+    /** 按 [pace] 的页数上限;null 为不设。 */
+    fun capFor(pace: PlacePace): Int? = limitsFor(pace).pageCap
 
     /** [site] 上来的页已到上限:再换页之前要先停下(用户答应了再看)。做过对外动作的网站([outwardDone])、[Off] 恒为 false。 */
     @Synchronized
     fun capReached(site: String, pace: PlacePace = PlacePace.NORMAL): Boolean =
-        random != null && key(site)?.let { it in outward } != true && pagesOn(site) >= capFor(pace)
+        random != null && key(site)?.let { it in outward } != true && capFor(pace)?.let { pagesOn(site) >= it } == true
 
     /** 本任务在 [site] 上做了一次对外动作(发送、提交):这个网站余下的时间里不再设页数上限。 */
     @Synchronized
