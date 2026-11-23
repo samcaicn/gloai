@@ -127,8 +127,11 @@ class DeskBrainTest {
     fun throwingBackgroundDoesNotFailReply() = runBlocking {
         val model = FakeModel()
         val said = Recorder()
-        LlmBrain(model, "rules", emptyList(), background = DeskBackground { error("board broke") }).reply("在吗", said)
+        val logged = mutableListOf<String>()
+        LlmBrain(model, "rules", emptyList(), background = DeskBackground { error("board broke") }, log = { logged += it })
+            .reply("在吗", said)
         assertEquals("好的", said.said.toString())
+        assertTrue(logged.single().contains("board broke"))
         assertEquals(listOf(listOf("在吗")), model.seen.map { m -> m.map { it.text() } })
     }
 }

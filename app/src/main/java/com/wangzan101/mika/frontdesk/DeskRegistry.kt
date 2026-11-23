@@ -15,8 +15,8 @@ import com.wangzan101.mika.core.frontdesk.FrontDesk
 import com.wangzan101.mika.core.frontdesk.ReportPolicy
 import com.wangzan101.mika.core.frontdesk.deskBackground
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.settings.FeatureFlags
-import com.wangzan101.mika.task.ParallelCapability
+import com.wangzan101.mika.task.SteerNote
+import com.wangzan101.mika.task.SteerState
 import com.wangzan101.mika.task.TaskRun
 import com.wangzan101.mika.task.TaskService
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +26,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -50,9 +51,11 @@ class DeskRegistry(
             app.taskState.runs.map { list -> list.map { TaskRunDesk(app, it) } },
             { app.taskState.runs.value.map { TaskRunDesk(app, it) } },
             { words, child, brief -> TaskService.start(app, words, child, brief = brief) },
-            { parallelLimit(app) },
+            // 任务服务每次决定开始还是排队时算出并发布的上限,两边看的是同一个数。
+            { app.taskState.parallelLimit.value.max },
             scope,
             { tr(R.string.desk_task_not_started) },
+            { tr(R.string.task_interrupted) },
         ),
         DeskNotifier(app.conversations) { DeskNotifier.post(app, it) },
         AppDeskMemory(
@@ -120,19 +123,23 @@ class DeskRegistry(
         return firstSeen.map { (child, parentTurn) ->
             val first = conversations.turns(child).firstOrNull()
             val words = first?.userText.orEmpty()
-            val title = (conversations.title(child) ?: words.ifBlank { parentTurn.userText }).take(DESK_LINE_MAX_CHARS)
+            val title = (conversations.title(child) ?: words.ifBlank { parentTurn.userText }).takeWhole(DESK_LINE_MAX_CHARS)
             DeskTaskEntry(child, title, words, first?.atMs ?: parentTurn.atMs ?: 0L)
         }
     }
 
-    private companion object {
-        /** 和任务服务的并行上限同一套规则:开关关着一次一个,开着按设备能力。 */
-        fun parallelLimit(app: MikaApp): Int {
-            if (!FeatureFlags.get(app).speedFlags().parallelTasks) return 1
-            val lowRam = app.getSystemService(android.app.ActivityManager::class.java).isLowRamDevice
-            return ParallelCapability.detect(android.os.Build.VERSION.SDK_INT, lowRam, FeatureFlags.get(app).parallelMax(),
-                app.taskState.secondDisplayFailed).max
-        }
+}
+
+/**
+ * 给在跑的任务补一句话,走本机插话:收件箱收下(下一步就带上)或转成任务收尾后的下一件事都算收下,
+ * 任务已停、这句作废或根本没记下才算没收下。不走远程追加:那条要求任务带 MCP 外部编号,前台派出的子任务没有。
+ */
+internal fun steerLocally(words: String, steer: (text: String, messageId: String) -> Unit, notes: () -> List<SteerNote>): Boolean {
+    val id = UUID.randomUUID().toString()
+    steer(words, id)
+    return when (notes().firstOrNull { it.id == id }?.state) {
+        null, SteerState.Cancelled, SteerState.Withdrawn -> false
+        else -> true
     }
 }
 
@@ -140,7 +147,7 @@ class DeskRegistry(
 private class TaskRunDesk(private val app: MikaApp, private val run: TaskRun) : DeskRun {
     override val conversationId: String get() = run.conversationId
     override val state: StateFlow<TaskState> get() = run.state
-    override fun steer(words: String): Boolean = run.steerRemote(words) != null
+    override fun steer(words: String): Boolean = steerLocally(words, run::steer) { run.steers.value }
     override fun answer(words: String) = TaskService.answer(app, words, run.key)
     override fun cancel() = TaskService.cancel(app, run.key)
 }

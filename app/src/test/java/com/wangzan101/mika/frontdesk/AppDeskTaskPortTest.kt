@@ -43,7 +43,7 @@ class AppDeskTaskPortTest {
         val runs = MutableStateFlow<List<DeskRun>>(emptyList())
         val starts = mutableListOf<Start>()
         val port = AppDeskTaskPort(store, runs, { runs.value }, { w, c, b -> starts += Start(w, c, b) }, { limit },
-            scope.backgroundScope, { "没开始" }, timeoutMs)
+            scope.backgroundScope, { "没开始" }, { "中断了" }, timeoutMs)
     }
 
     @Test fun dispatchCreatesLinkedChildAndStartsWithBrief() = runTest {
@@ -62,6 +62,15 @@ class AppDeskTaskPortTest {
         val rig = Rig(this)
         rig.port.dispatch("查天气", "说".repeat(DESK_NOTE_MAX_CHARS + 50), "p")
         assertEquals(DESK_NOTE_MAX_CHARS, rig.starts.single().brief!!.length)
+    }
+
+    // 截断不切开一个字符的两半(表情等占两个 char)。
+    @Test fun noteCapKeepsSurrogatePairsWhole() = runTest {
+        val rig = Rig(this)
+        rig.port.dispatch("查天气", "a" + "\uD83D\uDE00".repeat(DESK_NOTE_MAX_CHARS), "p")
+        val brief = rig.starts.single().brief!!
+        assertEquals(DESK_NOTE_MAX_CHARS - 1, brief.length)
+        assertFalse(brief.last().isHighSurrogate())
     }
 
     @Test fun queuedWhenParallelLimitReached() = runTest {
@@ -128,7 +137,7 @@ class AppDeskTaskPortTest {
     @Test fun startFailureReportsFailedAndLeavesNoChild() = runTest {
         val store = ConversationStore(tmp.newFolder())
         val port = AppDeskTaskPort(store, MutableStateFlow(emptyList()), { emptyList() }, { _, _, _ -> error("blocked") }, { 2 },
-            backgroundScope, { "没开始" })
+            backgroundScope, { "没开始" }, { "中断了" })
         assertEquals(DispatchOutcome.Failed("blocked"), port.dispatch("查天气", "", "p"))
     }
 
@@ -142,5 +151,33 @@ class AppDeskTaskPortTest {
         rig.store.append("c2", Turn("订票", "", "cancelled"))
         rig.store.setDeskParent("c2", "p")
         assertEquals(TaskState.Cancelled, rig.port.state("c2")!!.value)
+    }
+
+    // 进程中途没了的子会话:任务不在、也没记下结局,直接给中断的终态,不等登记、不会过一分钟后报「没开始」。
+    @Test fun adoptedChildWithoutRunOrRecordIsInterruptedAtOnce() = runTest {
+        val rig = Rig(this, timeoutMs = 1_000)
+        rig.store.setDeskParent("c3", "p")
+        val state = rig.port.state("c3")!!
+        assertEquals(TaskState.Failed("中断了", FailKind.Interrupted), state.value)
+        advanceTimeBy(1_001)
+        runCurrent()
+        assertEquals(TaskState.Failed("中断了", FailKind.Interrupted), state.value)
+    }
+
+    // 接回的子会话不算「刚派出还没登记」的占位:上限 1 时也照样能开始新的。
+    @Test fun adoptedChildDoesNotHoldASlot() = runTest {
+        val rig = Rig(this, limit = 1)
+        rig.store.setDeskParent("c3", "p")
+        rig.port.state("c3")
+        assertTrue(rig.port.dispatch("查天气", "", "p") is DispatchOutcome.Started)
+    }
+
+    // 接回时任务还在服务里:只按服务里那份计数,不再当成没登记的多算一次。
+    @Test fun adoptedLiveChildIsCountedOnce() = runTest {
+        val rig = Rig(this, limit = 2)
+        rig.runs.value = listOf(FakeRun("c4", TaskState.Running(1, "在做")))
+        rig.store.setDeskParent("c4", "p")
+        assertEquals(TaskState.Running(1, "在做"), rig.port.state("c4")!!.value)
+        assertTrue(rig.port.dispatch("查天气", "", "p") is DispatchOutcome.Started)
     }
 }

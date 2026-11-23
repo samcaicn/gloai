@@ -62,6 +62,8 @@ class LlmBrain(
     private val maxMessages: Int = 40,
     private val maxToolRounds: Int = 4,
     private val background: DeskBackground? = null,
+    /** Where a dropped background note's error goes; the app wires its own logger. */
+    private val log: (String) -> Unit = { System.err.println(it) },
 ) : DeskBrain {
     private val history = mutableListOf<Message>()
     private val opening = StringBuilder()
@@ -173,6 +175,7 @@ class LlmBrain(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
+        log("desk background dropped: ${e::class.simpleName}: ${e.message}")
         null
     }
 

@@ -24,6 +24,13 @@ const val DESK_NOTE_MAX_CHARS = 1_000
 /** 派出去的任务这么久还没在任务服务里登记(服务没起来、被挡下),当成没开始。 */
 const val DESK_START_TIMEOUT_MS = 60_000L
 
+/** 取前 [max] 个 char,不把一个字符(表情等占两个 char 的)切成两半。 */
+internal fun String.takeWhole(max: Int): String {
+    if (length <= max) return this
+    val end = if (max > 0 && this[max - 1].isHighSurrogate() && this[max].isLowSurrogate()) max - 1 else max
+    return substring(0, end)
+}
+
 /** 端口眼里一件在跑或排队的后台任务;产品里包着 [com.wangzan101.mika.task.TaskRun]。 */
 interface DeskRun {
     val conversationId: String
@@ -40,7 +47,8 @@ interface DeskRun {
  * 任务编号就是子会话编号。新子会话里一定没有任务,服务收到后按新任务开始或排队,说明不会被当成插话丢掉。
  *
  * 任务服务异步登记任务,所以每件活的状态由这里另持一份:先是 Idle,任务登记后跟着它的状态走,收尾即停;
- * [startTimeoutMs] 内一直没登记就记成没开始。重开会话时接回的子会话,任务已不在的按子会话最后一轮记下的结局给终态。
+ * [startTimeoutMs] 内一直没登记就记成没开始。重开会话时接回的子会话,任务还在的跟着它走;任务已不在的按子会话最后一轮
+ * 记下的结局给终态,连结局都没记下(进程中途没了)的直接记成中断([interrupted]),不等登记、也不占并行位置。
  *
  * [runs]/[current] 是任务服务里此刻在跑和排队的任务(排队的按先后),[start] 交给任务服务,[parallelLimit] 是此刻能同时跑几个。
  */
@@ -52,9 +60,11 @@ class AppDeskTaskPort(
     private val parallelLimit: () -> Int,
     private val scope: CoroutineScope,
     private val notStarted: () -> String,
+    private val interrupted: () -> String,
     private val startTimeoutMs: Long = DESK_START_TIMEOUT_MS,
 ) : DeskTaskPort {
-    private class Followed(val state: MutableStateFlow<TaskState>, val queuedAt: Int?) {
+    /** [adopted]:不是这里派的,是重开会话时接回的;它在不在服务里只看服务那份,不当成刚派出的占位。 */
+    private class Followed(val state: MutableStateFlow<TaskState>, val queuedAt: Int?, val adopted: Boolean = false) {
         /** 任务服务里已经看到过它。 */
         @Volatile var seen = false
     }
@@ -69,7 +79,7 @@ class AppDeskTaskPort(
         val entry = Followed(MutableStateFlow(TaskState.Idle), (outcome as? DispatchOutcome.Queued)?.position)
         followed[child] = entry
         try {
-            start(words, child, note.trim().take(DESK_NOTE_MAX_CHARS).ifBlank { null })
+            start(words, child, note.trim().takeWhole(DESK_NOTE_MAX_CHARS).ifBlank { null })
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -81,10 +91,10 @@ class AppDeskTaskPort(
         return outcome
     }
 
-    /** 按任务服务的规则预判:在跑的(含刚派出、还没登记的)不到上限就开始,否则排在已排队的后面。 */
+    /** 按任务服务的规则预判:在跑的(含这里刚派出、还没登记的)不到上限就开始,否则排在已排队的后面。 */
     private fun predict(child: String): DispatchOutcome {
         val live = current()
-        val unseen = followed.values.filter { !it.seen && it.state.value !is TaskState.Terminal }
+        val unseen = followed.values.filter { !it.adopted && !it.seen && it.state.value !is TaskState.Terminal }
         val running = live.count { !it.queued() && it.state.value !is TaskState.Terminal } + unseen.count { it.queuedAt == null }
         val queued = live.count { it.queued() } + unseen.count { it.queuedAt != null }
         return if (running < parallelLimit().coerceAtLeast(1)) DispatchOutcome.Started(child)
@@ -97,8 +107,8 @@ class AppDeskTaskPort(
         // 不是这里派的:只认挂在某个前台会话下的子会话(重开会话时接回)。
         if (conversations.deskParent(taskId) == null) return null
         val live = current().firstOrNull { it.conversationId == taskId }
-        val initial = live?.state?.value ?: ended(taskId) ?: TaskState.Idle
-        val entry = Followed(MutableStateFlow(initial), null)
+        val initial = live?.state?.value ?: ended(taskId) ?: TaskState.Failed(interrupted(), FailKind.Interrupted)
+        val entry = Followed(MutableStateFlow(initial), null, adopted = true)
         followed[taskId] = entry
         if (initial !is TaskState.Terminal) mirror(taskId, entry)
         return entry.state.asStateFlow()

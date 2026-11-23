@@ -38,7 +38,7 @@ class AppDeskMemory(
             val next = if (out.isEmpty()) line else "\n$line"
             if (out.length + next.length > DESK_MEMORY_MAX_CHARS) {
                 // 第一条就超长时截短放进去,别的放不下就不放了。
-                if (out.isEmpty()) out.append(line.take(DESK_MEMORY_MAX_CHARS))
+                if (out.isEmpty()) out.append(line.takeWhole(DESK_MEMORY_MAX_CHARS))
                 break
             }
             out.append(next)
