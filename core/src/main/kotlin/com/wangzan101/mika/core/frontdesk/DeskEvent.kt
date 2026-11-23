@@ -55,7 +55,4 @@ object DeskEvents {
         val line = deskLine(after) ?: return null
         return line.takeIf { it != deskLine(before) }
     }
-
-    private fun deskLine(narration: String?): String? =
-        narration?.let { stripDetails(it).take(DESK_LINE_MAX_CHARS) }?.ifBlank { null }
 }

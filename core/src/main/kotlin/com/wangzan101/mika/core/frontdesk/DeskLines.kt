@@ -17,3 +17,7 @@ private val WHITESPACE_RUN = Regex("""\s+""")
 /** 剥掉坐标与引号包裹的标题等细节,并把剥出的空白收拢。 */
 fun stripDetails(text: String): String =
     WHITESPACE_RUN.replace(COORDINATE_PATTERN.replace(QUOTED_PATTERN.replace(text, ""), ""), " ").trim()
+
+/** 一句进度说明变成前台的一行:剥细节、截到 [DESK_LINE_MAX_CHARS] 字;剥完没字时为 null。 */
+fun deskLine(narration: String?): String? =
+    narration?.let { stripDetails(it).take(DESK_LINE_MAX_CHARS) }?.ifBlank { null }
