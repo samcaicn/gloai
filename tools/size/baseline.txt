@@ -5,7 +5,6 @@
 1943 app/src/main/java/com/wangzan101/mika/cap/phone/shell/ShellService.kt
 1855 app/src/main/java/com/wangzan101/mika/proactive/LearnRunner.kt
 1587 app/src/main/java/com/wangzan101/mika/capsule/CapsuleController.kt
-1561 app/src/main/java/com/wangzan101/mika/task/TaskRun.kt
 1516 app/src/main/java/com/wangzan101/mika/task/TaskService.kt
 1489 app/src/main/java/com/wangzan101/mika/cap/web/WebScreen.kt
 1458 app/src/main/java/com/wangzan101/mika/ui/ModelSetupScreen.kt
