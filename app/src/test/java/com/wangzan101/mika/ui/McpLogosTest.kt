@@ -62,7 +62,7 @@ class McpLogosTest {
         val root = kotlinx.serialization.json.Json.parseToJsonElement(text) as kotlinx.serialization.json.JsonObject
         assertEquals("2", root["formatVersion"].toString())
         val logos = McpLogos.parse(text)
-        listOf("github", "cohere", "tencentcloud", "azure", "flyio").forEach { assertNotNull(it, logos.logo(it)) }
+        listOf("github", "vercel", "exa", "tavily", "intercom").forEach { assertNotNull(it, logos.logo(it)) }
     }
 
     @Test fun garbageOrEmptyIsEmpty() {
