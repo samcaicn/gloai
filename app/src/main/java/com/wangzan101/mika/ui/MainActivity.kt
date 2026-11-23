@@ -660,6 +660,11 @@ private fun MikaRoot(
                 app.chat.refresh()
                 onStopOrDispose {}
             }
+            // 聊天页看得见时,前台的汇报说在对话里;离开或退到后台就交回兜底(通知)
+            LifecycleStartEffect(route) {
+                app.chat.pageShown(route == Route.Chat)
+                onStopOrDispose { app.chat.pageShown(false) }
+            }
             Box(Modifier.fillMaxSize()) {
                     val readyRelease = readyUpdate?.takeIf { autoUpdate && it.apkUrl == updateState.update?.apkUrl }
                     val updateBackdrop = if (readyRelease != null) rememberGlassBackdrop() else null

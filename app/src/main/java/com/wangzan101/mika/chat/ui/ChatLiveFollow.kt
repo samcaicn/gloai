@@ -197,11 +197,6 @@ internal class ChatLiveFollow(private val vm: ChatViewModel, private val session
             _ui.update {
                 liveIndex = it.exchanges.size
                 it.copy(exchanges = it.exchanges + live, composer = ComposerMode.Busy, pip = session.gated(PipUi(visible = true)),
-                    followUpMode = when {
-                        it.attachments.isNotEmpty() -> FollowUpMode.Queue
-                        it.draft().hasContent -> it.followUpMode
-                        else -> FollowUpMode.Queue
-                    },
                     queued = it.queued.filterNot { q -> q.text == live.goal })
             }
         }
@@ -277,11 +272,6 @@ internal class ChatLiveFollow(private val vm: ChatViewModel, private val session
                 val photos = if (session.ownTask()) generatedPhotos.value else emptyList()
                 val ex = Exchange(goal, emptyList(), ExchangeStatus.Working, live = true, files = files, audios = audios, photos = photos, startedAt = clock())
                 it.copy(exchanges = it.exchanges + ex,
-                    followUpMode = when {
-                        it.attachments.isNotEmpty() -> FollowUpMode.Queue
-                        it.draft().hasContent -> it.followUpMode
-                        else -> FollowUpMode.Queue
-                    },
                     queued = it.queued.filterNot { q -> q.text == goal })
             }
         }

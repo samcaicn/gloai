@@ -12,7 +12,7 @@ import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.task.TaskGate
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.run.record.RunEvent
-import com.wangzan101.mika.frontdesk.DeskNotifier
+import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.task.SteerNote
 import com.wangzan101.mika.task.SteerState
 import kotlinx.coroutines.flow.map
@@ -142,10 +142,13 @@ internal object ChatReduce {
     }
 
     internal fun fromTurn(t: Turn): Exchange {
+        // 前台写的一轮(聊天、通话里前台回的话,和它的汇报):画成前台的一行,派出的任务各画一张卡片
+        if (DeskTurn.isDesk(t)) {
+            val status = if (t.status == DeskTurn.STATUS && t.note != null) ExchangeStatus.Failed(t.note!!) else ExchangeStatus.Done(t.outcome, null)
+            return Exchange(t.userText, emptyList(), status, live = false, runId = t.runId, deskReply = t.outcome, deskTasks = t.deskTasks)
+        }
         val status = when (t.status) {
             "succeeded" -> answerParts(t.outcome).let { (a, e) -> ExchangeStatus.Done(a, e) }
-            // 前台没有入口在线时写回的一行汇报,是一句正常的回话。
-            DeskNotifier.STATUS -> answerParts(t.outcome).let { (a, e) -> ExchangeStatus.Done(a, e) }
             "unverified" -> answerParts(t.outcome).let { (a, e) -> ExchangeStatus.Done(a, e, verified = false, note = t.note, unconfirmed = t.unconfirmed) }
             "cancelled" -> {
                 val rawSummary = Conversation.stopSummary(t)

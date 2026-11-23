@@ -1,0 +1,109 @@
+package com.wangzan101.mika.chat.ui
+
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import com.wangzan101.mika.R
+import com.wangzan101.mika.core.frontdesk.DeskTaskView
+import com.wangzan101.mika.ui.MarkdownText
+import com.wangzan101.mika.ui.theme.MikaShapes
+import com.wangzan101.mika.ui.theme.MikaTheme
+import com.wangzan101.mika.ui.theme.MikaType
+
+/**
+ * 前台的一轮在对话里的几行(按原型):用户的话(汇报那一轮没有)、前台回的话(不套气泡,顶上可带一个工具小标签,
+ * 汇报的下面带一个跳到卡片的小标签)、这一轮派出去的任务卡片。行 key 与 [chatItemKeys] 一致。
+ */
+internal fun LazyListScope.deskExchange(
+    index: Int, ex: Exchange, conversationId: String?, tasks: List<DeskTaskView>, reduceMotion: Boolean,
+    highlightKey: String?, jumpToCard: (String) -> Unit, openTask: (String) -> Unit,
+) {
+    if (ex.goal.isNotEmpty()) item("u$index") {
+        JumpHighlight(highlightKey == "u$index", reduceMotion) { UserBubble(ex.goal, conversationId, key = "u$index") }
+    }
+    item("r$index") {
+        JumpHighlight(highlightKey == "r$index", reduceMotion) { DeskReply(ex, "r$index", tasks, reduceMotion, jumpToCard) }
+    }
+    ex.deskCards.forEach { taskId ->
+        val key = deskCardKey(index, taskId)
+        item(key) {
+            JumpHighlight(highlightKey == key, reduceMotion) {
+                DeskTaskCard(tasks.firstOrNull { it.taskId == taskId }, reduceMotion) { openTask(taskId) }
+            }
+        }
+    }
+}
+
+/** 前台回的话:在想时三个点,边说边长;没说出话就收尾的那一轮(只派了单)整行不画。 */
+@Composable
+private fun DeskReply(ex: Exchange, key: String, tasks: List<DeskTaskView>, reduceMotion: Boolean, jumpToCard: (String) -> Unit) {
+    if (!deskReplyShown(ex)) return
+    val c = MikaTheme.colors
+    val text = ex.deskReply.orEmpty()
+    val working = ex.status == ExchangeStatus.Working
+    Column(Modifier.fillMaxWidth().padding(bottom = 12.dp).testTag("desk-reply")) {
+        ex.deskTool?.let { tool ->
+            Text(
+                tool, Modifier.padding(bottom = 4.dp).background(c.fill, MikaShapes.Chip).padding(horizontal = 8.dp, vertical = 1.dp),
+                style = MikaType.Micro, color = c.ink3, maxLines = 1,
+            )
+        }
+        when {
+            text.isNotBlank() && working -> MarkdownText(text, AnswerText.copy(color = c.ink), Modifier.fillMaxWidth(), streaming = true)
+            text.isNotBlank() -> AnswerArea(key, text, Modifier.fillMaxWidth()) { MarkdownText(text, AnswerText.copy(color = c.ink)) }
+            working -> ThinkingDots(reduceMotion)
+        }
+        if (ex.status is ExchangeStatus.Failed) {
+            Text(stringResource(R.string.desk_reply_failed), Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink3)
+        }
+        ex.deskRef?.let { taskId -> tasks.firstOrNull { it.taskId == taskId }?.let { DeskRefChip(it) { jumpToCard(taskId) } } }
+    }
+}
+
+/** 前台在想:三个依次起伏的小点;关了动画时静止。 */
+@Composable
+private fun ThinkingDots(reduceMotion: Boolean) {
+    val c = MikaTheme.colors
+    val label = stringResource(R.string.desk_thinking)
+    Row(
+        Modifier.padding(vertical = 6.dp, horizontal = 2.dp).semantics { contentDescription = label },
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        repeat(3) { i ->
+            val phase = if (reduceMotion) 1f else rememberInfiniteTransition(label = "desk-think").animateFloat(
+                0f, 1f,
+                infiniteRepeatable(tween(600, easing = FastOutSlowInEasing), RepeatMode.Reverse, StartOffset(i * 150)),
+                label = "desk-think-$i",
+            ).value
+            Box(
+                Modifier.size(6.dp).graphicsLayer {
+                    alpha = 0.25f + 0.75f * phase
+                    translationY = -3.dp.toPx() * phase
+                }.background(c.ink3, CircleShape),
+            )
+        }
+    }
+}

@@ -25,7 +25,6 @@ internal class ChatConversationOps(private val vm: ChatViewModel, private val se
     private var pendingStart by session::pendingStart
     private var screenSeen by session::screenSeen
     private var pipClosed by session::pipClosed
-    private val held = session.held
     private val _deleteBatch = session._deleteBatch
     private val scope = vm.scope
     private val actions = vm.actions
@@ -306,7 +305,6 @@ internal class ChatConversationOps(private val vm: ChatViewModel, private val se
         lingerJob?.cancel()
         pendingStart?.cancel()
         pendingStart = null
-        held.clear()
         vm.live.unpark(id)
         liveIndex = -1
         screenSeen = false

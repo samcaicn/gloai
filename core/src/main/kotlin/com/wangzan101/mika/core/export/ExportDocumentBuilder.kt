@@ -2,6 +2,7 @@ package com.wangzan101.mika.core.export
 
 import com.wangzan101.mika.core.agent.AttachmentLines
 import com.wangzan101.mika.core.agent.Conversation
+import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.AttachedPage
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.run.record.Redactor
@@ -131,7 +132,8 @@ class ExportDocumentBuilder(
     private fun selected(id: ExportBlockId, selection: ExportSelection) = selection.allSelected || id in selection.blocks
 
     private fun outcomeOf(turn: ExportTurnRecord, content: ExportContent): AnswerOutcome = when (turn.status) {
-        "succeeded" -> AnswerOutcome.Succeeded
+        // 前台回的话、前台的汇报都是正常的回话
+        "succeeded", DeskTurn.STATUS, DeskTurn.REPORT_STATUS -> AnswerOutcome.Succeeded
         "unverified" -> AnswerOutcome.Unverified(
             turn.note?.let { redact(it, content) },
             turn.unconfirmed.map { redact(it, content) },

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="desk_tool_added">「%1$s」に追加しました</string>
+    <string name="desk_tool_answered">「%1$s」に回答しました</string>
+    <string name="desk_tool_cancelled">「%1$s」を取り消しました</string>
+    <string name="desk_reply_failed">いま返事できませんでした。もう一度どうぞ</string>
+    <string name="desk_thinking">考え中</string>
+    <string name="desk_phase_running">対応中</string>
+    <string name="desk_phase_queued">順番待ち</string>
+    <string name="desk_phase_queued_at">順番待ち · %1$d 番目</string>
+    <string name="desk_phase_needs_you">対応が必要</string>
+    <string name="desk_phase_done">完了</string>
+    <string name="desk_phase_failed">うまくいきませんでした</string>
+    <string name="desk_phase_cancelled">取り消し済み</string>
+    <string name="desk_card_details">詳細 ›</string>
+    <string name="desk_card_open">このタスクを開く</string>
+    <string name="desk_tray_caption">この会話のタスク · タップで進み具合を表示</string>
+    <string name="desk_tray_progress">進み具合を見る ›</string>
+    <string name="desk_tray_expand">タスクを表示</string>
+    <string name="desk_tray_collapse">タスクを隠す</string>
+    <plurals name="desk_tray_count">
+        <item quantity="other">%1$d 件対応中</item>
+    </plurals>
+</resources>

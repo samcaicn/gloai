@@ -6,6 +6,7 @@ import android.content.Context
 import android.util.Log
 import com.wangzan101.mika.R
 import com.wangzan101.mika.chat.ConversationStore
+import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.frontdesk.ActionKind
 import com.wangzan101.mika.core.frontdesk.DeskEvent
@@ -39,7 +40,7 @@ class DeskNotifier(
 
     companion object {
         /** 前台兜底写回会话的那一行的状态。 */
-        const val STATUS = "desk_report"
+        const val STATUS = DeskTurn.REPORT_STATUS
         private const val TAG = "MikaDesk"
 
         /** 一件任务这次变化的一句话(不带任务名),按界面语言。 */

@@ -152,6 +152,22 @@ class FrontDeskTest {
         assertEquals(1, second.delivered.size)
     }
 
+    // 看得到此刻接着谁:换上的入口顶掉前一个;前一个再关自己的句柄不影响新的,新的一关就空出来。
+    @Test
+    fun attachedShowsWhoHoldsTheDesk() = runTest {
+        val desk = desk()
+        val first = FakeSurface()
+        val second = FakeSurface()
+        assertEquals(null, desk.attached.value)
+        val a = desk.attach(first)
+        assertTrue(desk.attached.value === first)
+        val b = desk.attach(second)
+        a.close()
+        assertTrue(desk.attached.value === second)
+        b.close()
+        assertEquals(null, desk.attached.value)
+    }
+
     @Test
     fun terminalStopsSubscriptionAndActiveDropsAfterDone() = runTest {
         val state = port.add("t1", running("打开日历"))

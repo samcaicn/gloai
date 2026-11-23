@@ -1,5 +1,6 @@
 package com.wangzan101.mika.voicecall
 
+import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.Turn as ChatTurn
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -76,7 +77,7 @@ class VoiceCallTranscript(
             snapshot.filter { it.question.isNotBlank() && (it.answer.isNotBlank() || it.tasks.isNotEmpty()) }.forEach { turn ->
                 appendTurn(
                     id,
-                    ChatTurn(userText = turn.question, outcome = turn.answer, status = "succeeded", atMs = turn.at, deskTasks = turn.tasks),
+                    ChatTurn(userText = turn.question, outcome = turn.answer, status = DeskTurn.STATUS, atMs = turn.at, deskTasks = turn.tasks),
                 )
             }
         }

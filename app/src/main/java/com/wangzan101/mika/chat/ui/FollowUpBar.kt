@@ -5,16 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,18 +25,15 @@ import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.task.QueuedFollowUp
-import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 
-/** 输入栏上方的补充消息:运行中可点箭头引导,没任务时可从第一件开始。 */
+/** 输入栏上方排着的补充消息(打断后留下的);没任务时可从第一件开始。聊天走前台后不再有「引导」箭头。 */
 @Composable
 fun FollowUpTray(
     items: List<QueuedFollowUp>,
     active: Boolean,
-    canGuide: Boolean = active,
-    onGuide: (String) -> Unit = {},
     onEdit: (String) -> Unit,
     onCancel: (String) -> Unit,
     onStartNow: () -> Unit,
@@ -65,7 +59,7 @@ fun FollowUpTray(
                 )
             }
         }
-        items.forEach { item -> PendingRow(item, canGuide, onGuide, onActions) }
+        items.forEach { item -> PendingRow(item, onActions) }
     }
 }
 
@@ -73,8 +67,6 @@ fun FollowUpTray(
 @Composable
 private fun PendingRow(
     item: QueuedFollowUp,
-    canGuide: Boolean,
-    onGuide: (String) -> Unit,
     onActions: (QueuedFollowUp) -> Unit,
 ) {
     val c = MikaTheme.colors
@@ -95,21 +87,5 @@ private fun PendingRow(
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             style = MikaType.Body, color = c.ink, maxLines = 3, overflow = TextOverflow.Ellipsis,
         )
-        if (canGuide) {
-            Box(
-                Modifier.size(40.dp).testTag("follow-up-steer")
-                    .clip(MikaShapes.Pill)
-                    .clickable(
-                        role = Role.Button,
-                        onClickLabel = stringResource(R.string.follow_up_steer),
-                    ) { onGuide(item.id) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    MikaIcons.Forward, stringResource(R.string.follow_up_steer),
-                    Modifier.size(18.dp), tint = c.ink3,
-                )
-            }
-        }
     }
 }

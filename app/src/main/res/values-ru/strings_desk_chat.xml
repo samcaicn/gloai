@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="desk_tool_added">Добавлено в «%1$s»</string>
+    <string name="desk_tool_answered">Ответ передан в «%1$s»</string>
+    <string name="desk_tool_cancelled">Отменено: «%1$s»</string>
+    <string name="desk_reply_failed">Сейчас не получилось ответить. Повторите?</string>
+    <string name="desk_thinking">Думаю</string>
+    <string name="desk_phase_running">В работе</string>
+    <string name="desk_phase_queued">В очереди</string>
+    <string name="desk_phase_queued_at">В очереди · №%1$d</string>
+    <string name="desk_phase_needs_you">Нужны вы</string>
+    <string name="desk_phase_done">Готово</string>
+    <string name="desk_phase_failed">Не получилось</string>
+    <string name="desk_phase_cancelled">Отменено</string>
+    <string name="desk_card_details">Подробнее ›</string>
+    <string name="desk_card_open">Открыть задачу</string>
+    <string name="desk_tray_caption">Задачи этого чата · нажмите, чтобы увидеть ход</string>
+    <string name="desk_tray_progress">Смотреть ход ›</string>
+    <string name="desk_tray_expand">Показать задачи</string>
+    <string name="desk_tray_collapse">Скрыть задачи</string>
+    <plurals name="desk_tray_count">
+        <item quantity="one">%1$d задача в работе</item>
+        <item quantity="few">%1$d задачи в работе</item>
+        <item quantity="many">%1$d задач в работе</item>
+        <item quantity="other">%1$d задачи в работе</item>
+    </plurals>
+</resources>

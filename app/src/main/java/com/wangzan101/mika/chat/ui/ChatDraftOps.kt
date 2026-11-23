@@ -161,7 +161,6 @@ internal class ChatDraftOps(private val vm: ChatViewModel, private val session: 
                 quote = null,
                 rejectedAttachments = rejected,
                 overLimit = overLimit,
-                followUpMode = if (draft.attachments.isNotEmpty() && it.composer != ComposerMode.Idle) FollowUpMode.Queue else it.followUpMode,
                 pendingSharedDraft = null,
             )
         }

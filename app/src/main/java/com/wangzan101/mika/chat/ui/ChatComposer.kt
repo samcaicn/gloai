@@ -75,6 +75,7 @@ import com.wangzan101.mika.voice.ui.voiceState
 
 /**
  * 玻璃胶囊输入栏:左边「＋」,右边发送(没内容时灰);任务在跑时多一个停止,补充消息先排在输入栏上方。
+ * 聊天走前台:前台在办的事在输入栏上方一条([DeskTray]),输入栏不因为后台任务变忙。
  * 「＋」打开功能面板([onPlus],对话页里是从底部升起的列表)。待发的附件在输入栏上方一排([PendingTray])。
  */
 @Composable
@@ -88,7 +89,6 @@ internal fun Composer(
     onStop: () -> Unit,
     /** 这个对话明确排队、还没开始的下一件。 */
     queued: List<com.wangzan101.mika.task.QueuedFollowUp> = emptyList(),
-    onGuideQueued: (String) -> Unit = {},
     onQueueActions: (com.wangzan101.mika.task.QueuedFollowUp) -> Unit = {},
     onCancelQueued: (String) -> Unit = {},
     onEditQueued: (String) -> Unit = {},
@@ -126,6 +126,10 @@ internal fun Composer(
     onVoiceHolding: (Boolean) -> Unit = {},
     sendFromIme: Boolean = false,
     draftKey: String? = null,
+    /** 这条会话前台派过的任务:有在办的就在输入栏上方一条「在办」。 */
+    deskTasks: List<com.wangzan101.mika.core.frontdesk.DeskTaskView> = emptyList(),
+    /** 点「在办」里的一件:滚到它的卡片。 */
+    onJumpTask: (String) -> Unit = {},
 ) {
     val c = MikaTheme.colors
     var fieldFocused by remember { mutableStateOf(false) }
@@ -173,8 +177,9 @@ internal fun Composer(
             .padding(start = ComposerInset, end = ComposerInset, top = 10.dp, bottom = 6.dp),
     ) {
         Column(Modifier.fillMaxWidth()) {
+            DeskTray(deskTasks, reduceMotion, onJumpTask)
             FollowUpTray(
-                queued, active = mode != ComposerMode.Idle, canGuide = mode == ComposerMode.Busy, onGuide = onGuideQueued,
+                queued, active = mode != ComposerMode.Idle,
                 onEdit = onEditQueued, onCancel = onCancelQueued, onStartNow = onStartQueued, onActions = onQueueActions,
             )
             quote?.let { QuoteChip(it, onRemoveQuote, Modifier.padding(bottom = 6.dp)) }

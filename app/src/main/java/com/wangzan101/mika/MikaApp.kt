@@ -589,6 +589,23 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                 projectDeleter.delete(pid)
             },
             workspaceResolver = workspaceResolver,
+            // 聊天走前台:和通话共用这条会话的前台与账本;没配思考模型时为 null,发出去会引导去设置
+            desk = com.wangzan101.mika.chat.ui.DeskChatDeps(
+                desk = { id -> desks.desk(id) },
+                executor = { id, verify -> desks.executor(id, verify) },
+                brain = { id ->
+                    com.wangzan101.mika.frontdesk.deskModel(app)?.let { model ->
+                        com.wangzan101.mika.core.frontdesk.LlmBrain(
+                            model,
+                            com.wangzan101.mika.core.frontdesk.DeskPrompt.user(spoken = false),
+                            com.wangzan101.mika.core.frontdesk.DeskTools.specs(com.wangzan101.mika.core.frontdesk.DeskToolSet.User)
+                                .map(com.wangzan101.mika.core.frontdesk.LlmBrain::toolSpec),
+                            background = desks.background(id),
+                            log = { Log.w("MikaDesk", it) },
+                        )
+                    }
+                },
+            ),
         )
     }
 

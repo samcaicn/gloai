@@ -28,6 +28,13 @@ internal fun chatItemKeys(
 ): List<String> = buildList {
     if (exchanges.isEmpty() && !hasBlocked) add("empty")
     exchanges.forEachIndexed { index, ex ->
+        // 前台的一行:用户气泡、前台的话(没话时也占一行)、它派出的每件任务一张卡片
+        if (ex.deskReply != null) {
+            if (ex.goal.isNotEmpty()) add("u$index")
+            add("r$index")
+            ex.deskCards.forEach { add(deskCardKey(index, it)) }
+            return@forEachIndexed
+        }
         if (ex.goal.isNotEmpty()) add("u$index")
         val active = ex.status.isActive()
         val answering = ex.status == ExchangeStatus.Working && !ex.draft.isNullOrBlank()
@@ -58,6 +65,13 @@ internal fun chatItemCount(
     phoneSetupRow: Int?,
     hasBlocked: Boolean,
 ): Int = chatItemKeys(exchanges, kept, phoneSetupRow, hasBlocked).size
+
+/** 第 [index] 轮下面任务 [taskId] 那张卡片的行 key。 */
+internal fun deskCardKey(index: Int, taskId: String) = "c$index-$taskId"
+
+/** 任务 [taskId] 的卡片在哪一行(画在派它的那一轮下面);这条会话里没有这张卡片时为 null。 */
+internal fun deskCardKey(exchanges: List<Exchange>, taskId: String): String? =
+    exchanges.indexOfFirst { taskId in it.deskCards }.takeIf { it >= 0 }?.let { deskCardKey(it, taskId) }
 
 /** 目标消息在 [chatItemKeys] 里的 key;轮次或消息已经不在了时返回 null。 */
 internal fun chatTargetKey(exchanges: List<Exchange>, target: ChatTarget): String? {

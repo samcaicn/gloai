@@ -87,7 +87,8 @@ class VoiceCallTranscriptTest {
         assertEquals("conv-9", id1)
         assertEquals("带猫去打疫苗", t1.userText)
         assertEquals("好的，记下了", t1.outcome)
-        assertEquals("succeeded", t1.status)
+        // 通话里是前台在回话:写成前台的一轮,只派了单没回话的那轮也不会画成空的「完成」
+        assertEquals(com.wangzan101.mika.core.agent.DeskTurn.STATUS, t1.status)
         assertEquals(1_000L, t1.atMs)
         val (id2, t2) = h.appended[1]
         assertEquals("conv-9", id2)

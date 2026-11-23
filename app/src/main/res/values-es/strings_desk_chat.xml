@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="desk_tool_added">Añadido a «%1$s»</string>
+    <string name="desk_tool_answered">Respondido en «%1$s»</string>
+    <string name="desk_tool_cancelled">Cancelado: «%1$s»</string>
+    <string name="desk_reply_failed">No pude responder ahora. ¿Lo repites?</string>
+    <string name="desk_thinking">Pensando</string>
+    <string name="desk_phase_running">En marcha</string>
+    <string name="desk_phase_queued">En cola</string>
+    <string name="desk_phase_queued_at">En cola · n.º %1$d</string>
+    <string name="desk_phase_needs_you">Te necesita</string>
+    <string name="desk_phase_done">Hecho</string>
+    <string name="desk_phase_failed">No salió</string>
+    <string name="desk_phase_cancelled">Cancelado</string>
+    <string name="desk_card_details">Detalles ›</string>
+    <string name="desk_card_open">Abrir esta tarea</string>
+    <string name="desk_tray_caption">Tareas de este chat · toca una para ver cómo va</string>
+    <string name="desk_tray_progress">Ver progreso ›</string>
+    <string name="desk_tray_expand">Mostrar tareas</string>
+    <string name="desk_tray_collapse">Ocultar tareas</string>
+    <plurals name="desk_tray_count">
+        <item quantity="one">%1$d tarea en marcha</item>
+        <item quantity="many">%1$d tareas en marcha</item>
+        <item quantity="other">%1$d tareas en marcha</item>
+    </plurals>
+</resources>

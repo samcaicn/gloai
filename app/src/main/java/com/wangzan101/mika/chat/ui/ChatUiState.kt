@@ -137,6 +137,15 @@ data class Exchange(
     /** 每一步实际做的动作(按步号):标题是汇总,点开一步时看这里的明细。 */
     val stepActions: Map<Int, List<StepAction>> = emptyMap(),
     val goals: GoalChecklist? = null,
+    /**
+     * 前台这一轮的回话(聊天走前台时):不为 null 表示这一行是前台的一问一答,画成前台气泡,不画任务卡片;
+     * 空串是还在想(画三个点)。办好了但前台一句话没说(只派了单)时不画空气泡。
+     */
+    val deskReply: String? = null,
+    /** 前台这一轮派出(或汇报所指)的任务编号,按先后;每件在这一问一答下面画一张任务卡片。 */
+    val deskTasks: List<String> = emptyList(),
+    /** 前台这一轮给已有任务补话、回话或取消时的一枚小标签(只在这次打开时显示,不落盘)。 */
+    val deskTool: String? = null,
 )
 
 /**
@@ -144,7 +153,20 @@ data class Exchange(
  * 界面上「查看过程」、来源、重新开始都按这个给,那一轮就都没有(不然点进去只会说「记录已过期」)。
  * 认轮次、和存下的那份对上([ChatViewModel] 里按 [Exchange.runId])照旧用原来的编号。
  */
-val Exchange.recordedRun: String? get() = runId?.takeUnless { it.startsWith(NoticeTurn.RUN_PREFIX) }
+val Exchange.recordedRun: String? get() = runId?.takeUnless { it.startsWith(NoticeTurn.RUN_PREFIX) || it.startsWith(DeskChatOps.RUN_PREFIX) }
+
+/**
+ * 前台汇报那一行(没有用户的话)只指回它说的那张卡片([deskRef]),不再画一张;前台的一问一答下面每件派出的任务一张卡片。
+ * 汇报那一轮前台顺手又派的任务排在 [deskTasks] 后面,照样画卡片。
+ */
+val Exchange.deskCards: List<String> get() = if (goal.isEmpty()) deskTasks.drop(1) else deskTasks
+
+/** 前台汇报那一行指回的任务;不是汇报为 null。 */
+val Exchange.deskRef: String? get() = if (goal.isEmpty()) deskTasks.firstOrNull() else null
+
+/** 前台这一行画不画字:还在想(三个点)、说了话、或没回成都画;办好了却一句没说(只派了单)不画空气泡。 */
+internal fun deskReplyShown(ex: Exchange): Boolean =
+    ex.deskReply != null && (ex.status == ExchangeStatus.Working || ex.deskReply.isNotBlank() || ex.status is ExchangeStatus.Failed)
 
 /** 在跑时的一行进展:等你时说等什么;模型请求在途时只给中性状态;否则是这一步的话,没有就是最近做的事。 */
 fun liveLine(ex: Exchange): String? {
@@ -204,13 +226,13 @@ data class PipUi(
 enum class ComposerMode {
     /** 没有任务,发出去就是新任务。 */
     Idle,
-    /** 任务在跑:发出去的话交给这个任务,停止是另一个按钮。 */
+    /** 这个对话里直接开的任务在跑(带附件开的,或旧对话里的):没打字时给停止按钮;打的字照样交给前台。 */
     Busy,
     /** Agent 在等回答,发出去就是回答。 */
     Answer,
 }
 
-/** 任务进行中发补充消息时,这句话交给谁:当前任务(下一步带上),还是这个对话的下一件任务。 */
+/** 悬浮胶囊里任务进行中发补充消息时,这句话交给谁:当前任务(下一步带上),还是这个对话的下一件任务(聊天页走前台,不再用它)。 */
 enum class FollowUpMode { Steer, Queue }
 
 data class ChatUi(
@@ -222,10 +244,10 @@ data class ChatUi(
     val blocked: List<Problem>? = null,
     val pip: PipUi = PipUi(),
     val composer: ComposerMode = ComposerMode.Idle,
-    /** 任务进行中补充消息交给谁;主对话默认排队,点消息右侧箭头后改为引导。 */
-    val followUpMode: FollowUpMode = FollowUpMode.Queue,
     /** 这个对话明确排队、还没开始的下一件(按先后);开始或取消后从这里拿掉。 */
     val queued: List<QueuedFollowUp> = emptyList(),
+    /** 这条会话前台派过的任务和各自阶段(按派单先后);在办的显示在输入框上方的「在办」条里,每件对应对话里的一张卡片。 */
+    val deskTasks: List<com.wangzan101.mika.core.frontdesk.DeskTaskView> = emptyList(),
     val takeoverStage: Takeover.Stage = Takeover.Stage.None,
     /** 沙箱就绪时输入框旁才有附件按钮。 */
     val attachEnabled: Boolean = false,
@@ -253,7 +275,6 @@ internal data class ComposerDraft(
     val input: String = "",
     val attachments: List<PendingAttachment> = emptyList(),
     val quote: QuoteMessage.Quote? = null,
-    val followUpMode: FollowUpMode = FollowUpMode.Queue,
     val sharedDraft: SharedDraft? = null,
     val importing: Boolean = false,
     val rejected: List<AttachmentFailure> = emptyList(),
@@ -262,11 +283,11 @@ internal data class ComposerDraft(
 ) {
     val hasContent: Boolean get() = input.isNotEmpty() || attachments.isNotEmpty() || quote != null || importing || rejected.isNotEmpty()
     fun applyTo(ui: ChatUi) = ui.copy(input = input, attachments = attachments, quote = quote,
-        followUpMode = followUpMode, sharedDraft = sharedDraft, importing = importing,
+        sharedDraft = sharedDraft, importing = importing,
         rejectedAttachments = rejected, overLimit = overLimit, projectId = projectId ?: ui.projectId)
 }
 
-internal fun ChatUi.draft() = ComposerDraft(input, attachments, quote, followUpMode, sharedDraft,
+internal fun ChatUi.draft() = ComposerDraft(input, attachments, quote, sharedDraft,
     importing, rejectedAttachments, overLimit, projectId)
 
 /**
@@ -289,8 +310,8 @@ internal fun ChatUi.rebuildForConversation(
     pip = PipUi(),
     composer = ComposerMode.Idle,
     input = input,
-    followUpMode = FollowUpMode.Queue,
     queued = emptyList(),
+    deskTasks = emptyList(),
     takeoverStage = takeoverStage,
     attachments = attachments,
     importing = false,

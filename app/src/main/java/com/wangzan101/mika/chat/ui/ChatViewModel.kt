@@ -64,7 +64,7 @@ import com.wangzan101.mika.ui.ToolLabels
 
 /**
  * 聊天界面的状态。步骤列表来自运行事件里实际做过的事(活动);进展那一行是模型这一步的话,
- * 等待模型时仅显示状态。任务在跑时输入框发的话先排队,用户再决定是否改为当前任务的引导。
+ * 等待模型时仅显示状态。输入框发的话交给这条会话的前台(见 [DeskChatOps]),前台派出的任务在各自的子会话里跑。
  * 整个进程只用一个实例,界面关掉再打开时正在跑的任务的步骤还在。
  */
 class ChatViewModel(
@@ -174,6 +174,8 @@ class ChatViewModel(
     internal val projectDeletionImpact: (String) -> ProjectDeleteImpact = { ProjectDeleteImpact(0, 0, 0) },
     internal val removeProject: suspend (String) -> Unit = {},
     internal val workspaceResolver: WorkspaceResolver? = null,
+    /** 聊天走前台:打的字交给这条会话的前台,派出的任务挂成卡片;没给时(只在测试里)照旧直接开任务。 */
+    desk: DeskChatDeps? = null,
 ) {
     internal val session = ChatSession(this)
     internal val live = ChatLiveFollow(this, session)
@@ -183,6 +185,7 @@ class ChatViewModel(
     internal val drafting = ChatDraftOps(this, session)
     internal val sending = ChatSendOps(this, session)
     internal val noting = ChatNoteOps(this, session)
+    internal val desking: ChatDesk? = desk?.let { ChatDesk(this, session, it) }
     private var autoReadKey by session::autoReadKey
     private val _ui = session._ui
     private val _jump = session._jump
@@ -297,6 +300,7 @@ class ChatViewModel(
             drafts.update { it + (draft.conversationId to ComposerDraft(input = draft.text,
                 attachments = session.sharedAttachments(draft), sharedDraft = draft)) }
         }
+        desking?.start()
         val current = store.currentChat() as? CurrentChat.Open
         val pending = sharedDrafts?.readPending()?.takeIf { current != null && it.conversationId == current.id }
         if (current != null && (current.id in drafts.value || pending != null)) {
@@ -383,10 +387,8 @@ class ChatViewModel(
     fun quote(from: QuoteMessage.From, text: String) = sending.quote(from, text)
     fun clearQuote() = sending.clearQuote()
     fun send(text: String, check: Prerequisites.Check): Boolean = sending.send(text, check)
-    fun setFollowUpMode(mode: FollowUpMode) = sending.setFollowUpMode(mode)
     fun startQueued() = sending.startQueued()
     fun cancelQueued(id: String): Boolean = sending.cancelQueued(id)
-    fun guideQueued(id: String, check: Prerequisites.Check): Boolean = sending.guideQueued(id, check)
     fun editQueued(id: String): String? = sending.editQueued(id)
     fun withdrawSteer(messageId: String): Boolean = sending.withdrawSteer(messageId)
     fun editSteer(messageId: String): String? = sending.editSteer(messageId)
@@ -406,6 +408,10 @@ class ChatViewModel(
     fun closePip() = sending.closePip()
     fun reopenPip() = sending.reopenPip()
     fun togglePipSound() = sending.togglePipSound()
+
+    // ChatDesk
+    /** 聊天页在不在屏上:在的时候后台的汇报由前台在页面上说一句,不在时交给兜底(写回会话、发通知)。 */
+    fun pageShown(shown: Boolean) { desking?.pageShown(shown) }
 
     // ChatNoteOps
     fun noteText(note: MemoryNote): String = noting.noteText(note)

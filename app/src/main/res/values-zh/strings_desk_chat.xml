@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="desk_tool_added">已加到「%1$s」</string>
+    <string name="desk_tool_answered">已回复「%1$s」</string>
+    <string name="desk_tool_cancelled">已取消「%1$s」</string>
+    <string name="desk_reply_failed">刚才没能回话，再说一次试试</string>
+    <string name="desk_thinking">在想</string>
+    <string name="desk_phase_running">在办</string>
+    <string name="desk_phase_queued">排队中</string>
+    <string name="desk_phase_queued_at">排队中 · 第 %1$d 个</string>
+    <string name="desk_phase_needs_you">要你处理</string>
+    <string name="desk_phase_done">办好了</string>
+    <string name="desk_phase_failed">没办成</string>
+    <string name="desk_phase_cancelled">已取消</string>
+    <string name="desk_card_details">查看详情 ›</string>
+    <string name="desk_card_open">打开这件任务</string>
+    <string name="desk_tray_caption">这个对话里的事 · 点一件看详细进展</string>
+    <string name="desk_tray_progress">查看详细进展 ›</string>
+    <string name="desk_tray_expand">展开在办的事</string>
+    <string name="desk_tray_collapse">收起在办的事</string>
+    <plurals name="desk_tray_count">
+        <item quantity="other">%1$d 件在办</item>
+    </plurals>
+</resources>

@@ -84,10 +84,11 @@ import com.wangzan101.mika.browser.ui.SentPage
 import com.wangzan101.mika.settings.ui.StatusCopy
 import com.wangzan101.mika.ui.MarkdownModel
 import com.wangzan101.mika.ui.MarkdownText
+import com.wangzan101.mika.core.frontdesk.DeskTaskView
 
 /** 跳转目标行的短暂高亮:一条全宽淡色底,约 1.8 秒后渐隐。 */
 @Composable
-private fun JumpHighlight(active: Boolean, reduceMotion: Boolean, content: @Composable () -> Unit) {
+internal fun JumpHighlight(active: Boolean, reduceMotion: Boolean, content: @Composable () -> Unit) {
     val c = MikaTheme.colors
     val alpha by animateFloatAsState(if (active) 1f else 0f, if (reduceMotion) snap() else tween(260), label = "jump-highlight")
     Box(
@@ -106,7 +107,16 @@ internal fun LazyListScope.exchange(
     /** 终态后的两个新运行入口:true 从摘要断点继续,false 按原目标重新开始。 */
     recover: (Boolean) -> Unit = {},
     openReport: (String) -> Unit = {}, openPlayback: (String) -> Unit = {},
+    /** 这条会话前台派过的任务(画卡片、汇报的小标签用)。 */
+    deskTasks: List<DeskTaskView> = emptyList(),
+    /** 滚到某件任务的卡片并短暂高亮。 */
+    jumpToCard: (String) -> Unit = {},
 ) {
+    // 前台的一轮:用户的话、前台回的话、这一轮派出的任务卡片;不走任务那套步骤和状态卡
+    if (ex.deskReply != null) {
+        deskExchange(index, ex, conversationId, deskTasks, reduceMotion, highlightKey, jumpToCard, vm::openConversation)
+        return
+    }
     if (ex.goal.isNotEmpty()) item("u$index") {
         JumpHighlight(highlightKey == "u$index", reduceMotion) { UserBubble(ex.goal, conversationId, key = "u$index") }
     }

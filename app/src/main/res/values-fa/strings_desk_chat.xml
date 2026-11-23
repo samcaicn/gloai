@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="desk_tool_added">به «%1$s» اضافه شد</string>
+    <string name="desk_tool_answered">در «%1$s» پاسخ داده شد</string>
+    <string name="desk_tool_cancelled">«%1$s» لغو شد</string>
+    <string name="desk_reply_failed">الان نتوانستم جواب بدهم. دوباره می‌گویید؟</string>
+    <string name="desk_thinking">در حال فکر</string>
+    <string name="desk_phase_running">در حال انجام</string>
+    <string name="desk_phase_queued">در صف</string>
+    <string name="desk_phase_queued_at">در صف · شماره %1$d</string>
+    <string name="desk_phase_needs_you">به شما نیاز دارد</string>
+    <string name="desk_phase_done">انجام شد</string>
+    <string name="desk_phase_failed">نشد</string>
+    <string name="desk_phase_cancelled">لغو شد</string>
+    <string name="desk_card_details">جزئیات ›</string>
+    <string name="desk_card_open">باز کردن این کار</string>
+    <string name="desk_tray_caption">کارهای این گفتگو · برای دیدن پیشرفت روی یکی بزنید</string>
+    <string name="desk_tray_progress">دیدن پیشرفت ›</string>
+    <string name="desk_tray_expand">نمایش کارها</string>
+    <string name="desk_tray_collapse">پنهان کردن کارها</string>
+    <plurals name="desk_tray_count">
+        <item quantity="one">%1$d کار در حال انجام</item>
+        <item quantity="other">%1$d کار در حال انجام</item>
+    </plurals>
+</resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="desk_tool_added">Ditambahkan ke “%1$s”</string>
+    <string name="desk_tool_answered">Dijawab di “%1$s”</string>
+    <string name="desk_tool_cancelled">“%1$s” dibatalkan</string>
+    <string name="desk_reply_failed">Barusan tidak bisa membalas. Coba ulangi?</string>
+    <string name="desk_thinking">Berpikir</string>
+    <string name="desk_phase_running">Dikerjakan</string>
+    <string name="desk_phase_queued">Antre</string>
+    <string name="desk_phase_queued_at">Antre · ke-%1$d</string>
+    <string name="desk_phase_needs_you">Perlu kamu</string>
+    <string name="desk_phase_done">Selesai</string>
+    <string name="desk_phase_failed">Tidak berhasil</string>
+    <string name="desk_phase_cancelled">Dibatalkan</string>
+    <string name="desk_card_details">Detail ›</string>
+    <string name="desk_card_open">Buka tugas ini</string>
+    <string name="desk_tray_caption">Tugas di obrolan ini · ketuk salah satu untuk lihat progres</string>
+    <string name="desk_tray_progress">Lihat progres ›</string>
+    <string name="desk_tray_expand">Tampilkan tugas</string>
+    <string name="desk_tray_collapse">Sembunyikan tugas</string>
+    <plurals name="desk_tray_count">
+        <item quantity="other">%1$d tugas dikerjakan</item>
+    </plurals>
+</resources>

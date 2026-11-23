@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="desk_tool_added">‘%1$s’에 추가했어요</string>
+    <string name="desk_tool_answered">‘%1$s’에 답했어요</string>
+    <string name="desk_tool_cancelled">‘%1$s’을(를) 취소했어요</string>
+    <string name="desk_reply_failed">방금은 답하지 못했어요. 다시 말해 주세요</string>
+    <string name="desk_thinking">생각 중</string>
+    <string name="desk_phase_running">처리 중</string>
+    <string name="desk_phase_queued">대기 중</string>
+    <string name="desk_phase_queued_at">대기 중 · %1$d번째</string>
+    <string name="desk_phase_needs_you">확인 필요</string>
+    <string name="desk_phase_done">완료</string>
+    <string name="desk_phase_failed">처리하지 못함</string>
+    <string name="desk_phase_cancelled">취소됨</string>
+    <string name="desk_card_details">자세히 ›</string>
+    <string name="desk_card_open">이 작업 열기</string>
+    <string name="desk_tray_caption">이 대화의 작업 · 눌러서 진행 상황 보기</string>
+    <string name="desk_tray_progress">진행 상황 보기 ›</string>
+    <string name="desk_tray_expand">작업 펼치기</string>
+    <string name="desk_tray_collapse">작업 접기</string>
+    <plurals name="desk_tray_count">
+        <item quantity="other">작업 %1$d개 처리 중</item>
+    </plurals>
+</resources>

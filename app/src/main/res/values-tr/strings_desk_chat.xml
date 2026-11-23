@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="desk_tool_added">“%1$s” görevine eklendi</string>
+    <string name="desk_tool_answered">“%1$s” için yanıt verildi</string>
+    <string name="desk_tool_cancelled">“%1$s” iptal edildi</string>
+    <string name="desk_reply_failed">Az önce yanıt veremedim. Tekrar söyler misin?</string>
+    <string name="desk_thinking">Düşünüyor</string>
+    <string name="desk_phase_running">Yapılıyor</string>
+    <string name="desk_phase_queued">Sırada</string>
+    <string name="desk_phase_queued_at">Sırada · %1$d.</string>
+    <string name="desk_phase_needs_you">Sana ihtiyaç var</string>
+    <string name="desk_phase_done">Bitti</string>
+    <string name="desk_phase_failed">Olmadı</string>
+    <string name="desk_phase_cancelled">İptal edildi</string>
+    <string name="desk_card_details">Ayrıntılar ›</string>
+    <string name="desk_card_open">Bu görevi aç</string>
+    <string name="desk_tray_caption">Bu sohbetteki görevler · durumunu görmek için birine dokun</string>
+    <string name="desk_tray_progress">İlerlemeyi gör ›</string>
+    <string name="desk_tray_expand">Görevleri göster</string>
+    <string name="desk_tray_collapse">Görevleri gizle</string>
+    <plurals name="desk_tray_count">
+        <item quantity="other">%1$d görev yapılıyor</item>
+    </plurals>
+</resources>

@@ -36,6 +36,19 @@ class ConversationTest {
         assertTrue(both, TokenEstimate.of(both) <= 300 && "The user said: 问问" in both && "result: 长长" in both)
     }
 
+    // 前台的一轮是前台回的话、不是没办完;汇报那一轮没有用户的话,不说成「用户说」
+    @Test fun deskTurnsAreFrontDeskReplies() {
+        val t = text(listOf(
+            Turn("帮我订明天的日料", "好,我让后面去订。", DeskTurn.STATUS, deskTasks = listOf("c1")),
+            Turn("顺便查汇率", "", DeskTurn.STATUS, deskTasks = listOf("c2")),
+            Turn("", "订日料:办好了", DeskTurn.REPORT_STATUS, deskTasks = listOf("c1")),
+        ))
+        assertTrue(t, "The user said: 帮我订明天的日料; Mika's front desk replied: 好,我让后面去订。" in t)
+        assertTrue(t, "The user said: 顺便查汇率; Mika's front desk handed it to a background task" in t)
+        assertTrue(t, "3. Mika's front desk told the user: 订日料:办好了" in t)
+        assertFalse(t, "not finished" in t)
+    }
+
     @Test fun keptPageSaysWhetherItIsStillOpen() {
         val open = text(listOf(Turn("播放课程,挂着别关", "已开始播放", "succeeded", keptPage = "course.example.com")))
         assertTrue("kept the page on course.example.com running in the background" in open)

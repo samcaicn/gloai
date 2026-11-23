@@ -232,6 +232,13 @@ fun ChatScreen(
         if (jumpHighlight == active) jumpHighlight = null
     }
 
+    var cardFlash by remember { mutableStateOf<CardFlash?>(null) }
+    LaunchedEffect(cardFlash) {
+        val active = cardFlash ?: return@LaunchedEffect
+        delay(JUMP_HIGHLIGHT_MS)
+        if (cardFlash == active) cardFlash = null
+    }
+
     // 只有原本跟着最新消息时才继续跟随。这个状态与列表位置一起跨页面保存。
     var followingTail by rememberSaveable { mutableStateOf(true) }
     var scrollingToBottom by remember(ui.conversationId) { mutableStateOf(false) }
@@ -257,9 +264,21 @@ fun ChatScreen(
     val scrollMarker = "${ui.conversationId}:${ui.exchanges.size}:${last?.steps?.size}:${last?.steers?.size}:${last?.status?.hashCode()}:${ui.blocked?.hashCode()}"
     val jump = pendingJump?.takeIf { it.conversationId == ui.conversationId }
     // 目标行的高亮:只在目标还是当前对话时算。
-    val highlightKey = jumpHighlight
+    val highlightKey = cardFlash?.takeIf { it.conversationId == ui.conversationId }?.key ?: jumpHighlight
         ?.takeIf { it.conversationId == ui.conversationId }
         ?.let { chatTargetKey(ui.exchanges, it.target) }
+    // 点「在办」里的一件、汇报下的小标签:滚到这件任务的卡片并短暂高亮;卡片不在这页(比如卡片所在的一轮被删了)就直接打开这件任务
+    val jumpToCard: (String) -> Unit = { taskId ->
+        val key = deskCardKey(ui.exchanges, taskId)
+        val index = key?.let { chatItemKeys(ui.exchanges, kept, setupRow, hasBlocked = ui.blocked != null).indexOf(it) } ?: -1
+        if (key == null || index < 0) vm.openConversation(taskId)
+        else {
+            scrollToBottomJob?.cancel()
+            followingTail = false
+            scope.launch { if (reduceMotion) listState.scrollToItem(index) else listState.animateScrollToItem(index) }
+            cardFlash = CardFlash(ui.conversationId, key, System.nanoTime())
+        }
+    }
     LaunchedEffect(scrollMarker, jump) {
         // 从搜索或文件库过来:先滚到目标消息,期间不要跟末尾;目标不在了就退回原来的逻辑。
         if (jump != null) {
@@ -391,6 +410,7 @@ fun ChatScreen(
                             vm.send(context.getString(label, ex.goal), check)
                         },
                         openReport = openReport, openPlayback = openPlayback,
+                        deskTasks = ui.deskTasks, jumpToCard = jumpToCard,
                     )
                     // 「去设置」挂在发现手机没就绪的那一轮后面;配不上具体轮次时(下面)照旧挂在最后
                     if (setupRow == i) item("ps$i") { PhoneSetupLine(openPhoneSetup) }
@@ -483,9 +503,6 @@ fun ChatScreen(
             onSend = { vm.send(input, check) },
             onStop = vm::cancel,
             queued = ui.queued,
-            onGuideQueued = { id ->
-                if (!vm.guideQueued(id, check)) Toast.makeText(context, context.getString(R.string.follow_up_already_started), Toast.LENGTH_SHORT).show()
-            },
             onQueueActions = { queueActions = it },
             onCancelQueued = { id ->
                 if (!vm.cancelQueued(id)) Toast.makeText(context, context.getString(R.string.follow_up_already_started), Toast.LENGTH_SHORT).show()
@@ -497,7 +514,8 @@ fun ChatScreen(
                 keyboardController?.hide()
                 showPlus = true
             }) else null,
-            attachBlocked = ui.attachEnabled && !ui.importing && ui.composer != ComposerMode.Idle && ui.followUpMode == FollowUpMode.Steer,
+            // 附件跟着一件直接开跑的任务走:这条会话自己在跑任务时加不了(见 [ChatSession.canAttach])
+            attachBlocked = ui.attachEnabled && !ui.importing && ui.composer != ComposerMode.Idle,
             attachments = ui.attachments,
             importing = ui.importing,
             rejected = ui.rejectedAttachments,
@@ -521,6 +539,8 @@ fun ChatScreen(
             steerTarget = null,
             onVoiceHolding = { voiceHolding = it },
             editRequest = editRequest,
+            deskTasks = ui.deskTasks,
+            onJumpTask = jumpToCard,
         )
 
         val pipOccupiesCorner = !screenDocked && ui.pip.visible && ui.pip.mode != PipMode.Done
@@ -828,3 +848,6 @@ private fun LazyListState.nearTail(thresholdPx: Int): Boolean {
 }
 
 // ---------- 空对话 ----------
+
+/** 跳到一张任务卡片后的短暂高亮:哪个对话、哪一行;[at] 让连点同一张也重新计时。 */
+private data class CardFlash(val conversationId: String?, val key: String, val at: Long)

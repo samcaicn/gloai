@@ -52,8 +52,11 @@ class FrontDesk(
     private val tracked = HashSet<String>()
     private val views = MutableStateFlow<List<DeskTaskView>>(emptyList())
 
-    @Volatile
-    private var surface: DeskSurface? = null
+    private val current = MutableStateFlow<DeskSurface?>(null)
+    private val surface: DeskSurface? get() = current.value
+
+    /** 此刻接着的入口;入口断开后为 null。别的入口可据此在空出来时接上,不去抢正在用的(比如通话)。 */
+    val attached: StateFlow<DeskSurface?> = current.asStateFlow()
 
     /** 这次对话前台派过的任务及各自阶段,按派单先后;收尾了的留在列表里,标成对应终态。 */
     val active: StateFlow<List<DeskTaskView>> = views.asStateFlow()
@@ -64,8 +67,8 @@ class FrontDesk(
 
     /** 接上一个入口(替换之前接着的);关掉返回的句柄即断开,之后的汇报交给 sink。 */
     fun attach(surface: DeskSurface): AutoCloseable {
-        this.surface = surface
-        return AutoCloseable { if (this.surface === surface) this.surface = null }
+        current.value = surface
+        return AutoCloseable { current.compareAndSet(surface, null) }
     }
 
     /** 开始跟一件刚派出的任务(派单时账本已由派单方记好);同一件只跟一次,不认识的编号忽略。 */
