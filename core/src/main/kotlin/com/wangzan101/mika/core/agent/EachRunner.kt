@@ -40,7 +40,7 @@ internal class EachRunner(
         val cursor = ScrollCursor(role, text)
         val outcomes = mutableListOf<Outcome>()
         var justScrolled = false
-        repeat(maxItems) {
+        while (outcomes.size < maxItems) {
             val elements = read()
             when (val s = cursor.advance(elements, justScrolled)) {
                 is ScrollCursor.Step.DoNext -> {
@@ -57,7 +57,7 @@ internal class EachRunner(
                 ScrollCursor.Step.End -> return Summary(outcomes.count { it.ok }, outcomes.count { !it.ok }, null, outcomes)
             }
         }
-        // 上限兜底：正常列表不会到这一步（滚不动时 End 会先触发）
+        // 只按尝试处理的条目数限制上限；滚动不占额度，滚不动时由游标的 End 结束。
         return Summary(outcomes.count { it.ok }, outcomes.count { !it.ok }, "__guard__", outcomes)
     }
 
