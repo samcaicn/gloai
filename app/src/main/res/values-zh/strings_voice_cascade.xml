@@ -15,7 +15,7 @@
     <string name="call_mode_speak">说</string>
     <string name="call_mode_think_light">轻模型</string>
     <string name="call_mode_think_main">主模型</string>
-    <string name="call_mode_think_light_note">回得快；没配轻模型时用主模型</string>
+    <string name="call_mode_think_note">前台用的模型（聊天和通话）</string>
     <string name="call_mode_listen_device">手机自带识别听不到通话声音，请给「听」选一个服务商的识别模型。</string>
     <string name="call_mode_rhythm">对话节奏</string>
     <string name="call_mode_silence">对方说完的判断</string>

@@ -103,7 +103,7 @@ fun CallModeScreen(onBack: () -> Unit, onOpenStt: () -> Unit, onOpenTts: () -> U
                 ) { RowChevron() }
                 ListRow(
                     MikaIcons.Spark, stringResource(R.string.call_mode_think),
-                    if (s.think == ThinkModel.Light) stringResource(R.string.call_mode_think_light_note) else null,
+                    stringResource(R.string.call_mode_think_note),
                 ) {}
                 SegmentedControl(
                     listOf(stringResource(R.string.call_mode_think_light), stringResource(R.string.call_mode_think_main)),

@@ -86,7 +86,7 @@ enum class CallEngine {
     Realtime,
 }
 
-/** Which chat model answers in a [CallEngine.Standard] call. */
+/** Which chat model the front desk thinks with, in chat and in calls. */
 @Serializable
 enum class ThinkModel { Light, Main }
 

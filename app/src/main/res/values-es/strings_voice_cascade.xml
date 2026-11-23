@@ -15,7 +15,7 @@
     <string name="call_mode_speak">Hablar</string>
     <string name="call_mode_think_light">Modelo ligero</string>
     <string name="call_mode_think_main">Modelo principal</string>
-    <string name="call_mode_think_light_note">Responde antes; usa el principal si no hay modelo ligero</string>
+    <string name="call_mode_think_note">El modelo que usa la recepción (chat y llamadas)</string>
     <string name="call_mode_listen_device">El reconocimiento del teléfono no oye el audio de la llamada. Elige un modelo de un servicio para escuchar.</string>
     <string name="call_mode_rhythm">Turnos de palabra</string>
     <string name="call_mode_silence">Cuándo terminó de hablar</string>

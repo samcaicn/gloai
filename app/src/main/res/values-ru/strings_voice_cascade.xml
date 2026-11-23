@@ -15,7 +15,7 @@
     <string name="call_mode_speak">Говорить</string>
     <string name="call_mode_think_light">Лёгкая модель</string>
     <string name="call_mode_think_main">Основная модель</string>
-    <string name="call_mode_think_light_note">Отвечает быстрее; без лёгкой модели — основная</string>
+    <string name="call_mode_think_note">Модель фронт-деска (чат и звонки)</string>
     <string name="call_mode_listen_device">Распознавание на устройстве не слышит звук звонка. Выберите модель сервиса для «Слушать».</string>
     <string name="call_mode_rhythm">Очерёдность реплик</string>
     <string name="call_mode_silence">Когда собеседник закончил</string>
