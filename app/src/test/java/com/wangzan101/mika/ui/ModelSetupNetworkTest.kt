@@ -7,6 +7,9 @@ import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.configFor
+import com.wangzan101.mika.settings.connect
+import javax.crypto.KeyGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,7 +27,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import javax.crypto.KeyGenerator
 
 /** 对着本地服务核对目录请求与用户单独确认的模型试调用。 */
 class ModelSetupNetworkTest {

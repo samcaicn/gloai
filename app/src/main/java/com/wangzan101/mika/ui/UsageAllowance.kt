@@ -29,18 +29,20 @@ import com.wangzan101.mika.i18n.uiLocale
 import com.wangzan101.mika.settings.AllowanceRoute
 import com.wangzan101.mika.settings.Provider
 import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.allowanceKey
+import com.wangzan101.mika.settings.matchesAllowanceConnection
 import com.wangzan101.mika.ui.components.GroupCard
 import com.wangzan101.mika.ui.components.ListRow
 import com.wangzan101.mika.ui.components.RowChevron
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private val allowanceClient by lazy { ProviderAllowanceClient(ProviderStore.modelHttp) }
 

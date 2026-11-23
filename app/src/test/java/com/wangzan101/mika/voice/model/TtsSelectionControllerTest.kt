@@ -6,6 +6,7 @@ import com.wangzan101.mika.core.model.TtsCapabilities
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.connect
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

@@ -1,7 +1,5 @@
 package com.wangzan101.mika.ui
 
-import com.wangzan101.mika.i18n.ChineseTexts
-import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.core.model.ApiKeyText
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ChatModel
@@ -15,6 +13,8 @@ import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
+import com.wangzan101.mika.i18n.ChineseTexts
+import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.ClientSetup
 import com.wangzan101.mika.settings.FeatureFlagsCapsuleTest.MemoryPrefs
@@ -23,6 +23,15 @@ import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.RoleChoice
+import com.wangzan101.mika.settings.apiKey
+import com.wangzan101.mika.settings.choose
+import com.wangzan101.mika.settings.configFor
+import com.wangzan101.mika.settings.connect
+import com.wangzan101.mika.settings.markTyped
+import com.wangzan101.mika.settings.markVerified
+import com.wangzan101.mika.settings.providerKey
+import com.wangzan101.mika.settings.rememberModels
+import com.wangzan101.mika.settings.save
 import com.wangzan101.mika.voice.SpeechChoice
 import com.wangzan101.mika.voice.SpeechSettings
 import com.wangzan101.mika.voice.model.MemoryVoiceCatalogBackend
@@ -40,6 +49,7 @@ import com.wangzan101.mika.voice.model.VoiceModel
 import com.wangzan101.mika.voice.model.VoiceModelRef
 import com.wangzan101.mika.voice.model.VoiceService
 import com.wangzan101.mika.voice.model.voiceTestEnvironment
+import javax.crypto.KeyGenerator
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -52,7 +62,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import javax.crypto.KeyGenerator
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ModelSetupViewModelTest {

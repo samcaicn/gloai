@@ -1,33 +1,37 @@
 package com.wangzan101.mika.task
 
-import com.wangzan101.mika.core.action.OutwardPacing
 import android.os.Build
 import android.util.Log
 import android.view.Display
 import com.wangzan101.mika.MikaApp
+import com.wangzan101.mika.cap.web.LazyWebPort
+import com.wangzan101.mika.cap.web.WebHandover
+import com.wangzan101.mika.cap.web.WebSites
+import com.wangzan101.mika.core.action.OutwardPacing
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.ModelRouter
-import com.wangzan101.mika.core.model.ChatModel
-import com.wangzan101.mika.settings.ProviderStore
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.replay.RouteMatcher
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn
-import com.wangzan101.mika.core.run.RunOrigin
+import com.wangzan101.mika.core.cap.web.WEB
+import com.wangzan101.mika.core.knowledge.ChannelFacts
+import com.wangzan101.mika.core.model.ChatModel
+import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.replay.RouteMatcher
 import com.wangzan101.mika.core.run.RunInput
+import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.core.tool.HandBack
 import com.wangzan101.mika.settings.FeatureFlags
+import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.mainFallbackChain
+import com.wangzan101.mika.settings.mainProviderId
 import com.wangzan101.mika.takeover.HandoverActivity
 import com.wangzan101.mika.takeover.HandoverActivityCounter
 import com.wangzan101.mika.takeover.Takeover
 import com.wangzan101.mika.takeover.TakeoverPort
 import com.wangzan101.mika.takeover.stoppedAt
+import com.wangzan101.mika.task.TaskRun.Companion.TAG
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
-import com.wangzan101.mika.core.knowledge.ChannelFacts
-import com.wangzan101.mika.cap.web.LazyWebPort
-import com.wangzan101.mika.cap.web.WebHandover
-import com.wangzan101.mika.cap.web.WebSites
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -36,8 +40,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.wangzan101.mika.core.cap.web.WEB
-import com.wangzan101.mika.task.TaskRun.Companion.TAG
 
 // 运行装配:Agent 循环与接管
 internal suspend fun TaskRun.assembleAgent(a: RunAssembly, m: RunModels, ph: RunPhone, taskGate: TaskGate, mem: RunMemory, rec: RunRecord, pr: RunPrompt, web: LazyWebPort?, t: RunTools, priorTurns: List<Turn>): AgentLoop {

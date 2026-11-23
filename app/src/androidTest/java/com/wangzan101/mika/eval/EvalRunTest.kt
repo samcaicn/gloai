@@ -1,23 +1,22 @@
 package com.wangzan101.mika.eval
 
-import com.wangzan101.mika.DeviceTaskState
 import android.content.Context
 import android.os.Bundle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.wangzan101.mika.DeviceTaskState
 import com.wangzan101.mika.cap.phone.a11y.DeviceSupport
 import com.wangzan101.mika.confirm.ConfirmationCopy
-import com.wangzan101.mika.core.risk.IrrevAction
 import com.wangzan101.mika.core.agent.SpeedFlags
 import com.wangzan101.mika.core.agent.TaskState
+import com.wangzan101.mika.core.assembly.recordedTools
+import com.wangzan101.mika.core.cap.phone.OperatingPace
 import com.wangzan101.mika.core.eval.AppCapabilities
 import com.wangzan101.mika.core.eval.Check
+import com.wangzan101.mika.core.eval.Checks
 import com.wangzan101.mika.core.eval.EvalCategory
 import com.wangzan101.mika.core.eval.EvalPairing
-import com.wangzan101.mika.core.eval.Checks
 import com.wangzan101.mika.core.eval.EvalReport
-import com.wangzan101.mika.core.record.RunMetrics
-import com.wangzan101.mika.core.record.RunMetricsStore
 import com.wangzan101.mika.core.eval.EvalTask
 import com.wangzan101.mika.core.eval.EvalTasks
 import com.wangzan101.mika.core.eval.Observed
@@ -27,12 +26,19 @@ import com.wangzan101.mika.core.eval.Scoring
 import com.wangzan101.mika.core.eval.TaskScore
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.record.RunMetrics
+import com.wangzan101.mika.core.record.RunMetricsStore
+import com.wangzan101.mika.core.risk.IrrevAction
 import com.wangzan101.mika.memory.MemoryRuntime
 import com.wangzan101.mika.record.RunStore
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.configFor
 import com.wangzan101.mika.task.TaskRun
 import com.wangzan101.mika.task.TaskService
+import com.wangzan101.mika.task.testTasks
+import java.io.File
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -44,11 +50,6 @@ import org.junit.After
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
-import java.util.UUID
-import com.wangzan101.mika.core.assembly.recordedTools
-import com.wangzan101.mika.task.testTasks
-import com.wangzan101.mika.core.cap.phone.OperatingPace
 
 /**
  * 真机评测:经 [TaskService] 的真实路径一题一题地跑任务集,打分并写汇总。只在显式传参时运行。

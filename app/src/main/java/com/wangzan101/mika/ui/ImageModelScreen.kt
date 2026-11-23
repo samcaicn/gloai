@@ -16,12 +16,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wangzan101.mika.R
+import com.wangzan101.mika.core.model.ImageAspect
+import com.wangzan101.mika.core.model.ImageRequest
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.settings.ImageChoice
 import com.wangzan101.mika.settings.ImageModelSettings
 import com.wangzan101.mika.settings.ImageProtocol
 import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.imageModel
 import com.wangzan101.mika.ui.components.FooterNote
 import com.wangzan101.mika.ui.components.GroupCard
 import com.wangzan101.mika.ui.components.GroupLabel
@@ -31,8 +34,6 @@ import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.components.MikaSwitch
 import com.wangzan101.mika.ui.components.RadioRow
 import com.wangzan101.mika.ui.theme.MikaTheme
-import com.wangzan101.mika.core.model.ImageAspect
-import com.wangzan101.mika.core.model.ImageRequest
 import kotlinx.coroutines.launch
 
 /**

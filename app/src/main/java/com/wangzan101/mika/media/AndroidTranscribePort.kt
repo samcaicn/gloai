@@ -11,6 +11,7 @@ import com.wangzan101.mika.core.model.ClientHeaders
 import com.wangzan101.mika.core.model.ModelSession
 import com.wangzan101.mika.core.workspace.SandboxPaths
 import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.providerKey
 import com.wangzan101.mika.voice.SpeechChoice
 import com.wangzan101.mika.voice.SpeechEngineSpec
 import com.wangzan101.mika.voice.Transcriber
@@ -18,9 +19,9 @@ import com.wangzan101.mika.voice.model.ResolvedAccount
 import com.wangzan101.mika.voice.model.ResolvedVoiceModel
 import com.wangzan101.mika.voice.model.SttSelectionController
 import com.wangzan101.mika.voice.model.VoiceModelEnvironment
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 
 /**
  * 转写能力的手机实现:从工作区经文件闸门读音频。

@@ -26,7 +26,9 @@ import com.wangzan101.mika.core.teach.TeachWatch
 import com.wangzan101.mika.core.teach.teachGoalAccepted
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.modelFor
 import com.wangzan101.mika.task.TaskCenterState
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +39,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.UUID
 
 enum class TeachNotice { Busy, NoAccessibility, NeedGoal, SecretGoal, DraftFailed, NoSteps, SecretNote, NoVisibleStop, WatchLost }
 

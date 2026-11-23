@@ -8,6 +8,14 @@ import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.ChatGptSignIns
 import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.configFor
+import com.wangzan101.mika.settings.connect
+import com.wangzan101.mika.settings.connectOpenRouter
+import com.wangzan101.mika.settings.openRouterAccount
+import com.wangzan101.mika.settings.providerKey
+import com.wangzan101.mika.settings.signOutOpenRouter
+import java.io.File
+import javax.crypto.KeyGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,8 +37,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
-import javax.crypto.KeyGenerator
 
 /**
  * 用 OpenRouter 账号登录走一遍:浏览器(假的)打开授权页,带着 code 回到本机回调,换到 Key,
