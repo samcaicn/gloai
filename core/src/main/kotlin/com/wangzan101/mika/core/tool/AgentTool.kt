@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.tool
 
-import com.wangzan101.mika.core.observation.Observation
-import com.wangzan101.mika.core.risk.GateTarget
+import com.wangzan101.mika.core.screen.observation.Observation
+import com.wangzan101.mika.core.safety.gate.GateTarget
 import com.wangzan101.mika.core.action.Risk as ApprovalRisk
 import kotlinx.serialization.json.JsonObject
 

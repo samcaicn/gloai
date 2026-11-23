@@ -6,10 +6,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.random.Random
-import com.wangzan101.mika.core.uistate.IdleScroll
-import com.wangzan101.mika.core.uistate.PageLimitReached
-import com.wangzan101.mika.core.uistate.PlacePace
-import com.wangzan101.mika.core.uistate.dwellStopped
+import com.wangzan101.mika.core.screen.uistate.IdleScroll
+import com.wangzan101.mika.core.screen.uistate.PageLimitReached
+import com.wangzan101.mika.core.screen.uistate.PlacePace
+import com.wangzan101.mika.core.screen.uistate.dwellStopped
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 

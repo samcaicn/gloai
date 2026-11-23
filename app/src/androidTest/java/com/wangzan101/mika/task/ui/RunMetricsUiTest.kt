@@ -9,8 +9,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.wangzan101.mika.core.record.RunMetrics
-import com.wangzan101.mika.core.record.RunStats
+import com.wangzan101.mika.core.run.record.RunMetrics
+import com.wangzan101.mika.core.run.record.RunStats
 import com.wangzan101.mika.ui.theme.MikaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule

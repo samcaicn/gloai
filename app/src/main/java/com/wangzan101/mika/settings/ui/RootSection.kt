@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import com.wangzan101.mika.R
 import com.wangzan101.mika.cap.phone.PhoneServices
 import com.wangzan101.mika.cap.phone.setup.RootControl
-import com.wangzan101.mika.core.shell.RootGrant
+import com.wangzan101.mika.core.device.shell.RootGrant
 import com.wangzan101.mika.ui.components.FooterNote
 import com.wangzan101.mika.ui.components.GroupCard
 import com.wangzan101.mika.ui.components.GroupLabel

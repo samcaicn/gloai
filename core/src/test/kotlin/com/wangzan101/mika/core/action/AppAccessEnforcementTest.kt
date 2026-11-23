@@ -1,10 +1,10 @@
 package com.wangzan101.mika.core.action
 
-import com.wangzan101.mika.core.access.*
+import com.wangzan101.mika.core.device.access.*
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.guard.OperationGuards
+import com.wangzan101.mika.core.safety.guard.OperationGuards
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ChatModel
 import com.wangzan101.mika.core.model.Message
@@ -14,7 +14,7 @@ import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.testing.answerReply
 import com.wangzan101.mika.core.tool.FakeScreen
-import com.wangzan101.mika.core.uistate.*
+import com.wangzan101.mika.core.screen.uistate.*
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
@@ -29,7 +29,7 @@ class AppAccessEnforcementTest {
             override suspend fun snapshot(): ScreenSnapshot { reads++; error("must not read") }
             override suspend fun systemCommand(command: String): SystemCommandResult { commands++; return SystemCommandResult(0, "shell output") }
         }
-        val executor = ActionExecutor(toolDispatcher(screen), OperationGuards(), null, gate = {}, recorder = ActionRecorder(com.wangzan101.mika.core.record.RunSink.NONE), autonomous = true)
+        val executor = ActionExecutor(toolDispatcher(screen), OperationGuards(), null, gate = {}, recorder = ActionRecorder(com.wangzan101.mika.core.run.record.RunSink.NONE), autonomous = true)
         val blocked = executor.run(Part.ToolCall("read", "phone_observe", "{}"), Origin.Model(1))
         assertTrue(blocked is ActionOutcome.Refused)
         assertEquals("app_blocked", (blocked as ActionOutcome.Refused).code)
@@ -57,7 +57,7 @@ class AppAccessEnforcementTest {
         val screen = AppAccessScreenPort(native, AppAccessPolicy { AppAccessState(blocked = setOf("bank")) },
             packages = { listOf(pkg) })
         val executor = ActionExecutor(toolDispatcher(screen), OperationGuards(), null, gate = {},
-            recorder = ActionRecorder(com.wangzan101.mika.core.record.RunSink.NONE), autonomous = true)
+            recorder = ActionRecorder(com.wangzan101.mika.core.run.record.RunSink.NONE), autonomous = true)
         val outcome = executor.run(Part.ToolCall("launch", "phone_launch_app", """{"package":"com.allowed"}"""), Origin.Model(1))
         assertTrue("$outcome", outcome is ActionOutcome.Ran)
         assertEquals("com.allowed", pkg)
@@ -75,7 +75,7 @@ class AppAccessEnforcementTest {
         val screen = AppAccessScreenPort(native, AppAccessPolicy { AppAccessState(blocked = setOf("bank")) },
             packages = { listOf(pkg) })
         val executor = ActionExecutor(toolDispatcher(screen), OperationGuards(), null, gate = {},
-            recorder = ActionRecorder(com.wangzan101.mika.core.record.RunSink.NONE), autonomous = true)
+            recorder = ActionRecorder(com.wangzan101.mika.core.run.record.RunSink.NONE), autonomous = true)
         val outcome = executor.run(Part.ToolCall("tap", "phone_tap", """{"x":100,"y":100}"""), Origin.Model(1))
         assertTrue("$outcome", outcome is ActionOutcome.Refused)
         assertEquals("app_blocked", (outcome as ActionOutcome.Refused).code)

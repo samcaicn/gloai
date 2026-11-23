@@ -12,7 +12,7 @@ import com.wangzan101.mika.core.model.ModelProtocol
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.OpenAiServiceTier
 import com.wangzan101.mika.core.model.PromptCaching
-import com.wangzan101.mika.core.usage.TokenBudgetLimits
+import com.wangzan101.mika.core.model.usage.TokenBudgetLimits
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

@@ -1,7 +1,7 @@
 package com.wangzan101.mika.chat.ui
 
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.verify.AnswerSource
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.safety.verify.AnswerSource
 import com.wangzan101.mika.record.RunStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

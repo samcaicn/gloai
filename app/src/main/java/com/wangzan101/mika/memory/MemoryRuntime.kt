@@ -2,12 +2,12 @@ package com.wangzan101.mika.memory
 
 import android.content.Context
 import com.wangzan101.mika.chat.ConversationStore
-import com.wangzan101.mika.core.memory.MemoryItem
-import com.wangzan101.mika.core.memory.MemoryNote
-import com.wangzan101.mika.core.memory.MemoryStore
-import com.wangzan101.mika.core.memory.ProfileStore
-import com.wangzan101.mika.core.memory.TaskMemoryStore
-import com.wangzan101.mika.core.skills.SkillNote
+import com.wangzan101.mika.core.learn.memory.MemoryItem
+import com.wangzan101.mika.core.learn.memory.MemoryNote
+import com.wangzan101.mika.core.learn.memory.MemoryStore
+import com.wangzan101.mika.core.learn.memory.ProfileStore
+import com.wangzan101.mika.core.learn.memory.TaskMemoryStore
+import com.wangzan101.mika.core.learn.skills.SkillNote
 import com.wangzan101.mika.settings.KeystoreKeyCipher
 import com.wangzan101.mika.settings.MemorySettings
 import com.wangzan101.mika.skills.PersonalSkillFiles

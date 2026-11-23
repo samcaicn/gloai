@@ -13,8 +13,8 @@ import com.wangzan101.mika.cap.phone.a11y.MainScreenCapture
 import com.wangzan101.mika.cap.phone.a11y.OverlayWindow
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.task.ConfirmationNotifier
-import com.wangzan101.mika.core.userscreen.CapturedScreen
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
+import com.wangzan101.mika.core.screen.user.CapturedScreen
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
 import com.wangzan101.mika.task.TaskService
 import com.wangzan101.mika.chat.ui.FollowUpMode
 import com.wangzan101.mika.chat.ui.ScreenCopy

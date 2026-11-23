@@ -4,8 +4,8 @@ import com.wangzan101.mika.core.agent.GateReason
 import com.wangzan101.mika.core.agent.RunProgress
 import com.wangzan101.mika.core.agent.TaskStage
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.risk.IrrevAction
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.gate.IrrevAction
 import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.i18n.ChineseTexts
 import org.junit.Assert.*

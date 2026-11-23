@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.context.StepSummary
+import com.wangzan101.mika.core.agent.StepSummary
 import com.wangzan101.mika.core.model.Author
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.Part

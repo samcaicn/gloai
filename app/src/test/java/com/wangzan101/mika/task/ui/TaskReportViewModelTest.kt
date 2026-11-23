@@ -1,7 +1,7 @@
 package com.wangzan101.mika.task.ui
 
-import com.wangzan101.mika.core.record.PlaybackMark
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.PlaybackMark
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.i18n.ChineseTexts
 import com.wangzan101.mika.record.RunStore
 import org.junit.Assert.*

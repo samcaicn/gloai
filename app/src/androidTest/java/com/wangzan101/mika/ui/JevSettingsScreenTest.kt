@@ -10,7 +10,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wangzan101.mika.ChineseUi
-import com.wangzan101.mika.core.decision.DecisionConfig
+import com.wangzan101.mika.core.model.decision.DecisionConfig
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.DecisionSettings
 import com.wangzan101.mika.ui.theme.MikaTheme

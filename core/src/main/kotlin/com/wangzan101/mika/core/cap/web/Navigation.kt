@@ -1,11 +1,11 @@
 package com.wangzan101.mika.core.cap.web
 
 import com.wangzan101.mika.core.tool.Entry
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Observation
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Observation
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.uistate.dialogJson
+import com.wangzan101.mika.core.screen.uistate.dialogJson
 import com.wangzan101.mika.core.tool.ArgError
 import com.wangzan101.mika.core.tool.Args
 import com.wangzan101.mika.core.tool.EvidenceLog
@@ -26,9 +26,9 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
-import com.wangzan101.mika.core.uistate.session
-import com.wangzan101.mika.core.uistate.DwellStop
-import com.wangzan101.mika.core.uistate.dwellStopped
+import com.wangzan101.mika.core.screen.uistate.session
+import com.wangzan101.mika.core.screen.uistate.DwellStop
+import com.wangzan101.mika.core.screen.uistate.dwellStopped
 
 /** 打开网页。跳 App 的链接(含应用商店的网页链接)不在内置浏览器里打开。 */
 internal object Navigate : WebTool {

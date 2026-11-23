@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.cap.phone
 
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.ArgError
@@ -13,8 +13,8 @@ import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.tool.int
 import com.wangzan101.mika.core.tool.str
-import com.wangzan101.mika.core.uistate.UiTreeNode
-import com.wangzan101.mika.core.uistate.toPx
+import com.wangzan101.mika.core.screen.uistate.UiTreeNode
+import com.wangzan101.mika.core.screen.uistate.toPx
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -22,10 +22,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
-import com.wangzan101.mika.core.uistate.action
-import com.wangzan101.mika.core.uistate.lastOrSnapshot
-import com.wangzan101.mika.core.uistate.screen
-import com.wangzan101.mika.core.uistate.session
+import com.wangzan101.mika.core.screen.uistate.action
+import com.wangzan101.mika.core.screen.uistate.lastOrSnapshot
+import com.wangzan101.mika.core.screen.uistate.screen
+import com.wangzan101.mika.core.screen.uistate.session
 
 /** 按界面实际内容推进，直到找到目标或内容停止变化。 */
 internal object PhoneFind : PhoneTool {

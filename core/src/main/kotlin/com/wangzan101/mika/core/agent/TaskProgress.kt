@@ -1,8 +1,8 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Observation
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Observation
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import kotlinx.serialization.json.Json

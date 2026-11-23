@@ -13,7 +13,7 @@ import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityWindowInfo
 import com.wangzan101.mika.calls.onCallerLabelEvent
-import com.wangzan101.mika.core.uistate.ScreenEvent
+import com.wangzan101.mika.core.screen.uistate.ScreenEvent
 import kotlin.coroutines.resume
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow

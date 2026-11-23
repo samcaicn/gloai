@@ -6,8 +6,8 @@ import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.decision.DecisionModel
-import com.wangzan101.mika.core.decision.DecisionPolicy
+import com.wangzan101.mika.core.model.decision.DecisionModel
+import com.wangzan101.mika.core.model.decision.DecisionPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.buildJsonObject

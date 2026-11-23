@@ -1,9 +1,9 @@
 package com.wangzan101.mika.settings
 
 import android.content.SharedPreferences
-import com.wangzan101.mika.core.shell.RecoveryCapability
-import com.wangzan101.mika.core.shell.RecoveryConsent
-import com.wangzan101.mika.core.shell.RestoreOutcome
+import com.wangzan101.mika.core.device.shell.RecoveryCapability
+import com.wangzan101.mika.core.device.shell.RecoveryConsent
+import com.wangzan101.mika.core.device.shell.RestoreOutcome
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

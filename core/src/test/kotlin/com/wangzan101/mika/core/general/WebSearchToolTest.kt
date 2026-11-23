@@ -2,7 +2,7 @@ package com.wangzan101.mika.core.general
 
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.observation.Trust
+import com.wangzan101.mika.core.screen.observation.Trust
 import com.wangzan101.mika.core.search.WebSearch
 import com.wangzan101.mika.core.search.WebSearchHit
 import com.wangzan101.mika.core.search.WebSearchResult

@@ -6,8 +6,8 @@ import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.run.Outbox
 import com.wangzan101.mika.core.run.SendOutcome
-import com.wangzan101.mika.core.wechat.WechatAccount
-import com.wangzan101.mika.core.wechat.WechatOwnerResult
+import com.wangzan101.mika.core.cap.wechat.WechatAccount
+import com.wangzan101.mika.core.cap.wechat.WechatOwnerResult
 import com.wangzan101.mika.settings.KeyCipher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

@@ -4,8 +4,8 @@ import com.wangzan101.mika.core.agent.AttachmentLines
 import com.wangzan101.mika.core.agent.Conversation
 import com.wangzan101.mika.core.agent.AttachedPage
 import com.wangzan101.mika.core.agent.QuoteMessage
-import com.wangzan101.mika.core.record.Redactor
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
+import com.wangzan101.mika.core.run.record.Redactor
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
 import java.util.Locale
 
 /**

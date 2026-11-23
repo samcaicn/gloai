@@ -94,7 +94,7 @@ class ConversationTitlerTest {
 
     @Test fun screenOnlyMessageIsNotTitled() = runBlocking {
         val m = Titler("屏幕")
-        val line = com.wangzan101.mika.core.userscreen.UserScreenMessage.line("abc")
+        val line = com.wangzan101.mika.core.screen.user.UserScreenMessage.line("abc")
         assertNull(ConversationTitler.generate(listOf(m), line))
         assertTrue(m.requests.isEmpty())
         // 带附言时只把附言给模型

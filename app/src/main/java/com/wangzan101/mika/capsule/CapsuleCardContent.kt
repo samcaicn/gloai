@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wangzan101.mika.core.userscreen.CapturedScreen
+import com.wangzan101.mika.core.screen.user.CapturedScreen
 import com.wangzan101.mika.chat.ui.FollowUpMode
 import androidx.compose.ui.graphics.ImageBitmap
 import com.wangzan101.mika.ui.theme.MikaMotion

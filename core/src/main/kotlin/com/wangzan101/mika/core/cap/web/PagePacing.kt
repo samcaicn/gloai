@@ -2,7 +2,7 @@ package com.wangzan101.mika.core.cap.web
 
 import com.wangzan101.mika.core.net.UrlHost
 import kotlin.random.Random
-import com.wangzan101.mika.core.uistate.PlacePace
+import com.wangzan101.mika.core.screen.uistate.PlacePace
 
 /**
  * 网页上一页一页往下看的节奏(纯逻辑,不碰时钟和页面):人打开一页总要看一会儿才翻下一页、点开下一条。

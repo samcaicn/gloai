@@ -1,14 +1,14 @@
 package com.wangzan101.mika.core.general
 
-import com.wangzan101.mika.core.knowledge.GuideView
-import com.wangzan101.mika.core.knowledge.KNOWLEDGE_KINDS
-import com.wangzan101.mika.core.knowledge.KnowledgeIndex
-import com.wangzan101.mika.core.knowledge.PERSONAL_KIND
-import com.wangzan101.mika.core.knowledge.SKILL_KINDS
-import com.wangzan101.mika.core.knowledge.toolsNote
+import com.wangzan101.mika.core.learn.knowledge.GuideView
+import com.wangzan101.mika.core.learn.knowledge.KNOWLEDGE_KINDS
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeIndex
+import com.wangzan101.mika.core.learn.knowledge.PERSONAL_KIND
+import com.wangzan101.mika.core.learn.knowledge.SKILL_KINDS
+import com.wangzan101.mika.core.learn.knowledge.toolsNote
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.skills.PLUGIN_KIND
-import com.wangzan101.mika.core.skills.PersonalSkills
+import com.wangzan101.mika.core.learn.skills.PLUGIN_KIND
+import com.wangzan101.mika.core.learn.skills.PersonalSkills
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.ArgError
 import com.wangzan101.mika.core.tool.Args

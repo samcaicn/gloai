@@ -33,7 +33,7 @@ import androidx.webkit.WebViewFeature
 import com.wangzan101.mika.core.cap.web.DialogReply
 import com.wangzan101.mika.core.cap.web.ExternalLink
 import com.wangzan101.mika.core.cap.web.PageDialogs
-import com.wangzan101.mika.core.uistate.PageDialog
+import com.wangzan101.mika.core.screen.uistate.PageDialog
 import com.wangzan101.mika.core.cap.web.WebUrlPolicy
 import com.wangzan101.mika.cap.web.cdp.WebDevtools
 import kotlinx.coroutines.CompletableDeferred

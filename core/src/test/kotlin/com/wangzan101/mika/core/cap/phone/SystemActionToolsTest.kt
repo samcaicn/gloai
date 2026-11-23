@@ -6,10 +6,10 @@ import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.tool.FAILURE_MESSAGES
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.tool.execute
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.SystemAction
-import com.wangzan101.mika.core.uistate.SystemActionResult
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.SystemAction
+import com.wangzan101.mika.core.screen.uistate.SystemActionResult
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray

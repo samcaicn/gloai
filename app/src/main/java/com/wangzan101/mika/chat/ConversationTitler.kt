@@ -7,7 +7,7 @@ import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 

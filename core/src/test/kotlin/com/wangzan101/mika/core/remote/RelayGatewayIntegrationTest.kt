@@ -82,7 +82,7 @@ class RelayGatewayIntegrationTest {
             assertTrue(endpoints.activity.value.recentClients > 0)
             // Run the shipped Python CLI through the real Go gateway and Kotlin phone API.
             val tokenFile = tmp.newFile("phone-token").apply { writeText(phoneToken.get()) }
-            val script = File("../tools/mika/scripts/mika_cli.py").canonicalPath
+            val script = File("../companions/mika/scripts/mika_cli.py").canonicalPath
             fun cli(vararg args: String): JsonObject {
                 lateinit var err: File
                 val cli = ProcessBuilder(listOf(System.getProperty("mika.python", "python3"), script,

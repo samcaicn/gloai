@@ -17,10 +17,10 @@ import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.model.Usage
-import com.wangzan101.mika.core.usage.UsagePurpose
-import com.wangzan101.mika.core.usage.UsageSink
-import com.wangzan101.mika.core.usage.UsageSource
-import com.wangzan101.mika.core.usage.metered
+import com.wangzan101.mika.core.model.usage.UsagePurpose
+import com.wangzan101.mika.core.model.usage.UsageSink
+import com.wangzan101.mika.core.model.usage.UsageSource
+import com.wangzan101.mika.core.model.usage.metered
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.chat.ConversationStore
 import androidx.compose.ui.test.onAllNodesWithContentDescription

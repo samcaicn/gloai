@@ -5,10 +5,10 @@ import com.wangzan101.mika.core.action.Risk as ApprovalRisk
 import com.wangzan101.mika.core.capability.Capability
 import com.wangzan101.mika.core.capability.CapabilityStatus
 import com.wangzan101.mika.core.capability.PromptEnv
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Observation
-import com.wangzan101.mika.core.observation.Trust
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Observation
+import com.wangzan101.mika.core.screen.observation.Trust
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.Args

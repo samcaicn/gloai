@@ -3,11 +3,11 @@ package com.wangzan101.mika.cap.phone.setup
 import android.util.Log
 import com.wangzan101.mika.cap.phone.shell.HelperHub
 import com.wangzan101.mika.capsule.CapsuleMode
-import com.wangzan101.mika.core.shell.A11yObservation
-import com.wangzan101.mika.core.shell.RecoveryCapability
-import com.wangzan101.mika.core.shell.RecoveryConsent
-import com.wangzan101.mika.core.shell.RestoreWish
-import com.wangzan101.mika.core.shell.RestoreWishSender
+import com.wangzan101.mika.core.device.shell.A11yObservation
+import com.wangzan101.mika.core.device.shell.RecoveryCapability
+import com.wangzan101.mika.core.device.shell.RecoveryConsent
+import com.wangzan101.mika.core.device.shell.RestoreWish
+import com.wangzan101.mika.core.device.shell.RestoreWishSender
 import com.wangzan101.mika.shell.IMikaShell
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

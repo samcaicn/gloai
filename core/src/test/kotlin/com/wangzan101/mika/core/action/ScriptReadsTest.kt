@@ -1,10 +1,10 @@
 package com.wangzan101.mika.core.action
 
-import com.wangzan101.mika.core.gate.ConfirmationGate
-import com.wangzan101.mika.core.guard.OperationGuards
+import com.wangzan101.mika.core.safety.gate.ConfirmationGate
+import com.wangzan101.mika.core.safety.guard.OperationGuards
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.record.RunSink
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.run.record.RunSink
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.cap.web.SCRIPT_MAX_READS
 import com.wangzan101.mika.core.tool.ScriptWebPort
@@ -39,7 +39,7 @@ class ScriptReadsTest {
         val reads = (script as ActionOutcome.Ran).after.filter { it.code == "read_loop" }
         assertTrue("脚本里的重读要提醒", reads.isNotEmpty())
         // 读的重复(read_loop、repeating_action)都只提醒
-        assertTrue(script.verdicts.all { it.severity == com.wangzan101.mika.core.guard.Severity.Warn })
+        assertTrue(script.verdicts.all { it.severity == com.wangzan101.mika.core.safety.guard.Severity.Warn })
 
         // 之后模型自己读同一页:按任务的计数从头算,头几次不提醒
         val later = (2..5).map { executor.run(Part.ToolCall("m$it", "phone_list_elements", "{}"), Origin.Model(it)) as ActionOutcome.Ran }

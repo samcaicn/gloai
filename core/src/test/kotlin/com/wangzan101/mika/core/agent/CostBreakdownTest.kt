@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.knowledge.GuideCatalog
-import com.wangzan101.mika.core.knowledge.KnowledgeStore
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeStore
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.testing.FakeRequest
 import com.wangzan101.mika.core.testing.Screen

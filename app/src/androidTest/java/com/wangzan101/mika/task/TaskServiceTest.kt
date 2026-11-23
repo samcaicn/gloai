@@ -28,7 +28,7 @@ import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.personal.PersonalTask
 import com.wangzan101.mika.core.trigger.TriggerDefinition
 import com.wangzan101.mika.core.trigger.TriggerWindowState
-import com.wangzan101.mika.core.verify.Verifier
+import com.wangzan101.mika.core.safety.verify.Verifier
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.shell.IMikaShell
 import org.junit.After

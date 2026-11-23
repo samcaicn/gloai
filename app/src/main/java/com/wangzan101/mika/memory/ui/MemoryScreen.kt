@@ -32,9 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.wangzan101.mika.core.knowledge.GuideCatalog
-import com.wangzan101.mika.core.memory.MemoryKind
-import com.wangzan101.mika.core.memory.TaskMemory
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.memory.MemoryKind
+import com.wangzan101.mika.core.learn.memory.TaskMemory
 import com.wangzan101.mika.memory.MemoryRuntime
 import com.wangzan101.mika.ui.components.ActionSheet
 import com.wangzan101.mika.ui.components.BarIconButton

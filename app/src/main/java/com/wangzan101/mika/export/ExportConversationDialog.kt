@@ -48,7 +48,7 @@ import com.wangzan101.mika.core.export.ExportProgress
 import com.wangzan101.mika.core.export.ExportRedactor
 import com.wangzan101.mika.core.export.ExportSelection
 import com.wangzan101.mika.core.export.RedactionLevel
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
 import com.wangzan101.mika.chat.ui.AttachmentMessage
 import com.wangzan101.mika.chat.ui.ScreenCopy
 import kotlinx.coroutines.CancellationException

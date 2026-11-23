@@ -1,10 +1,10 @@
 package com.wangzan101.mika.core.capability
 
-import com.wangzan101.mika.core.uistate.ScreenFamily
-import com.wangzan101.mika.core.uistate.Surface
-import com.wangzan101.mika.core.guard.OffScreenGuard
-import com.wangzan101.mika.core.knowledge.BundledScripts
-import com.wangzan101.mika.core.observation.Look
+import com.wangzan101.mika.core.screen.uistate.ScreenFamily
+import com.wangzan101.mika.core.screen.uistate.Surface
+import com.wangzan101.mika.core.safety.guard.OffScreenGuard
+import com.wangzan101.mika.core.learn.knowledge.BundledScripts
+import com.wangzan101.mika.core.screen.observation.Look
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.ToolContext
 import com.wangzan101.mika.core.tool.ToolExecution

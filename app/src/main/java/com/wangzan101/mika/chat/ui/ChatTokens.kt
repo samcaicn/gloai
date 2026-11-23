@@ -10,8 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import com.wangzan101.mika.core.record.RunMetrics
-import com.wangzan101.mika.core.usage.DeepSeekCost
+import com.wangzan101.mika.core.run.record.RunMetrics
+import com.wangzan101.mika.core.model.usage.DeepSeekCost
 import com.wangzan101.mika.record.RunStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

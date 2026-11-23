@@ -1,7 +1,7 @@
 package com.wangzan101.mika.settings
 
 import com.wangzan101.mika.core.action.ApprovalSettings
-import com.wangzan101.mika.core.gate.ConfirmationGate
+import com.wangzan101.mika.core.safety.gate.ConfirmationGate
 
 /**
  * 一个任务自己的审批设置:自主与否是开工时取全局的,之后跟着开发者选项里的「自主模式」变([set])。

@@ -33,7 +33,7 @@ import com.wangzan101.mika.capsule.CapsuleSetup
 import com.wangzan101.mika.core.agent.SpeedFlags
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.model.ModelRole
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
 import com.wangzan101.mika.i18n.AppLanguage
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural

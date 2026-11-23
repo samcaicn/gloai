@@ -28,10 +28,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.knowledge.FrontMatter
-import com.wangzan101.mika.core.skills.PersonalSkill
-import com.wangzan101.mika.core.teach.TeachPhase
-import com.wangzan101.mika.core.teach.TeachSession
+import com.wangzan101.mika.core.learn.knowledge.FrontMatter
+import com.wangzan101.mika.core.learn.skills.PersonalSkill
+import com.wangzan101.mika.core.learn.teach.TeachPhase
+import com.wangzan101.mika.core.learn.teach.TeachSession
 import com.wangzan101.mika.teach.TeachNotice
 import com.wangzan101.mika.teach.TeachRuntime
 import com.wangzan101.mika.teach.TeachUi

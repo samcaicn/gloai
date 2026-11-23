@@ -6,9 +6,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.cap.phone.shell.AsciiTextKeys
 import com.wangzan101.mika.cap.phone.shell.ShellService
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.UiElement
-import com.wangzan101.mika.core.uistate.Verification
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.Verification
 import com.wangzan101.mika.shell.IMikaShell
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking

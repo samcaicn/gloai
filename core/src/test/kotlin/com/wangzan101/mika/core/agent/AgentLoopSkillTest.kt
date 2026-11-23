@@ -1,17 +1,17 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
-import com.wangzan101.mika.core.skills.InMemoryPersonalSkills
-import com.wangzan101.mika.core.skills.PersonalSkill
-import com.wangzan101.mika.core.skills.SkillStatus
-import com.wangzan101.mika.core.skills.personalSkill
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
+import com.wangzan101.mika.core.learn.skills.InMemoryPersonalSkills
+import com.wangzan101.mika.core.learn.skills.PersonalSkill
+import com.wangzan101.mika.core.learn.skills.SkillStatus
+import com.wangzan101.mika.core.learn.skills.personalSkill
 import com.wangzan101.mika.core.tool.FakeScreen
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals

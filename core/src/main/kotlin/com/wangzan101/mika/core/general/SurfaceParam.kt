@@ -8,7 +8,7 @@ import com.wangzan101.mika.core.tool.ToolDef
 import com.wangzan101.mika.core.tool.argStr
 import com.wangzan101.mika.core.tool.str
 import kotlinx.serialization.json.JsonObject
-import com.wangzan101.mika.core.uistate.focus
+import com.wangzan101.mika.core.screen.uistate.focus
 
 private const val SURFACE = "surface"
 

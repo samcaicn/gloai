@@ -6,7 +6,7 @@ import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
-import com.wangzan101.mika.core.uistate.Pace
+import com.wangzan101.mika.core.screen.uistate.Pace
 import kotlin.random.Random
 
 /**

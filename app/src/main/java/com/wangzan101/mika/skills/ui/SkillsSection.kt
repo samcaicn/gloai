@@ -23,9 +23,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.wangzan101.mika.core.knowledge.AppKnowledgeStage
-import com.wangzan101.mika.core.knowledge.FrontMatter
-import com.wangzan101.mika.core.skills.SkillImport
+import com.wangzan101.mika.core.learn.knowledge.AppKnowledgeStage
+import com.wangzan101.mika.core.learn.knowledge.FrontMatter
+import com.wangzan101.mika.core.learn.skills.SkillImport
 import com.wangzan101.mika.ui.components.ActionSheet
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize

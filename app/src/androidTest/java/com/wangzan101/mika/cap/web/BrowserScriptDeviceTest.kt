@@ -1,7 +1,7 @@
 package com.wangzan101.mika.cap.web
 
 import com.wangzan101.mika.runAction
-import com.wangzan101.mika.core.guard.OperationGuards
+import com.wangzan101.mika.core.safety.guard.OperationGuards
 import android.net.LocalSocket
 import android.net.LocalSocketAddress
 import android.os.Process
@@ -20,10 +20,10 @@ import com.wangzan101.mika.core.cap.web.cdp.CdpSession
 import com.wangzan101.mika.core.cap.web.cdp.CdpStream
 import com.wangzan101.mika.core.cap.web.cdp.CdpTransport
 import com.wangzan101.mika.core.cap.web.cdp.evaluate
-import com.wangzan101.mika.core.gate.ConfirmationGate
+import com.wangzan101.mika.core.safety.gate.ConfirmationGate
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
 import com.wangzan101.mika.core.cap.web.SCRIPT_MAX_ACTIONS
 import com.wangzan101.mika.core.tool.ToolDispatcher
 import com.wangzan101.mika.cap.web.cdp.WebDevtools

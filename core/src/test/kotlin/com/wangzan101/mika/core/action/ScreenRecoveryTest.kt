@@ -1,13 +1,13 @@
 package com.wangzan101.mika.core.action
 
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.gate.ScreenRecoveryRequired
-import com.wangzan101.mika.core.guard.OperationGuards
+import com.wangzan101.mika.core.safety.gate.ScreenRecoveryRequired
+import com.wangzan101.mika.core.safety.guard.OperationGuards
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.run.record.RunSink
 import com.wangzan101.mika.core.tool.FakeScreen
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals

@@ -1,19 +1,19 @@
 package com.wangzan101.mika.core.tool
 
-import com.wangzan101.mika.core.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.ObsKind
 import com.wangzan101.mika.core.model.Author
 import com.wangzan101.mika.core.agent.HistoryPruner
 import com.wangzan101.mika.core.agent.visibleReads
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
-import com.wangzan101.mika.core.vision.JvmTestImageOps
-import com.wangzan101.mika.core.vision.VisionService
-import com.wangzan101.mika.core.vision.says
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.screen.vision.JvmTestImageOps
+import com.wangzan101.mika.core.screen.vision.VisionService
+import com.wangzan101.mika.core.screen.vision.says
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean

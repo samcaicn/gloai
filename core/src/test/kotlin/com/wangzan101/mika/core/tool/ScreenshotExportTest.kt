@@ -6,8 +6,8 @@ import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunSpec
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.vision.JvmTestImageOps
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.vision.JvmTestImageOps
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive

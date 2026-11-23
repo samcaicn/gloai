@@ -4,8 +4,8 @@ import com.wangzan101.mika.core.assembly.allTools
 import com.wangzan101.mika.core.assembly.knownToolNames
 import com.wangzan101.mika.core.assembly.knownTools
 import com.wangzan101.mika.core.assembly.legacyNames
-import com.wangzan101.mika.core.knowledge.KnowledgeIndex
-import com.wangzan101.mika.core.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeIndex
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import com.wangzan101.mika.core.tool.Verb

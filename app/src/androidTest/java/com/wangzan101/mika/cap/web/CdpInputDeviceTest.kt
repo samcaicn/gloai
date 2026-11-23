@@ -5,11 +5,11 @@ import android.view.WindowManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.webkit.WebViewAssetLoader
-import com.wangzan101.mika.core.uistate.CdpKeys
+import com.wangzan101.mika.core.screen.uistate.CdpKeys
 import com.wangzan101.mika.core.cap.web.cdp.CdpSession
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.Verification
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.Verification
 import com.wangzan101.mika.core.cap.web.DEVTOOLS_UNAVAILABLE
 import com.wangzan101.mika.core.cap.web.WebPoint
 import com.wangzan101.mika.cap.web.cdp.WebDevtools

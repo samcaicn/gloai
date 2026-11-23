@@ -1,8 +1,8 @@
 package com.wangzan101.mika.task
 
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.risk.IrrevAction
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.gate.IrrevAction
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

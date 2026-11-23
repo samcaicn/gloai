@@ -3,7 +3,7 @@ package com.wangzan101.mika.chat.ui
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 

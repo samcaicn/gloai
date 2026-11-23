@@ -1,19 +1,19 @@
 package com.wangzan101.mika.core.agent
 
 import com.wangzan101.mika.core.model.Author
-import com.wangzan101.mika.core.memory.MemoryKind
-import com.wangzan101.mika.core.memory.MemorySource
-import com.wangzan101.mika.core.memory.UserUtterances
-import com.wangzan101.mika.core.memory.finishReply
-import com.wangzan101.mika.core.memory.memStore
+import com.wangzan101.mika.core.learn.memory.MemoryKind
+import com.wangzan101.mika.core.learn.memory.MemorySource
+import com.wangzan101.mika.core.learn.memory.UserUtterances
+import com.wangzan101.mika.core.learn.memory.finishReply
+import com.wangzan101.mika.core.learn.memory.memStore
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.proactive.ObservedContext
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunInbox
 import com.wangzan101.mika.core.run.RunInput
@@ -115,7 +115,7 @@ class AgentLoopMemoryTest {
         val found = model.requests[1].last { it.role == Role.Tool }.parts.filterIsInstance<Part.ToolResult>().single().content
         val result = model.requests[2].last { it.role == Role.Tool }.parts.filterIsInstance<Part.ToolResult>().single().content
         assertTrue("$found -> $result", "\"ok\":true" in result)
-        assertTrue(s.items.value.none { it.id == target.id && it.status == com.wangzan101.mika.core.memory.MemoryStatus.active })
+        assertTrue(s.items.value.none { it.id == target.id && it.status == com.wangzan101.mika.core.learn.memory.MemoryStatus.active })
     }
 
     // 只是在问「如果让你删你会怎么做」:模型万一真提了删除,工具自己不执行,那条记忆还在
@@ -136,7 +136,7 @@ class AgentLoopMemoryTest {
         assertTrue(end.toString(), end is com.wangzan101.mika.core.agent.TaskState.Succeeded)
         assertEquals("不靠意图判断", 0, judge.requests.size)
         assertTrue(events.filterIsInstance<RunEvent.ToolResult>().single { it.tool == "memory_edit" }.resultJson.contains("edit_not_requested"))
-        assertTrue("那条还在", s.items.value.any { it.id == target.id && it.status == com.wangzan101.mika.core.memory.MemoryStatus.active })
+        assertTrue("那条还在", s.items.value.any { it.id == target.id && it.status == com.wangzan101.mika.core.learn.memory.MemoryStatus.active })
     }
 
     // 一次记好几条,其中几条按规矩不收:不把整个任务按「操作连续失败」停掉。存上的照存,模型接着如实回答
@@ -195,14 +195,14 @@ class AgentLoopMemoryTest {
         }
         assertTrue(end.toString(), end is com.wangzan101.mika.core.agent.TaskState.Succeeded)
         assertEquals(10, s.items.value.size)
-        assertTrue(s.items.value.all { it.source.type == com.wangzan101.mika.core.memory.MemoryContext.INFERRED })
+        assertTrue(s.items.value.all { it.source.type == com.wangzan101.mika.core.learn.memory.MemoryContext.INFERRED })
     }
 
     // 查到一条 Mika 自己归纳的记忆,接着照常回答:这条进了证据账本(工具查到的事实),任务正常结束
     @Test fun aRunThatFindsAnInferredMemoryFinishesNormally() {
         val s = memStore()
         s.add(MemoryKind.fact, "用户常点张江路那家外卖", listOf("外卖"),
-            MemorySource(com.wangzan101.mika.core.memory.MemoryContext.INFERRED, "你自己总结几条写进记忆", atMs = 1)).getOrThrow()
+            MemorySource(com.wangzan101.mika.core.learn.memory.MemoryContext.INFERRED, "你自己总结几条写进记忆", atMs = 1)).getOrThrow()
         val events = mutableListOf<RunEvent>()
         val model = FakeModel(
             ModelReply(listOf(Part.ToolCall("s1", "memory_search", """{"query":"外卖"}""")), StopReason.ToolUse, null),

@@ -2,13 +2,13 @@ package com.wangzan101.mika.settings.ui
 
 import org.junit.Rule
 import com.wangzan101.mika.i18n.ChineseTexts
-import com.wangzan101.mika.core.shell.BuiltinShellFailure
-import com.wangzan101.mika.core.shell.BuiltinShellFix
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
-import com.wangzan101.mika.core.shell.HelperRestart
-import com.wangzan101.mika.core.shell.RootGrant
-import com.wangzan101.mika.core.shell.SetupStep
-import com.wangzan101.mika.core.shell.SetupSuspect
+import com.wangzan101.mika.core.device.shell.BuiltinShellFailure
+import com.wangzan101.mika.core.device.shell.BuiltinShellFix
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.HelperRestart
+import com.wangzan101.mika.core.device.shell.RootGrant
+import com.wangzan101.mika.core.device.shell.SetupStep
+import com.wangzan101.mika.core.device.shell.SetupSuspect
 import com.wangzan101.mika.settings.Problem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

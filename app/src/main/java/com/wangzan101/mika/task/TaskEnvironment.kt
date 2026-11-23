@@ -1,7 +1,7 @@
 package com.wangzan101.mika.task
 
 import android.content.Context
-import com.wangzan101.mika.core.decision.DecisionModel
+import com.wangzan101.mika.core.model.decision.DecisionModel
 import com.wangzan101.mika.core.model.ChatModel
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.ModelSession

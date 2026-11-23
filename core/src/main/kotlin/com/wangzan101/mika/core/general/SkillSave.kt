@@ -1,15 +1,15 @@
 package com.wangzan101.mika.core.general
 
 import com.wangzan101.mika.core.agent.DO_STEPS_TOOL
-import com.wangzan101.mika.core.knowledge.FrontMatter
-import com.wangzan101.mika.core.knowledge.PERSONAL_KIND
-import com.wangzan101.mika.core.memory.SensitiveFilter
+import com.wangzan101.mika.core.learn.knowledge.FrontMatter
+import com.wangzan101.mika.core.learn.knowledge.PERSONAL_KIND
+import com.wangzan101.mika.core.learn.memory.SensitiveFilter
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.skills.PersonalSkill
-import com.wangzan101.mika.core.skills.PersonalSkills
-import com.wangzan101.mika.core.skills.SkillDrafter
-import com.wangzan101.mika.core.skills.SkillStatus
+import com.wangzan101.mika.core.learn.skills.PersonalSkill
+import com.wangzan101.mika.core.learn.skills.PersonalSkills
+import com.wangzan101.mika.core.learn.skills.SkillDrafter
+import com.wangzan101.mika.core.learn.skills.SkillStatus
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.Args
 import com.wangzan101.mika.core.tool.Risk

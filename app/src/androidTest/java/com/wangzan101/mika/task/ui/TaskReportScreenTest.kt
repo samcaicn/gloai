@@ -11,8 +11,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.ChineseUi
-import com.wangzan101.mika.core.record.PlaybackMark
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.PlaybackMark
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.record.RunStore
 import org.junit.Rule
 import org.junit.Test

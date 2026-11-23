@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.general
 
-import com.wangzan101.mika.core.memory.ProfileChange
+import com.wangzan101.mika.core.learn.memory.ProfileChange
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.ArgError

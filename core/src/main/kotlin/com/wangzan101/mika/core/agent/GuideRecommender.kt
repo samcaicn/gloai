@@ -1,12 +1,12 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.knowledge.KNOWLEDGE_KINDS
-import com.wangzan101.mika.core.knowledge.KnowledgeIndex
-import com.wangzan101.mika.core.knowledge.PERSONAL_KIND
-import com.wangzan101.mika.core.knowledge.RECOMMEND_MIN_SCORE
-import com.wangzan101.mika.core.knowledge.SKILL_KINDS
-import com.wangzan101.mika.core.knowledge.GuideCatalog
-import com.wangzan101.mika.core.knowledge.GuideInfo
+import com.wangzan101.mika.core.learn.knowledge.KNOWLEDGE_KINDS
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeIndex
+import com.wangzan101.mika.core.learn.knowledge.PERSONAL_KIND
+import com.wangzan101.mika.core.learn.knowledge.RECOMMEND_MIN_SCORE
+import com.wangzan101.mika.core.learn.knowledge.SKILL_KINDS
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.knowledge.GuideInfo
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull

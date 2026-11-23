@@ -15,7 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.knowledge.FrontMatter
+import com.wangzan101.mika.core.learn.knowledge.FrontMatter
 import com.wangzan101.mika.skills.MarketEntry
 import com.wangzan101.mika.skills.SkillMarket
 import com.wangzan101.mika.ui.components.*

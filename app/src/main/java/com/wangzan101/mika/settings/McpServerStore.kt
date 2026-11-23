@@ -18,8 +18,8 @@ import com.wangzan101.mika.core.cap.mcp.McpConnection
 import com.wangzan101.mika.core.cap.mcp.McpTrust
 import com.wangzan101.mika.core.net.LocalHosts
 import com.wangzan101.mika.core.net.NetProxy
-import com.wangzan101.mika.core.oauth.LoopbackCallback
-import com.wangzan101.mika.core.resource.ResourceScope
+import com.wangzan101.mika.core.model.oauth.LoopbackCallback
+import com.wangzan101.mika.core.run.ResourceScope
 import com.wangzan101.mika.core.workspace.SandboxError
 import com.wangzan101.mika.mcp.McpPackageConsent
 import com.wangzan101.mika.mcp.McpPackageProvisioner

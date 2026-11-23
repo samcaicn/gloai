@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.cap.phone.sms
 
 import com.wangzan101.mika.core.tool.FakeScreen
-import com.wangzan101.mika.core.uistate.*
+import com.wangzan101.mika.core.screen.uistate.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
 import org.junit.Assert.*

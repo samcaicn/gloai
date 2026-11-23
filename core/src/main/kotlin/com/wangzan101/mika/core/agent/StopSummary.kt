@@ -5,9 +5,9 @@ import com.wangzan101.mika.core.model.ChatModel
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
-import com.wangzan101.mika.core.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.ObsKind
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.tool.PACKAGE_NAME_RE
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull

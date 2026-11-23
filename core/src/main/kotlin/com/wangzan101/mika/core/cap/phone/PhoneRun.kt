@@ -20,8 +20,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
-import com.wangzan101.mika.core.uistate.screen
-import com.wangzan101.mika.core.uistate.session
+import com.wangzan101.mika.core.screen.uistate.screen
+import com.wangzan101.mika.core.screen.uistate.session
 
 /** 根据每一步读到的当前无障碍树重新定位目标,然后把动作交回统一执行入口。 */
 internal object PhoneRun : PhoneTool {

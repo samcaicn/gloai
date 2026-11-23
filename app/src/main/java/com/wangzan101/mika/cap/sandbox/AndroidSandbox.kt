@@ -15,8 +15,8 @@ import com.wangzan101.mika.core.cap.sandbox.SandboxProcess
 import com.wangzan101.mika.core.cap.sandbox.SandboxShell
 import com.wangzan101.mika.core.cap.sandbox.PhoneCommandHandler
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
-import com.wangzan101.mika.core.knowledge.ScriptEntry
-import com.wangzan101.mika.core.knowledge.ScriptManifest
+import com.wangzan101.mika.core.learn.knowledge.ScriptEntry
+import com.wangzan101.mika.core.learn.knowledge.ScriptManifest
 import com.wangzan101.mika.core.cap.sandbox.ShareRules
 import com.wangzan101.mika.core.workspace.WorkspacePathCheck
 import kotlinx.coroutines.CancellationException

@@ -47,8 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.knowledge.FrontMatter
-import com.wangzan101.mika.core.skills.SkillStatus
+import com.wangzan101.mika.core.learn.knowledge.FrontMatter
+import com.wangzan101.mika.core.learn.skills.SkillStatus
 import com.wangzan101.mika.settings.RecommendedTask
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize

@@ -1,6 +1,6 @@
 package com.wangzan101.mika.cap.phone.shell
 
-import com.wangzan101.mika.core.uistate.SystemAction
+import com.wangzan101.mika.core.screen.uistate.SystemAction
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

@@ -10,7 +10,7 @@ import com.wangzan101.mika.ChineseUi
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.core.agent.Turn
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.mcp.McpServerState
 import com.wangzan101.mika.record.RunStore
 import com.wangzan101.mika.ui.theme.MikaTheme

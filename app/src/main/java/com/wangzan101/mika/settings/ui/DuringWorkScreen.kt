@@ -35,7 +35,7 @@ import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.core.cap.phone.OperatingPace
-import com.wangzan101.mika.core.usage.TokenBudgetLimits
+import com.wangzan101.mika.core.model.usage.TokenBudgetLimits
 import com.wangzan101.mika.device.ui.DeviceAccessSection
 
 /**

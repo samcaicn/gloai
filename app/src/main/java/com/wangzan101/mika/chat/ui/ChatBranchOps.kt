@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import com.wangzan101.mika.core.agent.AttachedPage
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
 
 /** 从某一轮分支、从某一句重新问。 */
 internal class ChatBranchOps(private val vm: ChatViewModel, private val session: ChatSession) {

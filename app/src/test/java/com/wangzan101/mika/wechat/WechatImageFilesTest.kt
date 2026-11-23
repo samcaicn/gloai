@@ -3,8 +3,8 @@ package com.wangzan101.mika.wechat
 import com.wangzan101.mika.cap.sandbox.JVM_GATE
 import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.Delivery
-import com.wangzan101.mika.core.wechat.WechatImage
-import com.wangzan101.mika.core.wechat.WechatImages
+import com.wangzan101.mika.core.cap.wechat.WechatImage
+import com.wangzan101.mika.core.cap.wechat.WechatImages
 import com.wangzan101.mika.core.workspace.SandboxTree
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.CompletableDeferred

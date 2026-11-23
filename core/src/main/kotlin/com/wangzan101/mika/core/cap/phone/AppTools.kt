@@ -1,8 +1,8 @@
 package com.wangzan101.mika.core.cap.phone
 
 import com.wangzan101.mika.core.tool.Entry
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Observation
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Observation
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.ArgError
@@ -26,11 +26,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import com.wangzan101.mika.core.tool.LinkPolicy
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.APP_IN_USE_BY_OTHER_TASK
-import com.wangzan101.mika.core.uistate.AppWait
-import com.wangzan101.mika.core.uistate.action
-import com.wangzan101.mika.core.uistate.session
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.APP_IN_USE_BY_OTHER_TASK
+import com.wangzan101.mika.core.screen.uistate.AppWait
+import com.wangzan101.mika.core.screen.uistate.action
+import com.wangzan101.mika.core.screen.uistate.session
 
 /** 列出、打开手机上的 App:永远作用于手机。 */
 internal object ListApps : PhoneTool {

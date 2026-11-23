@@ -3,10 +3,10 @@ package com.wangzan101.mika.cap.web
 import com.wangzan101.mika.core.cap.web.cdp.input
 import com.wangzan101.mika.core.cap.web.cdp.insertText
 import com.wangzan101.mika.core.cap.web.cdp.typeText
-import com.wangzan101.mika.core.uistate.DOUBLE_TAP_GAP_MS
+import com.wangzan101.mika.core.screen.uistate.DOUBLE_TAP_GAP_MS
 import com.wangzan101.mika.core.cap.web.cdp.pressCombo
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.Verification
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.Verification
 import com.wangzan101.mika.core.cap.web.WebUrlPolicy
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonPrimitive

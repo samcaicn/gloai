@@ -1,10 +1,10 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.trace.RunTrace
-import com.wangzan101.mika.core.guard.OperationGuards
-import com.wangzan101.mika.core.guard.GuardVerdict
-import com.wangzan101.mika.core.observation.Place
-import com.wangzan101.mika.core.observation.tag
+import com.wangzan101.mika.core.run.trace.RunTrace
+import com.wangzan101.mika.core.safety.guard.OperationGuards
+import com.wangzan101.mika.core.safety.guard.GuardVerdict
+import com.wangzan101.mika.core.screen.observation.Place
+import com.wangzan101.mika.core.screen.observation.tag
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.PromptVersion
 import com.wangzan101.mika.core.tool.parseArgs
@@ -18,15 +18,15 @@ import com.wangzan101.mika.core.action.FollowUp
 import com.wangzan101.mika.core.action.Origin
 import com.wangzan101.mika.core.action.Presented
 import com.wangzan101.mika.core.action.Refusals
-import com.wangzan101.mika.core.access.AppAccessDenied
+import com.wangzan101.mika.core.device.access.AppAccessDenied
 import com.wangzan101.mika.core.model.Author
-import com.wangzan101.mika.core.gate.ConfirmationGate
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.knowledge.ChannelFacts
-import com.wangzan101.mika.core.knowledge.KnowledgeStore
-import com.wangzan101.mika.core.knowledge.GuideCatalog
-import com.wangzan101.mika.core.memory.ProfileEntry
-import com.wangzan101.mika.core.memory.MemoryStore
+import com.wangzan101.mika.core.safety.gate.ConfirmationGate
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.learn.knowledge.ChannelFacts
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeStore
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.memory.ProfileEntry
+import com.wangzan101.mika.core.learn.memory.MemoryStore
 import com.wangzan101.mika.core.model.ChatModel
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.ModelReply
@@ -35,9 +35,9 @@ import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.proactive.ObservedContext
-import com.wangzan101.mika.core.record.Redactor
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.run.record.Redactor
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
 import com.wangzan101.mika.core.run.RunEventBus
 import com.wangzan101.mika.core.run.RunInbox
 import com.wangzan101.mika.core.run.RunSpec
@@ -46,7 +46,7 @@ import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.core.run.Interaction
 import com.wangzan101.mika.core.run.LocalInteraction
 import com.wangzan101.mika.core.run.Delivery
-import com.wangzan101.mika.core.usage.RunUsageTally
+import com.wangzan101.mika.core.model.usage.RunUsageTally
 import com.wangzan101.mika.core.tool.HandBack
 import com.wangzan101.mika.core.tool.HandBackOutcome
 import com.wangzan101.mika.core.tool.Outcome
@@ -54,9 +54,9 @@ import com.wangzan101.mika.core.tool.AskPort
 import com.wangzan101.mika.core.tool.ToolDispatcher
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
-import com.wangzan101.mika.core.replay.RouteMatcher
-import com.wangzan101.mika.core.screenmap.ScreenMapStore
-import com.wangzan101.mika.core.verify.Verifier
+import com.wangzan101.mika.core.learn.replay.RouteMatcher
+import com.wangzan101.mika.core.screen.map.ScreenMapStore
+import com.wangzan101.mika.core.safety.verify.Verifier
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -75,7 +75,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import java.time.ZoneId
-import com.wangzan101.mika.core.userscreen.UserScreenSource
+import com.wangzan101.mika.core.screen.user.UserScreenSource
 
 /** 批做完后另看的一眼:内容和画面同一时刻。 */
 internal fun batchViewNote(content: String) = Feedback.format("batch_view_note", "screen" to content)
@@ -149,7 +149,7 @@ class AgentLoop(
     /** UI 对话第一次要用工具时的独立意图判断；null 保留评测与其他入口的原行为。 */
     internal val intentJudge: ChatModel? = null,
     /** 可选的类型化意图判断;不确定或失败时仍问 intentJudge,不替代主模型与执行关卡。 */
-    intentDecision: com.wangzan101.mika.core.decision.DecisionModel? = null,
+    intentDecision: com.wangzan101.mika.core.model.decision.DecisionModel? = null,
     /** 经验回放的路线匹配;只在 flags.replay 打开时用。 */
     routes: RouteMatcher? = null,
     /** 技能目录(含个人技能);任务开始时列出全部技能,并按目标给几条 App/站点知识的索引。为 null 或 [recommendSkills] 关着时不给索引。 */

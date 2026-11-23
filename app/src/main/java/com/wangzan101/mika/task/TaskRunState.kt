@@ -8,7 +8,7 @@ import com.wangzan101.mika.core.chat.GeneratedAudio
 import com.wangzan101.mika.core.chat.GeneratedPhoto
 import com.wangzan101.mika.core.cap.image.SavedImage
 import com.wangzan101.mika.core.model.SavedAudio
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.takeover.Takeover
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -61,8 +61,8 @@ import com.wangzan101.mika.chat.CurrentChat
 import com.wangzan101.mika.chat.SharedDraft
 import com.wangzan101.mika.chat.SharedDraftImporter
 import com.wangzan101.mika.task.ConfirmationNotifier
-import com.wangzan101.mika.core.knowledge.GuideCatalog
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
 import com.wangzan101.mika.i18n.AppLanguage
 import com.wangzan101.mika.memory.MemoryRuntime
 import com.wangzan101.mika.record.RunStore

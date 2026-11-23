@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.docs
 
-import com.wangzan101.mika.core.knowledge.IndexEntry
-import com.wangzan101.mika.core.knowledge.KnowledgeIndex
+import com.wangzan101.mika.core.learn.knowledge.IndexEntry
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeIndex
 import java.io.File
 
 /**

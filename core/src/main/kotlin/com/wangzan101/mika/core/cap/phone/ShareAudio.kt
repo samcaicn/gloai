@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.cap.phone
 
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Observation
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Observation
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.ArgError
 import com.wangzan101.mika.core.tool.Args
@@ -12,7 +12,7 @@ import com.wangzan101.mika.core.tool.ToolDef
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.tool.str
-import com.wangzan101.mika.core.uistate.action
+import com.wangzan101.mika.core.screen.uistate.action
 import com.wangzan101.mika.core.workspace.SandboxPaths
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

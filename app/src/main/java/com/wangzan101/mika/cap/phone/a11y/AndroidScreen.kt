@@ -22,38 +22,38 @@ import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import com.wangzan101.mika.core.cap.phone.GesturePacing
 import com.wangzan101.mika.core.cap.phone.TypingPacing
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import com.wangzan101.mika.media.ShareableFile
-import com.wangzan101.mika.core.uistate.APP_IN_USE_BY_OTHER_TASK
-import com.wangzan101.mika.core.uistate.AppWait
-import com.wangzan101.mika.core.uistate.AppCopy
-import com.wangzan101.mika.core.uistate.AppProfiles
-import com.wangzan101.mika.core.uistate.LaunchChoice
-import com.wangzan101.mika.core.uistate.LaunchChooser
-import com.wangzan101.mika.core.uistate.OpenedElsewhere
-import com.wangzan101.mika.core.uistate.UnseenField
-import com.wangzan101.mika.core.uistate.normalize
-import com.wangzan101.mika.core.uistate.Relocation
-import com.wangzan101.mika.core.uistate.ScreenCheck
-import com.wangzan101.mika.core.uistate.ScreenDiagnosis
-import com.wangzan101.mika.core.uistate.ScreenFacts
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenEvent
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.VisibleTextLine
-import com.wangzan101.mika.core.uistate.SystemCommandResult
-import com.wangzan101.mika.core.uistate.SystemAction
-import com.wangzan101.mika.core.uistate.SystemActionResult
-import com.wangzan101.mika.core.uistate.WheelOutcome
+import com.wangzan101.mika.core.screen.uistate.APP_IN_USE_BY_OTHER_TASK
+import com.wangzan101.mika.core.screen.uistate.AppWait
+import com.wangzan101.mika.core.screen.uistate.AppCopy
+import com.wangzan101.mika.core.screen.uistate.AppProfiles
+import com.wangzan101.mika.core.screen.uistate.LaunchChoice
+import com.wangzan101.mika.core.screen.uistate.LaunchChooser
+import com.wangzan101.mika.core.screen.uistate.OpenedElsewhere
+import com.wangzan101.mika.core.screen.uistate.UnseenField
+import com.wangzan101.mika.core.screen.uistate.normalize
+import com.wangzan101.mika.core.screen.uistate.Relocation
+import com.wangzan101.mika.core.screen.uistate.ScreenCheck
+import com.wangzan101.mika.core.screen.uistate.ScreenDiagnosis
+import com.wangzan101.mika.core.screen.uistate.ScreenFacts
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenEvent
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.VisibleTextLine
+import com.wangzan101.mika.core.screen.uistate.SystemCommandResult
+import com.wangzan101.mika.core.screen.uistate.SystemAction
+import com.wangzan101.mika.core.screen.uistate.SystemActionResult
+import com.wangzan101.mika.core.screen.uistate.WheelOutcome
 import com.wangzan101.mika.cap.phone.shell.AsciiTextKeys
 import com.wangzan101.mika.cap.phone.shell.SystemIntents
-import com.wangzan101.mika.core.visual.FrameGrid
-import com.wangzan101.mika.core.uistate.Verification
-import com.wangzan101.mika.core.uistate.TextField
-import com.wangzan101.mika.core.uistate.typeAndVerify
-import com.wangzan101.mika.core.uistate.relocate
-import com.wangzan101.mika.core.uistate.RELOCATE_MAX_SHIFT
-import com.wangzan101.mika.core.uistate.BackAffordance
+import com.wangzan101.mika.core.screen.visual.FrameGrid
+import com.wangzan101.mika.core.screen.uistate.Verification
+import com.wangzan101.mika.core.screen.uistate.TextField
+import com.wangzan101.mika.core.screen.uistate.typeAndVerify
+import com.wangzan101.mika.core.screen.uistate.relocate
+import com.wangzan101.mika.core.screen.uistate.RELOCATE_MAX_SHIFT
+import com.wangzan101.mika.core.screen.uistate.BackAffordance
 import com.wangzan101.mika.cap.phone.display.FrameMath
 import com.wangzan101.mika.cap.phone.display.LazyAgentDisplay
 import com.wangzan101.mika.shell.IMikaShell
@@ -123,7 +123,7 @@ class AndroidScreen(
     internal val beforeOpen: (packageName: String, user: Int?) -> Unit = { _, _ -> },
     /** 启动被拒、没开出来:撤回 [beforeOpen] 提前做的。 */
     internal val notOpened: (packageName: String, user: Int?) -> Unit = { _, _ -> },
-    override val appAccess: com.wangzan101.mika.core.access.AppAccessPolicy = com.wangzan101.mika.core.access.AppAccessPolicy.ALLOW,
+    override val appAccess: com.wangzan101.mika.core.device.access.AppAccessPolicy = com.wangzan101.mika.core.device.access.AppAccessPolicy.ALLOW,
     /** 把工作区里的音频变成可分享的 content URI;为空时这个屏不支持音频分享。 */
     internal val shareAudioFile: (suspend (path: String) -> ShareableFile?)? = null,
     /** 把工作区里的图片变成可分享的 content URI;为空时这个屏不支持图片分享。 */
@@ -191,7 +191,7 @@ class AndroidScreen(
     override suspend fun waitStable(timeoutMs: Long): Boolean = capture.waitStable(timeoutMs)
     override suspend fun awaitChange(timeoutMs: Long): Boolean = capture.awaitChange(timeoutMs)
     override suspend fun waitFor(condition: String, value: String?, timeoutMs: Long): Boolean = capture.waitFor(condition, value, timeoutMs)
-    internal fun containsText(node: com.wangzan101.mika.core.uistate.UiTreeNode, text: String): Boolean = capture.containsText(node, text)
+    internal fun containsText(node: com.wangzan101.mika.core.screen.uistate.UiTreeNode, text: String): Boolean = capture.containsText(node, text)
     override suspend fun nextEvent(kind: String, packageName: String?, timeoutMs: Long): ScreenEvent? = capture.nextEvent(kind, packageName, timeoutMs)
     override suspend fun watchEvents(kind: String, packageName: String?, durationMs: Long, maxEvents: Int): List<ScreenEvent> = capture.watchEvents(kind, packageName, durationMs, maxEvents)
 

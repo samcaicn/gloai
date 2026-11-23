@@ -22,14 +22,14 @@ import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.risk.IrrevAction
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.gate.IrrevAction
 import com.wangzan101.mika.core.agent.Turn
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.settings.AccessibilityState
 import com.wangzan101.mika.settings.Prerequisites
 import com.wangzan101.mika.settings.Problem
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
 import com.wangzan101.mika.settings.SystemStatus
 import com.wangzan101.mika.takeover.Takeover
 import com.wangzan101.mika.task.SteerNote
@@ -38,7 +38,7 @@ import com.wangzan101.mika.task.QueuedFollowUp
 import com.wangzan101.mika.task.QueuedSource
 import com.wangzan101.mika.chat.ui.PipPhysics.Corner
 import com.wangzan101.mika.core.agent.AttachedPage
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -1036,8 +1036,8 @@ class ChatViewModelTest {
             RunEvent.Media(1, 1, 1, "com.chat"),
             RunEvent.Media(2, 2, 3, "网站 www.12306.cn"),
             RunEvent.Sources(3, listOf(
-                com.wangzan101.mika.core.verify.AnswerSource(1, "screen", "com.chat", null, 1, listOf(1)),
-                com.wangzan101.mika.core.verify.AnswerSource(4, "web", "https://www.12306.cn/index", "车次查询", 3, emptyList()),
+                com.wangzan101.mika.core.safety.verify.AnswerSource(1, "screen", "com.chat", null, 1, listOf(1)),
+                com.wangzan101.mika.core.safety.verify.AnswerSource(4, "web", "https://www.12306.cn/index", "车次查询", 3, emptyList()),
             )),
         )
         val source = evidenceSource(events) { if (it == "com.chat") "聊天" else it }
@@ -2374,9 +2374,9 @@ class ChatViewModelTest {
         override suspend fun save(notes: com.wangzan101.mika.memory.RunNotes) { savedNotes += notes }
     }
     private val notesFlow = MutableStateFlow<Map<String, com.wangzan101.mika.memory.RunNotes>>(emptyMap())
-    private fun item(id: String, content: String) = com.wangzan101.mika.core.memory.MemoryItem(
-        id, com.wangzan101.mika.core.memory.MemoryKind.preference, content, emptyList(),
-        com.wangzan101.mika.core.memory.MemorySource("manual", atMs = 0), com.wangzan101.mika.core.memory.MemoryStatus.active, createdAt = 0, updatedAt = 0,
+    private fun item(id: String, content: String) = com.wangzan101.mika.core.learn.memory.MemoryItem(
+        id, com.wangzan101.mika.core.learn.memory.MemoryKind.preference, content, emptyList(),
+        com.wangzan101.mika.core.learn.memory.MemorySource("manual", atMs = 0), com.wangzan101.mika.core.learn.memory.MemoryStatus.active, createdAt = 0, updatedAt = 0,
     )
     private val items = MutableStateFlow(listOf(item("a", "用户点外卖不要香菜"), item("b", "用户喝咖啡不加糖"), item("p1", "点外卖先比价")))
 
@@ -2388,8 +2388,8 @@ class ChatViewModelTest {
         }
     }
 
-    private val remembered = com.wangzan101.mika.core.memory.MemoryNote(com.wangzan101.mika.core.memory.NoteKind.added, "a", "t1", null)
-    private val procedure = com.wangzan101.mika.core.memory.MemoryNote(com.wangzan101.mika.core.memory.NoteKind.pending, "p1", "t2", "p1")
+    private val remembered = com.wangzan101.mika.core.learn.memory.MemoryNote(com.wangzan101.mika.core.learn.memory.NoteKind.added, "a", "t1", null)
+    private val procedure = com.wangzan101.mika.core.learn.memory.MemoryNote(com.wangzan101.mika.core.learn.memory.NoteKind.pending, "p1", "t2", "p1")
 
     @Test fun memoryNotesShownUnderResult() = runTest {
         val vm = vmWithHistory()
@@ -2448,8 +2448,8 @@ class ChatViewModelTest {
 
     @Test fun suspendedSkillRestoreAndView() = runTest {
         val vm = vmWithHistory()
-        val learned = com.wangzan101.mika.core.skills.SkillNote("Mika 学会了一项技能:发微信", draftId = "d1")
-        val suspended = com.wangzan101.mika.core.skills.SkillNote("这项技能最近不灵,先停用了", suspended = "wechat-msg")
+        val learned = com.wangzan101.mika.core.learn.skills.SkillNote("Mika 学会了一项技能:发微信", draftId = "d1")
+        val suspended = com.wangzan101.mika.core.learn.skills.SkillNote("这项技能最近不灵,先停用了", suspended = "wechat-msg")
         notesFlow.value = mapOf("r1" to com.wangzan101.mika.memory.RunNotes("c1", "r1", skillNotes = listOf(learned, suspended)))
         runCurrent()
         vm.viewSkill(learned)

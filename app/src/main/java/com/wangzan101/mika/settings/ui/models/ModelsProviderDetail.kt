@@ -1,7 +1,7 @@
 package com.wangzan101.mika.settings.ui.models
 
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.usage.TokenBudgetLimits
+import com.wangzan101.mika.core.model.usage.TokenBudgetLimits
 import com.wangzan101.mika.i18n.tr
 import androidx.compose.ui.res.stringResource
 import com.wangzan101.mika.ui.components.keepsKeyboard

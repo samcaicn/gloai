@@ -11,8 +11,8 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.wangzan101.mika.core.shell.RecoveryCapability
-import com.wangzan101.mika.core.shell.RecoveryConsent
+import com.wangzan101.mika.core.device.shell.RecoveryCapability
+import com.wangzan101.mika.core.device.shell.RecoveryConsent
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

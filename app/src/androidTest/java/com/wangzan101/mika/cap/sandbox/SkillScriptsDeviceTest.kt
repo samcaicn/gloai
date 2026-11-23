@@ -4,9 +4,9 @@ import com.wangzan101.mika.runAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.knowledge.ScriptManifest
+import com.wangzan101.mika.core.learn.knowledge.ScriptManifest
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
-import com.wangzan101.mika.core.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -22,7 +22,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.lang.reflect.Proxy
-import com.wangzan101.mika.core.access.AppAccessPolicy
+import com.wangzan101.mika.core.device.access.AppAccessPolicy
 import com.wangzan101.mika.core.assembly.toolDispatcher
 
 /**

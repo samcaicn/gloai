@@ -5,7 +5,7 @@ import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.core.agent.Conversation
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.tool.PACKAGE_NAME_RE
 import com.wangzan101.mika.settings.ui.StatusCopy
 import com.wangzan101.mika.chat.ui.answerParts

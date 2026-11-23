@@ -22,29 +22,29 @@ import com.wangzan101.mika.core.cap.web.WEB
 import com.wangzan101.mika.core.cap.web.WebCapability
 import com.wangzan101.mika.core.cap.web.WebGroup
 import com.wangzan101.mika.core.cap.web.WebPort
-import com.wangzan101.mika.core.uistate.IdleScroll
+import com.wangzan101.mika.core.screen.uistate.IdleScroll
 import com.wangzan101.mika.core.cap.web.PagePacing
-import com.wangzan101.mika.core.uistate.PlacePace
+import com.wangzan101.mika.core.screen.uistate.PlacePace
 import com.wangzan101.mika.core.cap.mcp.McpConnection
-import com.wangzan101.mika.core.plugin.PluginCapability
-import com.wangzan101.mika.core.plugin.PluginScriptTool
-import com.wangzan101.mika.core.plugin.PluginToolSpec
-import com.wangzan101.mika.core.plugin.ScriptRunner
+import com.wangzan101.mika.core.tool.PluginCapability
+import com.wangzan101.mika.core.tool.PluginScriptTool
+import com.wangzan101.mika.core.tool.PluginToolSpec
+import com.wangzan101.mika.core.tool.ScriptRunner
 import com.wangzan101.mika.core.general.GeneralGroup
-import com.wangzan101.mika.core.knowledge.GuideCatalog
-import com.wangzan101.mika.core.memory.MemoryStore
-import com.wangzan101.mika.core.record.RunRecords
-import com.wangzan101.mika.core.memory.ProfileStore
-import com.wangzan101.mika.core.memory.UserUtterances
-import com.wangzan101.mika.core.skills.PersonalSkills
-import com.wangzan101.mika.core.uistate.ScreenPort
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.memory.MemoryStore
+import com.wangzan101.mika.core.run.record.RunRecords
+import com.wangzan101.mika.core.learn.memory.ProfileStore
+import com.wangzan101.mika.core.learn.memory.UserUtterances
+import com.wangzan101.mika.core.learn.skills.PersonalSkills
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.LegacyNames
 import com.wangzan101.mika.core.tool.ToolConfig
 import com.wangzan101.mika.core.tool.ToolDispatcher
 import com.wangzan101.mika.core.tool.ToolIndex
-import com.wangzan101.mika.core.vision.ImageOps
-import com.wangzan101.mika.core.vision.VisionService
+import com.wangzan101.mika.core.screen.vision.ImageOps
+import com.wangzan101.mika.core.screen.vision.VisionService
 import com.wangzan101.mika.core.workspace.WorkspacePathCheck
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunSpec
@@ -53,8 +53,8 @@ import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.core.trigger.Scheduled
 import com.wangzan101.mika.core.trigger.TriggerDefinition
 import com.wangzan101.mika.core.trigger.ScheduleAdmin
-import com.wangzan101.mika.core.child.ChildRunHost
-import com.wangzan101.mika.core.userscreen.UserScreenSource
+import com.wangzan101.mika.core.run.ChildRunHost
+import com.wangzan101.mika.core.screen.user.UserScreenSource
 import java.io.File
 
 private val helperFileTools = DeviceFilesGroup.withSearchAndCopy(searchAndCopyTools(DEVICE_FILES))
@@ -134,7 +134,7 @@ fun toolDispatcher(
     /** 用户的个人技能;和 [skills]、[utterances] 都给了才提供 skill_save(用户要求时写下或改一份个人技能)。 */
     personalSkills: PersonalSkills? = null,
     /** 改 Mika 自己设置的白名单入口;为空时不提供 settings_list、settings_set(见 [SelfConfig])。 */
-    selfConfig: com.wangzan101.mika.core.settings.SelfConfig? = null,
+    selfConfig: com.wangzan101.mika.core.self.SelfConfig? = null,
     /** 存下的运行记录;给了、而这个对话之前有记过运行的轮次时提供 history_read(查之前几轮读到的东西)。 */
     runRecords: RunRecords? = null,
     /** 声音生成/保存;为空时不装音频能力(没配置声音模型或用户没打开)。 */
@@ -168,13 +168,13 @@ fun toolDispatcher(
     phoneCalls: com.wangzan101.mika.core.calls.PhoneCallPort? = null,
     smsLogin: com.wangzan101.mika.core.cap.phone.sms.SmsLoginPort? = null,
     /** 跨会话任务摘要;给了才提供 task_memory_search / task_memory_timeline / task_memory_step。 */
-    taskMemory: com.wangzan101.mika.core.memory.TaskMemoryStore? = null,
+    taskMemory: com.wangzan101.mika.core.learn.memory.TaskMemoryStore? = null,
     /** 这两天的通知原文和存着的各天、各周、各月的归纳(主动能力攒下的、够格带进任务的);给了才提供 notices_read。 */
     notices: com.wangzan101.mika.core.proactive.NoticeSource? = null,
     /** 用户在 UI 发起任务时可访问的设备文件。 */
     deviceFiles: com.wangzan101.mika.core.cap.devicefiles.DeviceFilesPort? = null,
     /** 把任务结果投递到机主绑定微信的出口;为空(任务没明确要发微信)时不提供 wechat_send_owner。没绑定时出口照样在,发送照实回报不可用。 */
-    wechatOwner: com.wangzan101.mika.core.wechat.WechatOwnerPort? = null,
+    wechatOwner: com.wangzan101.mika.core.cap.wechat.WechatOwnerPort? = null,
     /** 启用的插件工具(名字已拼成 plugin_<id>_<name>);给了 [pluginScriptRunner] 才放进任务。 */
     pluginTools: List<PluginToolSpec> = emptyList(),
     /** 在 App 进程内跑插件脚本的入口;为空时插件工具不登记。 */
@@ -215,9 +215,9 @@ fun toolDispatcher(
         },
         // 端口为空时整个能力不进装配(任务没明确要发微信)
         object : CapabilityProvider {
-            override val id = com.wangzan101.mika.core.wechat.WechatOwnerCapability.WECHAT_OWNER
+            override val id = com.wangzan101.mika.core.cap.wechat.WechatOwnerCapability.WECHAT_OWNER
             override fun open(spec: RunSpec) =
-                wechatOwner?.let { com.wangzan101.mika.core.wechat.WechatOwnerCapability(it) }
+                wechatOwner?.let { com.wangzan101.mika.core.cap.wechat.WechatOwnerCapability(it) }
         },
     ) + listOfNotNull(if (transcribe != null || transcribeProvider != null) {
         object : CapabilityProvider {
@@ -302,7 +302,7 @@ fun recordedTools(): ToolIndex = legacyNames().let { legacy -> ToolIndex(allTool
 
 /** Mika 所有可能提供的工具,按发给模型的顺序。 */
 internal fun allTools(): List<AgentTool> =
-    GeneralGroup.tools + PhoneCapability.tools() + WebGroup.tools + SandboxGroup.tools + com.wangzan101.mika.core.cap.audio.AudioGroup.tools + com.wangzan101.mika.core.cap.transcribe.TranscribeGroup.tools + com.wangzan101.mika.core.cap.image.ImageGroup.tools + RootGroup.tools + com.wangzan101.mika.core.calls.callAgentTools + helperFileTools + com.wangzan101.mika.core.wechat.wechatOwnerAgentTools
+    GeneralGroup.tools + PhoneCapability.tools() + WebGroup.tools + SandboxGroup.tools + com.wangzan101.mika.core.cap.audio.AudioGroup.tools + com.wangzan101.mika.core.cap.transcribe.TranscribeGroup.tools + com.wangzan101.mika.core.cap.image.ImageGroup.tools + RootGroup.tools + com.wangzan101.mika.core.calls.callAgentTools + helperFileTools + com.wangzan101.mika.core.cap.wechat.wechatOwnerAgentTools
 
 /** Mika 所有可能提供的工具的声明。 */
 fun knownTools(): ToolIndex = ToolIndex(allTools())

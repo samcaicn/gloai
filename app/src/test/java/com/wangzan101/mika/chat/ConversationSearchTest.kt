@@ -4,7 +4,7 @@ import com.wangzan101.mika.core.agent.AttachmentLines
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.agent.AttachedPage
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
 import com.wangzan101.mika.chat.ui.ChatCopy
 import com.wangzan101.mika.chat.ui.ChatTarget
 import kotlinx.coroutines.runBlocking

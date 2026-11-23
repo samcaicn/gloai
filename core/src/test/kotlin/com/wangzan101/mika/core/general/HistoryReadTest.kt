@@ -1,15 +1,15 @@
 package com.wangzan101.mika.core.general
 
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.agent.NoticeTurn
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Trust
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunRecords
-import com.wangzan101.mika.core.record.RunSummary
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Trust
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunRecords
+import com.wangzan101.mika.core.run.record.RunSummary
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunSpec
 import com.wangzan101.mika.core.tool.ActionPass
@@ -184,7 +184,7 @@ class HistoryReadTest {
             val result = runBlocking { dispatcher.execute(Part.ToolCall("h", HISTORY_READ, args), ActionPass()) }
             assertTrue(args, secret in result.content.toString())
             val emitted = mutableListOf<RunEvent>()
-            val recorder = com.wangzan101.mika.core.action.ActionRecorder(object : com.wangzan101.mika.core.record.RunSink {
+            val recorder = com.wangzan101.mika.core.action.ActionRecorder(object : com.wangzan101.mika.core.run.record.RunSink {
                 override fun event(e: RunEvent) { emitted += e }
             })
             recorder.result(1, HISTORY_READ, com.wangzan101.mika.core.tool.Verb.HistoryRead, result.content, JsonObject(emptyMap()), null, null, 0, "model", "h")
@@ -208,7 +208,7 @@ class HistoryReadTest {
         }
         // 不是通知提醒的那一轮:单读时结果照记
         val plain = runBlocking { dispatcher.execute(Part.ToolCall("h", HISTORY_READ, """{"turn":2}"""), ActionPass()) }
-        val kept = com.wangzan101.mika.core.record.Redactor.result(com.wangzan101.mika.core.tool.Verb.HistoryRead, plain.content)
+        val kept = com.wangzan101.mika.core.run.record.Redactor.result(com.wangzan101.mika.core.tool.Verb.HistoryRead, plain.content)
         assertEquals(JsonPrimitive("没找到"), kept["outcome"])
     }
 }

@@ -8,7 +8,7 @@ import com.wangzan101.mika.cap.phone.shell.AsciiTextKeys
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.tool.ToolDispatcher
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import com.wangzan101.mika.runAction
 import com.wangzan101.mika.shell.IMikaShell
 import kotlinx.coroutines.delay

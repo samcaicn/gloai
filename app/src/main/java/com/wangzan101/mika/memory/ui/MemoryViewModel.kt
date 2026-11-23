@@ -2,26 +2,26 @@ package com.wangzan101.mika.memory.ui
 
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.core.memory.MemoryIndex
-import com.wangzan101.mika.core.memory.MemoryItem
-import com.wangzan101.mika.core.memory.MemoryKind
-import com.wangzan101.mika.core.memory.MemoryRejected
-import com.wangzan101.mika.core.memory.MemorySource
-import com.wangzan101.mika.core.memory.MemoryStatus
-import com.wangzan101.mika.core.memory.MemoryStore
-import com.wangzan101.mika.core.memory.TaskMemory
-import com.wangzan101.mika.core.memory.TaskMemoryStore
-import com.wangzan101.mika.core.knowledge.FrontMatter
-import com.wangzan101.mika.core.skills.SkillDrafter
-import com.wangzan101.mika.core.skills.SkillImport
+import com.wangzan101.mika.core.learn.memory.MemoryIndex
+import com.wangzan101.mika.core.learn.memory.MemoryItem
+import com.wangzan101.mika.core.learn.memory.MemoryKind
+import com.wangzan101.mika.core.learn.memory.MemoryRejected
+import com.wangzan101.mika.core.learn.memory.MemorySource
+import com.wangzan101.mika.core.learn.memory.MemoryStatus
+import com.wangzan101.mika.core.learn.memory.MemoryStore
+import com.wangzan101.mika.core.learn.memory.TaskMemory
+import com.wangzan101.mika.core.learn.memory.TaskMemoryStore
+import com.wangzan101.mika.core.learn.knowledge.FrontMatter
+import com.wangzan101.mika.core.learn.skills.SkillDrafter
+import com.wangzan101.mika.core.learn.skills.SkillImport
 import com.wangzan101.mika.core.assembly.knownToolNames
-import com.wangzan101.mika.core.skills.PersonalSkill
-import com.wangzan101.mika.core.skills.PersonalSkills
-import com.wangzan101.mika.core.skills.SkillStatus
-import com.wangzan101.mika.core.knowledge.AppKnowledgeDraftStore
-import com.wangzan101.mika.core.knowledge.AppKnowledgeDrafter
-import com.wangzan101.mika.core.knowledge.AppKnowledgeStage
-import com.wangzan101.mika.core.knowledge.AppKnowledgeTrial
+import com.wangzan101.mika.core.learn.skills.PersonalSkill
+import com.wangzan101.mika.core.learn.skills.PersonalSkills
+import com.wangzan101.mika.core.learn.skills.SkillStatus
+import com.wangzan101.mika.core.learn.knowledge.AppKnowledgeDraftStore
+import com.wangzan101.mika.core.learn.knowledge.AppKnowledgeDrafter
+import com.wangzan101.mika.core.learn.knowledge.AppKnowledgeStage
+import com.wangzan101.mika.core.learn.knowledge.AppKnowledgeTrial
 import com.wangzan101.mika.settings.MemorySettings
 import com.wangzan101.mika.settings.MemorySwitches
 import kotlinx.coroutines.CoroutineScope
@@ -252,7 +252,7 @@ class MemoryViewModel(
             if (s.type == "manual") tr(R.string.memory_manual)
             else SimpleDateFormat(tr(R.string.date_pattern_md), uiLocale()).format(Date(s.atMs)).let { day ->
                 // Mika 自己归纳出来的:引的是用户提出要求的那句话,不能说成「你说的」
-                if (s.type == com.wangzan101.mika.core.memory.MemoryContext.INFERRED) tr(R.string.memory_inferred, day, s.quote.orEmpty())
+                if (s.type == com.wangzan101.mika.core.learn.memory.MemoryContext.INFERRED) tr(R.string.memory_inferred, day, s.quote.orEmpty())
                 else if (s.channel != null && s.channel != "Ui") tr(R.string.memory_said_via, day, s.channel, s.quote.orEmpty())
                 else tr(R.string.memory_said, day, s.quote.orEmpty())
             }

@@ -1,7 +1,7 @@
 package com.wangzan101.mika.cap.web
 
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
 import com.wangzan101.mika.core.cap.web.DownloadInfo
 import com.wangzan101.mika.core.cap.web.EvalJs
 import com.wangzan101.mika.core.cap.web.NavResult
@@ -96,7 +96,7 @@ class LazyWebPortTest {
 
     @Test
     fun interactionsWaitForTheFirstNavigation() = runTest {
-        val combo = com.wangzan101.mika.core.uistate.CdpKeys.parseCombo("Escape")!!
+        val combo = com.wangzan101.mika.core.screen.uistate.CdpKeys.parseCombo("Escape")!!
         val at = com.wangzan101.mika.core.cap.web.WebPoint.Xy(1, 1)
         assertEquals("no_tab_open", (lazy.hover(at) as ActionResult.Failed).reason)
         assertEquals("no_tab_open", (lazy.pressCombo(combo) as ActionResult.Failed).reason)

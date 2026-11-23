@@ -5,13 +5,13 @@ import com.wangzan101.mika.core.cap.web.DownloadInfo
 import com.wangzan101.mika.core.cap.web.FakeWebPort
 import com.wangzan101.mika.core.cap.web.NavResult
 import com.wangzan101.mika.core.cap.web.WebPort
-import com.wangzan101.mika.core.gate.IrreversibleDetector
-import com.wangzan101.mika.core.gate.classify
+import com.wangzan101.mika.core.safety.gate.IrreversibleDetector
+import com.wangzan101.mika.core.safety.gate.classify
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.risk.IrrevAction
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.safety.gate.IrrevAction
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -64,7 +64,7 @@ class RealTaskFailuresTest {
     }
 
     @Test fun appThatNeverReachesTheForegroundIsAFailure() = runTest {
-        val screen = FakeScreen().apply { result = com.wangzan101.mika.core.uistate.ActionResult.Failed("app_not_in_front", hint = "In the foreground now: com.launcher.") }
+        val screen = FakeScreen().apply { result = com.wangzan101.mika.core.screen.uistate.ActionResult.Failed("app_not_in_front", hint = "In the foreground now: com.launcher.") }
         val r = toolDispatcher(screen).execute(call("phone_launch_app", """{"package":"com.x"}""")).content
         assertEquals("false", r.s("ok")); assertEquals("app_not_in_front", r.s("error"))
         assertTrue(r.s("message"), "did not come to the foreground" in r.s("message") && "com.launcher" in r.s("message"))
@@ -114,8 +114,8 @@ class RealTaskFailuresTest {
     /** 用错了屏的编号、被拒的调用不改「最近操作的屏」:之后不点名屏幕的确认、接管照旧说的是原来那块。 */
     @Test fun misaimedCallsDoNotMoveTheRememberedScreen() = runTest {
         val d = toolDispatcher(FakeScreen(), web = FakeWebPort())
-        val ex = com.wangzan101.mika.core.action.ActionExecutor(d, com.wangzan101.mika.core.guard.OperationGuards(), null, gate = {},
-            recorder = com.wangzan101.mika.core.action.ActionRecorder(com.wangzan101.mika.core.record.RunSink.NONE))
+        val ex = com.wangzan101.mika.core.action.ActionExecutor(d, com.wangzan101.mika.core.safety.guard.OperationGuards(), null, gate = {},
+            recorder = com.wangzan101.mika.core.action.ActionRecorder(com.wangzan101.mika.core.run.record.RunSink.NONE))
         d.execute(call("web_navigate", """{"url":"https://shop.example.com/"}"""))
         val webSid = d.execute(call("web_observe")).content.s("snapshotId")
         d.execute(call("phone_observe"))

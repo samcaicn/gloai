@@ -1,8 +1,8 @@
 package com.wangzan101.mika.ui
 
-import com.wangzan101.mika.core.decision.DecisionChoice
-import com.wangzan101.mika.core.decision.DecisionConfig
-import com.wangzan101.mika.core.decision.DecisionModel
+import com.wangzan101.mika.core.model.decision.DecisionChoice
+import com.wangzan101.mika.core.model.decision.DecisionConfig
+import com.wangzan101.mika.core.model.decision.DecisionModel
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.*

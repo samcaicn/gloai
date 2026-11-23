@@ -32,7 +32,7 @@ class TokenEstimateTest {
 
     @Test fun imagesWithSizeCountByPixels() {
         // 原分辨率 1224×2700 与压缩后 580×1280(长边 1280)
-        val (w, h) = com.wangzan101.mika.core.vision.ModelImage.scaled(1224, 2700)
+        val (w, h) = com.wangzan101.mika.core.screen.vision.ModelImage.scaled(1224, 2700)
         assertEquals(580 to 1280, w to h)
         assertEquals(4407, TokenEstimate.of(listOf(Message(Role.User, listOf(Part.Image("x", width = 1224, height = 2700)), Author.Mika))))
         assertEquals(990, TokenEstimate.of(listOf(Message(Role.User, listOf(Part.Image("x", width = w, height = h)), Author.Mika))))

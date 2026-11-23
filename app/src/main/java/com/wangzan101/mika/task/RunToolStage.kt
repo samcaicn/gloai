@@ -2,9 +2,9 @@ package com.wangzan101.mika.task
 
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.core.uistate.IdleScroll
+import com.wangzan101.mika.core.screen.uistate.IdleScroll
 import com.wangzan101.mika.core.cap.web.PagePacing
-import com.wangzan101.mika.core.uistate.PlacePace
+import com.wangzan101.mika.core.screen.uistate.PlacePace
 import kotlin.random.Random
 import com.wangzan101.mika.core.action.OutwardPacing
 import com.wangzan101.mika.settings.ui.StatusCopy
@@ -14,15 +14,15 @@ import com.wangzan101.mika.cap.phone.setup.RootShell
 import com.wangzan101.mika.cap.root.RootCommands
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.core.agent.AgentLoop
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.core.run.Attendance
 import com.wangzan101.mika.core.cap.sandbox.FolderFileImporter
-import com.wangzan101.mika.core.wechat.explicitWechatOwnerRequest
+import com.wangzan101.mika.core.cap.wechat.explicitWechatOwnerRequest
 import com.wangzan101.mika.wechat.AndroidWechatOwnerPort
-import com.wangzan101.mika.core.child.ChildAgentRunner
-import com.wangzan101.mika.core.vision.VisionService
+import com.wangzan101.mika.core.run.ChildAgentRunner
+import com.wangzan101.mika.core.screen.vision.VisionService
 import com.wangzan101.mika.record.RunStore
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.media.BitmapImageOps

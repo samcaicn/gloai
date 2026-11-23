@@ -19,7 +19,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.viewModelScope
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.trace.TraceArchive
+import com.wangzan101.mika.core.run.trace.TraceArchive
 import com.wangzan101.mika.record.OtlpReceipt
 import com.wangzan101.mika.record.OtlpSender
 import com.wangzan101.mika.ui.components.ListRow

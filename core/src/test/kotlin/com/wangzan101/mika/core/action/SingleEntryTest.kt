@@ -47,7 +47,7 @@ class SingleEntryTest {
     }
 
     @Test fun actionAndGuardDoNotDependOnTheLoop() {
-        val bad = listOf("action", "guard").flatMap { pkg ->
+        val bad = listOf("action", "safety/guard").flatMap { pkg ->
             File("src/main/kotlin/com/wangzan101/mika/core/$pkg").walkTopDown().filter { it.isFile && it.extension == "kt" }.flatMap { f ->
                 f.readLines().filter { it.startsWith("import com.wangzan101.mika.core.agent.") }.map { "${f.path}: $it" }
             }.toList()

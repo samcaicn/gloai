@@ -15,7 +15,7 @@ internal fun fail(error: String, message: String, recoverable: Boolean = true) =
 })
 
 /**
- * 编号用不了:动作没做。[cause] 说清是哪一种,运行记录和模型都看得到:[com.wangzan101.mika.core.uistate.StaleCause] 的几种,
+ * 编号用不了:动作没做。[cause] 说清是哪一种,运行记录和模型都看得到:[com.wangzan101.mika.core.screen.uistate.StaleCause] 的几种,
  * 端口找不回元素的 element_lost,看图找到的点过期的 located_stale,把 screenshotId 当 snapshotId 的 screenshot_id。
  */
 internal fun refExpired(message: String, cause: String) =

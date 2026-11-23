@@ -2,7 +2,7 @@ package com.wangzan101.mika.chat.ui
 
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.AttachedPage
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
 
 /**
  * 第 [turn] 轮(0 起)此刻能不能作为分支点:轮次在范围内、这一轮已经结束、对话没有被挡住([blocked]:有任务在跑或排队、

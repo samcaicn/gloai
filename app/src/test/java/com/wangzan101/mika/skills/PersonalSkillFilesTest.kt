@@ -1,8 +1,8 @@
 package com.wangzan101.mika.skills
 
-import com.wangzan101.mika.core.skills.PersonalSkill
-import com.wangzan101.mika.core.skills.PersonalSkills
-import com.wangzan101.mika.core.skills.SkillStatus
+import com.wangzan101.mika.core.learn.skills.PersonalSkill
+import com.wangzan101.mika.core.learn.skills.PersonalSkills
+import com.wangzan101.mika.core.learn.skills.SkillStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

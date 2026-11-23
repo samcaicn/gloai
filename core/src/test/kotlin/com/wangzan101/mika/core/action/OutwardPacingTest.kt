@@ -1,16 +1,16 @@
 package com.wangzan101.mika.core.action
 
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.guard.OperationGuards
+import com.wangzan101.mika.core.safety.guard.OperationGuards
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.tool.execute
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

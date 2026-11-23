@@ -6,9 +6,9 @@ import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.cap.sandbox.FakeSandbox
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.tool.FakeScreen
-import com.wangzan101.mika.core.access.AppAccessPolicy
-import com.wangzan101.mika.core.access.AppAccessState
-import com.wangzan101.mika.core.uistate.AppAccessScreenPort
+import com.wangzan101.mika.core.device.access.AppAccessPolicy
+import com.wangzan101.mika.core.device.access.AppAccessState
+import com.wangzan101.mika.core.screen.uistate.AppAccessScreenPort
 import com.wangzan101.mika.core.tool.ToolDispatcher
 import com.wangzan101.mika.core.cap.web.FakeWebPort
 import kotlinx.coroutines.runBlocking

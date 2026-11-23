@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.cap.phone
 
-import com.wangzan101.mika.core.uistate.Pace
-import com.wangzan101.mika.core.uistate.TextField
+import com.wangzan101.mika.core.screen.uistate.Pace
+import com.wangzan101.mika.core.screen.uistate.TextField
 import kotlinx.coroutines.delay
 import kotlin.math.ceil
 import kotlin.math.roundToLong

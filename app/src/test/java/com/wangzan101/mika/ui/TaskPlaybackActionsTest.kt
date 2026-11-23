@@ -1,7 +1,7 @@
 package com.wangzan101.mika.ui
 
-import com.wangzan101.mika.core.record.PlaybackMark
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.PlaybackMark
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.i18n.ChineseTexts
 import org.junit.Assert.*
 import org.junit.Rule
@@ -89,8 +89,8 @@ class TaskPlaybackActionsTest {
     @Test fun oldElementMarkersRemainVisibleAndDistinguishEstimatedCoordinates() {
         fun action(step: Int, call: String, args: String) = RunEvent.ActionTarget(
             1, step, "phone_tap", args, null,
-            com.wangzan101.mika.core.replay.Anchors(null, emptyList()),
-            com.wangzan101.mika.core.replay.Anchors(null, emptyList()), true, callId = call)
+            com.wangzan101.mika.core.learn.replay.Anchors(null, emptyList()),
+            com.wangzan101.mika.core.learn.replay.Anchors(null, emptyList()), true, callId = call)
         val r = report(listOf(
             action(14, "other", """{"x":746,"y":97}"""),
             action(14, "open", """{"ref":"@e423","snapshotId":"p11"}"""),

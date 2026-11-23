@@ -1,12 +1,12 @@
 package com.wangzan101.mika.core.cap.web
 
-import com.wangzan101.mika.core.uistate.KeyCombo
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenCheck
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
-import com.wangzan101.mika.core.uistate.WebInfo
-import com.wangzan101.mika.core.uistate.PageDialog
+import com.wangzan101.mika.core.screen.uistate.KeyCombo
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenCheck
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.WebInfo
+import com.wangzan101.mika.core.screen.uistate.PageDialog
 
 /** 假网页端口:记录调用,结果可按测试改。读屏编号 w<tab>-<n>,和手机的永不相同。 */
 class FakeWebPort : WebPort {

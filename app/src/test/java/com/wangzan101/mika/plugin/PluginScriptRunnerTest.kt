@@ -1,6 +1,6 @@
 package com.wangzan101.mika.plugin
 
-import com.wangzan101.mika.core.plugin.ScriptResult
+import com.wangzan101.mika.core.tool.ScriptResult
 import com.wangzan101.mika.core.tool.Risk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

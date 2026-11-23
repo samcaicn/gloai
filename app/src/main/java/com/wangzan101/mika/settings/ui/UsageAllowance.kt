@@ -19,11 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.core.model.ModelError
-import com.wangzan101.mika.core.usage.AllowanceMoney
-import com.wangzan101.mika.core.usage.AllowanceSource
-import com.wangzan101.mika.core.usage.ProviderAllowance
-import com.wangzan101.mika.core.usage.ProviderAllowanceClient
-import com.wangzan101.mika.core.usage.ResetPeriod
+import com.wangzan101.mika.core.model.usage.AllowanceMoney
+import com.wangzan101.mika.core.model.usage.AllowanceSource
+import com.wangzan101.mika.core.model.usage.ProviderAllowance
+import com.wangzan101.mika.core.model.usage.ProviderAllowanceClient
+import com.wangzan101.mika.core.model.usage.ResetPeriod
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.uiLocale
 import com.wangzan101.mika.settings.AllowanceRoute

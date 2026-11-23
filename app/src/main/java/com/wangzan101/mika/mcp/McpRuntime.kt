@@ -16,7 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import com.wangzan101.mika.core.mcp.McpUsb
-import com.wangzan101.mika.core.shell.HelperHandoff
+import com.wangzan101.mika.core.device.shell.HelperHandoff
 import com.wangzan101.mika.device.AndroidDeviceAccess
 import com.wangzan101.mika.core.remote.RemoteTasks
 import com.wangzan101.mika.core.remote.RunExportSource

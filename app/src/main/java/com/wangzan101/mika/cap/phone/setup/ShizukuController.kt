@@ -11,8 +11,8 @@ import android.util.Log
 import com.wangzan101.mika.BuildConfig
 import com.wangzan101.mika.cap.phone.shell.HelperHub
 import com.wangzan101.mika.cap.phone.shell.ShizukuShellUserService
-import com.wangzan101.mika.core.shell.BuiltinShellFailure
-import com.wangzan101.mika.core.shell.ShizukuPlatformState
+import com.wangzan101.mika.core.device.shell.BuiltinShellFailure
+import com.wangzan101.mika.core.device.shell.ShizukuPlatformState
 import com.wangzan101.mika.shell.IMikaShell
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher

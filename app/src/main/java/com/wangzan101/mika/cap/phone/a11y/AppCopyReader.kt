@@ -1,10 +1,10 @@
 package com.wangzan101.mika.cap.phone.a11y
 
 import com.wangzan101.mika.cap.phone.shell.ShellService
-import com.wangzan101.mika.core.uistate.AppCopies
-import com.wangzan101.mika.core.uistate.AppCopy
-import com.wangzan101.mika.core.uistate.AppProfiles
-import com.wangzan101.mika.core.uistate.UserProfile
+import com.wangzan101.mika.core.screen.uistate.AppCopies
+import com.wangzan101.mika.core.screen.uistate.AppCopy
+import com.wangzan101.mika.core.screen.uistate.AppProfiles
+import com.wangzan101.mika.core.screen.uistate.UserProfile
 import com.wangzan101.mika.shell.IMikaShell
 
 /** 问内置助手:能打开的另一份 App(装在分身、工作资料一类的另一份用户里)。 */

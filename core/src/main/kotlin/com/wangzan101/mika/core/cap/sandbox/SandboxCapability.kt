@@ -4,10 +4,10 @@ import com.wangzan101.mika.core.capability.Capability
 import com.wangzan101.mika.core.capability.CapabilityKey
 import com.wangzan101.mika.core.capability.CapabilityStatus
 import com.wangzan101.mika.core.capability.PromptEnv
-import com.wangzan101.mika.core.guard.OffScreenGuard
-import com.wangzan101.mika.core.knowledge.ScriptManifest
-import com.wangzan101.mika.core.knowledge.ScriptState
-import com.wangzan101.mika.core.knowledge.BundledScripts
+import com.wangzan101.mika.core.safety.guard.OffScreenGuard
+import com.wangzan101.mika.core.learn.knowledge.ScriptManifest
+import com.wangzan101.mika.core.learn.knowledge.ScriptState
+import com.wangzan101.mika.core.learn.knowledge.BundledScripts
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.ToolContext

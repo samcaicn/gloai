@@ -1,10 +1,10 @@
 package com.wangzan101.mika.core.general
 
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Observation
-import com.wangzan101.mika.core.observation.Place
-import com.wangzan101.mika.core.observation.Trust
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Observation
+import com.wangzan101.mika.core.screen.observation.Place
+import com.wangzan101.mika.core.screen.observation.Trust
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.AgentTool
@@ -18,9 +18,9 @@ import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.tool.fail
 import com.wangzan101.mika.core.tool.okObj
 import com.wangzan101.mika.core.tool.str
-import com.wangzan101.mika.core.userscreen.UserScreen
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
-import com.wangzan101.mika.core.userscreen.UserScreenPrompt
+import com.wangzan101.mika.core.screen.user.UserScreen
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
+import com.wangzan101.mika.core.screen.user.UserScreenPrompt
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.put
 import java.time.ZoneId

@@ -3,7 +3,7 @@ package com.wangzan101.mika.chat.ui
 import com.wangzan101.mika.core.agent.GoalChecklist
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.AttachedPage
-import com.wangzan101.mika.core.record.RunMetrics
+import com.wangzan101.mika.core.run.record.RunMetrics
 import com.wangzan101.mika.ui.components.DirectionalIcon
 import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing

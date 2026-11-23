@@ -18,9 +18,9 @@ import com.wangzan101.mika.core.model.Role
  */
 data class Turn(
     val userText: String, val outcome: String, val status: String, val note: String? = null, val runId: String? = null,
-    val memoryNotes: List<com.wangzan101.mika.core.memory.MemoryNote> = emptyList(),
+    val memoryNotes: List<com.wangzan101.mika.core.learn.memory.MemoryNote> = emptyList(),
     val usedMemory: List<String> = emptyList(),
-    val skillNotes: List<com.wangzan101.mika.core.skills.SkillNote> = emptyList(),
+    val skillNotes: List<com.wangzan101.mika.core.learn.skills.SkillNote> = emptyList(),
     val unconfirmed: List<String> = emptyList(),
     val result: String? = null,
     /** 任务进行中用户插的、已交给这个任务的话(界面在那一轮下面显示)。 */

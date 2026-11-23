@@ -4,7 +4,7 @@ import org.junit.Rule
 import com.wangzan101.mika.i18n.ChineseTexts
 import com.wangzan101.mika.chat.BranchOrigin
 import com.wangzan101.mika.chat.ConversationSummary
-import com.wangzan101.mika.core.usage.DeepSeekCost
+import com.wangzan101.mika.core.model.usage.DeepSeekCost
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

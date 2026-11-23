@@ -3,14 +3,14 @@ package com.wangzan101.mika.cap.phone.a11y
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityWindowInfo
-import com.wangzan101.mika.core.uistate.OpenedElsewhere
-import com.wangzan101.mika.core.uistate.ScreenCheck
-import com.wangzan101.mika.core.uistate.ScreenDiagnosis
-import com.wangzan101.mika.core.uistate.ScreenEvent
-import com.wangzan101.mika.core.uistate.ScreenFacts
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.VisibleTextLine
-import com.wangzan101.mika.core.visual.FrameGrid
+import com.wangzan101.mika.core.screen.uistate.OpenedElsewhere
+import com.wangzan101.mika.core.screen.uistate.ScreenCheck
+import com.wangzan101.mika.core.screen.uistate.ScreenDiagnosis
+import com.wangzan101.mika.core.screen.uistate.ScreenEvent
+import com.wangzan101.mika.core.screen.uistate.ScreenFacts
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.VisibleTextLine
+import com.wangzan101.mika.core.screen.visual.FrameGrid
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -241,7 +241,7 @@ internal class ScreenCapture(private val screen: AndroidScreen) {
         }
     }
 
-    internal fun containsText(node: com.wangzan101.mika.core.uistate.UiTreeNode, text: String): Boolean =
+    internal fun containsText(node: com.wangzan101.mika.core.screen.uistate.UiTreeNode, text: String): Boolean =
         (!node.secret && (node.text?.contains(text, true) == true || node.description?.contains(text, true) == true)) ||
             node.children.any { containsText(it, text) }
 

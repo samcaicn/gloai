@@ -222,7 +222,7 @@ class ManifestProvidersTest {
     /** 内置助手进程按这个全名启动。 */
     @Test
     fun helperEntryClassExists() {
-        val c = Class.forName(com.wangzan101.mika.core.shell.HelperHandoff.HELPER_CLASS, false, javaClass.classLoader)
+        val c = Class.forName(com.wangzan101.mika.core.device.shell.HelperHandoff.HELPER_CLASS, false, javaClass.classLoader)
         assertTrue(c.methods.any { it.name == "main" && java.lang.reflect.Modifier.isStatic(it.modifiers) })
     }
 }

@@ -1,8 +1,8 @@
 package com.wangzan101.mika.core.cap.web
 
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
-import com.wangzan101.mika.core.uistate.normalize
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.normalize
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -12,7 +12,7 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlin.math.max
 import kotlin.math.roundToInt
-import com.wangzan101.mika.core.uistate.WebInfo
+import com.wangzan101.mika.core.screen.uistate.WebInfo
 
 /**
  * 页面脚本输出 → ScreenSnapshot。输入形如

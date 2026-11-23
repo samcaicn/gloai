@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.cap.phone
 
-import com.wangzan101.mika.core.uistate.PlacePace
+import com.wangzan101.mika.core.screen.uistate.PlacePace
 import kotlin.random.Random
 
 /**

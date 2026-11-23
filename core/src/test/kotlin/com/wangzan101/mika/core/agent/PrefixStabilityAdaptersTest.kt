@@ -14,7 +14,7 @@ import com.wangzan101.mika.core.model.ResponsesModel
 import com.wangzan101.mika.core.testing.Screen
 import com.wangzan101.mika.core.testing.ScriptedScreen
 import com.wangzan101.mika.core.testing.label
-import com.wangzan101.mika.core.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray

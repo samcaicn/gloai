@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.general
 
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.risk.IrrevAction
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.gate.IrrevAction
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.ArgError
 import com.wangzan101.mika.core.tool.Args
@@ -19,10 +19,10 @@ import com.wangzan101.mika.core.tool.fail
 import com.wangzan101.mika.core.tool.okObj
 import com.wangzan101.mika.core.tool.str
 import kotlinx.serialization.json.put
-import com.wangzan101.mika.core.uistate.confirmTarget
-import com.wangzan101.mika.core.uistate.focus
-import com.wangzan101.mika.core.uistate.lastSnapshot
-import com.wangzan101.mika.core.uistate.session
+import com.wangzan101.mika.core.screen.uistate.confirmTarget
+import com.wangzan101.mika.core.screen.uistate.focus
+import com.wangzan101.mika.core.screen.uistate.lastSnapshot
+import com.wangzan101.mika.core.screen.uistate.session
 
 /**
  * 花钱的那一步(下单、屏上有应付金额时的提交等)前请用户同意;询问时只有这一种要问。付款本身不在这里,交给用户亲手付。

@@ -5,9 +5,9 @@ import android.util.Base64
 import com.wangzan101.mika.core.cap.root.RootCommandClass
 import com.wangzan101.mika.core.cap.root.RootPort
 import com.wangzan101.mika.core.cap.root.RootRun
-import com.wangzan101.mika.core.shell.RootCommandSession
-import com.wangzan101.mika.core.shell.SuAnswer
-import com.wangzan101.mika.core.shell.SuProbe
+import com.wangzan101.mika.core.device.shell.RootCommandSession
+import com.wangzan101.mika.core.device.shell.SuAnswer
+import com.wangzan101.mika.core.device.shell.SuProbe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import java.io.ByteArrayOutputStream

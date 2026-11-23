@@ -1,9 +1,9 @@
 package com.wangzan101.mika.skills
 
-import com.wangzan101.mika.core.skills.PersonalSkill
-import com.wangzan101.mika.core.skills.PersonalSkills
-import com.wangzan101.mika.core.skills.SkillStatus
-import com.wangzan101.mika.core.skills.SkillRevision
+import com.wangzan101.mika.core.learn.skills.PersonalSkill
+import com.wangzan101.mika.core.learn.skills.PersonalSkills
+import com.wangzan101.mika.core.learn.skills.SkillStatus
+import com.wangzan101.mika.core.learn.skills.SkillRevision
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray

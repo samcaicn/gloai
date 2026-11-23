@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.guard.GuardVerdict
-import com.wangzan101.mika.core.guard.Severity
+import com.wangzan101.mika.core.safety.guard.GuardVerdict
+import com.wangzan101.mika.core.safety.guard.Severity
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertTrue

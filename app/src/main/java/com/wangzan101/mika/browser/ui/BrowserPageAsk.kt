@@ -86,7 +86,7 @@ import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.AttachedPage
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.tool.PACKAGE_NAME_RE
 import com.wangzan101.mika.takeover.Takeover
 import com.wangzan101.mika.task.TaskRun

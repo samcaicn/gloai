@@ -20,7 +20,7 @@ import com.wangzan101.mika.about.CheckStatus
 import com.wangzan101.mika.about.MikaLinks
 import com.wangzan101.mika.about.ReleaseInfo
 import com.wangzan101.mika.about.UpdateState
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
 import com.wangzan101.mika.settings.AccessibilityState
 import com.wangzan101.mika.settings.Prerequisites
 import com.wangzan101.mika.settings.SystemStatus

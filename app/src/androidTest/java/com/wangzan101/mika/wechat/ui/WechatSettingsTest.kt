@@ -12,7 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.ChineseUi
-import com.wangzan101.mika.core.wechat.WechatAccount
+import com.wangzan101.mika.core.cap.wechat.WechatAccount
 import com.wangzan101.mika.settings.KeyCipher
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.wechat.WechatRuntime

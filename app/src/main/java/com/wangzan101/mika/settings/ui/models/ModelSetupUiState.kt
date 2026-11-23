@@ -1,7 +1,7 @@
 package com.wangzan101.mika.settings.ui.models
 
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.chatgpt.signInWithChatGpt
+import com.wangzan101.mika.core.model.chatgpt.signInWithChatGpt
 import com.wangzan101.mika.core.model.ApiKeyText
 import com.wangzan101.mika.core.model.ModelGroup
 import com.wangzan101.mika.core.model.ModelRole

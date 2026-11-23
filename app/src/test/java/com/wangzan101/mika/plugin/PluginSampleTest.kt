@@ -1,6 +1,6 @@
 package com.wangzan101.mika.plugin
 
-import com.wangzan101.mika.core.skills.PLUGIN_KIND
+import com.wangzan101.mika.core.learn.skills.PLUGIN_KIND
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
@@ -18,9 +18,9 @@ class PluginSampleTest {
 
     private val examples: File by lazy {
         var dir = File(System.getProperty("user.dir")).canonicalFile
-        while (dir.parentFile != null && !File(dir, "examples/plugins").isDirectory) dir = dir.parentFile!!
-        check(File(dir, "examples/plugins").isDirectory) { "examples/plugins not found from ${System.getProperty("user.dir")}" }
-        File(dir, "examples/plugins")
+        while (dir.parentFile != null && !File(dir, "plugins/examples").isDirectory) dir = dir.parentFile!!
+        check(File(dir, "plugins/examples").isDirectory) { "plugins/examples not found from ${System.getProperty("user.dir")}" }
+        File(dir, "plugins/examples")
     }
 
     private val feishu get() = File(examples, "com.example.feishu")

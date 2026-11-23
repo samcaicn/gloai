@@ -1,6 +1,6 @@
 package com.wangzan101.mika.cap.phone.a11y
 
-import com.wangzan101.mika.core.uistate.UnseenField
+import com.wangzan101.mika.core.screen.uistate.UnseenField
 
 internal object ContextPastePolicy {
     fun canProbe(enabled: Boolean, password: Boolean, inList: Boolean, role: String): Boolean =

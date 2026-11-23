@@ -29,9 +29,9 @@ import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.Surface
-import com.wangzan101.mika.core.shell.DevtoolsSocket
-import com.wangzan101.mika.core.uistate.AppCopies
-import com.wangzan101.mika.core.uistate.PressKeys
+import com.wangzan101.mika.core.device.shell.DevtoolsSocket
+import com.wangzan101.mika.core.screen.uistate.AppCopies
+import com.wangzan101.mika.core.screen.uistate.PressKeys
 import java.io.File
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap

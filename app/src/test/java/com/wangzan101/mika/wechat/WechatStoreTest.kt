@@ -1,7 +1,7 @@
 package com.wangzan101.mika.wechat
 
 import com.wangzan101.mika.core.run.ChannelPeer
-import com.wangzan101.mika.core.wechat.WechatAccount
+import com.wangzan101.mika.core.cap.wechat.WechatAccount
 import com.wangzan101.mika.settings.KeyCipher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

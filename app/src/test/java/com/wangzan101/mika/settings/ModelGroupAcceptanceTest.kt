@@ -15,8 +15,8 @@ import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.model.Usage
-import com.wangzan101.mika.core.usage.UsagePurpose
-import com.wangzan101.mika.core.usage.UsageSource
+import com.wangzan101.mika.core.model.usage.UsagePurpose
+import com.wangzan101.mika.core.model.usage.UsageSource
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

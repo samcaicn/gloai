@@ -1,7 +1,7 @@
 package com.wangzan101.mika.memory
 
-import com.wangzan101.mika.core.memory.ProfileEntry
-import com.wangzan101.mika.core.memory.ProfileStatus
+import com.wangzan101.mika.core.learn.memory.ProfileEntry
+import com.wangzan101.mika.core.learn.memory.ProfileStatus
 import com.wangzan101.mika.settings.KeyCipher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

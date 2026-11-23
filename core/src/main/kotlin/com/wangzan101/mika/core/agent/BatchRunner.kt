@@ -1,9 +1,9 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.observation.Observation
+import com.wangzan101.mika.core.screen.observation.Observation
 import com.wangzan101.mika.core.run.SKIPPED_FOR_NEW_MESSAGE
-import com.wangzan101.mika.core.guard.OperationGuards
-import com.wangzan101.mika.core.guard.GuardVerdict
+import com.wangzan101.mika.core.safety.guard.OperationGuards
+import com.wangzan101.mika.core.safety.guard.GuardVerdict
 import com.wangzan101.mika.core.action.ActionExecutor
 import com.wangzan101.mika.core.action.ActionOutcome
 import com.wangzan101.mika.core.action.Origin
@@ -11,8 +11,8 @@ import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.record.Redactor
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.Redactor
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.tool.ToolDispatcher
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Until
@@ -46,7 +46,7 @@ private const val TIMEOUT_S = "timeout_s"
 private val STEP_FIELDS = setOf("tool", "args", EXPECT, EXPECT_GONE, EXPECT_APP, WAIT_STABLE, TIMEOUT_S)
 
 /** 应用访问被挡:批里要停下,并把执行入口的说明原样带给模型。 */
-private fun appAccessDenied(code: String) = com.wangzan101.mika.core.access.AppAccessDenied.isAppAccessCode(code)
+private fun appAccessDenied(code: String) = com.wangzan101.mika.core.device.access.AppAccessDenied.isAppAccessCode(code)
 
 /** 一批里的一步;[until] 是做完之后、接着做之前要等到的样子,没给为 null。 */
 data class BatchStep(val tool: String, val argsJson: String, val until: Until? = null)

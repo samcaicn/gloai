@@ -1,11 +1,11 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.knowledge.KnowledgeEntry
-import com.wangzan101.mika.core.knowledge.SiteCommandFile
-import com.wangzan101.mika.core.knowledge.Surface
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeEntry
+import com.wangzan101.mika.core.learn.knowledge.SiteCommandFile
+import com.wangzan101.mika.core.learn.knowledge.Surface
 import com.wangzan101.mika.core.model.Author
-import com.wangzan101.mika.core.observation.Place
-import com.wangzan101.mika.core.observation.PlaceKind
+import com.wangzan101.mika.core.screen.observation.Place
+import com.wangzan101.mika.core.screen.observation.PlaceKind
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
@@ -50,7 +50,7 @@ enum class ContextKind(val wire: String, val layer: ContextLayer, val trust: Tru
     ScreenMap("screen_map", ContextLayer.Knowledge, Trust.Reference, pinned = true),
     SkillsIndex("skills_index", ContextLayer.Skills, Trust.Reference, pinned = true),
     Channel("channel", ContextLayer.Runtime, Trust.Runtime, pinned = true),
-    /** 用户发来的此刻的屏幕(见 [com.wangzan101.mika.core.userscreen.UserScreenPrompt]):紧跟在那句话后面,压缩时保留。 */
+    /** 用户发来的此刻的屏幕(见 [com.wangzan101.mika.core.screen.user.UserScreenPrompt]):紧跟在那句话后面,压缩时保留。 */
     UserScreen("user_screen", ContextLayer.Runtime, Trust.Screen, pinned = true),
     RuntimeState("runtime_state", ContextLayer.Runtime, Trust.Runtime, pinned = false),
     Notice("notice", ContextLayer.Runtime, Trust.Mika, pinned = false);

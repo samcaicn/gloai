@@ -20,10 +20,10 @@ import com.wangzan101.mika.cap.phone.shell.adb.AndroidAdb
 import com.wangzan101.mika.cap.sandbox.SandboxState
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.model.ModelRole
-import com.wangzan101.mika.core.shell.PairingDiscovery
-import com.wangzan101.mika.core.shell.PermissionCommands
-import com.wangzan101.mika.core.shell.SetupInputs
-import com.wangzan101.mika.core.shell.SetupStep
+import com.wangzan101.mika.core.device.shell.PairingDiscovery
+import com.wangzan101.mika.core.device.shell.PermissionCommands
+import com.wangzan101.mika.core.device.shell.SetupInputs
+import com.wangzan101.mika.core.device.shell.SetupStep
 import com.wangzan101.mika.i18n.AppLanguage
 import com.wangzan101.mika.record.RunStore
 import com.wangzan101.mika.settings.AccessibilityState

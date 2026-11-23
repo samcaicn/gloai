@@ -1,19 +1,19 @@
 package com.wangzan101.mika.core.tool
 
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.gate.IrreversibleDetector
+import com.wangzan101.mika.core.safety.gate.IrreversibleDetector
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.prompt.Feedback
-import com.wangzan101.mika.core.risk.GateTarget
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.UnseenField
-import com.wangzan101.mika.core.uistate.Verification
-import com.wangzan101.mika.core.vision.JvmTestImageOps
-import com.wangzan101.mika.core.vision.LocScreen
-import com.wangzan101.mika.core.vision.VisionService
-import com.wangzan101.mika.core.vision.says
-import com.wangzan101.mika.core.vision.uiEl
+import com.wangzan101.mika.core.safety.gate.GateTarget
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.UnseenField
+import com.wangzan101.mika.core.screen.uistate.Verification
+import com.wangzan101.mika.core.screen.vision.JvmTestImageOps
+import com.wangzan101.mika.core.screen.vision.LocScreen
+import com.wangzan101.mika.core.screen.vision.VisionService
+import com.wangzan101.mika.core.screen.vision.says
+import com.wangzan101.mika.core.screen.vision.uiEl
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -117,7 +117,7 @@ class TypeAtPointTest {
         assertTrue(IrreversibleDetector.needsCheck(GateTarget.Enter, args("""{"text":"hi","ref":"@v1","snapshotId":"loc_1"}""")))
         assertFalse(IrreversibleDetector.needsCheck(GateTarget.Enter, args("""{"text":"hi","ref":"@e1","snapshotId":"s1"}""")))
         // 那一点上是发送按钮:点它就按发送判
-        val send = com.wangzan101.mika.core.uistate.ScreenSnapshot("s1", "com.example.chat",
+        val send = com.wangzan101.mika.core.screen.uistate.ScreenSnapshot("s1", "com.example.chat",
             listOf(uiEl("@e1", "发送", listOf(800, 880, 999, 940)).copy(clickable = true)), 1080, 2400)
         assertTrue(IrreversibleDetector.classify(GateTarget.Enter, args("""{"text":"hi","x":900,"y":910}"""), send, send) != null)
         assertTrue(IrreversibleDetector.classify(GateTarget.Enter, args("""{"text":"hi","x":100,"y":100}"""), send, send) == null)

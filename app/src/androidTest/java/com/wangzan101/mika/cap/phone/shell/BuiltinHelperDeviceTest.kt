@@ -7,7 +7,7 @@ import android.media.ImageReader
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
 import com.wangzan101.mika.cap.phone.PhoneServices
 import com.wangzan101.mika.cap.phone.setup.BuiltinShellManager
 import com.wangzan101.mika.cap.sandbox.WorkspaceKey

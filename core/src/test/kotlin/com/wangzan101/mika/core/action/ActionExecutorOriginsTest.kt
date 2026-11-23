@@ -1,15 +1,15 @@
 package com.wangzan101.mika.core.action
 
 import com.wangzan101.mika.core.tool.execute
-import com.wangzan101.mika.core.guard.OperationGuards
-import com.wangzan101.mika.core.gate.ConfirmationGate
-import com.wangzan101.mika.core.risk.IrrevAction
+import com.wangzan101.mika.core.safety.guard.OperationGuards
+import com.wangzan101.mika.core.safety.gate.ConfirmationGate
+import com.wangzan101.mika.core.safety.gate.IrrevAction
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import com.wangzan101.mika.core.tool.FakeScreen
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -28,7 +28,7 @@ private class OneButton(label: String) : ScreenPort by FakeScreen() {
     )
     override suspend fun snapshot() = ScreenSnapshot("s1", "com.chat", shown, 1080, 2400)
     override suspend fun peek() = snapshot()
-    override suspend fun tapRef(ref: String, snapshotId: String) = com.wangzan101.mika.core.uistate.ActionResult.Ok(changed = true).also { taps += ref }
+    override suspend fun tapRef(ref: String, snapshotId: String) = com.wangzan101.mika.core.screen.uistate.ActionResult.Ok(changed = true).also { taps += ref }
 }
 
 /**

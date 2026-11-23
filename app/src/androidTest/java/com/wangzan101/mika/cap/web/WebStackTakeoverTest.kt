@@ -12,7 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.webkit.WebViewAssetLoader
 import com.wangzan101.mika.cap.phone.a11y.DeviceSupport
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import com.wangzan101.mika.core.tool.HandBack
 import com.wangzan101.mika.core.tool.HandBackOutcome
 import com.wangzan101.mika.takeover.HandoverActivity

@@ -5,7 +5,7 @@ import com.wangzan101.mika.core.action.ConfirmChoice
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.GateReason
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.child.ChildAgentRunner
+import com.wangzan101.mika.core.run.ChildAgentRunner
 import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.run.InputReceipt
 import com.wangzan101.mika.core.run.RunInbox

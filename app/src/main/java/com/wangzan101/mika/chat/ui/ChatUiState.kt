@@ -10,16 +10,16 @@ import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.GoalChecklist
 import com.wangzan101.mika.core.agent.NoticeTurn
 import com.wangzan101.mika.core.agent.Turn
-import com.wangzan101.mika.core.memory.MemoryNote
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.skills.SkillNote
+import com.wangzan101.mika.core.learn.memory.MemoryNote
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.learn.skills.SkillNote
 import com.wangzan101.mika.settings.Problem
 import com.wangzan101.mika.takeover.Takeover
 import com.wangzan101.mika.task.SteerNote
 import com.wangzan101.mika.task.SteerState
 import com.wangzan101.mika.task.QueuedFollowUp
 import com.wangzan101.mika.core.agent.AttachedPage
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
 
 enum class StepState { Ok, Run, Wait, Dim }
 

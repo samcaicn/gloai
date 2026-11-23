@@ -5,7 +5,7 @@ import android.view.Display
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.cap.phone.shell.MainScreenWatch
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.After

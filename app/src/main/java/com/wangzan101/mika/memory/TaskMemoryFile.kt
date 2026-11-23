@@ -1,8 +1,8 @@
 package com.wangzan101.mika.memory
 
 import android.security.keystore.UserNotAuthenticatedException
-import com.wangzan101.mika.core.memory.TaskMemory
-import com.wangzan101.mika.core.memory.TaskMemoryPersistence
+import com.wangzan101.mika.core.learn.memory.TaskMemory
+import com.wangzan101.mika.core.learn.memory.TaskMemoryPersistence
 import com.wangzan101.mika.settings.KeyCipher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

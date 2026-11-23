@@ -26,9 +26,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.wangzan101.mika.core.record.RunMetrics
-import com.wangzan101.mika.core.record.RunMetricsStore
-import com.wangzan101.mika.core.record.RunStats
+import com.wangzan101.mika.core.run.record.RunMetrics
+import com.wangzan101.mika.core.run.record.RunMetricsStore
+import com.wangzan101.mika.core.run.record.RunStats
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize
 import com.wangzan101.mika.ui.components.EmptyNote

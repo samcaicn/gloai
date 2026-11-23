@@ -1,7 +1,7 @@
 package com.wangzan101.mika.memory
 
-import com.wangzan101.mika.core.memory.ProfileBackend
-import com.wangzan101.mika.core.memory.ProfileEntry
+import com.wangzan101.mika.core.learn.memory.ProfileBackend
+import com.wangzan101.mika.core.learn.memory.ProfileEntry
 import com.wangzan101.mika.settings.KeyCipher
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json

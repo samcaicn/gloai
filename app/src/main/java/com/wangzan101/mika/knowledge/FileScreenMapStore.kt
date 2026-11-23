@@ -1,8 +1,8 @@
 package com.wangzan101.mika.knowledge
 
-import com.wangzan101.mika.core.screenmap.ScreenGraph
-import com.wangzan101.mika.core.screenmap.ScreenGraphCodec
-import com.wangzan101.mika.core.screenmap.ScreenMapStore
+import com.wangzan101.mika.core.screen.map.ScreenGraph
+import com.wangzan101.mika.core.screen.map.ScreenGraphCodec
+import com.wangzan101.mika.core.screen.map.ScreenMapStore
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption

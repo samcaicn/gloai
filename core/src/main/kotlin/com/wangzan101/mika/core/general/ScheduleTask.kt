@@ -2,7 +2,7 @@ package com.wangzan101.mika.core.general
 
 import com.wangzan101.mika.core.action.ActionRisk
 import com.wangzan101.mika.core.action.Risk as ApprovalRisk
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.ArgError

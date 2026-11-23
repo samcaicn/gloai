@@ -3,15 +3,15 @@ package com.wangzan101.mika.core.agent
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
-import com.wangzan101.mika.core.replay.MemRoutes
-import com.wangzan101.mika.core.replay.Notes
-import com.wangzan101.mika.core.replay.PagedScreen
-import com.wangzan101.mika.core.replay.RouteMatcher
-import com.wangzan101.mika.core.replay.RouteStep
-import com.wangzan101.mika.core.replay.Selector
-import com.wangzan101.mika.core.replay.ui
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenPort
+import com.wangzan101.mika.core.learn.replay.MemRoutes
+import com.wangzan101.mika.core.learn.replay.Notes
+import com.wangzan101.mika.core.learn.replay.PagedScreen
+import com.wangzan101.mika.core.learn.replay.RouteMatcher
+import com.wangzan101.mika.core.learn.replay.RouteStep
+import com.wangzan101.mika.core.learn.replay.Selector
+import com.wangzan101.mika.core.learn.replay.ui
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
 import com.wangzan101.mika.core.testing.PromptSurface
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -31,7 +31,7 @@ class ReplayNoticeSurfaceTest {
     }
 
     /** 交还时补进对话的说明(带「按以往」的那段文字)。 */
-    private fun notice(screen: ScreenPort, route: com.wangzan101.mika.core.replay.Route = Notes.route()): String {
+    private fun notice(screen: ScreenPort, route: com.wangzan101.mika.core.learn.replay.Route = Notes.route()): String {
         val main = FakeModel(text("写好了"))
         runBlocking {
             AgentLoop(main, toolDispatcher(screen), "BASE", flags = SpeedFlags(replay = true),

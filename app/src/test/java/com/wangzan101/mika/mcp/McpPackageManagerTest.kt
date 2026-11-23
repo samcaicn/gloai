@@ -9,7 +9,7 @@ import com.wangzan101.mika.core.cap.mcp.McpStdioProcess
 import com.wangzan101.mika.core.cap.sandbox.CommandResult
 import com.wangzan101.mika.core.cap.sandbox.SandboxPort
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
-import com.wangzan101.mika.core.knowledge.ScriptEntry
+import com.wangzan101.mika.core.learn.knowledge.ScriptEntry
 import com.wangzan101.mika.core.workspace.NioFdSys
 import com.wangzan101.mika.core.workspace.SandboxError
 import com.wangzan101.mika.core.workspace.SandboxTree

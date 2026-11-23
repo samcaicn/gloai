@@ -1,10 +1,10 @@
 package com.wangzan101.mika.core.general
 
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Observation
-import com.wangzan101.mika.core.observation.Place
-import com.wangzan101.mika.core.observation.Trust
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Observation
+import com.wangzan101.mika.core.screen.observation.Place
+import com.wangzan101.mika.core.screen.observation.Trust
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.search.WebSearch

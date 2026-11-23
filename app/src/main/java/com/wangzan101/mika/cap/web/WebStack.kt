@@ -6,7 +6,7 @@ import com.wangzan101.mika.core.cap.web.WebUrlPolicy
 import android.os.SystemClock
 import android.util.Log
 import androidx.webkit.WebViewAssetLoader
-import com.wangzan101.mika.core.resource.ResourceScope
+import com.wangzan101.mika.core.run.ResourceScope
 import com.wangzan101.mika.takeover.HandoverActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

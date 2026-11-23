@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.cap.web
 
-import com.wangzan101.mika.core.record.Redactor
+import com.wangzan101.mika.core.run.record.Redactor
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

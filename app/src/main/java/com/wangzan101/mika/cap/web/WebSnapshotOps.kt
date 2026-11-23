@@ -2,14 +2,14 @@ package com.wangzan101.mika.cap.web
 
 import android.util.Log
 import com.wangzan101.mika.core.cap.web.cdp.CdpSession
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ElementLocator
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ElementLocator
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import com.wangzan101.mika.core.cap.web.ElementProbe
 import com.wangzan101.mika.core.cap.web.PageTree
-import com.wangzan101.mika.core.uistate.WebInfo
-import com.wangzan101.mika.core.uistate.PageDialog
+import com.wangzan101.mika.core.screen.uistate.WebInfo
+import com.wangzan101.mika.core.screen.uistate.PageDialog
 import com.wangzan101.mika.core.cap.web.DIALOG_OPEN
 import com.wangzan101.mika.core.cap.web.WebUrlPolicy
 import kotlinx.coroutines.CancellationException

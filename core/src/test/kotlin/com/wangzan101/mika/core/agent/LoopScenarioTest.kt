@@ -1,11 +1,11 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.knowledge.KnowledgeStore
-import com.wangzan101.mika.core.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeStore
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.cap.sandbox.FakeSandbox
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import com.wangzan101.mika.core.testing.FakeChatModel
 import com.wangzan101.mika.core.testing.InterruptibleStream
 import com.wangzan101.mika.core.run.RunId
@@ -22,7 +22,7 @@ import com.wangzan101.mika.core.testing.label
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.tool.ScriptWebPort
 import com.wangzan101.mika.core.tool.ToolDispatcher
-import com.wangzan101.mika.core.verify.Verifier
+import com.wangzan101.mika.core.safety.verify.Verifier
 import com.wangzan101.mika.core.agent.AttachedPage
 import com.wangzan101.mika.core.cap.web.FakeWebPort
 import com.wangzan101.mika.core.cap.web.PageText

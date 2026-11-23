@@ -1,7 +1,7 @@
 package com.wangzan101.mika.settings
 
 import com.wangzan101.mika.core.cap.phone.OperatingPace
-import com.wangzan101.mika.core.settings.SelfConfig
+import com.wangzan101.mika.core.self.SelfConfig
 
 /**
  * 模型能改的那几项设置。[FeatureFlags] 是存储,这里只挑可逆的偏好交给模型:

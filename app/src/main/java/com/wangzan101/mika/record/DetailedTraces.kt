@@ -2,8 +2,8 @@ package com.wangzan101.mika.record
 
 import android.content.Context
 import com.wangzan101.mika.BuildConfig
-import com.wangzan101.mika.core.trace.RunTrace
-import com.wangzan101.mika.core.trace.TraceStore
+import com.wangzan101.mika.core.run.trace.RunTrace
+import com.wangzan101.mika.core.run.trace.TraceStore
 import java.io.File
 
 /** One switch for all runs; a ticket taken before setup cannot be reused after stop/re-enable. */

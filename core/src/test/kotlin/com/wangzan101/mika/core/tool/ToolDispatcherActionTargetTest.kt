@@ -1,17 +1,17 @@
 package com.wangzan101.mika.core.tool
 
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.replay.Anchors
-import com.wangzan101.mika.core.replay.Selector
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.learn.replay.Anchors
+import com.wangzan101.mika.core.learn.replay.Selector
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.uistate.interfaces
+import com.wangzan101.mika.core.screen.uistate.interfaces
 
 private fun el(ref: String, role: String, name: String, b: List<Int>, clickable: Boolean = false, rid: String? = null, editable: Boolean = false) =
     UiElement(ref, role, name, 0, 0, b, rid, clickable, editable, false)

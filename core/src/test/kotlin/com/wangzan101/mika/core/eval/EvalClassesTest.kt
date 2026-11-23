@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.eval
 
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.testing.TOOLS
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

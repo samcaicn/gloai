@@ -37,7 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.chat.ConversationStore
-import com.wangzan101.mika.core.usage.ConversationUsage
+import com.wangzan101.mika.core.model.usage.ConversationUsage
 import com.wangzan101.mika.ui.components.GroupLabel
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme

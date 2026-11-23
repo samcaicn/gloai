@@ -7,8 +7,8 @@ import com.wangzan101.mika.core.run.ChannelInputSink
 import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.run.SendOutcome
-import com.wangzan101.mika.core.wechat.WechatAccount
-import com.wangzan101.mika.core.wechat.WechatApi
+import com.wangzan101.mika.core.cap.wechat.WechatAccount
+import com.wangzan101.mika.core.cap.wechat.WechatApi
 import com.wangzan101.mika.core.workspace.SandboxTree
 import com.wangzan101.mika.settings.KeyCipher
 import kotlinx.coroutines.CompletableDeferred

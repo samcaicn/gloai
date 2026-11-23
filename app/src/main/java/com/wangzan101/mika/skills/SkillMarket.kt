@@ -1,8 +1,8 @@
 package com.wangzan101.mika.skills
 
-import com.wangzan101.mika.core.knowledge.FrontMatter
-import com.wangzan101.mika.core.skills.PersonalSkills
-import com.wangzan101.mika.core.skills.SkillDrafter
+import com.wangzan101.mika.core.learn.knowledge.FrontMatter
+import com.wangzan101.mika.core.learn.skills.PersonalSkills
+import com.wangzan101.mika.core.learn.skills.SkillDrafter
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient

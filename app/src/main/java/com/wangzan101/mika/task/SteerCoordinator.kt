@@ -2,7 +2,7 @@ package com.wangzan101.mika.task
 
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.run.InputReceipt
 import com.wangzan101.mika.core.run.RunInbox
 import java.util.UUID

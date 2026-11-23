@@ -1,7 +1,7 @@
 package com.wangzan101.mika.settings
 
 import com.wangzan101.mika.core.agent.ContextLimits
-import com.wangzan101.mika.core.chatgpt.ChatGptSession
+import com.wangzan101.mika.core.model.chatgpt.ChatGptSession
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ClientHeaders
 import com.wangzan101.mika.core.model.ListedModel

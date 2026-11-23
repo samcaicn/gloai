@@ -1,10 +1,10 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.observation.Place
+import com.wangzan101.mika.core.screen.observation.Place
 import com.wangzan101.mika.core.model.Author
-import com.wangzan101.mika.core.knowledge.KnowledgeEntry
-import com.wangzan101.mika.core.knowledge.Link
-import com.wangzan101.mika.core.knowledge.Surface
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeEntry
+import com.wangzan101.mika.core.learn.knowledge.Link
+import com.wangzan101.mika.core.learn.knowledge.Surface
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
@@ -279,10 +279,10 @@ class RuntimeStateHistoryTest {
 /** 开局已列出全部技能:前台到了关联技能的 App 也不再补技能索引,开局那份不改。 */
 class ForegroundAddsNoSkillsIndexTest {
     @Test fun foregroundAppAddsNoSkillLines() = runBlocking {
-        val catalog = com.wangzan101.mika.core.knowledge.GuideCatalog.loadBundled()
-        val store = com.wangzan101.mika.core.knowledge.KnowledgeStore(com.wangzan101.mika.core.knowledge.KnowledgeStore.loadBundled())
-        val screen = object : com.wangzan101.mika.core.uistate.ScreenPort by FakeScreen() {
-            override suspend fun snapshot() = com.wangzan101.mika.core.uistate.ScreenSnapshot("s", "com.tencent.mm", emptyList(), 1080, 2400)
+        val catalog = com.wangzan101.mika.core.learn.knowledge.GuideCatalog.loadBundled()
+        val store = com.wangzan101.mika.core.learn.knowledge.KnowledgeStore(com.wangzan101.mika.core.learn.knowledge.KnowledgeStore.loadBundled())
+        val screen = object : com.wangzan101.mika.core.screen.uistate.ScreenPort by FakeScreen() {
+            override suspend fun snapshot() = com.wangzan101.mika.core.screen.uistate.ScreenSnapshot("s", "com.tencent.mm", emptyList(), 1080, 2400)
         }
         fun tools(vararg c: Part.ToolCall) = ModelReply(c.toList(), StopReason.ToolUse, null)
         val m = FakeModel(tools(Part.ToolCall("o1", "phone_observe", "{}")), tools(Part.ToolCall("o2", "phone_observe", "{}")),

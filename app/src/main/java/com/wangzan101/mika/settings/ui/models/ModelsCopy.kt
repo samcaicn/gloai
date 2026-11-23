@@ -1,15 +1,15 @@
 package com.wangzan101.mika.settings.ui.models
 
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.oauth.AccountSignInException
-import com.wangzan101.mika.core.oauth.AccountSignInFailure
+import com.wangzan101.mika.core.model.oauth.AccountSignInException
+import com.wangzan101.mika.core.model.oauth.AccountSignInFailure
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.wangzan101.mika.core.chatgpt.SignInFailure
+import com.wangzan101.mika.core.model.chatgpt.SignInFailure
 import com.wangzan101.mika.core.model.GroupStrategy
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.settings.ModelOption

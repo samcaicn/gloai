@@ -32,7 +32,7 @@ import com.wangzan101.mika.core.proactive.NoticeSource
 import com.wangzan101.mika.core.proactive.NoticeTalk
 import com.wangzan101.mika.core.proactive.TriageConsent
 import com.wangzan101.mika.core.proactive.TriageTarget
-import com.wangzan101.mika.core.shell.ShellCommandRunner
+import com.wangzan101.mika.core.device.shell.ShellCommandRunner
 import com.wangzan101.mika.i18n.AppLanguage
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.settings.FeatureFlags

@@ -1,6 +1,6 @@
 package com.wangzan101.mika.settings.ui
 
-import com.wangzan101.mika.core.shell.HelperRestart
+import com.wangzan101.mika.core.device.shell.HelperRestart
 import com.wangzan101.mika.ChineseUi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.getValue
@@ -20,9 +20,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wangzan101.mika.capsule.CapsuleMode
 import com.wangzan101.mika.core.agent.SpeedFlags
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
-import com.wangzan101.mika.core.shell.ShellTransport
-import com.wangzan101.mika.core.shell.ShizukuPlatformState
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.ShellTransport
+import com.wangzan101.mika.core.device.shell.ShizukuPlatformState
 import com.wangzan101.mika.settings.AccessibilityState
 import com.wangzan101.mika.settings.Problem
 import com.wangzan101.mika.settings.SystemStatus

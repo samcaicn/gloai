@@ -12,8 +12,8 @@ import android.os.Build
 import com.wangzan101.mika.R
 import com.wangzan101.mika.task.alertQuietly
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.risk.IrrevAction
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.gate.IrrevAction
 
 /**
  * 确认卡片和通知上的文字。字段都是模型写的:只当纯文本用(不解析任何标记);

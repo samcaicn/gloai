@@ -1,7 +1,7 @@
 package com.wangzan101.mika.plugin
 
-import com.wangzan101.mika.core.plugin.ScriptResult
-import com.wangzan101.mika.core.plugin.ScriptRunner
+import com.wangzan101.mika.core.tool.ScriptResult
+import com.wangzan101.mika.core.tool.ScriptRunner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

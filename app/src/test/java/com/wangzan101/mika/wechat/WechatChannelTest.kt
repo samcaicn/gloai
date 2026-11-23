@@ -9,8 +9,8 @@ import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.run.MemoryOwnerIdentity
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.SendOutcome
-import com.wangzan101.mika.core.wechat.WechatAccount
-import com.wangzan101.mika.core.wechat.WechatApi
+import com.wangzan101.mika.core.cap.wechat.WechatAccount
+import com.wangzan101.mika.core.cap.wechat.WechatApi
 import com.wangzan101.mika.settings.KeyCipher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin

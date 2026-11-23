@@ -16,9 +16,9 @@ import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.ModelSession
 import com.wangzan101.mika.core.model.OpenAiCompatModel
 import com.wangzan101.mika.core.model.ResponsesModel
-import com.wangzan101.mika.core.usage.UsagePurpose
-import com.wangzan101.mika.core.usage.UsageSource
-import com.wangzan101.mika.core.usage.metered
+import com.wangzan101.mika.core.model.usage.UsagePurpose
+import com.wangzan101.mika.core.model.usage.UsageSource
+import com.wangzan101.mika.core.model.usage.metered
 import java.util.concurrent.TimeUnit
 import com.wangzan101.mika.settings.ProviderStore.Companion.http
 import com.wangzan101.mika.settings.ProviderStore.Companion.XAI_ACCOUNT

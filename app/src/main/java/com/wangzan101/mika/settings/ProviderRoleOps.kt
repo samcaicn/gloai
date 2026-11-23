@@ -4,7 +4,7 @@ import com.wangzan101.mika.core.model.ModelGroup
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.OpenAiServiceTier
-import com.wangzan101.mika.core.usage.TokenBudgetLimits
+import com.wangzan101.mika.core.model.usage.TokenBudgetLimits
 import kotlinx.serialization.json.add
 import java.io.IOException
 

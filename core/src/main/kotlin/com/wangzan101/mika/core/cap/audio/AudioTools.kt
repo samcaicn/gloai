@@ -2,12 +2,12 @@ package com.wangzan101.mika.core.cap.audio
 
 import com.wangzan101.mika.core.action.ActionRisk
 import com.wangzan101.mika.core.action.Risk as ApprovalRisk
-import com.wangzan101.mika.core.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
 import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.model.TtsError
 import com.wangzan101.mika.core.model.TtsRequest
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.risk.IrrevAction
+import com.wangzan101.mika.core.safety.gate.IrrevAction
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.ArgError
 import com.wangzan101.mika.core.tool.Args

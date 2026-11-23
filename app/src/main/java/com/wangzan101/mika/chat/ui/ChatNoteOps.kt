@@ -1,6 +1,6 @@
 package com.wangzan101.mika.chat.ui
-import com.wangzan101.mika.core.memory.MemoryNote
-import com.wangzan101.mika.core.skills.SkillNote
+import com.wangzan101.mika.core.learn.memory.MemoryNote
+import com.wangzan101.mika.core.learn.skills.SkillNote
 import com.wangzan101.mika.memory.RunNotes
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update

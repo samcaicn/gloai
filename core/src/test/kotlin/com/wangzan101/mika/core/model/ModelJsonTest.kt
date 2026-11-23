@@ -2,10 +2,10 @@ package com.wangzan101.mika.core.model
 
 import com.wangzan101.mika.core.agent.FakeModel
 import com.wangzan101.mika.core.model.ModelJson.field
-import com.wangzan101.mika.core.verify.Criteria
-import com.wangzan101.mika.core.verify.Evidence
-import com.wangzan101.mika.core.verify.Verdict
-import com.wangzan101.mika.core.verify.Verifier
+import com.wangzan101.mika.core.safety.verify.Criteria
+import com.wangzan101.mika.core.safety.verify.Evidence
+import com.wangzan101.mika.core.safety.verify.Verdict
+import com.wangzan101.mika.core.safety.verify.Verifier
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
@@ -44,7 +44,7 @@ class ModelJsonTest {
 
     @Test fun verifierRetriesOnceAskingForJsonOnly() = runTest {
         val criteria = Criteria(listOf("电量"), "read", fallback = false)
-        val ev = Evidence(com.wangzan101.mika.core.verify.freshOf("当前 App:设置\n电量 86%"), null, com.wangzan101.mika.core.verify.EvidenceLedger(), emptyList(), protected = false)
+        val ev = Evidence(com.wangzan101.mika.core.safety.verify.freshOf("当前 App:设置\n电量 86%"), null, com.wangzan101.mika.core.safety.verify.EvidenceLedger(), emptyList(), protected = false)
         fun reply(s: String) = ModelReply(listOf(Part.Text(s)), StopReason.EndTurn, null)
         val m = FakeModel(reply("我认为通过了。"), reply(verdict))
         val v = Verifier(m, null).verify("看电量", criteria, "电量 86%\n依据: 「电量 86%」", ev)

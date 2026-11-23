@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.cap.phone
 
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.Args
 import com.wangzan101.mika.core.tool.Risk
@@ -19,7 +19,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
-import com.wangzan101.mika.core.uistate.session
+import com.wangzan101.mika.core.screen.uistate.session
 
 /** 不截屏地按文字、资源 ID 或控件类型查询当前无障碍树,结果保留父子线索。 */
 internal object PhoneQuery : PhoneTool {

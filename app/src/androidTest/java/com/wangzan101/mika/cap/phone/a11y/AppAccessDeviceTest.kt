@@ -4,7 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.cap.phone.display.AgentDisplay
-import com.wangzan101.mika.core.access.AppAccessDenied
+import com.wangzan101.mika.core.device.access.AppAccessDenied
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
@@ -22,7 +22,7 @@ class AppAccessDeviceTest {
         val display = AgentDisplay(shell, 720, 1600, 320, InstrumentationRegistry.getInstrumentation().targetContext.getSystemService(android.hardware.display.DisplayManager::class.java))
         try {
             val native = AndroidScreen(DeviceSupport.service(), shell, DeviceSupport.ready(display), appAccess = app.appAccess)
-            val screen = com.wangzan101.mika.core.uistate.AppAccessScreenPort(native, app.appAccess,
+            val screen = com.wangzan101.mika.core.screen.uistate.AppAccessScreenPort(native, app.appAccess,
                 packages = native::accessPackages, protectedUi = { app.appAccess.sensitiveUi }, ownPackage = app.packageName)
             app.appAccess.setBlocked(pkg, true)
             try { screen.openApp(pkg); fail("Blocked launch must be denied") }
@@ -52,7 +52,7 @@ class AppAccessDeviceTest {
         val display = AgentDisplay(shell, 720, 1600, 320, InstrumentationRegistry.getInstrumentation().targetContext.getSystemService(android.hardware.display.DisplayManager::class.java))
         try {
             val native = AndroidScreen(DeviceSupport.service(), shell, DeviceSupport.ready(display), appAccess = app.appAccess)
-            val screen = com.wangzan101.mika.core.uistate.AppAccessScreenPort(native, app.appAccess,
+            val screen = com.wangzan101.mika.core.screen.uistate.AppAccessScreenPort(native, app.appAccess,
                 packages = native::accessPackages, protectedUi = { app.appAccess.sensitiveUi }, ownPackage = app.packageName,
                 windowToken = { ScreenAccessibility.windowGeneration() })
             app.appAccess.setBlocked(pkg, false)

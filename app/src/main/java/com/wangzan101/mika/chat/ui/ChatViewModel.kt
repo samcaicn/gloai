@@ -22,10 +22,10 @@ import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.cap.sandbox.ImportResult
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.memory.MemoryItem
-import com.wangzan101.mika.core.memory.MemoryNote
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.skills.SkillNote
+import com.wangzan101.mika.core.learn.memory.MemoryItem
+import com.wangzan101.mika.core.learn.memory.MemoryNote
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.learn.skills.SkillNote
 import com.wangzan101.mika.memory.RunNotes
 import com.wangzan101.mika.settings.Prerequisites
 import com.wangzan101.mika.takeover.Takeover

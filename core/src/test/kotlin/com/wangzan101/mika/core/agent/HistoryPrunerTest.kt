@@ -135,17 +135,17 @@ class HistoryPrunerTest {
 
     // 缩短按结果里读到的观察是什么样的东西,缩短后留着结局和观察编号
     @Test fun shrinksByObservationFormAndKeepsOutcomeAndObsIds() {
-        fun round(id: String, tool: String, content: String, form: com.wangzan101.mika.core.observation.ObsForm, obsId: Int) = listOf(
+        fun round(id: String, tool: String, content: String, form: com.wangzan101.mika.core.screen.observation.ObsForm, obsId: Int) = listOf(
             Message(Role.Assistant, listOf(Part.ToolCall(id, tool, "{}")), Author.Mika),
-            Message(Role.Tool, listOf(Part.ToolResult(id, content, false, listOf(com.wangzan101.mika.core.observation.ReadTag(obsId, form)))), Author.Mika),
+            Message(Role.Tool, listOf(Part.ToolResult(id, content, false, listOf(com.wangzan101.mika.core.screen.observation.ReadTag(obsId, form)))), Author.Mika),
         )
         val long = "x".repeat(5000)
         val h = listOf(task) +
-            round("i", "phone_launch_app", """{"ok":true,"currentApp":"com.x","note":"${"y".repeat(400)}"}""", com.wangzan101.mika.core.observation.ObsForm.Interface, 1) +
-            round("p", "web_read_page", """{"ok":true,"url":"https://a.example.com/","text":"$long"}""", com.wangzan101.mika.core.observation.ObsForm.Page, 2) +
-            round("s", "web_read_page", """{"ok":true,"url":"https://a.example.com/","text":"短的正文"}""", com.wangzan101.mika.core.observation.ObsForm.Page, 3) +
-            round("m", "memory_search", """{"ok":true,"memories":[{"content":"$long"}]}""", com.wangzan101.mika.core.observation.ObsForm.UserSaid, 4) +
-            round("c", "run_command", """{"ok":false,"error":"exit_nonzero","message":"命令失败","exitCode":2,"output":"$long"}""", com.wangzan101.mika.core.observation.ObsForm.Command, 5) +
+            round("i", "phone_launch_app", """{"ok":true,"currentApp":"com.x","note":"${"y".repeat(400)}"}""", com.wangzan101.mika.core.screen.observation.ObsForm.Interface, 1) +
+            round("p", "web_read_page", """{"ok":true,"url":"https://a.example.com/","text":"$long"}""", com.wangzan101.mika.core.screen.observation.ObsForm.Page, 2) +
+            round("s", "web_read_page", """{"ok":true,"url":"https://a.example.com/","text":"短的正文"}""", com.wangzan101.mika.core.screen.observation.ObsForm.Page, 3) +
+            round("m", "memory_search", """{"ok":true,"memories":[{"content":"$long"}]}""", com.wangzan101.mika.core.screen.observation.ObsForm.UserSaid, 4) +
+            round("c", "run_command", """{"ok":false,"error":"exit_nonzero","message":"命令失败","exitCode":2,"output":"$long"}""", com.wangzan101.mika.core.screen.observation.ObsForm.Command, 5) +
             (1..6).flatMap { tap("t$it") }
         val rs = results(HistoryPruner.prune(h, TOOLS, cut)).associateBy { it.callId }
         // 界面状态一律缩短;页面、命令输出只在大时缩短;用户说的不缩

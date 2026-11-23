@@ -28,7 +28,7 @@ class RemoteTaskRecordTest {
 
     // 回答的证据账本不进远程收件
     @Test fun sourcesAreNotStored() {
-        val s = TaskState.Succeeded("a", sources = listOf(com.wangzan101.mika.core.verify.AnswerSource(1, "screen", null, null, 1)))
+        val s = TaskState.Succeeded("a", sources = listOf(com.wangzan101.mika.core.safety.verify.AnswerSource(1, "screen", null, null, 1)))
         assertEquals(s.copy(sources = emptyList()), RemoteTaskRecord.decode(RemoteTaskRecord.encode(s)).state)
     }
 

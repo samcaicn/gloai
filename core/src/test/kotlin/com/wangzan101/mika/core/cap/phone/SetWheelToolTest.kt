@@ -5,8 +5,8 @@ import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.tool.FAILURE_MESSAGES
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.tool.execute
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.WheelOutcome
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.WheelOutcome
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive

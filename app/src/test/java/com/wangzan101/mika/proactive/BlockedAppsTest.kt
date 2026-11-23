@@ -17,7 +17,7 @@ import com.wangzan101.mika.core.proactive.TopicPoolData
 import com.wangzan101.mika.core.proactive.TriageConsent
 import com.wangzan101.mika.core.proactive.TriagePlanner
 import com.wangzan101.mika.core.proactive.TriageTarget
-import com.wangzan101.mika.core.usage.ProactiveBudget
+import com.wangzan101.mika.core.model.usage.ProactiveBudget
 import java.time.ZoneOffset
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi

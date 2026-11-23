@@ -20,10 +20,10 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import com.wangzan101.mika.core.uistate.CdpKey
-import com.wangzan101.mika.core.uistate.CdpKeys
-import com.wangzan101.mika.core.uistate.KeyCombo
-import com.wangzan101.mika.core.uistate.KeyModifier
+import com.wangzan101.mika.core.screen.uistate.CdpKey
+import com.wangzan101.mika.core.screen.uistate.CdpKeys
+import com.wangzan101.mika.core.screen.uistate.KeyCombo
+import com.wangzan101.mika.core.screen.uistate.KeyModifier
 
 // 网页上的真实鼠标、键盘(Input 域)。坐标一律是主框架视口的 CSS 像素,和页面脚本给的一致。
 // 节奏(轨迹、按住时长、键间隔、滚轮分格)由 [InputPacing] 给,默认 [InputPacing.Instant] 不加停顿。

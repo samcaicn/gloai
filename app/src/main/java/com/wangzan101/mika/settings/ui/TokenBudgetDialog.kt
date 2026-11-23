@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.usage.TokenBudgetLimits
+import com.wangzan101.mika.core.model.usage.TokenBudgetLimits
 import com.wangzan101.mika.ui.components.MikaDialog
 import com.wangzan101.mika.ui.components.RadioRow
 import com.wangzan101.mika.ui.theme.MikaTheme

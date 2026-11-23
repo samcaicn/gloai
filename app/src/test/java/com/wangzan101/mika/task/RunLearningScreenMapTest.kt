@@ -1,11 +1,11 @@
 package com.wangzan101.mika.task
 
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.knowledge.GuideCatalog
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.replay.Anchors
-import com.wangzan101.mika.core.screenmap.ScreenGraph
-import com.wangzan101.mika.core.screenmap.ScreenMapStore
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.learn.replay.Anchors
+import com.wangzan101.mika.core.screen.map.ScreenGraph
+import com.wangzan101.mika.core.screen.map.ScreenMapStore
 import com.wangzan101.mika.settings.MemorySwitches
 import com.wangzan101.mika.core.assembly.knownTools
 import kotlinx.coroutines.runBlocking

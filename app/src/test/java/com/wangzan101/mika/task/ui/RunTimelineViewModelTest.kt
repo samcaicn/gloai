@@ -1,10 +1,10 @@
 package com.wangzan101.mika.task.ui
 
 import com.wangzan101.mika.i18n.ChineseTexts
-import com.wangzan101.mika.core.guard.GuardVerdict
-import com.wangzan101.mika.core.guard.Severity
-import com.wangzan101.mika.core.record.Redactor
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.safety.guard.GuardVerdict
+import com.wangzan101.mika.core.safety.guard.Severity
+import com.wangzan101.mika.core.run.record.Redactor
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.record.RunHandle
 import com.wangzan101.mika.record.RunStore
 import kotlinx.serialization.json.JsonArray

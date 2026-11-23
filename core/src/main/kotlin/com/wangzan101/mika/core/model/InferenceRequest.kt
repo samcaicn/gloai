@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.model
 
-import com.wangzan101.mika.core.trace.TraceCall
-import com.wangzan101.mika.core.usage.ModelHttpAttempts
+import com.wangzan101.mika.core.run.trace.TraceCall
+import com.wangzan101.mika.core.model.usage.ModelHttpAttempts
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.serialization.json.*
 import okhttp3.MediaType.Companion.toMediaType

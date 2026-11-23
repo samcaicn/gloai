@@ -1,8 +1,8 @@
 package com.wangzan101.mika.task
 
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSummary
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSummary
 import com.wangzan101.mika.core.remote.RemoteTask
 import com.wangzan101.mika.core.remote.RunExportLookup
 import com.wangzan101.mika.core.remote.RunRecordExport

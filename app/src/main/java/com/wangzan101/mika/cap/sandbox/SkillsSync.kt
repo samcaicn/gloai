@@ -1,7 +1,7 @@
 package com.wangzan101.mika.cap.sandbox
 
 import androidx.annotation.VisibleForTesting
-import com.wangzan101.mika.core.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
 import com.wangzan101.mika.core.cap.sandbox.RootfsExtractor
 import com.wangzan101.mika.core.workspace.SandboxError
 import com.wangzan101.mika.core.workspace.SandboxPaths

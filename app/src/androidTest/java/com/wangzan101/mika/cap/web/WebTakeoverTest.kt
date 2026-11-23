@@ -12,7 +12,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.webkit.WebViewAssetLoader
 import com.wangzan101.mika.cap.phone.a11y.DeviceSupport
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine

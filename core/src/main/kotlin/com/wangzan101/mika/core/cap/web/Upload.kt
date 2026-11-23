@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.cap.web
 
-import com.wangzan101.mika.core.risk.GateTarget
+import com.wangzan101.mika.core.safety.gate.GateTarget
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.ArgError
@@ -19,8 +19,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import com.wangzan101.mika.core.workspace.WorkspacePathCheck
-import com.wangzan101.mika.core.uistate.action
-import com.wangzan101.mika.core.uistate.session
+import com.wangzan101.mika.core.screen.uistate.action
+import com.wangzan101.mika.core.screen.uistate.session
 
 /** 页面脚本给文件选择控件(input type=file)的角色。 */
 private const val FILE_ROLE = "file"

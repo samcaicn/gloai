@@ -8,10 +8,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
-import com.wangzan101.mika.core.guard.GuardVerdict
-import com.wangzan101.mika.core.guard.Severity
-import com.wangzan101.mika.core.guard.actionSignature
-import com.wangzan101.mika.core.guard.OffScreenGuard
+import com.wangzan101.mika.core.safety.guard.GuardVerdict
+import com.wangzan101.mika.core.safety.guard.Severity
+import com.wangzan101.mika.core.safety.guard.actionSignature
+import com.wangzan101.mika.core.safety.guard.OffScreenGuard
 
 /** 一个任务里沙箱命令累计最多跑这么久。 */
 const val SANDBOX_BUDGET_MS = 30 * 60_000L

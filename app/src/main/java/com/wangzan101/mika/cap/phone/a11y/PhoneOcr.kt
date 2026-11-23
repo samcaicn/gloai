@@ -9,8 +9,8 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import com.wangzan101.mika.core.uistate.VisibleTextLine
-import com.wangzan101.mika.core.uistate.normalize
+import com.wangzan101.mika.core.screen.uistate.VisibleTextLine
+import com.wangzan101.mika.core.screen.uistate.normalize
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger

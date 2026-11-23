@@ -239,7 +239,7 @@ internal fun TaskService.launch(run: TaskRun, store: ConversationStore) {
             TaskState.Failed(SHELL_DIED, FailKind.Environment)
         } catch (e: UnattendedLockException) {
             TaskState.Failed(e.message.orEmpty(), FailKind.Environment)
-        } catch (e: com.wangzan101.mika.core.access.AppAccessDenied) {
+        } catch (e: com.wangzan101.mika.core.device.access.AppAccessDenied) {
             val reason = when (e.code) {
                 "app_blocked" -> tr(R.string.task_app_blocked, e.packageName ?: tr(R.string.task_app_this_app))
                 "app_access_unavailable" -> tr(R.string.task_app_access_unavailable)

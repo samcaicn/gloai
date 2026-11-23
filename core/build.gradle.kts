@@ -51,7 +51,7 @@ val knowledgeIndex by tasks.registering(JavaExec::class) {
     inputs.dir(resources.resolve("skills")).withPropertyName("skills")
     outputs.dir(out)
     classpath = sourceSets.main.get().output.classesDirs + configurations.runtimeClasspath.get()
-    mainClass.set("com.wangzan101.mika.core.knowledge.KnowledgeIndex")
+    mainClass.set("com.wangzan101.mika.core.learn.knowledge.KnowledgeIndex")
     argumentProviders.add(CommandLineArgumentProvider {
         listOf(resources.absolutePath, out.get().file("knowledge/index.json").asFile.absolutePath)
     })
@@ -81,7 +81,7 @@ val chatgptSignInCheck by tasks.registering(JavaExec::class) {
     group = "verification"
     description = "用 App 的登录代码对着 OpenAI 走一遍 ChatGPT 登录;-Ptimeout=<秒> -Pmodel=<slug> -Pkeep"
     classpath = chatgptCheck.runtimeClasspath
-    mainClass.set("com.wangzan101.mika.core.chatgpt.check.ChatGptSignInCheckKt")
+    mainClass.set("com.wangzan101.mika.core.model.chatgpt.check.ChatGptSignInCheckKt")
     args(listOfNotNull(
         providers.gradleProperty("timeout").orNull?.let { "--timeout=$it" },
         providers.gradleProperty("model").orNull?.let { "--model=$it" },
@@ -121,8 +121,8 @@ val relayGatewayBinary = tasks.register<Exec>("relayGatewayBinary") {
     group = "verification"
     description = "构建自托管远程 MCP 网关,供跨语言集成测试使用"
     val output = layout.buildDirectory.file("relay-check/mika-relay")
-    workingDir(rootProject.file("tools/relay"))
-    inputs.files(fileTree(rootProject.file("tools/relay")) { include("*.go", "go.mod", "go.sum", "web/**") })
+    workingDir(rootProject.file("companions/relay"))
+    inputs.files(fileTree(rootProject.file("companions/relay")) { include("*.go", "go.mod", "go.sum", "web/**") })
     outputs.file(output)
     environment("GOCACHE", rootProject.layout.buildDirectory.dir("go-cache").get().asFile.absolutePath)
     doFirst { output.get().asFile.parentFile.mkdirs() }
@@ -146,7 +146,7 @@ val cliContractTest by tasks.registering(Test::class) {
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.main.get().output + sourceSets.test.get().runtimeClasspath
     include("**/RemoteCliContractTest*")
-    inputs.dir(rootProject.file("tools/mika/scripts"))
+    inputs.dir(rootProject.file("companions/mika/scripts"))
     systemProperty("mika.python", providers.gradleProperty("mikaPython").getOrElse("python3"))
 }
 
@@ -156,5 +156,5 @@ val cliTest by tasks.registering(Exec::class) {
     description = "CLI 进程、假 ADB、独立 Skill 与真实 HTTP 契约测试 (Python 3.10+)"
     dependsOn(cliContractTest)
     workingDir(rootProject.projectDir)
-    commandLine(providers.gradleProperty("mikaPython").getOrElse("python3"), "-m", "unittest", "discover", "-s", "tools/mika/tests", "-v")
+    commandLine(providers.gradleProperty("mikaPython").getOrElse("python3"), "-m", "unittest", "discover", "-s", "companions/mika/tests", "-v")
 }

@@ -1,9 +1,9 @@
 package com.wangzan101.mika.core.cap.transcribe
 
 import com.wangzan101.mika.core.model.ModelError
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Observation
-import com.wangzan101.mika.core.observation.Place
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Observation
+import com.wangzan101.mika.core.screen.observation.Place
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.ArgError

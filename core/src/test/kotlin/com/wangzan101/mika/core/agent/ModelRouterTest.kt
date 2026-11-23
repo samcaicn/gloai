@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.observation.Place
+import com.wangzan101.mika.core.screen.observation.Place
 import com.wangzan101.mika.core.tool.placeOf
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ChatModel

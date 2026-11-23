@@ -2,13 +2,13 @@ package com.wangzan101.mika.settings.ui
 
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.core.shell.BuiltinShellFailure
-import com.wangzan101.mika.core.shell.RootGrant
-import com.wangzan101.mika.core.shell.BuiltinShellFix
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
-import com.wangzan101.mika.core.shell.HelperRestart
-import com.wangzan101.mika.core.shell.SetupStep
-import com.wangzan101.mika.core.shell.SetupSuspect
+import com.wangzan101.mika.core.device.shell.BuiltinShellFailure
+import com.wangzan101.mika.core.device.shell.RootGrant
+import com.wangzan101.mika.core.device.shell.BuiltinShellFix
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.HelperRestart
+import com.wangzan101.mika.core.device.shell.SetupStep
+import com.wangzan101.mika.core.device.shell.SetupSuspect
 import com.wangzan101.mika.ui.components.ValueTone
 
 /**
@@ -24,7 +24,7 @@ object PhoneSetupCopy {
     /** 引导页顶栏上的短标题。 */
     val BAR_TITLE: String get() = tr(R.string.phone_bar_title)
     val SKIP_NOTE: String get() = tr(R.string.phone_skip_note)
-    /** 这个环境设置不了手机操作(见 [com.wangzan101.mika.core.shell.PhoneSetupFlow.unavailable]):一句结论,一句原因。 */
+    /** 这个环境设置不了手机操作(见 [com.wangzan101.mika.core.device.shell.PhoneSetupFlow.unavailable]):一句结论,一句原因。 */
     val UNAVAILABLE: String get() = tr(R.string.phone_unavailable)
     val UNAVAILABLE_REASON: String get() = tr(R.string.phone_unavailable_reason)
 

@@ -1,10 +1,10 @@
 package com.wangzan101.mika.core.cap.phone
 
-import com.wangzan101.mika.core.uistate.DwellInterrupted
-import com.wangzan101.mika.core.uistate.IdleScroll
-import com.wangzan101.mika.core.uistate.PageLimitReached
+import com.wangzan101.mika.core.screen.uistate.DwellInterrupted
+import com.wangzan101.mika.core.screen.uistate.IdleScroll
+import com.wangzan101.mika.core.screen.uistate.PageLimitReached
 import com.wangzan101.mika.core.run.waitOrSteer
-import com.wangzan101.mika.core.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 

@@ -27,7 +27,7 @@ import com.wangzan101.mika.cap.phone.a11y.OverlayWindow
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.assembly.knownTools
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.task.DeviceStateWatcher
 import com.wangzan101.mika.task.TaskCenterState

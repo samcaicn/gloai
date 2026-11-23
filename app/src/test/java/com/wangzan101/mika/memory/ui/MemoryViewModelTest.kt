@@ -1,8 +1,8 @@
 package com.wangzan101.mika.memory.ui
 
 import com.wangzan101.mika.i18n.ChineseTexts
-import com.wangzan101.mika.core.memory.MemoryKind
-import com.wangzan101.mika.core.memory.MemorySource
+import com.wangzan101.mika.core.learn.memory.MemoryKind
+import com.wangzan101.mika.core.learn.memory.MemorySource
 import com.wangzan101.mika.settings.MemorySettings
 import com.wangzan101.mika.task.memoryStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,7 +46,7 @@ class MemoryViewModelTest {
 
     // Mika 自己归纳出来的那条:来历写明是它归纳的,引的是用户提要求的那句,不写成「你说的」
     @Test fun inferredMemoryShowsItWasMikasConclusion() = runTest {
-        store.add(MemoryKind.fact, "用户常在张江路一带活动", emptyList(), said.copy(type = com.wangzan101.mika.core.memory.MemoryContext.INFERRED, quote = "你自己总结几条写进记忆")).getOrThrow()
+        store.add(MemoryKind.fact, "用户常在张江路一带活动", emptyList(), said.copy(type = com.wangzan101.mika.core.learn.memory.MemoryContext.INFERRED, quote = "你自己总结几条写进记忆")).getOrThrow()
         val vm = vm()
         assertEquals("Mika 在 10 月 23 日按你的要求归纳:『你自己总结几条写进记忆』", vm.ui.value.rows.first { it.content == "用户常在张江路一带活动" }.source)
         // 开关默认关,打开后存得住
@@ -152,7 +152,7 @@ class MemoryViewModelTest {
 
     @Test fun approveWithEdit() = runTest {
         val skills = com.wangzan101.mika.task.MapSkills()
-        skills.putPending("d1", com.wangzan101.mika.core.skills.PersonalSkill("meeting-notes", skillMd("meeting-notes", "## 步骤\n1. 点搜索"), com.wangzan101.mika.core.skills.SkillStatus.pending, "r1", null, 0, emptyList()))
+        skills.putPending("d1", com.wangzan101.mika.core.learn.skills.PersonalSkill("meeting-notes", skillMd("meeting-notes", "## 步骤\n1. 点搜索"), com.wangzan101.mika.core.learn.skills.SkillStatus.pending, "r1", null, 0, emptyList()))
         val vm = skillsVm(skills)
         assertEquals(listOf("d1"), vm.ui.value.skills.drafts.map { it.id })
         // 改过的全文同样过校验:缺小节、带敏感信息、提到没有的工具都不收
@@ -174,7 +174,7 @@ class MemoryViewModelTest {
     }
 
     @Test fun updateDraftShowsChangedLines() = runTest {
-        val old = com.wangzan101.mika.core.skills.PersonalSkill("meeting-notes", skillMd("meeting-notes", "## 步骤\n1. 点搜索\n2. 整理待办"), com.wangzan101.mika.core.skills.SkillStatus.active, "r0", null, 0, emptyList())
+        val old = com.wangzan101.mika.core.learn.skills.PersonalSkill("meeting-notes", skillMd("meeting-notes", "## 步骤\n1. 点搜索\n2. 整理待办"), com.wangzan101.mika.core.learn.skills.SkillStatus.active, "r0", null, 0, emptyList())
         val skills = com.wangzan101.mika.task.MapSkills(old)
         skills.putPending("d2", old.copy(markdown = skillMd("meeting-notes", "## 步骤\n1. 点搜索\n2. 补充负责人"), replacesDraftOf = "meeting-notes"))
         val vm = skillsVm(skills)
@@ -182,14 +182,14 @@ class MemoryViewModelTest {
     }
 
     @Test fun restoreSuspended() = runTest {
-        val s = com.wangzan101.mika.core.skills.PersonalSkill("meeting-notes", skillMd("meeting-notes", "## 步骤\n1. 点搜索"), com.wangzan101.mika.core.skills.SkillStatus.suspended, "r0", null, 0, listOf("failed", "verified", "unverified"))
+        val s = com.wangzan101.mika.core.learn.skills.PersonalSkill("meeting-notes", skillMd("meeting-notes", "## 步骤\n1. 点搜索"), com.wangzan101.mika.core.learn.skills.SkillStatus.suspended, "r0", null, 0, listOf("failed", "verified", "unverified"))
         val skills = com.wangzan101.mika.task.MapSkills(s)
         val vm = skillsVm(skills)
         val row = vm.ui.value.skills.installed.single()
         assertTrue(row.suspended)
         assertEquals(listOf("没办成", "核查通过", "没能核实"), row.recent)
         vm.restoreSkill("meeting-notes"); runCurrent()
-        assertEquals(com.wangzan101.mika.core.skills.SkillStatus.active, skills.get("meeting-notes")!!.status)
+        assertEquals(com.wangzan101.mika.core.learn.skills.SkillStatus.active, skills.get("meeting-notes")!!.status)
         assertTrue(skills.get("meeting-notes")!!.outcomes.isEmpty())
         assertTrue(!vm.ui.value.skills.installed.single().suspended)
         vm.suspendSkill("meeting-notes"); runCurrent()
@@ -226,8 +226,8 @@ class MemoryViewModelTest {
 
     @Test fun importedDraftIsCheckedEvenWhenNotEdited() = runTest {
         val skills = com.wangzan101.mika.task.MapSkills()
-        val imported = com.wangzan101.mika.core.skills.PersonalSkill("meeting-notes", fullMd("meeting-notes", "用 `missing_tool` 打开"),
-            com.wangzan101.mika.core.skills.SkillStatus.pending, null, null, 0, emptyList(), source = com.wangzan101.mika.core.skills.PersonalSkill.SOURCE_IMPORTED)
+        val imported = com.wangzan101.mika.core.learn.skills.PersonalSkill("meeting-notes", fullMd("meeting-notes", "用 `missing_tool` 打开"),
+            com.wangzan101.mika.core.learn.skills.SkillStatus.pending, null, null, 0, emptyList(), source = com.wangzan101.mika.core.learn.skills.PersonalSkill.SOURCE_IMPORTED)
         skills.putPending("d1", imported)
         skills.putPending("d2", imported.copy(name = "learned", markdown = fullMd("learned", "用 `missing_tool` 打开"), learnedFrom = "r1", source = null))
         val vm = skillsVm(skills)

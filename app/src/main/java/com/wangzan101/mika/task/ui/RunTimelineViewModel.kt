@@ -2,8 +2,8 @@ package com.wangzan101.mika.task.ui
 
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunMetrics
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunMetrics
 import com.wangzan101.mika.record.RunStore
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -260,7 +260,7 @@ class RunTimelineViewModel(
             val code = (parsed?.get("error") as? JsonPrimitive)?.contentOrNull
                 ?: ERROR.find(json)?.groupValues?.get(1)
             val message = (parsed?.get("message") as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
-            val reason = ERROR_LABELS[code] ?: message?.let { com.wangzan101.mika.core.record.Redactor.text(it).take(240) }
+            val reason = ERROR_LABELS[code] ?: message?.let { com.wangzan101.mika.core.run.record.Redactor.text(it).take(240) }
                 ?: code?.takeIf { it.isNotBlank() }?.take(100)
             return reason?.let { tr(R.string.result_error_detail, it) }
         }

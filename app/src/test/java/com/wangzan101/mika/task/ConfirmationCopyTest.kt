@@ -3,8 +3,8 @@ package com.wangzan101.mika.task
 import org.junit.Rule
 import com.wangzan101.mika.i18n.ChineseTexts
 import com.wangzan101.mika.core.cap.root.ROOT_CONFIRM_APP
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.risk.IrrevAction
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.gate.IrrevAction
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

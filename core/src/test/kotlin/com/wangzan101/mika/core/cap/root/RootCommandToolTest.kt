@@ -5,13 +5,13 @@ import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.FakeModel
 import com.wangzan101.mika.core.assembly.knownToolNames
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.gate.ConfirmationGate
+import com.wangzan101.mika.core.safety.gate.ConfirmationGate
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
 import com.wangzan101.mika.core.run.Attendance
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunInbox

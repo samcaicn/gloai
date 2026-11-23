@@ -4,7 +4,7 @@ import java.io.Closeable
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
-import com.wangzan101.mika.core.knowledge.ScriptEntry
+import com.wangzan101.mika.core.learn.knowledge.ScriptEntry
 import com.wangzan101.mika.core.workspace.SandboxError
 import com.wangzan101.mika.core.workspace.WorkspaceFileGate
 import com.wangzan101.mika.core.workspace.SandboxTree

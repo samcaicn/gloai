@@ -1,7 +1,7 @@
 package com.wangzan101.mika.chat.ui
 import com.wangzan101.mika.chat.SharedFile
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.task.SteerNote
 import com.wangzan101.mika.task.SteerState
 import com.wangzan101.mika.task.unconsumed

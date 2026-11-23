@@ -34,7 +34,7 @@ import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.run.Outbox
 import com.wangzan101.mika.core.run.RunStore
-import com.wangzan101.mika.core.usage.UsageLedger
+import com.wangzan101.mika.core.model.usage.UsageLedger
 import com.wangzan101.mika.core.workspace.SandboxTree
 import com.wangzan101.mika.i18n.AppLanguage
 import com.wangzan101.mika.i18n.ResourceTexts

@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.Untrusted
 
 /**
  * Mika 自己写进对话的一轮「通知提醒」(主动能力):用户点开提醒时,Mika 把挑出来的几条通知列成一条消息。

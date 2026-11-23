@@ -1,8 +1,8 @@
 package com.wangzan101.mika.settings.ui.models
 
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.chatgpt.ChatGptAuth
-import com.wangzan101.mika.core.oauth.OpenRouterAuth
+import com.wangzan101.mika.core.model.chatgpt.ChatGptAuth
+import com.wangzan101.mika.core.model.oauth.OpenRouterAuth
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.voice.SystemSpeech
 import com.wangzan101.mika.settings.ChatGptSignIns

@@ -23,9 +23,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.decision.DecisionConfig
-import com.wangzan101.mika.core.decision.DecisionModel
-import com.wangzan101.mika.core.decision.DecisionProtocol
+import com.wangzan101.mika.core.model.decision.DecisionConfig
+import com.wangzan101.mika.core.model.decision.DecisionModel
+import com.wangzan101.mika.core.model.decision.DecisionProtocol
 import com.wangzan101.mika.settings.DecisionSettings
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.FooterNote

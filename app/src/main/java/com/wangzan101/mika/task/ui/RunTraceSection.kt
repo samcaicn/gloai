@@ -20,8 +20,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.trace.TraceArchive
-import com.wangzan101.mika.core.trace.TraceRow
+import com.wangzan101.mika.core.run.trace.TraceArchive
+import com.wangzan101.mika.core.run.trace.TraceRow
 import com.wangzan101.mika.ui.components.GroupCard
 import com.wangzan101.mika.ui.components.ListRow
 import com.wangzan101.mika.ui.components.MikaSwitch

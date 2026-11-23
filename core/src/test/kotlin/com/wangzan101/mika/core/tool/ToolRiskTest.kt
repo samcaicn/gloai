@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.tool
 
-import com.wangzan101.mika.core.gate.gateTargetOf
-import com.wangzan101.mika.core.risk.GateTarget
+import com.wangzan101.mika.core.safety.gate.gateTargetOf
+import com.wangzan101.mika.core.safety.gate.GateTarget
 import com.wangzan101.mika.core.calls.PhoneCallPort
 import com.wangzan101.mika.core.calls.PhoneCallTask
 import com.wangzan101.mika.core.model.Part
@@ -106,8 +106,8 @@ class ToolRiskTest {
             override suspend fun answer(callId: String) = JsonObject(emptyMap())
             override suspend fun hangup(callId: String) = JsonObject(emptyMap())
             override suspend fun takeover() = JsonObject(emptyMap())
-        }, wechatOwner = com.wangzan101.mika.core.wechat.WechatOwnerPort {
-            com.wangzan101.mika.core.wechat.WechatOwnerResult(com.wangzan101.mika.core.wechat.WechatOwnerResult.Status.Unavailable)
+        }, wechatOwner = com.wangzan101.mika.core.cap.wechat.WechatOwnerPort {
+            com.wangzan101.mika.core.cap.wechat.WechatOwnerResult(com.wangzan101.mika.core.cap.wechat.WechatOwnerResult.Status.Unavailable)
         })
         for (name in names) {
             val r = d.executeRead(Part.ToolCall("c", name, "{}")).content

@@ -13,10 +13,10 @@ import com.wangzan101.mika.core.agent.ModelRouter
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.cap.web.WEB
-import com.wangzan101.mika.core.knowledge.ChannelFacts
+import com.wangzan101.mika.core.learn.knowledge.ChannelFacts
 import com.wangzan101.mika.core.model.ChatModel
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.replay.RouteMatcher
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.learn.replay.RouteMatcher
 import com.wangzan101.mika.core.run.RunInput
 import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.core.tool.HandBack
@@ -97,7 +97,7 @@ internal suspend fun TaskRun.assembleAgent(a: RunAssembly, m: RunModels, ph: Run
             if (phoneScreen.acquired && dispatcher?.surface != WEB) phone?.screen?.let { phoneRuntime.awaitUserPick(it, taskGate, w) }
             // 等关卡期间发生过锁屏周期:按旧屏幕准备好的动作作废,执行入口换成说明结果喂回模型
             if (taskGate.pass({ phoneScreen.acquired && dispatcher?.surface != WEB }, w))
-                throw com.wangzan101.mika.core.gate.ScreenRecoveryRequired()
+                throw com.wangzan101.mika.core.safety.gate.ScreenRecoveryRequired()
         }, knowledge = knowledge, screenMaps = memoryRuntime.screenMaps(), sink = sink, trace = trace, installedApps = { apps },
         // 选渠道用的事实:装了哪些 App、在 Mika 里登录过哪些网站、有没有内置浏览器
         channelFacts = {

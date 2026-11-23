@@ -86,9 +86,9 @@ class CapsuleCardContentTest {
     private val at = java.time.LocalDateTime.of(2026, 10, 28, 19, 42).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
     private val shots = com.wangzan101.mika.chat.ui.ScreenShots { _, id ->
         when (id) {
-            "s1" -> com.wangzan101.mika.chat.ui.ShownScreen(com.wangzan101.mika.core.userscreen.UserScreen("s1", at, "com.android.settings", "设置"),
+            "s1" -> com.wangzan101.mika.chat.ui.ShownScreen(com.wangzan101.mika.core.screen.user.UserScreen("s1", at, "com.android.settings", "设置"),
                 Bitmap.createBitmap(90, 200, Bitmap.Config.ARGB_8888).asImageBitmap())
-            "s2" -> com.wangzan101.mika.chat.ui.ShownScreen(com.wangzan101.mika.core.userscreen.UserScreen("s2", at, "com.example.bank", "银行", blocked = true), null)
+            "s2" -> com.wangzan101.mika.chat.ui.ShownScreen(com.wangzan101.mika.core.screen.user.UserScreen("s2", at, "com.example.bank", "银行", blocked = true), null)
             else -> null
         }
     }
@@ -125,8 +125,8 @@ class CapsuleCardContentTest {
     }
 
     @Test fun attachmentChipShowsScreenAndCanBeSentOrRemoved() {
-        val screen = com.wangzan101.mika.core.userscreen.UserScreen("", at, "com.android.settings", "设置")
-        val pending = PendingScreen(com.wangzan101.mika.core.userscreen.CapturedScreen(byteArrayOf(1), screen),
+        val screen = com.wangzan101.mika.core.screen.user.UserScreen("", at, "com.android.settings", "设置")
+        val pending = PendingScreen(com.wangzan101.mika.core.screen.user.CapturedScreen(byteArrayOf(1), screen),
             Bitmap.createBitmap(90, 200, Bitmap.Config.ARGB_8888).asImageBitmap())
         show(CardView.Chat("c1", title = "t"), thread = idleThread(), input = CardInputUi(screen = pending))
         compose.onNodeWithTag("capsule-attachment").assertIsDisplayed()
@@ -139,9 +139,9 @@ class CapsuleCardContentTest {
     }
 
     @Test fun blockedChipSaysNotCaptured() {
-        val screen = com.wangzan101.mika.core.userscreen.UserScreen("", at, "com.example.bank", "银行", blocked = true)
+        val screen = com.wangzan101.mika.core.screen.user.UserScreen("", at, "com.example.bank", "银行", blocked = true)
         show(CardView.Chat("c1", title = "t"), thread = idleThread(),
-            input = CardInputUi(screen = PendingScreen(com.wangzan101.mika.core.userscreen.CapturedScreen(null, screen), null)))
+            input = CardInputUi(screen = PendingScreen(com.wangzan101.mika.core.screen.user.CapturedScreen(null, screen), null)))
         compose.onNodeWithText(com.wangzan101.mika.chat.ui.ScreenCopy.BLOCKED, useUnmergedTree = true).assertIsDisplayed()
     }
 

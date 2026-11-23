@@ -9,7 +9,7 @@ import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.verify.Verifier
+import com.wangzan101.mika.core.safety.verify.Verifier
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
