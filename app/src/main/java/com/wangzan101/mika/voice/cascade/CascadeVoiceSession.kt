@@ -83,6 +83,8 @@ class CascadeVoiceSession internal constructor(
 
     // Speaking state.
     @Volatile private var reply: Job? = null
+    // Keep cancelled replies until they finish, even if a replacement is itself interrupted while waiting.
+    private val replyJobs = mutableSetOf<Job>() // guarded by lock
     @Volatile private var audibleUntil = 0L
     private val failures = AtomicInteger(0)
     private val callIds = AtomicInteger(0)
@@ -123,8 +125,10 @@ class CascadeVoiceSession internal constructor(
 
     override fun sendGreeting(text: String): Boolean {
         if (closed || text.isBlank()) return false
-        brain.remember(text)
-        startReply { it.say(text) }
+        startReply {
+            brain.remember(text)
+            it.say(text)
+        }
         return true
     }
 
@@ -278,10 +282,10 @@ class CascadeVoiceSession internal constructor(
     private fun startReply(block: suspend (ReplyContext) -> Unit) {
         synchronized(lock) {
             // The new reply waits for the old one to unwind (it closes its tool calls in the brain's history).
-            val previous = reply
             interrupt()
-            reply = scope.launch {
-                previous?.join()
+            val previous = replyJobs.toList()
+            val next = scope.launch {
+                previous.forEach { it.join() }
                 try {
                     speakReply(block)
                 } catch (e: CancellationException) {
@@ -290,6 +294,9 @@ class CascadeVoiceSession internal constructor(
                     fatal(e)
                 }
             }
+            replyJobs += next
+            next.invokeOnCompletion { synchronized(lock) { replyJobs.remove(next) } }
+            reply = next
         }
     }
 
