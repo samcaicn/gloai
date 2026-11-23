@@ -74,6 +74,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.wangzan101.mika.R
 import com.wangzan101.mika.chat.ui.ChatCopy
+import com.wangzan101.mika.ui.MarkdownModel
+import com.wangzan101.mika.ui.MarkdownText
 import com.wangzan101.mika.ui.theme.MikaColors
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaShapes
@@ -363,13 +365,21 @@ private fun SaidBubble(item: VoiceCallFeedItem.Said, max: androidx.compose.ui.un
     Box(Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
         val shape = if (mine) MikaShapes.UserBubble else MikaShapes.AnswerBubble
         val base = Modifier.widthIn(max = max).alpha(if (item.partial) 0.6f else 1f).animateContentSize()
-        Text(
-            if (item.partial && mine) item.text + "…" else item.text,
-            (if (mine) base.background(c.accent.copy(alpha = 0.14f), shape) else base.background(c.surface, shape).border(1.dp, c.hair, shape))
-                .padding(horizontal = 14.dp, vertical = 10.dp)
-                .testTag(if (mine) "voicecall-said-user" else "voicecall-said-mika"),
-            style = MikaType.Body, color = c.ink,
-        )
+        if (mine) {
+            // 你说的/打的照原样显示
+            Text(
+                if (item.partial) item.text + "…" else item.text,
+                base.background(c.accent.copy(alpha = 0.14f), shape).padding(horizontal = 14.dp, vertical = 10.dp).testTag("voicecall-said-user"),
+                style = MikaType.Body, color = c.ink,
+            )
+        } else {
+            // Mika 的回答可能带 Markdown(打字请求的结果就是任务的书面答复),和聊天里一样渲染,别露出星号
+            MarkdownText(
+                item.text, MikaType.Body.copy(color = c.ink),
+                base.background(c.surface, shape).border(1.dp, c.hair, shape).padding(horizontal = 14.dp, vertical = 10.dp).testTag("voicecall-said-mika"),
+                streaming = item.partial,
+            )
+        }
     }
 }
 
@@ -397,8 +407,10 @@ private fun TaskCard(item: VoiceCallFeedItem.Task) {
                         }
                     }
                 }
+                // 步骤行可能是任务答复的开头,带 Markdown;一行小字里不排版,去掉符号、并成一行
+                val plain = remember(step) { MarkdownModel.toPlainText(step).replace(LINE_BREAKS, " ") }
                 Text(
-                    step, Modifier.padding(start = 10.dp), style = MikaType.Body,
+                    plain, Modifier.padding(start = 10.dp), style = MikaType.Body,
                     color = if (running) c.ink else c.ink2, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -566,6 +578,7 @@ private fun LevelBars(level: Float, color: Color, modifier: Modifier = Modifier)
 }
 
 private const val BAR_COUNT = 28
+private val LINE_BREAKS = Regex("\\s*\\n+\\s*")
 
 @Composable
 private fun PillButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
