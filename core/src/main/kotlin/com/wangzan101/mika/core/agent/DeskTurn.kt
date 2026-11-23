@@ -14,4 +14,7 @@ object DeskTurn {
     const val RUN_PREFIX = "desk:"
 
     fun isDesk(t: Turn): Boolean = t.status == STATUS || t.status == REPORT_STATUS
+
+    /** 前台这一轮没回出来、也没派成时记下的原因([Turn.note]);正常回了话的为 null。 */
+    fun failure(t: Turn): String? = t.note?.takeIf { t.status == STATUS }
 }

@@ -161,7 +161,7 @@ internal class ChatSession(private val vm: ChatViewModel) {
      * 能不能加附件:接了前台时随时能加(带附件的一句派成一件新任务,有没有任务在跑都一样);
      * 没接前台(只在测试里)时附件随新任务直接开,只在这条会话没有任务在跑时能加。
      */
-    fun canAttach(ui: ChatUi) = ui.attachEnabled && !ui.importing && (vm.desking != null || ui.composer == ComposerMode.Idle)
+    fun canAttach(ui: ChatUi) = ui.attachEnabled && !ui.importing && (vm.deskFor(ui.conversationId) != null || ui.composer == ComposerMode.Idle)
 
     /**
      * 小画面什么时候给:屏得开过(其余字段照算,开屏那一刻直接用)。用户关掉了这个任务的小画面时只留小按钮,

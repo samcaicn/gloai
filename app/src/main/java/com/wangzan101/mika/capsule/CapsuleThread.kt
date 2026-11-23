@@ -3,6 +3,7 @@ package com.wangzan101.mika.capsule
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.core.agent.Conversation
+import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.run.record.RunEvent
@@ -81,14 +82,15 @@ object CapsuleThreads {
     fun pastItems(index: Int, t: PastTurn, summarizing: Set<String> = emptySet()): List<ThreadItem> {
         val turn = t.turn
         val base = turn.runId?.let { "r$it" } ?: "p$index"
-        val kind = when (turn.status) {
-            "succeeded", "unverified" -> CapsuleKind.Done
-            "cancelled" -> CapsuleKind.Cancelled
+        // 前台回的话、前台的汇报都是正常的回话(汇报那一轮没有用户的话,下面不画用户气泡)
+        val kind = when {
+            Conversation.replied(turn) -> CapsuleKind.Done
+            turn.status == "cancelled" -> CapsuleKind.Cancelled
             else -> CapsuleKind.Failed
         }
         val answer = when (kind) {
             CapsuleKind.Done -> answerParts(turn.outcome).first
-            CapsuleKind.Failed -> turn.outcome
+            CapsuleKind.Failed -> DeskTurn.failure(turn) ?: turn.outcome
             else -> Conversation.stopSummary(turn).orEmpty()
         }
         // 原话,再是插的话;插话之前已经说完的、被它打断的那段回复排在它前面(和对话页一样)

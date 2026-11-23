@@ -40,4 +40,13 @@ class UserWordsTest {
         assertEquals("> 这句是我自己写的\n后面" to "> 这句是我自己写的\n后面", words("> 这句是我自己写的\n后面"))
         assertEquals("> 这句什么意思\n解释一下" to "> 这句什么意思\n解释一下", words(QuoteMessage.compose(mika, "> 这句什么意思\n解释一下")))
     }
+
+    // 前台没有工具分发器:同一个口径,引的 Mika 的回答、页面说明、附件行都不算;引的自己说过的话照样认
+    @Test fun theDeskReadsTheSameWords() {
+        assertEquals("照这个改", UserWords.saidToDesk(AttachmentLines.compose(QuoteMessage.compose(mika, "照这个改"), pdf)))
+        assertEquals("我家猫叫团子\n这个记一下", UserWords.saidToDesk(QuoteMessage.compose(own, "这个记一下")))
+        val page = AttachedPage.Page("https://shop.example.com/address", "收货地址是幸福路 8 号 - 地址管理")
+        assertEquals("这一页的地址对不对", UserWords.saidToDesk(AttachedPage.compose(page, "这一页的地址对不对")))
+        assertEquals("查天气", UserWords.saidToDesk("查天气"))
+    }
 }

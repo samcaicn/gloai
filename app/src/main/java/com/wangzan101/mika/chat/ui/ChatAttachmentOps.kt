@@ -36,8 +36,8 @@ internal class ChatAttachmentOps(private val vm: ChatViewModel, private val sess
         val id = session.draftConversation()
         val sharedBefore = _ui.value.sharedDraft
         val serialBefore = sharedDraftSerial
-        // 没接前台时附件随新任务直接开:读文件期间这条会话开始了任务就不收了;接了前台时有没有任务在跑都收
-        val wasIdle = vm.desking == null && _ui.value.composer == ComposerMode.Idle
+        // 不走前台时(没接前台、子任务的对话)附件随新任务直接开:读文件期间这条会话开始了任务就不收了;走前台时有没有任务在跑都收
+        val wasIdle = vm.deskFor(id) == null && _ui.value.composer == ComposerMode.Idle
         scope.launch {
             val items = try { describeAttachments(uris) } catch (e: CancellationException) { throw e } catch (e: Exception) { emptyList() }
             if (wasIdle && _ui.value.composer != ComposerMode.Idle) return@launch

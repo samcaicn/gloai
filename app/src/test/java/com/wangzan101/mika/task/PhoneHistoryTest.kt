@@ -1,6 +1,7 @@
 package com.wangzan101.mika.task
 
 import com.wangzan101.mika.chat.ConversationStore
+import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.agent.AgentLoop
@@ -37,6 +38,18 @@ class PhoneHistoryTest {
         store.append("phone", Turn("failed check", "answer", "unverified", verified = false))
         val turns = history().turns("phone", 0, 20)!!.getValue("turns").jsonArray
         assertEquals(listOf(null, true, false), turns.map { it.jsonObject["verified"]?.jsonPrimitive?.boolean })
+    }
+
+    @Test fun deskRepliesAndReportsReachTheRemoteHistoryAsDone() {
+        // 前台回的话、前台的汇报都是办完了的回话;汇报那一轮没有用户的话;前台没回出来的一轮报没办成,原因是记下的 note
+        val store = conversations()
+        store.append("chat", Turn("帮我查下天气", "好,我让后台去查", DeskTurn.STATUS, runId = "desk:1"))
+        store.append("chat", Turn("", "天气查好了", DeskTurn.REPORT_STATUS, runId = "desk:2"))
+        store.append("chat", Turn("看看这个文件", "", DeskTurn.STATUS, note = "files_not_ready", runId = "desk:3"))
+        val turns = history().turns("chat", 0, 20)!!.getValue("turns").jsonArray.map { it.jsonObject }
+        assertEquals(listOf("done", "done", "failed"), turns.map { it.getValue("status").jsonPrimitive.content })
+        assertEquals(listOf("帮我查下天气", "", "看看这个文件"), turns.map { it.getValue("goal").jsonPrimitive.content })
+        assertEquals(listOf(null, null, "files_not_ready"), turns.map { it["reason"]?.jsonPrimitive?.content })
     }
 
     @Test fun queuedCancellationsKeepSeparateRemoteIdsWithoutRunRecords() {

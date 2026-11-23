@@ -144,7 +144,7 @@ internal object ChatReduce {
     internal fun fromTurn(t: Turn): Exchange {
         // 前台写的一轮(聊天、通话里前台回的话,和它的汇报):画成前台的一行,派出的任务各画一张卡片
         if (DeskTurn.isDesk(t)) {
-            val status = if (t.status == DeskTurn.STATUS && t.note != null) ExchangeStatus.Failed(t.note!!) else ExchangeStatus.Done(t.outcome, null)
+            val status = DeskTurn.failure(t)?.let { ExchangeStatus.Failed(it) } ?: ExchangeStatus.Done(t.outcome, null)
             return Exchange(t.userText, emptyList(), status, live = false, runId = t.runId, deskReply = t.outcome, deskTasks = t.deskTasks)
         }
         val status = when (t.status) {

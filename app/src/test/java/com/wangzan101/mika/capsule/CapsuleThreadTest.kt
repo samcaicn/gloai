@@ -2,6 +2,7 @@ package com.wangzan101.mika.capsule
 
 import org.junit.Rule
 import com.wangzan101.mika.i18n.ChineseTexts
+import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.FailKind
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn
@@ -65,6 +66,23 @@ class CapsuleThreadTest {
     }
 
     // 停了的那一轮:「已停止」那一行下面是交代;交代还在写时是「正在整理已做的事…」
+    @Test fun deskRepliesAndReportsReadAsRepliesNotFailures() {
+        // 前台回的话、前台的汇报都是正常的回话;汇报那一轮没有用户的话,不画用户气泡;只派了单没回话的一轮不留空的回答
+        val past = listOf(
+            PastTurn(turn("帮我查下天气", "好,我让后台去查", status = DeskTurn.STATUS, runId = "desk:1")),
+            PastTurn(turn("", "天气查好了:晴", status = DeskTurn.REPORT_STATUS, runId = "desk:2")),
+            PastTurn(turn("再订个闹钟", "", status = DeskTurn.STATUS, runId = "desk:3")),
+        )
+        val t = CapsuleThreads.build(past, 10, emptyList())
+        assertEquals(listOf("你:帮我查下天气", "答:好,我让后台去查", "答:天气查好了:晴", "你:再订个闹钟"), texts(t))
+        assertTrue(t.items.none { it is ThreadItem.Note })
+    }
+
+    @Test fun deskTurnThatCouldNotReplyShowsItsReason() {
+        val failed = Turn("看看这个文件", "", DeskTurn.STATUS, note = "文件没准备好", runId = "desk:1")
+        assertEquals(listOf("你:看看这个文件", "注:没办成", "答:文件没准备好"), texts(CapsuleThreads.build(listOf(PastTurn(failed)), 10, emptyList())))
+    }
+
     @Test fun stoppedTurnShowsItsSummaryUnderTheNote() {
         val past = listOf(
             PastTurn(turn("看设置", "停止前看完了网络、蓝牙;显示、声音还没看。", status = "cancelled", runId = "r1"), places = listOf("设置")),

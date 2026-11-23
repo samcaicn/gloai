@@ -7,6 +7,7 @@ import com.wangzan101.mika.cap.sandbox.ImportResult
 import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.settings.Prerequisites
+import com.wangzan101.mika.task.SteerNote
 import com.wangzan101.mika.task.SteerState
 import com.wangzan101.mika.task.unconsumed
 import kotlinx.coroutines.CancellationException
@@ -57,6 +58,7 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
      * 发送输入框里的话;有引用时引用写在话的前面(见 [QuoteMessage]),发出去后清掉。返回 false 表示没发出去(条件不满足)。
      * 去向按先后:通话在等主人回话时交给通话;任务在等回答时是回答;带附件时派成前台跟着的一件新任务(不经前台模型);
      * 其余都交给这条会话的前台(前台在回话时照样能发,不变成「任务在跑」)。正在跟用户学习时一律不发。
+     * 前台派出的子任务的对话不走前台(见 [ChatDesk.handles]):任务在跑时这句插给它,空着时开新的一件,带附件时随新任务开。
      */
     fun send(text: String, check: Prerequisites.Check): Boolean {
         if (teaching()) {
@@ -75,6 +77,7 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
 
     private fun route(words: String, ui: ChatUi, check: Prerequisites.Check): Routed {
         val goal = QuoteMessage.compose(ui.quote, words)
+        val desk = vm.deskFor(ui.conversationId)
         // 通话里在等主人回话:这句就是回话,交给通话(它会记进这个对话);带着附件也先交给通话,附件留在输入框
         if (words.isNotEmpty() && ui.conversationId?.let { vm.ownerAnswer(it, goal) } == true) return Routed.Sent
         // 任务在等回答:这句就是回答
@@ -83,9 +86,9 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
             return Routed.Sent
         }
         // 带附件:先复制进这条会话的工作区,再派成前台跟着的一件新任务(文件随它复制进子会话),有没有任务在跑都一样;
-        // 没接前台(只在测试里)时照旧随新任务直接开,任务在跑时不发
+        // 不走前台时照旧随新任务直接开,任务在跑时不发
         if (ui.attachments.isNotEmpty()) {
-            if (vm.desking == null && ui.composer != ComposerMode.Idle) return Routed.NotSent
+            if (desk == null && ui.composer != ComposerMode.Idle) return Routed.NotSent
             return if (sendWithAttachments(goal, ui.attachments, check)) Routed.Importing else Routed.NotSent
         }
         // 只有引用、没写话时不发
@@ -95,15 +98,32 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
             return Routed.NotSent
         }
         val id = ui.conversationId ?: store.newConversation()
-        val desk = vm.desking
         if (desk != null) {
             claim(id)
             return if (desk.line(id).send(goal)) Routed.Sent else Routed.NotSent
         }
-        // 没接前台(只在测试里):照旧开新任务;任务在跑时不另开
+        // 不走前台:任务在跑时这句插给它(不另开),空着时照旧开新任务
+        if (ui.composer == ComposerMode.Busy) return if (steer(id, goal)) Routed.Sent else Routed.NotSent
         if (ui.composer != ComposerMode.Idle) return Routed.NotSent
         begin(goal, id)
         return Routed.Sent
+    }
+
+    /**
+     * 插话给这条会话正在跑的任务:挂在进行中的那一问下面(先显示「待送达」),交给服务。
+     * 任务还在等前一件让出服务(还没真正开始)时不发,话留在输入框里。
+     */
+    private fun steer(id: String, text: String): Boolean {
+        if (liveIndex !in _ui.value.exchanges.indices || pendingStart?.isActive == true) return false
+        val note = SteerNote(java.util.UUID.randomUUID().toString(), text, SteerState.Pending)
+        _ui.update { ui ->
+            if (liveIndex !in ui.exchanges.indices) return@update ui
+            val exchanges = ui.exchanges.toMutableList()
+            exchanges[liveIndex] = exchanges[liveIndex].let { it.copy(steers = it.steers + note) }
+            ui.copy(exchanges = exchanges)
+        }
+        actions.steer(id, note.id, text)
+        return true
     }
 
     /** 发出去了:清掉输入框里这句话和引用;系统分享的草稿没有附件就整份丢掉,有附件只清文字。 */
@@ -201,8 +221,8 @@ internal class ChatSendOps(private val vm: ChatViewModel, private val session: C
             val currentAttachments = now.attachments
             val draftReplaced = sharedDraftSerial != serialBefore
             val keepNewerAttachments = draftReplaced || currentAttachments != submitted.attachments
-            val desk = vm.desking
-            // 交给前台时不看有没有任务在跑;没接前台时照旧:复制期间开始了别的任务就不发了,草稿和附件留着
+            val desk = vm.deskFor(id)
+            // 交给前台时不看有没有任务在跑;不走前台时照旧:复制期间开始了别的任务就不发了,草稿和附件留着
             val accepted = desk != null || now.composer == ComposerMode.Idle
             if (accepted && desk != null) {
                 if (!keepNewerAttachments) vm.drafting.discardSharedDraft()

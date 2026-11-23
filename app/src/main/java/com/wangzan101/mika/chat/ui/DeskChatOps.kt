@@ -4,6 +4,7 @@ import com.wangzan101.mika.R
 import com.wangzan101.mika.chat.RetryAttachmentStatus
 import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.Turn
+import com.wangzan101.mika.core.agent.UserWords
 import com.wangzan101.mika.core.frontdesk.DeskBrain
 import com.wangzan101.mika.core.frontdesk.DeskEvent
 import com.wangzan101.mika.core.frontdesk.DeskReport
@@ -32,6 +33,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
 /** 聊天页接前台要的三样东西,由 app 装配,测试换成假的。 */
@@ -55,6 +57,7 @@ internal class ChatDesk(private val vm: ChatViewModel, private val session: Chat
     private val _ui = session._ui
     private val lines = HashMap<String, DeskChatOps>()
     private val shown = MutableStateFlow(false)
+    private val children = ConcurrentHashMap<String, Boolean>()
 
     /** 聊天页在不在屏上(界面按生命周期报);默认不在,汇报都交给兜底。 */
     fun pageShown(value: Boolean) {
@@ -63,6 +66,14 @@ internal class ChatDesk(private val vm: ChatViewModel, private val session: Chat
 
     /** 页面开着,而且屏上就是这条会话。 */
     fun showing(conversationId: String) = shown.value && _ui.value.conversationId == conversationId
+
+    /**
+     * 这条会话由前台接。前台派出去的子任务的对话([com.wangzan101.mika.chat.ConversationStore.deskParent])不另起前台:
+     * 在那里打的字照旧直接对它的任务说(在跑时插话、等回答时回答、空着时开新的一件)。还没有编号的新对话由前台接。
+     * 是不是子对话在派出时就定了,记一次。
+     */
+    fun handles(conversationId: String?): Boolean =
+        conversationId == null || !children.getOrPut(conversationId) { vm.store.deskParent(conversationId) != null }
 
     /** 这条会话的前台入口;同一条会话一直是同一个(它记着这条会话的前台说过的话)。 */
     fun line(conversationId: String): DeskChatOps = synchronized(lines) {
@@ -76,10 +87,12 @@ internal class ChatDesk(private val vm: ChatViewModel, private val session: Chat
                 .collectLatest { (id, s) -> if (id != null) follow(id, s) }
         }
         // 会话删掉了:它的前台入口一并丢掉(前台本身由前台登记处收掉,后台任务不碰)
-        vm.scope.launch { vm.store.deletions.collect { id -> synchronized(lines) { lines.remove(id) } } }
+        vm.scope.launch { vm.store.deletions.collect { id -> synchronized(lines) { lines.remove(id) }; children.remove(id) } }
     }
 
     private suspend fun follow(id: String, attach: Boolean) = coroutineScope {
+        // 子任务的对话不造前台,也不接上
+        if (!withContext(vm.io) { handles(id) }) return@coroutineScope
         val desk = withContext(vm.io) { deps.desk(id) }
         val surface = line(id)
         var handle: AutoCloseable? = null
@@ -132,7 +145,7 @@ internal class DeskChatOps(
             _ui.update { it.copy(blocked = listOf(Problem.NoModel)) }
             return false
         }
-        said += text
+        remember(text)
         val runId = newRunId()
         val startedAt = vm.clock()
         val row = Exchange(text, emptyList(), ExchangeStatus.Working, live = true, runId = runId, startedAt = startedAt, deskReply = "")
@@ -150,7 +163,7 @@ internal class DeskChatOps(
      * 有没有任务在跑都一样,输入框不因此变忙。[title] 是卡片上的标题。
      */
     fun sendFiles(text: String, goal: String, files: List<Pair<String, Long>>, title: String) {
-        if (text.isNotBlank()) said += text
+        val words = remember(text)
         val runId = newRunId()
         val startedAt = vm.clock()
         val row = Exchange(goal, emptyList(), ExchangeStatus.Working, live = true, runId = runId, startedAt = startedAt, deskReply = "")
@@ -160,7 +173,7 @@ internal class DeskChatOps(
         }
         vm.scope.launch {
             val result = try {
-                executor().dispatchWithFiles(text, title) { child -> copyFiles(child, files)?.let { ChatReduce.withAttachments(text, it) } }
+                executor().dispatchWithFiles(words, title) { child -> copyFiles(child, files)?.let { ChatReduce.withAttachments(text, it) } }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -272,7 +285,7 @@ internal class DeskChatOps(
      */
     private suspend fun prepare(brain: DeskBrain): DeskToolExecutor {
         val prior = withContext(vm.io) { runCatching { vm.store.turns(conversationId) }.getOrDefault(emptyList()) }
-        said.addAllAbsent(prior.map { it.userText }.filter { it.isNotBlank() })
+        said.addAllAbsent(prior.map { UserWords.saidToDesk(it.userText) }.filter { it.isNotBlank() })
         brain.seed(prior)
         return executor()
     }
@@ -281,6 +294,13 @@ internal class DeskChatOps(
         synchronized(this) { executor } ?: withContext(vm.io) { deps.executor(conversationId, ::verified) }.let { made ->
             synchronized(this) { executor ?: made.also { executor = it } }
         }
+
+    /**
+     * 记下用户这句里他自己说的话([UserWords.saidToDesk]):引的 Mika 的回答、屏幕和页面的说明、附件行都不记,
+     * 前台拿它们派单核对不过。返回记下的那份(可能为空)。
+     */
+    private fun remember(text: String): String =
+        UserWords.saidToDesk(text).also { if (it.isNotBlank()) said += it }
 
     /** 前台交给后台的原话得是用户在这条会话里打过的字(整句或其中一段),前台自己编的不认。 */
     private fun verified(words: String): Boolean {

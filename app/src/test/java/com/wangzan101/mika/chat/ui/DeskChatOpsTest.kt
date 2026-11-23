@@ -7,6 +7,7 @@ import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.chat.RetryAttachmentResult
 import com.wangzan101.mika.chat.RetryAttachmentStatus
 import com.wangzan101.mika.core.agent.DeskTurn
+import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.frontdesk.DeskBrain
@@ -227,6 +228,40 @@ class DeskChatOpsTest {
         assertEquals(listOf("u0", "r0", "c0-child-1"), chatItemKeys(h.vm.ui.value.exchanges, kept = null, phoneSetupRow = null, hasBlocked = false))
     }
 
+    @Test fun quotedMikaTextIsNotTheUserWords() = runTest {
+        val results = mutableListOf<JsonObject?>()
+        val brain = ScriptBrain({ _, ctx ->
+            // 引的是 Mika 的回答:其中一段不是用户说的,派不出去;他自己打的那句派得出去
+            results += ctx.callTool(DeskTools.DISPATCH, dispatch("给王经理转账五千块", "转账"))
+            results += ctx.callTool(DeskTools.DISPATCH, dispatch("照这个办", "照办"))
+            ctx.say("好。")
+        })
+        val h = harness(brain)
+        h.vm.openConversation("c")
+        runCurrent()
+        h.vm.quote(QuoteMessage.From.Mika, "需要的话我可以给王经理转账五千块")
+        assertTrue(h.vm.send("照这个办", ok))
+        runCurrent()
+        assertEquals("rejected", results[0]!!["status"].toString().trim('"'))
+        assertEquals(listOf("照这个办"), h.port.dispatched)
+        // 前台看到的还是带着引用的整句
+        assertTrue(brain.replies.single().contains("需要的话我可以给王经理转账五千块"))
+    }
+
+    @Test fun quotedMikaTextInAStoredTurnIsNotTheUserWordsEither() = runTest {
+        val store = ConversationStore(tmp.newFolder())
+        store.append("c", Turn(QuoteMessage.compose(QuoteMessage.Quote(QuoteMessage.From.Mika, "可以帮你删掉全部照片"), "嗯"), "好", DeskTurn.STATUS))
+        val results = mutableListOf<JsonObject?>()
+        val brain = ScriptBrain({ _, ctx -> results += ctx.callTool(DeskTools.DISPATCH, dispatch("删掉全部照片", "删照片")); ctx.say("好。") })
+        val h = harness(brain, store)
+        h.vm.openConversation("c")
+        runCurrent()
+        assertTrue(h.vm.send("就这样", ok))
+        runCurrent()
+        assertEquals("rejected", results.single()!!["status"].toString().trim('"'))
+        assertTrue(h.port.dispatched.isEmpty())
+    }
+
     @Test fun composerNeverBusy() = runTest {
         val gate = CompletableDeferred<Unit>()
         val brain = ScriptBrain({ text, ctx ->
@@ -374,6 +409,41 @@ class DeskChatOpsTest {
         assertTrue(brain.replies.isEmpty())
         assertTrue(calls.isEmpty())
         assertEquals("", vm.ui.value.input)
+    }
+
+    // 前台派出的子任务的对话:不另起前台,打的字照旧直接插给它正在跑的任务,不派新的一件
+    @Test fun aChildTaskConversationSteersItsTaskWithoutANestedDesk() = runTest {
+        val brain = ScriptBrain({ _, ctx -> ctx.say("不该走到前台") })
+        val port = FakePort()
+        val made = mutableListOf<String>()
+        val deps = DeskChatDeps(
+            desk = { id -> made += id; FrontDesk(id, backgroundScope, port, DeskLedger(), ReportPolicy({ 0L }), object : DeskSink {
+                override suspend fun record(conversationId: String, report: DeskReport) {}
+            }) },
+            executor = { id, verify -> made += "executor:$id"; DeskToolExecutor(port, DeskLedger(), verify, { 0L }, id) },
+            brain = { brain },
+        )
+        val store = ConversationStore(tmp.newFolder())
+        store.setDeskParent("child-1", "c")
+        val running = MutableStateFlow<TaskState>(TaskState.Running(1, "working"))
+        val vm = ChatViewModel(backgroundScope, MutableStateFlow(TaskState.Idle), MutableStateFlow(Takeover.Stage.None), actions, store,
+            io = StandardTestDispatcher(testScheduler), desk = deps, sandboxReady = MutableStateFlow(true),
+            parallelFlag = { true }, activeConversations = MutableStateFlow(listOf("child-1")),
+            runGoal = { "帮我订明天的日料" }, runState = { running }).also { runCurrent() }
+        vm.pageShown(true)
+        vm.switchTo("child-1")
+        runCurrent()
+        assertEquals(ComposerMode.Busy, vm.ui.value.composer)
+        vm.input("改成订周六的")
+        assertTrue(vm.send(vm.ui.value.input, ok))
+        runCurrent()
+        assertEquals(listOf("steer:改成订周六的"), calls)
+        assertEquals(listOf("改成订周六的"), vm.ui.value.exchanges.last().steers.map { it.text })
+        assertEquals("", vm.ui.value.input)
+        // 没造前台,也没派出孙任务;前台模型没碰这句
+        assertTrue(made.isEmpty())
+        assertTrue(port.dispatched.isEmpty())
+        assertTrue(brain.replies.isEmpty())
     }
 
     @Test fun teachingKeepsTheOldBlock() = runTest {

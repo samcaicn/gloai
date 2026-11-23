@@ -57,6 +57,13 @@ object Conversation {
     /** 停止的那一轮还没有交代(或没什么可交代)时记下的话。 */
     const val CANCELLED_OUTCOME = "已取消"
 
+    /**
+     * 这一轮是不是正常交出了回话:任务办完了(含办完但没核实的)、前台回的话、前台的汇报都算;前台没回出来([DeskTurn.failure])不算。
+     * 对话之外按结局分类的地方(胶囊、远程历史……)都按它分,不各写一份。
+     */
+    fun replied(t: Turn): Boolean =
+        t.status == "succeeded" || t.status == "unverified" || (DeskTurn.isDesk(t) && DeskTurn.failure(t) == null)
+
     /** 停止的那一轮补上的交代;没有时为 null。 */
     fun stopSummary(t: Turn): String? =
         t.outcome.trim().takeIf { t.status == "cancelled" && it.isNotEmpty() && it != CANCELLED_OUTCOME }

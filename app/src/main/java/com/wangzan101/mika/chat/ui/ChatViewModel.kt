@@ -186,6 +186,9 @@ class ChatViewModel(
     internal val sending = ChatSendOps(this, session)
     internal val noting = ChatNoteOps(this, session)
     internal val desking: ChatDesk? = desk?.let { ChatDesk(this, session, it) }
+
+    /** 接这条会话的前台;没接前台、或这是前台派出的子任务的对话时为 null(照旧直接对任务说,见 [ChatDesk.handles])。 */
+    internal fun deskFor(conversationId: String?): ChatDesk? = desking?.takeIf { it.handles(conversationId) }
     private var autoReadKey by session::autoReadKey
     private val _ui = session._ui
     private val _jump = session._jump
