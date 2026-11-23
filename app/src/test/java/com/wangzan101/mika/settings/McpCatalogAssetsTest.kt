@@ -10,9 +10,10 @@ import java.io.File
 class McpCatalogAssetsTest {
     private fun bundled(): McpCatalog = McpCatalogAssets.parse(File("src/main/assets/mcp/catalog.json").readText())
 
-    @Test fun bundledCatalogHasAtLeast200UniqueUsablePresets() {
+    @Test fun bundledCatalogHasUniqueUsablePresets() {
+        // 远程预设只收厂商托管的真实 MCP 端点(tools/mcp/check_catalog.py --online 探测通过),不凑数量。
         val catalog = bundled()
-        assertTrue("need at least 200 usable presets, got ${catalog.presets.size}", catalog.presets.size >= 200)
+        assertTrue("catalog lost its presets, got ${catalog.presets.size}", catalog.presets.size >= 50)
         assertEquals(catalog.presets.size, catalog.presets.map { it.id }.toSet().size)
     }
 
@@ -34,6 +35,16 @@ class McpCatalogAssetsTest {
                 assertTrue("${preset.id}: package source must be https", spec.source.startsWith("https://"))
                 assertTrue("${preset.id}: package version must be exact", spec.version.isNotBlank())
             }
+        }
+    }
+
+    @Test fun remotePresetsPointAtMcpServersNotRestApiRoots() {
+        // 远程预设一律是厂商的 MCP 端点;普通 REST API 根地址(如 https://api.x.com/v1)握手必失败。
+        for (preset in bundled().presets.filter { it.transport != "stdio" }) {
+            assertTrue("${preset.id}: no user-templated endpoints", !preset.endpoint.contains("{{"))
+            val host = java.net.URI(preset.endpoint).host
+            assertTrue("${preset.id}: ${preset.endpoint} looks like a REST API root",
+                preset.endpoint.contains("mcp") || host.contains("mcp"))
         }
     }
 

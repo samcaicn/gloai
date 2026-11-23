@@ -199,7 +199,8 @@ def summary(key):
 
 
 # --- service builders -----------------------------------------------------------
-# A service tuple is (id, name, category, transport, auth, endpoint|command, fields, official_source,
+# Remote presets use remote(); there is no "REST API" shape — an entry exists only when the vendor
+# hosts a real MCP server. A service tuple is (id, name, category, transport, auth, endpoint|command, fields, official_source,
 # summary_key, package_spec). fields are (id, secret, required, target, name, label_key); the name
 # holds the header / env-var name, empty for bearer/url/argv. package_spec is (ecosystem, name,
 # version, source) and only for stdio.
@@ -208,18 +209,12 @@ def remote(sid, name, category, endpoint, source, sumkey, auth="oauth", transpor
     return (sid, name, category, transport, auth, endpoint, list(fields), source, sumkey, None)
 
 
-def api(sid, name, category, endpoint, source, sumkey, fields=None, transport="streamable-http"):
-    f = list(fields) if fields is not None else [("api_key", True, True, "bearer", "", "api_key")]
-    return (sid, name, category, transport, "fields", endpoint, f, source, sumkey, None)
-
-
 def stdio(sid, name, category, binname, source, sumkey, eco, pkg, ver, auth="none", fields=(), args=()):
     return (sid, name, category, "stdio", auth, [binname, *args], list(fields), source, sumkey, (eco, pkg, ver, source))
 
 
 # Auth / field shorthands
 BEARER_KEY = [("api_key", True, True, "bearer", "", "api_key")]
-TENANT_URL = [("tenant", False, True, "url", "", "tenant")]
 
 SERVICES = [
     # ===== stdio — official / verifiable packages, versions pinned from the live registry =====
@@ -285,242 +280,97 @@ SERVICES = [
           "https://pypi.org/project/mcp-server-sqlite/", "database",
           "pypi", "mcp-server-sqlite", "2025.4.25"),
 
-    # ===== AI / large language models =====
-    api("openai", "OpenAI", "llm", "https://api.openai.com/v1", "https://platform.openai.com", "llm"),
-    api("anthropic", "Anthropic", "llm", "https://api.anthropic.com", "https://www.anthropic.com", "llm",
-        fields=[("api_key", True, True, "header", "x-api-key", "api_key")]),
-    api("google-gemini", "Google Gemini", "llm", "https://generativelanguage.googleapis.com", "https://ai.google.dev", "llm"),
-    api("mistral", "Mistral AI", "llm", "https://api.mistral.ai", "https://mistral.ai", "llm"),
-    api("cohere", "Cohere", "llm", "https://api.cohere.com", "https://cohere.com", "llm"),
-    api("groq", "Groq", "llm", "https://api.groq.com", "https://groq.com", "llm"),
-    api("deepseek", "DeepSeek", "llm", "https://api.deepseek.com", "https://platform.deepseek.com", "llm"),
-    api("xai", "xAI", "llm", "https://api.x.ai", "https://x.ai", "llm"),
-    api("together", "Together AI", "llm", "https://api.together.xyz", "https://www.together.ai", "llm"),
-    api("perplexity", "Perplexity", "llm", "https://api.perplexity.ai", "https://www.perplexity.ai", "llm"),
-    api("fireworks", "Fireworks AI", "llm", "https://api.fireworks.ai", "https://fireworks.ai", "llm"),
-    api("replicate", "Replicate", "llm", "https://api.replicate.com", "https://replicate.com", "llm"),
-    api("huggingface", "Hugging Face", "llm", "https://api-inference.huggingface.co", "https://huggingface.co", "llm"),
-    api("cerebras", "Cerebras", "llm", "https://api.cerebras.ai", "https://cerebras.ai", "llm"),
-    api("moonshot", "Moonshot AI", "llm", "https://api.moonshot.ai", "https://platform.moonshot.cn", "llm"),
-    api("zhipu", "Zhipu AI", "llm", "https://open.bigmodel.cn", "https://www.zhipuai.cn", "llm"),
-    api("qwen", "Qwen", "llm", "https://dashscope.aliyuncs.com", "https://www.alibabacloud.com", "llm"),
-    api("baidu-ernie", "Baidu ERNIE", "llm", "https://qianfan.baidubce.com", "https://cloud.baidu.com", "llm"),
-    api("minimax", "MiniMax", "llm", "https://api.minimax.chat", "https://www.minimaxi.com", "llm"),
-    remote("vertex-ai", "Google Vertex AI", "llm", "https://aiplatform.googleapis.com", "https://cloud.google.com/vertex-ai", "llm"),
-    remote("bedrock", "Amazon Bedrock", "llm", "https://bedrock.amazonaws.com", "https://aws.amazon.com/bedrock", "llm"),
-
-    # ===== web search =====
-    api("brave", "Brave Search API", "search", "https://api.search.brave.com", "https://brave.com/search/api", "search",
-        fields=[("api_key", True, True, "header", "X-Subscription-Token", "api_key")]),
-    api("tavily", "Tavily", "search", "https://api.tavily.com", "https://tavily.com", "search"),
-    api("exa", "Exa", "search", "https://api.exa.ai", "https://exa.ai", "search"),
-    api("serper", "Serper", "search", "https://google.serper.dev", "https://serper.dev", "search"),
-    api("serpapi", "SerpAPI", "search", "https://serpapi.com", "https://serpapi.com", "search"),
-    api("google-custom-search", "Google Custom Search", "search", "https://customsearch.googleapis.com", "https://developers.google.com/custom-search", "search"),
-    api("bing", "Bing Search", "search", "https://api.bing.microsoft.com", "https://www.microsoft.com/bing/apis", "search",
-        fields=[("api_key", True, True, "header", "Ocp-Apim-Subscription-Key", "api_key")]),
-    api("you", "You.com", "search", "https://api.you.com", "https://you.com", "search"),
-    api("kagi", "Kagi", "search", "https://kagi.com/api", "https://kagi.com", "search"),
-    remote("searxng", "SearXNG", "search", "https://{{base_url}}", "https://docs.searxng.org", "search", auth="fields",
-           fields=[("base_url", False, True, "url", "", "base_url")]),
-
-    # ===== databases & data stores =====
-    remote("mongodb-atlas", "MongoDB Atlas", "database", "https://cloud.mongodb.com", "https://www.mongodb.com/atlas", "database"),
-    api("neon", "Neon", "database", "https://console.neon.tech", "https://neon.tech", "database"),
-    api("supabase", "Supabase", "database", "https://api.supabase.com", "https://supabase.com", "database",
-        fields=[("api_key", True, True, "bearer", "", "api_key"), ("project", False, True, "header", "x-supabase-project", "project")]),
-    api("planetscale", "PlanetScale", "database", "https://api.planetscale.com", "https://planetscale.com", "database"),
-    api("upstash", "Upstash", "database", "https://api.upstash.com", "https://upstash.com", "database"),
-    api("clickhouse", "ClickHouse", "database", "https://api.clickhouse.cloud", "https://clickhouse.com", "database"),
-    api("snowflake", "Snowflake", "database", "https://api.snowflake.com", "https://www.snowflake.com", "database",
-        fields=[("api_key", True, True, "bearer", "", "api_key"), ("workspace", False, True, "header", "x-snowflake-account", "workspace")]),
-    remote("bigquery", "Google BigQuery", "database", "https://bigquery.googleapis.com", "https://cloud.google.com/bigquery", "database"),
-    remote("databricks", "Databricks", "database", "https://api.databricks.com", "https://www.databricks.com", "database"),
-    api("pinecone", "Pinecone", "vector", "https://api.pinecone.io", "https://www.pinecone.io", "vector"),
-    api("weaviate", "Weaviate", "vector", "https://api.weaviate.io", "https://weaviate.io", "vector"),
-    api("qdrant", "Qdrant", "vector", "https://api.qdrant.tech", "https://qdrant.tech", "vector"),
-    api("chroma", "Chroma", "vector", "https://api.trychroma.com", "https://www.trychroma.com", "vector"),
-    api("zilliz", "Zilliz", "vector", "https://api.zilliz.com", "https://zilliz.com", "vector"),
-    api("singlestore", "SingleStore", "database", "https://api.singlestore.com", "https://www.singlestore.com", "database"),
-    api("timescale", "Timescale", "database", "https://api.timescale.com", "https://www.timescale.com", "database"),
-    api("cockroachdb", "CockroachDB", "database", "https://api.cockroachlabs.cloud", "https://www.cockroachlabs.com", "database"),
-    api("elasticsearch", "Elasticsearch", "database", "https://api.elastic-cloud.com", "https://www.elastic.co/elasticsearch", "database"),
     stdio("mariadb", "MariaDB", "database", "mcp-server-mariadb", "https://pypi.org/project/mcp-server-mariadb/", "database", "pypi", "mcp-server-mariadb", "0.1.2"),
     stdio("mysql", "MySQL", "database", "mcp-server-mysql", "https://pypi.org/project/mcp-server-mysql/", "database", "pypi", "mcp-server-mysql", "0.1.4"),
-
-    # ===== developer tools, git hosting, CI/CD =====
-    remote("gitlab", "GitLab", "git", "https://gitlab.com", "https://gitlab.com", "git"),
-    remote("bitbucket", "Bitbucket", "git", "https://api.bitbucket.org", "https://bitbucket.org", "git"),
-    remote("azure-devops", "Azure DevOps", "git", "https://dev.azure.com", "https://azure.microsoft.com/products/devops", "git"),
-    remote("gitee", "Gitee", "git", "https://gitee.com", "https://gitee.com", "git"),
     stdio("docker", "Docker", "ci", "mcp-server-docker", "https://pypi.org/project/mcp-server-docker/", "ci", "pypi", "mcp-server-docker", "0.3.0"),
     stdio("kubernetes", "Kubernetes", "cloud", "mcp-server-kubernetes", "https://pypi.org/project/mcp-server-kubernetes/", "cloud", "pypi", "mcp-server-kubernetes", "0.1.6"),
-    api("datadog", "Datadog", "analytics", "https://api.datadoghq.com", "https://www.datadoghq.com", "analytics",
-        fields=[("api_key", True, True, "header", "DD-API-KEY", "api_key")]),
-    remote("grafana", "Grafana", "analytics", "https://grafana.com/api", "https://grafana.com", "analytics"),
-    api("newrelic", "New Relic", "analytics", "https://api.newrelic.com", "https://newrelic.com", "analytics",
-        fields=[("api_key", True, True, "header", "Api-Key", "api_key")]),
-    api("circleci", "CircleCI", "ci", "https://circleci.com/api", "https://circleci.com", "ci"),
-    api("buildkite", "Buildkite", "ci", "https://api.buildkite.com", "https://buildkite.com", "ci"),
-    api("sonarqube", "SonarQube", "code", "https://sonarcloud.io", "https://www.sonarsource.com", "code"),
-    api("codeclimate", "Code Climate", "code", "https://api.codeclimate.com", "https://codeclimate.com", "code"),
-    api("coveralls", "Coveralls", "code", "https://coveralls.io", "https://coveralls.io", "code"),
-    remote("npm-registry", "npm Registry", "ci", "https://registry.npmjs.org", "https://www.npmjs.com", "ci"),
-    remote("pypi", "PyPI", "ci", "https://pypi.org", "https://pypi.org", "ci"),
-    remote("vercel", "Vercel", "cloud", "https://api.vercel.com", "https://vercel.com", "cloud"),
-    remote("netlify", "Netlify", "cloud", "https://api.netlify.com", "https://www.netlify.com", "cloud"),
-    api("cloudflare", "Cloudflare", "cloud", "https://api.cloudflare.com", "https://www.cloudflare.com", "cloud",
-        fields=[("api_key", True, True, "bearer", "", "token")]),
-    remote("heroku", "Heroku", "cloud", "https://api.heroku.com", "https://www.heroku.com", "cloud"),
-    api("render", "Render", "cloud", "https://api.render.com", "https://render.com", "cloud"),
-    api("flyio", "Fly.io", "cloud", "https://api.machines.dev", "https://fly.io", "cloud"),
-    api("railway", "Railway", "cloud", "https://backboard.railway.app", "https://railway.app", "cloud"),
-    api("snyk", "Snyk", "security", "https://api.snyk.io", "https://snyk.io", "security"),
 
-    # ===== documents & productivity =====
-    remote("google-drive", "Google Drive", "docs", "https://www.googleapis.com/drive", "https://developers.google.com/drive", "docs"),
-    remote("google-docs", "Google Docs", "docs", "https://docs.googleapis.com", "https://developers.google.com/docs", "docs"),
-    remote("google-sheets", "Google Sheets", "docs", "https://sheets.googleapis.com", "https://developers.google.com/sheets", "docs"),
-    remote("google-calendar", "Google Calendar", "calendar", "https://www.googleapis.com/calendar", "https://developers.google.com/calendar", "calendar"),
-    remote("gmail", "Gmail", "email", "https://gmail.googleapis.com", "https://developers.google.com/gmail", "email"),
-    remote("confluence", "Confluence", "docs", "https://{{tenant}}.atlassian.net", "https://www.atlassian.com/software/confluence", "docs", fields=TENANT_URL),
-    remote("dropbox", "Dropbox", "docs", "https://api.dropboxapi.com", "https://www.dropbox.com", "docs"),
-    remote("box", "Box", "docs", "https://api.box.com", "https://www.box.com", "docs"),
-    remote("onedrive", "OneDrive", "docs", "https://graph.microsoft.com", "https://www.microsoft.com/microsoft-365/onedrive", "docs"),
-    api("airtable", "Airtable", "docs", "https://api.airtable.com", "https://airtable.com", "docs"),
-    api("coda", "Coda", "docs", "https://coda.io/apis", "https://coda.io", "docs"),
-    remote("readwise", "Readwise", "docs", "https://readwise.io/api", "https://readwise.io", "docs", auth="fields",
-           fields=BEARER_KEY),
-    remote("pocket", "Pocket", "docs", "https://getpocket.com", "https://getpocket.com", "docs"),
-    remote("todoist", "Todoist", "tasks", "https://api.todoist.com", "https://todoist.com", "tasks"),
+    # ===== remote — vendor-hosted MCP servers only =====
+    # Every endpoint below is the vendor's own MCP server, probed with check_catalog.py --online:
+    # either the handshake succeeds, or it answers 401 with OAuth resource metadata. "oauth" presets
+    # additionally need dynamic client registration, since the app signs in as a registered public
+    # client. A plain REST API root is never a preset; services without a hosted MCP server are left out.
 
-    # ===== tasks & project tracking =====
-    remote("linear", "Linear", "tasks", "https://api.linear.app", "https://linear.app", "tasks"),
-    remote("asana", "Asana", "tasks", "https://app.asana.com/api", "https://asana.com", "tasks"),
-    remote("trello", "Trello", "tasks", "https://api.trello.com", "https://trello.com", "tasks"),
-    api("clickup", "ClickUp", "tasks", "https://api.clickup.com", "https://clickup.com", "tasks"),
-    api("monday", "monday.com", "tasks", "https://api.monday.com", "https://monday.com", "tasks"),
-    api("shortcut", "Shortcut", "tasks", "https://api.app.shortcut.com", "https://www.shortcut.com", "tasks"),
-    remote("basecamp", "Basecamp", "tasks", "https://3.basecamp.com", "https://basecamp.com", "tasks"),
-    api("height", "Height", "tasks", "https://api.height.app", "https://height.app", "tasks"),
-    remote("wrike", "Wrike", "tasks", "https://www.wrike.com/api/v4", "https://developers.wrike.com", "tasks"),
-    remote("youtrack", "YouTrack", "tasks", "https://{{tenant}}.myjetbrains.com", "https://www.jetbrains.com/youtrack", "tasks", auth="fields",
-           fields=[("tenant", False, True, "url", "", "tenant"), ("token", True, True, "bearer", "", "token")]),
-    remote("ticktick", "TickTick", "tasks", "https://api.ticktick.com", "https://developer.ticktick.com", "tasks"),
+    # AI / large language models
+    remote("huggingface", "Hugging Face", "llm", "https://huggingface.co/mcp", "https://huggingface.co/settings/mcp", "llm",
+           auth="fields", fields=[("token", True, False, "bearer", "", "token")]),
+    remote("replicate", "Replicate", "llm", "https://mcp.replicate.com/mcp", "https://replicate.com/docs/reference/mcp", "llm"),
 
-    # ===== communication, chat & email =====
-    remote("discord", "Discord", "chat", "https://discord.com", "https://discord.com", "chat"),
-    api("telegram", "Telegram", "chat", "https://api.telegram.org", "https://core.telegram.org", "chat"),
-    api("whatsapp", "WhatsApp", "chat", "https://graph.facebook.com", "https://developers.facebook.com/docs/whatsapp", "chat"),
-    remote("msteams", "Microsoft Teams", "chat", "https://graph.microsoft.com", "https://www.microsoft.com/microsoft-teams", "chat"),
-    remote("zoom", "Zoom", "chat", "https://api.zoom.us", "https://zoom.us", "chat"),
-    remote("webex", "Webex", "chat", "https://webexapis.com", "https://www.webex.com", "chat"),
-    api("intercom", "Intercom", "chat", "https://api.intercom.io", "https://www.intercom.com", "chat"),
-    remote("zendesk", "Zendesk", "chat", "https://{{tenant}}.zendesk.com", "https://www.zendesk.com", "chat", fields=TENANT_URL),
-    api("sendgrid", "SendGrid", "email", "https://api.sendgrid.com", "https://sendgrid.com", "email"),
-    api("mailgun", "Mailgun", "email", "https://api.mailgun.net", "https://www.mailgun.com", "email"),
-    api("postmark", "Postmark", "email", "https://api.postmarkapp.com", "https://postmarkapp.com", "email"),
-    api("resend", "Resend", "email", "https://api.resend.com", "https://resend.com", "email"),
-    remote("outlook", "Outlook", "email", "https://graph.microsoft.com", "https://www.microsoft.com/outlook", "email"),
+    # web search
+    remote("exa", "Exa", "search", "https://mcp.exa.ai/mcp", "https://exa.ai", "search", auth="none"),
+    remote("tavily", "Tavily", "search", "https://mcp.tavily.com/mcp", "https://docs.tavily.com/documentation/mcp", "search"),
+    remote("you", "You.com", "search", "https://api.you.com/mcp", "https://documentation.you.com/developer-resources/mcp-server", "search"),
+    remote("serpapi", "SerpAPI", "search", "https://mcp.serpapi.com/mcp", "https://github.com/serpapi/serpapi-mcp", "search",
+           auth="fields", fields=BEARER_KEY),
 
-    # ===== design & collaboration =====
-    remote("figma", "Figma", "design", "https://api.figma.com", "https://www.figma.com", "design"),
-    remote("canva", "Canva", "design", "https://api.canva.com", "https://www.canva.com", "design"),
-    remote("miro", "Miro", "design", "https://api.miro.com", "https://miro.com", "design"),
-    remote("lucid", "Lucid", "design", "https://api.lucid.co", "https://lucid.co", "design"),
-    remote("zeplin", "Zeplin", "design", "https://api.zeplin.io", "https://zeplin.io", "design"),
+    # databases & data stores
+    remote("neon", "Neon", "database", "https://mcp.neon.tech/mcp", "https://neon.com/docs/ai/neon-mcp-server", "database"),
+    remote("supabase", "Supabase", "database", "https://mcp.supabase.com/mcp", "https://supabase.com/docs/guides/getting-started/mcp", "database"),
+    remote("planetscale", "PlanetScale", "database", "https://mcp.pscale.dev/mcp/planetscale", "https://planetscale.com/docs/connect/mcp", "database"),
+    remote("clickhouse", "ClickHouse", "database", "https://mcp.clickhouse.cloud/mcp", "https://clickhouse.com/docs/use-cases/AI/MCP/remote_mcp", "database"),
+    remote("cockroachdb", "CockroachDB", "database", "https://cockroachlabs.cloud/mcp", "https://www.cockroachlabs.com/docs/cockroachcloud/connect-to-the-cockroachdb-cloud-mcp-server", "database"),
 
-    # ===== cloud platforms =====
-    remote("google-cloud", "Google Cloud", "cloud", "https://cloudresourcemanager.googleapis.com", "https://cloud.google.com", "cloud"),
-    remote("azure", "Microsoft Azure", "cloud", "https://management.azure.com", "https://azure.microsoft.com", "cloud"),
-    api("digitalocean", "DigitalOcean", "cloud", "https://api.digitalocean.com", "https://www.digitalocean.com", "cloud"),
-    api("linode", "Linode", "cloud", "https://api.linode.com", "https://www.linode.com", "cloud"),
-    api("aliyun", "Alibaba Cloud", "cloud", "https://api.aliyun.com", "https://www.alibabacloud.com", "cloud"),
-    api("tencentcloud", "Tencent Cloud", "cloud", "https://api.tencentcloudapi.com", "https://www.tencentcloud.com", "cloud"),
-    remote("ibmcloud", "IBM Cloud", "cloud", "https://cloud.ibm.com", "https://www.ibm.com/cloud", "cloud"),
-    remote("oraclecloud", "Oracle Cloud", "cloud", "https://api.oraclecloud.com", "https://www.oracle.com/cloud", "cloud"),
-    api("scaleway", "Scaleway", "cloud", "https://api.scaleway.com", "https://www.scaleway.com", "cloud"),
-    api("vultr", "Vultr", "cloud", "https://api.vultr.com", "https://www.vultr.com", "cloud"),
-    api("hetzner", "Hetzner", "cloud", "https://api.hetzner.cloud", "https://www.hetzner.com/cloud", "cloud"),
-    remote("ovh", "OVHcloud", "cloud", "https://api.ovh.com", "https://www.ovhcloud.com", "cloud"),
-    api("bunny", "Bunny.net", "cloud", "https://api.bunny.net", "https://bunny.net", "cloud"),
-    api("backblaze", "Backblaze B2", "cloud", "https://api.backblazeb2.com", "https://www.backblaze.com", "cloud"),
-    api("wasabi", "Wasabi", "cloud", "https://s3.wasabisys.com", "https://wasabi.com", "cloud"),
+    # developer tools, git hosting, CI/CD, observability
+    remote("gitlab", "GitLab", "git", "https://gitlab.com/api/v4/mcp", "https://docs.gitlab.com/user/gitlab_duo/model_context_protocol/mcp_server/", "git"),
+    remote("gitee", "Gitee", "git", "https://api.gitee.com/mcp", "https://gitee.com/oschina/mcp-gitee", "git",
+           auth="fields", fields=[("token", True, True, "bearer", "", "access_token")]),
+    remote("buildkite", "Buildkite", "ci", "https://mcp.buildkite.com/mcp", "https://buildkite.com/docs/apis/mcp-server", "ci"),
+    remote("datadog", "Datadog", "analytics", "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp", "https://docs.datadoghq.com/bits_ai/mcp_server/", "analytics"),
+    remote("grafana", "Grafana", "analytics", "https://mcp.grafana.com/mcp", "https://grafana.com/docs/grafana-cloud/", "analytics"),
+    remote("newrelic", "New Relic", "analytics", "https://mcp.newrelic.com/mcp/", "https://docs.newrelic.com/docs/agentic-ai/mcp/overview/", "analytics"),
 
-    # ===== CRM & marketing =====
-    remote("salesforce", "Salesforce", "crm", "https://{{tenant}}.my.salesforce.com", "https://www.salesforce.com", "crm", fields=TENANT_URL),
-    remote("hubspot", "HubSpot", "crm", "https://api.hubapi.com", "https://www.hubspot.com", "crm"),
-    remote("pipedrive", "Pipedrive", "crm", "https://api.pipedrive.com", "https://www.pipedrive.com", "crm"),
-    remote("zoho", "Zoho CRM", "crm", "https://www.zohoapis.com", "https://www.zoho.com/crm", "crm"),
-    api("close", "Close", "crm", "https://api.close.com", "https://www.close.com", "crm"),
-    api("copper", "Copper", "crm", "https://api.copper.com", "https://www.copper.com", "crm"),
-    remote("mailchimp", "Mailchimp", "email", "https://us1.api.mailchimp.com", "https://mailchimp.com", "email"),
-    api("klaviyo", "Klaviyo", "email", "https://a.klaviyo.com", "https://www.klaviyo.com", "email"),
-    remote("marketo", "Marketo", "email", "https://{{tenant}}.mktorest.com", "https://business.adobe.com/products/marketo", "email", fields=TENANT_URL),
-    api("customerio", "Customer.io", "email", "https://api.customer.io", "https://customer.io", "email"),
-    remote("activecampaign", "ActiveCampaign", "email", "https://{{tenant}}.api-us1.com", "https://www.activecampaign.com", "email", auth="fields",
-           fields=[("tenant", False, True, "url", "", "tenant"), ("api_key", True, True, "header", "Api-Token", "api_key")]),
-    api("drip", "Drip", "email", "https://api.getdrip.com", "https://www.drip.com", "email"),
-    api("convertkit", "ConvertKit", "email", "https://api.convertkit.com", "https://convertkit.com", "email"),
-    api("brevo", "Brevo", "email", "https://api.brevo.com", "https://www.brevo.com", "email"),
+    # cloud & hosting
+    remote("vercel", "Vercel", "cloud", "https://mcp.vercel.com", "https://vercel.com/docs/mcp/vercel-mcp", "cloud"),
+    remote("netlify", "Netlify", "cloud", "https://netlify-mcp.netlify.app/mcp", "https://docs.netlify.com/build/build-with-ai/netlify-mcp-server/", "cloud"),
+    remote("cloudflare", "Cloudflare", "cloud", "https://mcp.cloudflare.com/mcp", "https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/", "cloud"),
+    remote("heroku", "Heroku", "cloud", "https://mcp.heroku.com/mcp", "https://devcenter.heroku.com/articles/heroku-mcp-server", "cloud"),
+    remote("render", "Render", "cloud", "https://mcp.render.com/mcp", "https://render.com/docs/mcp-server", "cloud",
+           auth="fields", fields=BEARER_KEY),
+    remote("railway", "Railway", "cloud", "https://mcp.railway.com/mcp", "https://railway.com", "cloud"),
+    remote("digitalocean", "DigitalOcean", "cloud", "https://apps.mcp.digitalocean.com/mcp", "https://docs.digitalocean.com/reference/mcp/", "cloud"),
 
-    # ===== finance & payments =====
-    remote("stripe", "Stripe", "payments", "https://api.stripe.com", "https://stripe.com", "payments"),
-    remote("square", "Square", "payments", "https://connect.squareup.com", "https://squareup.com", "payments"),
-    remote("paypal", "PayPal", "payments", "https://api-m.paypal.com", "https://www.paypal.com", "payments"),
-    api("plaid", "Plaid", "payments", "https://production.plaid.com", "https://plaid.com", "payments"),
-    remote("wise", "Wise", "payments", "https://api.wise.com", "https://wise.com", "payments"),
-    remote("braintree", "Braintree", "payments", "https://api.braintreegateway.com", "https://www.braintreepayments.com", "payments"),
-    api("adyen", "Adyen", "payments", "https://api.adyen.com", "https://www.adyen.com", "payments",
-        fields=[("api_key", True, True, "header", "x-api-key", "api_key")]),
-    remote("shopify", "Shopify", "payments", "https://{{tenant}}.myshopify.com", "https://www.shopify.com", "payments", fields=TENANT_URL),
-    remote("quickbooks", "QuickBooks", "payments", "https://quickbooks.api.intuit.com", "https://quickbooks.intuit.com", "payments"),
-    remote("xero", "Xero", "payments", "https://api.xero.com", "https://www.xero.com", "payments"),
-    remote("freshbooks", "FreshBooks", "payments", "https://api.freshbooks.com", "https://www.freshbooks.com", "payments"),
-    remote("wave", "Wave", "payments", "https://www.waveapps.com", "https://www.waveapps.com", "payments"),
-    remote("coinbase", "Coinbase", "payments", "https://api.coinbase.com", "https://www.coinbase.com", "payments"),
-    api("binance", "Binance", "payments", "https://api.binance.com", "https://www.binance.com", "payments"),
-    api("kraken", "Kraken", "payments", "https://api.kraken.com", "https://www.kraken.com", "payments"),
+    # documents & productivity
+    remote("confluence", "Confluence", "docs", "https://mcp.atlassian.com/v1/mcp", "https://www.atlassian.com/platform/remote-mcp-server", "docs"),
+    remote("dropbox", "Dropbox", "docs", "https://mcp.dropbox.com/mcp", "https://www.dropbox.com/developers", "docs"),
+    remote("airtable", "Airtable", "docs", "https://mcp.airtable.com/mcp", "https://support.airtable.com/docs/using-the-airtable-mcp-server", "docs"),
+    remote("coda", "Coda", "docs", "https://coda.io/apis/mcp", "https://coda.io/developers", "docs"),
+    remote("readwise", "Readwise", "docs", "https://mcp2.readwise.io/mcp", "https://readwise.io/mcp", "docs"),
+    remote("todoist", "Todoist", "tasks", "https://ai.todoist.net/mcp", "https://developer.todoist.com", "tasks"),
 
-    # ===== security =====
-    api("veracode", "Veracode", "security", "https://api.veracode.com", "https://www.veracode.com", "security"),
-    remote("checkmarx", "Checkmarx", "security", "https://ast.checkmarx.net", "https://checkmarx.com", "security"),
-    api("tenable", "Tenable", "security", "https://cloud.tenable.com", "https://www.tenable.com", "security",
-        fields=[("api_key", True, True, "header", "x-apikeys", "api_key")]),
-    remote("crowdstrike", "CrowdStrike", "security", "https://api.crowdstrike.com", "https://www.crowdstrike.com", "security"),
-    api("wiz", "Wiz", "security", "https://api.wiz.io", "https://www.wiz.io", "security"),
-    api("lacework", "Lacework", "security", "https://api.lacework.net", "https://www.lacework.com", "security"),
-    api("orca", "Orca Security", "security", "https://api.orcasecurity.io", "https://orca.security", "security"),
-    api("aqua", "Aqua Security", "security", "https://api.aquasec.com", "https://www.aquasec.com", "security"),
-    api("detectify", "Detectify", "security", "https://api.detectify.com", "https://detectify.com", "security"),
-    api("hackerone", "HackerOne", "security", "https://api.hackerone.com", "https://www.hackerone.com", "security"),
-    api("intruder", "Intruder", "security", "https://api.intruder.io", "https://www.intruder.io", "security"),
+    # tasks & project tracking
+    remote("linear", "Linear", "tasks", "https://mcp.linear.app/mcp", "https://linear.app/docs/mcp", "tasks"),
+    remote("clickup", "ClickUp", "tasks", "https://mcp.clickup.com/mcp", "https://clickup.com", "tasks"),
+    remote("monday", "monday.com", "tasks", "https://mcp.monday.com/mcp", "https://developer.monday.com/apps/docs/mondaycom-mcp-integration", "tasks"),
+    remote("shortcut", "Shortcut", "tasks", "https://mcp.shortcut.com/mcp", "https://developer.shortcut.com", "tasks"),
+    remote("basecamp", "Basecamp", "tasks", "https://mcp.basecamp.com/mcp", "https://basecamp.com", "tasks"),
 
-    # ===== media & images =====
-    api("cloudinary", "Cloudinary", "media", "https://api.cloudinary.com", "https://cloudinary.com", "media"),
-    api("unsplash", "Unsplash", "media", "https://api.unsplash.com", "https://unsplash.com", "media"),
-    remote("getty", "Getty Images", "media", "https://api.gettyimages.com", "https://www.gettyimages.com", "media"),
-    remote("shutterstock", "Shutterstock", "media", "https://api.shutterstock.com", "https://www.shutterstock.com", "media"),
-    api("elevenlabs", "ElevenLabs", "media", "https://api.elevenlabs.io", "https://elevenlabs.io", "media",
-        fields=[("api_key", True, True, "header", "xi-api-key", "api_key")]),
-    api("imgix", "imgix", "media", "https://api.imgix.com", "https://imgix.com", "media"),
-    api("mux", "Mux", "media", "https://api.mux.com", "https://www.mux.com", "media"),
-    api("pexels", "Pexels", "media", "https://api.pexels.com", "https://www.pexels.com", "media"),
-    api("giphy", "GIPHY", "media", "https://api.giphy.com", "https://giphy.com", "media"),
-    remote("youtube", "YouTube", "media", "https://www.googleapis.com/youtube", "https://developers.google.com/youtube", "media"),
-    remote("spotify", "Spotify", "media", "https://api.spotify.com", "https://developer.spotify.com", "media"),
-    remote("deezer", "Deezer", "media", "https://api.deezer.com", "https://developers.deezer.com", "media"),
+    # communication & email
+    remote("intercom", "Intercom", "chat", "https://mcp.intercom.com/mcp", "https://developers.intercom.com/docs/guides/mcp", "chat"),
+    remote("resend", "Resend", "email", "https://mcp.resend.com/mcp", "https://resend.com/docs/knowledge-base/mcp-server", "email"),
+    remote("mailchimp", "Mailchimp", "email", "https://mcp.mailchimp.com/mcp", "https://mailchimp.com/developer/", "email"),
+    remote("klaviyo", "Klaviyo", "email", "https://mcp.klaviyo.com/mcp", "https://developers.klaviyo.com/en/docs/klaviyo_mcp_server", "email"),
+    remote("customerio", "Customer.io", "email", "https://mcp.customer.io/mcp", "https://docs.customer.io/ai/mcp-server/", "email"),
 
-    # ===== maps & location =====
-    api("mapbox", "Mapbox", "maps", "https://api.mapbox.com", "https://www.mapbox.com", "maps"),
-    api("here", "HERE", "maps", "https://api.here.com", "https://www.here.com", "maps"),
-    api("tomtom", "TomTom", "maps", "https://api.tomtom.com", "https://developer.tomtom.com", "maps"),
-    remote("openstreetmap", "OpenStreetMap", "maps", "https://api.openstreetmap.org", "https://www.openstreetmap.org", "maps"),
-    api("maptiler", "MapTiler", "maps", "https://api.maptiler.com", "https://www.maptiler.com", "maps"),
-    api("locationiq", "LocationIQ", "maps", "https://api.locationiq.com", "https://locationiq.com", "maps"),
-    api("geoapify", "Geoapify", "maps", "https://api.geoapify.com", "https://www.geoapify.com", "maps"),
-    remote("foursquare", "Foursquare", "maps", "https://api.foursquare.com", "https://foursquare.com", "maps"),
-    api("radar", "Radar", "maps", "https://api.radar.io", "https://radar.com", "maps"),
+    # design & collaboration
+    remote("figma", "Figma", "design", "https://mcp.figma.com/mcp", "https://developers.figma.com/docs/figma-mcp-server/", "design"),
+    remote("canva", "Canva", "design", "https://mcp.canva.com/mcp", "https://www.canva.com", "design"),
+    remote("miro", "Miro", "design", "https://mcp.miro.com/", "https://developers.miro.com/docs/miro-mcp", "design"),
+    remote("lucid", "Lucid", "design", "https://mcp.lucid.app/mcp", "https://help.lucid.co", "design"),
+
+    # CRM
+    remote("salesforce", "Salesforce", "crm", "https://api.salesforce.com/platform/mcp/v1-beta.2/platform/sobject-all",
+           "https://developer.salesforce.com", "crm"),
+    remote("close", "Close", "crm", "https://mcp.close.com/mcp", "https://www.close.com", "crm"),
+
+    # payments
+    remote("stripe", "Stripe", "payments", "https://mcp.stripe.com", "https://docs.stripe.com/mcp", "payments"),
+    remote("square", "Square", "payments", "https://mcp.squareup.com/mcp", "https://developer.squareup.com/docs/mcp", "payments"),
+    remote("paypal", "PayPal", "payments", "https://mcp.paypal.com/mcp", "https://developer.paypal.com/tools/mcp-server/", "payments"),
+
+    # media & maps
+    remote("cloudinary", "Cloudinary", "media", "https://asset-management.mcp.cloudinary.com/mcp", "https://cloudinary.com/documentation/cloudinary_llm_mcp", "media"),
+    remote("mux", "Mux", "media", "https://mcp.mux.com/mcp", "https://www.mux.com/docs/integrations/mcp-server", "media"),
+    remote("mapbox", "Mapbox", "maps", "https://mcp.mapbox.com/mcp", "https://docs.mapbox.com/api/guides/mcp-server/", "maps"),
 ]
 
 
