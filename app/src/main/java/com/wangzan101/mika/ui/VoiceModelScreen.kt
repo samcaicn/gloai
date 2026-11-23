@@ -254,10 +254,11 @@ private fun MigratedVoiceModelContent(
         selectedModel?.let { model ->
             GroupCard {
                 val voices = VoiceVoices.tts(model)
-                if (voices.isNotEmpty()) {
+                val pickable = voices.isNotEmpty() || model.tts?.protocol.let { it != null && it != com.wangzan101.mika.voice.model.TtsProtocol.AndroidSystem }
+                if (pickable) {
                     ListRow(null, tr(R.string.voice_voice), first = true, onClick = { voicesOpen = true },
                         modifier = Modifier.testTag("tts-voice")) {
-                        RowValue(state.voice.ifBlank { tr(R.string.voice_voice_default) }.let(VoiceVoices::label))
+                        RowValue(state.voice.ifBlank { tr(R.string.voice_voice_default) }.let { VoiceVoices.label(model, it) })
                         RowChevron()
                     }
                 }
@@ -266,10 +267,11 @@ private fun MigratedVoiceModelContent(
                         VoiceVoices.withCurrent(voices, state.voice),
                         onPick = { settings.setVoice(it); test = null },
                         onDismiss = { voicesOpen = false },
+                        model = model,
                     )
                 }
                 InputRow(
-                    tr(R.string.voice_speed), speed, first = voices.isEmpty(),
+                    tr(R.string.voice_speed), speed, first = !pickable,
                     onChange = {
                         speed = it
                         it.toFloatOrNull()?.takeIf { v -> v.isFinite() }?.let { v -> settings.setSpeed(normalizeVoiceSpeed(v)) }

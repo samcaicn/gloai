@@ -7,6 +7,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import com.wangzan101.mika.ui.components.MikaDialog
+import com.wangzan101.mika.voice.model.VoiceListRefresh
+import com.wangzan101.mika.voice.model.VoiceModelLists
+import com.wangzan101.mika.voice.model.VoiceModelOrigin
+import com.wangzan101.mika.voice.model.VoiceModelRefresher
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -90,6 +101,8 @@ fun VoiceServicesScreen(store: ProviderStore, onBack: () -> Unit, onOpenCustom: 
     fun apply(plan: VoicePresetPlan) {
         val manager = VoiceAccountManager(voiceModels.catalog, requireNotNull(voiceModels.credentialStore))
         saved = VoicePresets.apply(manager, voiceModels.catalog, plan).map(::encodeRef)
+        // 新 key 下的模型列表可能不同,回到详情页时重新拉
+        listedThisRun.remove(plan.service.id)
     }
     BackHandler(enabled = vendorForm != null || detail != null || preset != null || results != null) { back() }
     when {
@@ -104,7 +117,8 @@ fun VoiceServicesScreen(store: ProviderStore, onBack: () -> Unit, onOpenCustom: 
             val service = snapshot.services.firstOrNull { it.id == detail }
             if (service == null) back()
             else VendorDetail(snapshot, service, voiceModels, back,
-                onChangeKey = VoiceVendors.forService(service.id)?.let { vendor -> { vendorForm = vendor.id } } ?: onOpenCustom)
+                onChangeKey = VoiceVendors.forService(service.id)?.takeIf { it.builds(service.id) }?.let { vendor -> { vendorForm = vendor.id } } ?: onOpenCustom,
+                onTest = { saved = listOf(encodeRef(it)) })
         }
         else -> ServiceList(
             snapshot, providers, back,
@@ -205,64 +219,173 @@ private fun ServiceList(
     }
 }
 
-/** One connected service: its key, then every model it brings, grouped by what it does, each usable from here. */
+/** Services whose list was fetched this run; the page fetches on first open, the refresh button any time after. */
+private val listedThisRun = mutableSetOf<String>()
+
+private sealed interface ListUi {
+    data object Idle : ListUi
+    data object Running : ListUi
+    data class Result(val outcome: VoiceListRefresh) : ListUi
+}
+
+/**
+ * One connected service: its key and model list, then every model it brings grouped by what it does. Models the
+ * vendor's list did not describe sit folded under 「其他模型」 in both the listen and speak groups; any model id can
+ * be typed in. A fetched or typed-in model opens its connection test once chosen, so a model the protocol does not
+ * fit shows its error right away.
+ */
 @Composable
 private fun VendorDetail(
     snapshot: VoiceCatalogSnapshot, service: VoiceService, voiceModels: VoiceModelEnvironment,
-    onBack: () -> Unit, onChangeKey: () -> Unit,
+    onBack: () -> Unit, onChangeKey: () -> Unit, onTest: (VoiceModelRef) -> Unit,
 ) {
+    val c = MikaTheme.colors
     val models = snapshot.models.filter { it.serviceId == service.id }
+    val vendor = VoiceVendors.forService(service.id)
+    val refresher = remember { VoiceModelRefresher(voiceModels.catalog, voiceModels.accountResolver) }
+    val scope = rememberCoroutineScope()
+    var list by remember(service.id) { mutableStateOf<ListUi>(ListUi.Idle) }
+    var adding by remember(service.id) { mutableStateOf<VoiceCapability?>(null) }
+    val open = remember(service.id) { mutableStateMapOf<VoiceCapability, Boolean>() }
+    fun refresh() {
+        if (list == ListUi.Running) return
+        list = ListUi.Running
+        scope.launch { list = ListUi.Result(refresher.refresh(service.id)) }
+    }
+    LaunchedEffect(service.id) {
+        if (vendor?.lister != null && listedThisRun.add(service.id)) refresh()
+    }
     Page(service.name, onBack) {
         GroupCard(Modifier.padding(top = 8.dp)) {
             ListRow(MikaIcons.Key, service.name, stringResource(R.string.voice_vendor_key_saved), first = true) {
                 MikaButton(stringResource(R.string.voice_vendor_change_key), onClick = onChangeKey,
                     kind = ButtonKind.Secondary, size = ButtonSize.Small, modifier = Modifier.testTag("vendor-change-key"))
             }
+            val status = if (vendor?.lister == null) stringResource(R.string.voice_list_none) else when (val state = list) {
+                ListUi.Idle -> stringResource(R.string.voice_list_idle)
+                ListUi.Running -> stringResource(R.string.voice_list_running)
+                is ListUi.Result -> when (val r = state.outcome) {
+                    VoiceListRefresh.NoList -> stringResource(R.string.voice_list_none)
+                    is VoiceListRefresh.Done -> if (r.voices > 0) stringResource(R.string.voice_list_done_voices, r.models, r.voices)
+                        else stringResource(R.string.voice_list_done, r.models)
+                    is VoiceListRefresh.Failed -> stringResource(R.string.voice_list_failed, r.error.detail)
+                }
+            }
+            ListRow(MikaIcons.Refresh, stringResource(R.string.voice_list_title), status,
+                modifier = Modifier.testTag("vendor-list-status")) {
+                if (vendor?.lister != null) MikaButton(
+                    stringResource(R.string.voice_list_refresh), onClick = ::refresh,
+                    kind = ButtonKind.Tonal, size = ButtonSize.Small, enabled = list != ListUi.Running,
+                    modifier = Modifier.testTag("vendor-list-refresh"),
+                )
+            }
         }
+        if ((list as? ListUi.Result)?.outcome is VoiceListRefresh.Failed) {
+            FooterNote(stringResource(R.string.voice_list_failed_note))
+        }
+        val templated = VoiceModelLists.templated(models)
         VoiceCapability.entries.forEach { cap ->
-            val list = models.filter { (cap in it.capabilities) }
-            if (list.isEmpty()) return@forEach
+            val all = models.filter { (cap in it.capabilities) }
+            if (all.isEmpty() && cap !in templated) return@forEach
+            val known = all.filterNot { it.guessed }
+            val others = all.filter { it.guessed }
             GroupLabel(stringResource(
                 when (cap) {
                     VoiceCapability.STT -> R.string.voice_vendor_stt_models
                     VoiceCapability.TTS -> R.string.voice_vendor_tts_models
                     VoiceCapability.REALTIME -> R.string.voice_vendor_rt_models
                 },
-                list.size,
+                known.size,
             ))
             GroupCard {
-                list.forEachIndexed { index, model ->
-                    val ref = VoiceModelRef(model.serviceId, model.id, cap)
-                    val inUse = when (cap) {
-                        VoiceCapability.STT -> snapshot.selections.stt == SttSelection.Model(ref)
-                        VoiceCapability.TTS -> snapshot.selections.tts == ref
-                        VoiceCapability.REALTIME -> snapshot.selections.realtime == ref
-                    }
-                    ListRow(null, voiceModelDisplayName(model), first = index == 0) {
-                        if (inUse) StatusPill(stringResource(R.string.voice_result_in_use), PillTone.Accent)
-                        else MikaButton(
-                            stringResource(
-                                when (cap) {
-                                    VoiceCapability.STT -> R.string.voice_vendor_set_stt
-                                    VoiceCapability.TTS -> R.string.voice_vendor_set_tts
-                                    VoiceCapability.REALTIME -> R.string.voice_vendor_set_rt
-                                },
-                            ),
-                            onClick = {
-                                when (cap) {
-                                    VoiceCapability.STT -> voiceModels.stt.select(ref)
-                                    VoiceCapability.TTS -> voiceModels.tts.select(ref)
-                                    VoiceCapability.REALTIME -> voiceModels.realtime.select(ref)
-                                }
-                            },
-                            kind = ButtonKind.Tonal, size = ButtonSize.Small,
-                            modifier = Modifier.testTag("vendor-use-${cap.name.lowercase()}-${model.id}"),
-                        )
-                    }
+                known.forEachIndexed { index, model -> VendorModelRow(snapshot, model, cap, index == 0, voiceModels, onTest) }
+                if (others.isNotEmpty()) {
+                    val expanded = open[cap] == true
+                    ListRow(
+                        null, stringResource(R.string.voice_other_models, others.size), stringResource(R.string.voice_other_models_sub),
+                        first = known.isEmpty(), onClick = { open[cap] = !expanded },
+                        modifier = Modifier.testTag("vendor-others-${cap.name.lowercase()}"),
+                    ) { Icon(if (expanded) MikaIcons.Up else MikaIcons.Down, null, tint = c.ink3) }
+                    if (expanded) others.forEach { model -> VendorModelRow(snapshot, model, cap, false, voiceModels, onTest) }
                 }
+                if (cap in templated) ListRow(
+                    MikaIcons.Plus, stringResource(R.string.voice_add_model_id), first = all.isEmpty(),
+                    titleColor = c.accent, onClick = { adding = cap },
+                    modifier = Modifier.testTag("vendor-add-${cap.name.lowercase()}"),
+                )
             }
         }
     }
+    adding?.let { cap ->
+        TextEntryDialog(
+            title = stringResource(R.string.voice_add_model_id), label = stringResource(R.string.voice_model_id),
+            onDismiss = { adding = null },
+            onConfirm = { id ->
+                adding = null
+                refresher.addManual(service.id, id, cap)?.let(onTest)
+            },
+            tag = "vendor-add-input",
+        )
+    }
+}
+
+/** One model under one capability: in use, or a button that makes it the one. */
+@Composable
+private fun VendorModelRow(
+    snapshot: VoiceCatalogSnapshot, model: VoiceModel, cap: VoiceCapability, first: Boolean,
+    voiceModels: VoiceModelEnvironment, onTest: (VoiceModelRef) -> Unit,
+) {
+    val ref = VoiceModelRef(model.serviceId, model.id, cap)
+    val inUse = when (cap) {
+        VoiceCapability.STT -> snapshot.selections.stt == SttSelection.Model(ref)
+        VoiceCapability.TTS -> snapshot.selections.tts == ref
+        VoiceCapability.REALTIME -> snapshot.selections.realtime == ref
+    }
+    ListRow(null, voiceModelDisplayName(model), model.id.takeIf { it != voiceModelDisplayName(model) }, first = first) {
+        if (inUse) StatusPill(stringResource(R.string.voice_result_in_use), PillTone.Accent)
+        else MikaButton(
+            stringResource(
+                when (cap) {
+                    VoiceCapability.STT -> R.string.voice_vendor_set_stt
+                    VoiceCapability.TTS -> R.string.voice_vendor_set_tts
+                    VoiceCapability.REALTIME -> R.string.voice_vendor_set_rt
+                },
+            ),
+            onClick = {
+                when (cap) {
+                    VoiceCapability.STT -> voiceModels.stt.select(ref)
+                    VoiceCapability.TTS -> voiceModels.tts.select(ref)
+                    VoiceCapability.REALTIME -> voiceModels.realtime.select(ref)
+                }
+                // 列表拉来的、手填的模型协议是借来的,选上就去测一次
+                if (model.origin != VoiceModelOrigin.Builtin) onTest(ref)
+            },
+            kind = ButtonKind.Tonal, size = ButtonSize.Small,
+            modifier = Modifier.testTag("vendor-use-${cap.name.lowercase()}-${model.id}"),
+        )
+    }
+}
+
+/** A one-line text prompt: a model id, a voice id. */
+@Composable
+internal fun TextEntryDialog(title: String, label: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit, tag: String) {
+    var text by rememberSaveable { mutableStateOf("") }
+    MikaDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                text, { text = it }, Modifier.fillMaxWidth().testTag(tag),
+                singleLine = true, label = { Text(label) },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text.trim()) }, enabled = text.isNotBlank(), modifier = Modifier.testTag("$tag-ok")) {
+                Text(stringResource(R.string.voice_add))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable

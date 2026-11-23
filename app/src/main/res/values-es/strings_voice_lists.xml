@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_list_title">Lista de modelos</string>
+    <string name="voice_list_idle">Obtener del proveedor todos los modelos que puede usar esta cuenta</string>
+    <string name="voice_list_running">Obteniendo…</string>
+    <string name="voice_list_done">%1$d modelos del proveedor</string>
+    <string name="voice_list_done_voices">%1$d modelos y %2$d voces del proveedor</string>
+    <string name="voice_list_failed">No se pudo obtener: %1$s</string>
+    <string name="voice_list_failed_note">Los modelos integrados de abajo siguen funcionando y puedes añadir un modelo por su ID.</string>
+    <string name="voice_list_none">Este proveedor no tiene una lista pública de modelos. Abajo están los integrados; añade cualquier otro por su ID.</string>
+    <string name="voice_other_models">Otros modelos · %1$d</string>
+    <string name="voice_other_models_sub">El proveedor no indica para qué sirven. Pruébalos antes de usarlos.</string>
+    <string name="voice_add_model_id">Añadir un modelo por ID</string>
+    <string name="voice_model_id">ID del modelo</string>
+    <string name="voice_add">Añadir</string>
+    <string name="voice_enter_voice_id">Introducir un ID de voz</string>
+    <string name="voice_voice_id">ID de voz</string>
+    <string name="voice_list_refresh">Actualizar</string>
+</resources>

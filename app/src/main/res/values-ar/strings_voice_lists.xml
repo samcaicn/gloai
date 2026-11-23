@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_list_title">قائمة النماذج</string>
+    <string name="voice_list_idle">جلب كل النماذج المتاحة لهذا الحساب من المزوّد</string>
+    <string name="voice_list_running">جارٍ الجلب…</string>
+    <string name="voice_list_done">تم جلب %1$d نموذج من المزوّد</string>
+    <string name="voice_list_done_voices">تم جلب %1$d نموذج و%2$d صوت من المزوّد</string>
+    <string name="voice_list_failed">تعذّر الجلب: %1$s</string>
+    <string name="voice_list_failed_note">النماذج المدمجة أدناه ما زالت تعمل، ويمكنك إضافة نموذج بمعرّفه.</string>
+    <string name="voice_list_none">لا توجد لدى هذا المزوّد قائمة نماذج عامة. النماذج المدمجة أدناه، وأضف غيرها بمعرّفها.</string>
+    <string name="voice_other_models">نماذج أخرى · %1$d</string>
+    <string name="voice_other_models_sub">لا يوضّح المزوّد وظيفتها. اختبر النموذج قبل الاعتماد عليه.</string>
+    <string name="voice_add_model_id">إضافة نموذج بالمعرّف</string>
+    <string name="voice_model_id">معرّف النموذج</string>
+    <string name="voice_add">إضافة</string>
+    <string name="voice_enter_voice_id">إدخال معرّف الصوت</string>
+    <string name="voice_voice_id">معرّف الصوت</string>
+    <string name="voice_list_refresh">تحديث</string>
+</resources>

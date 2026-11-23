@@ -33,6 +33,16 @@ class VoiceVendorsTest {
         assertEquals("tencent", VoiceVendors.forService("tencent")?.id)
     }
 
+    @Test fun `services earlier versions made belong to their vendor but are not rebuilt by its form`() {
+        val bailian = VoiceVendors.forService("stt-bailian:beijing")
+        assertEquals("bailian", bailian?.id)
+        assertNotNull(bailian?.lister)
+        assertEquals(false, bailian?.builds("stt-bailian:beijing"))
+        assertEquals(true, bailian?.builds("bailian:singapore"))
+        assertEquals(VoicePresets.VOLC_SERVICE, VoiceVendors.forService("stt-doubao")?.id)
+        assertEquals(null, VoiceVendors.forService("stt-bailianx"))
+    }
+
     @Test fun `every vendor model has an adapter for each capability`() {
         val registry = VoiceAdapterRegistry()
         for (vendor in VoiceVendors.all) for (model in vendor.preview) {

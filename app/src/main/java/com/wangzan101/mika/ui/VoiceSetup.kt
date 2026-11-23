@@ -191,10 +191,24 @@ internal fun VoiceOptionList(
     }
 }
 
-/** A list of voices in a bottom sheet; the saved one is listed even when it is not a known voice. */
+/**
+ * A list of voices in a bottom sheet; the saved one is listed even when it is not a known voice. The last row takes
+ * any voice id (a cloned voice, one newer than the list), so the list never limits what can be used.
+ */
 @Composable
-internal fun VoicePickerSheet(voices: List<String>, onPick: (String) -> Unit, onDismiss: () -> Unit) {
-    ActionSheet(stringResource(R.string.voice_voice), voices.map { voice -> SheetAction(VoiceVoices.label(voice)) { onPick(voice) } }, onDismiss)
+internal fun VoicePickerSheet(voices: List<String>, onPick: (String) -> Unit, onDismiss: () -> Unit, model: VoiceModel? = null) {
+    var typing by remember { mutableStateOf(false) }
+    if (typing) {
+        TextEntryDialog(
+            title = stringResource(R.string.voice_enter_voice_id), label = stringResource(R.string.voice_voice_id),
+            onDismiss = onDismiss, onConfirm = { onPick(it); onDismiss() }, tag = "voice-id-input",
+        )
+        return
+    }
+    val actions = voices.map { voice -> SheetAction(VoiceVoices.label(model, voice)) { onPick(voice) } } +
+        SheetAction(stringResource(R.string.voice_enter_voice_id), MikaIcons.Edit) { typing = true }
+    // 选「手动输入」时面板会顺手关掉,这里拦下,让输入框接着出来
+    ActionSheet(stringResource(R.string.voice_voice), actions) { if (!typing) onDismiss() }
 }
 
 /** Shown under each use page: where to connect more services. */

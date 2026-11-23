@@ -63,6 +63,30 @@ class VoiceCatalogStore(
         }
     }
 
+    /**
+     * Replaces every model of [serviceId] with [models] in one snapshot (a list refresh). Verifications stay for
+     * models whose binding is unchanged; selections of models that are gone fall back as on delete.
+     */
+    @Synchronized
+    fun replaceModels(serviceId: String, models: List<VoiceModel>) {
+        require(models.all { it.serviceId == serviceId })
+        commit { current ->
+            val before = current.models.filter { it.serviceId == serviceId }.associateBy { it.id }
+            val all = current.models.filterNot { it.serviceId == serviceId } + models
+            val after = models.associateBy { it.id }
+            current.copy(
+                models = all,
+                selections = pruneSelections(current.selections, all),
+                verifications = current.verifications.filter { record ->
+                    if (record.ref.serviceId != serviceId) return@filter true
+                    val next = after[record.ref.modelId] ?: return@filter false
+                    verificationIdentity(before[record.ref.modelId]?.binding(record.ref.capability)) ==
+                        verificationIdentity(next.binding(record.ref.capability))
+                },
+            )
+        }
+    }
+
     @Synchronized
     fun deleteModel(ref: VoiceModelRef) {
         commit { current ->
@@ -309,7 +333,7 @@ class VoiceCatalogStore(
     /** Binding fields that determine connection identity; cosmetic fields (Realtime speaker) are ignored. */
     private fun verificationIdentity(binding: Any?): Any? = when (binding) {
         is RealtimeBinding -> RealtimeBinding(binding.protocol, binding.endpoint, speaker = "")
-        is TtsBinding -> binding.copy(voice = "", voices = emptyList())
+        is TtsBinding -> binding.copy(voice = "", voices = emptyList(), voiceNames = emptyMap())
         else -> binding
     }
 

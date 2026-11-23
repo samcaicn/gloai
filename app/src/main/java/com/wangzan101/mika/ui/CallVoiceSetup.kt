@@ -150,7 +150,7 @@ internal fun CallVoiceScreen(runtime: CallRuntime, onBack: () -> Unit, onOpenSer
                     GroupCard(Modifier.padding(top = 8.dp)) {
                         ListRow(null, stringResource(R.string.voice_voice), first = true, onClick = { voicesOpen = true },
                             modifier = Modifier.testTag("call-voice-tts-voice")) {
-                            RowValue(if (s.callTtsVoice.isBlank()) stringResource(R.string.voice_voice_default) else VoiceVoices.label(s.callTtsVoice))
+                            RowValue(if (s.callTtsVoice.isBlank()) stringResource(R.string.voice_voice_default) else VoiceVoices.label(model, s.callTtsVoice))
                             RowChevron()
                         }
                     }
@@ -159,6 +159,7 @@ internal fun CallVoiceScreen(runtime: CallRuntime, onBack: () -> Unit, onOpenSer
                             VoiceVoices.withCurrent(VoiceVoices.tts(model), s.callTtsVoice),
                             onPick = { picked -> run { runtime.selectPhoneVoice(CallEngine.Standard, s.callStt, own, picked) } },
                             onDismiss = { voicesOpen = false },
+                            model = model,
                         )
                     }
                 }

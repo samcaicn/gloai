@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_list_title">モデル一覧</string>
+    <string name="voice_list_idle">このアカウントで使える全モデルをサービスから取得</string>
+    <string name="voice_list_running">取得中…</string>
+    <string name="voice_list_done">サービスから %1$d 個のモデルを取得</string>
+    <string name="voice_list_done_voices">サービスから %1$d 個のモデルと %2$d 個の音声を取得</string>
+    <string name="voice_list_failed">取得できませんでした：%1$s</string>
+    <string name="voice_list_failed_note">下の内蔵モデルはそのまま使えます。モデル ID を手動で追加することもできます。</string>
+    <string name="voice_list_none">このサービスには公開のモデル一覧がありません。下は内蔵モデルです。ほかのモデルは ID で追加できます。</string>
+    <string name="voice_other_models">その他のモデル · %1$d</string>
+    <string name="voice_other_models_sub">用途がサービス側で示されていません。使う前にテストしてください。</string>
+    <string name="voice_add_model_id">モデル ID を追加</string>
+    <string name="voice_model_id">モデル ID</string>
+    <string name="voice_add">追加</string>
+    <string name="voice_enter_voice_id">音声 ID を入力</string>
+    <string name="voice_voice_id">音声 ID</string>
+    <string name="voice_list_refresh">更新</string>
+</resources>

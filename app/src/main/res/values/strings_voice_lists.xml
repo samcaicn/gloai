@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_list_title">Model list</string>
+    <string name="voice_list_idle">Fetch every model this account can use from the vendor</string>
+    <string name="voice_list_running">Fetching…</string>
+    <string name="voice_list_done">%1$d models from the vendor</string>
+    <string name="voice_list_done_voices">%1$d models and %2$d voices from the vendor</string>
+    <string name="voice_list_failed">Couldn\'t fetch: %1$s</string>
+    <string name="voice_list_failed_note">The built-in models below still work, and you can add a model by its ID.</string>
+    <string name="voice_list_none">This vendor has no public model list. Built-in models are below; add any other model by its ID.</string>
+    <string name="voice_other_models">Other models · %1$d</string>
+    <string name="voice_other_models_sub">The vendor doesn\'t say what these do. Test one before relying on it.</string>
+    <string name="voice_add_model_id">Add a model by ID</string>
+    <string name="voice_model_id">Model ID</string>
+    <string name="voice_add">Add</string>
+    <string name="voice_enter_voice_id">Enter a voice ID</string>
+    <string name="voice_voice_id">Voice ID</string>
+    <string name="voice_list_refresh">Refresh</string>
+</resources>

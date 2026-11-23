@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_list_title">فهرست مدل‌ها</string>
+    <string name="voice_list_idle">دریافت همهٔ مدل‌های قابل استفادهٔ این حساب از سرویس‌دهنده</string>
+    <string name="voice_list_running">در حال دریافت…</string>
+    <string name="voice_list_done">%1$d مدل از سرویس‌دهنده دریافت شد</string>
+    <string name="voice_list_done_voices">%1$d مدل و %2$d صدا از سرویس‌دهنده دریافت شد</string>
+    <string name="voice_list_failed">دریافت نشد: %1$s</string>
+    <string name="voice_list_failed_note">مدل‌های داخلی زیر همچنان کار می‌کنند و می‌توانید مدلی را با شناسه‌اش اضافه کنید.</string>
+    <string name="voice_list_none">این سرویس‌دهنده فهرست عمومی مدل ندارد. مدل‌های داخلی در زیر هستند؛ بقیه را با شناسه اضافه کنید.</string>
+    <string name="voice_other_models">مدل‌های دیگر · %1$d</string>
+    <string name="voice_other_models_sub">سرویس‌دهنده کاربرد این‌ها را نگفته است. پیش از استفاده آزمایش کنید.</string>
+    <string name="voice_add_model_id">افزودن مدل با شناسه</string>
+    <string name="voice_model_id">شناسهٔ مدل</string>
+    <string name="voice_add">افزودن</string>
+    <string name="voice_enter_voice_id">وارد کردن شناسهٔ صدا</string>
+    <string name="voice_voice_id">شناسهٔ صدا</string>
+    <string name="voice_list_refresh">بازخوانی</string>
+</resources>

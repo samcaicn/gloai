@@ -6,6 +6,7 @@ import com.wangzan101.mika.calls.VolcRealtimeProtocol
 import com.wangzan101.mika.voice.BailianProtocol
 import com.wangzan101.mika.voice.BailianRegion
 import com.wangzan101.mika.voice.DoubaoProtocol
+import com.wangzan101.mika.voice.vendors.VendorModelLists
 
 /** One field a vendor asks for. Labels live in the UI, keyed by [key]. */
 data class VendorField(
@@ -27,11 +28,27 @@ data class VoiceVendor(
     /** Capability counts shown before the account exists. */
     val preview: List<VoiceModel>,
     private val build: (Map<String, String>) -> VoicePresetPlan,
+    /** Asks the vendor for this account's full model (and voice) list; null when the vendor has no list endpoint. */
+    val lister: VoiceModelLister? = null,
+    /** Fixes up a model derived from another one's binding when the vendor ties a binding field to the model id. */
+    val retarget: (VoiceModel) -> VoiceModel = { it },
+    /** Service id prefixes earlier versions gave this vendor's accounts; such services are this vendor's too. */
+    val legacyIds: List<String> = emptyList(),
+    /** The vendor's built-in models as they would be under [serviceId]; region-bound vendors derive the region from the id. */
+    private val builtins: ((String) -> List<VoiceModel>)? = null,
 ) {
+    /** This vendor's built-in models for one of its services, whose bindings models it lacks can borrow. */
+    fun models(serviceId: String): List<VoiceModel> = builtins?.invoke(serviceId) ?: preview.map { it.copy(serviceId = serviceId) }
+
     fun plan(values: Map<String, String>): VoicePresetPlan = build(values.mapValues { it.value.trim() })
 
-    /** True when [serviceId] was created by this vendor (any region). */
-    fun owns(serviceId: String): Boolean = serviceId == id || serviceId.startsWith("$id:")
+    /** True when [serviceId] is one of this vendor's accounts, made now or by an earlier version (any region). */
+    fun owns(serviceId: String): Boolean = (listOf(id) + legacyIds).any { matches(serviceId, it) }
+
+    /** True when [serviceId] is what [plan] makes; re-entering the key of such a service replaces it in place. */
+    fun builds(serviceId: String): Boolean = matches(serviceId, id)
+
+    private fun matches(serviceId: String, prefix: String) = serviceId == prefix || serviceId.startsWith("$prefix:")
 }
 
 object VoiceVendors {
@@ -54,6 +71,8 @@ object VoiceVendors {
     const val MINIMAX_CN = "https://api.minimaxi.com/v1/t2a_v2"
     const val MINIMAX_INTL = "https://api.minimax.io/v1/t2a_v2"
     const val QWEN_TTS_BEIJING = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+    const val BAILIAN_CN = "https://dashscope.aliyuncs.com"
+    const val BAILIAN_INTL = "https://dashscope-intl.aliyuncs.com"
     const val QWEN_TTS_SINGAPORE = "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
 
     const val REGION_CN = "cn"
@@ -72,9 +91,13 @@ object VoiceVendors {
     private fun tts(service: String, id: String, name: String, binding: TtsBinding) = VoiceModel(service, id, name, tts = binding)
 
     /** A vendor whose account is one API key and whose models do not depend on a region. */
-    private fun keyOnly(id: String, name: String, models: (String) -> List<VoiceModel>) = VoiceVendor(
+    private fun keyOnly(
+        id: String, name: String, lister: VoiceModelLister? = null, retarget: (VoiceModel) -> VoiceModel = { it },
+        models: (String) -> List<VoiceModel>,
+    ) = VoiceVendor(
         id = id, name = name, fields = listOf(key), preview = models(id),
         build = { values -> VoicePresetPlan(owned(id, name), VoiceCredentials(apiKey = need(values, F_API_KEY)), models(id)) },
+        lister = lister, retarget = retarget, builtins = models,
     )
 
     // ---- Volcano Engine ----
@@ -82,10 +105,11 @@ object VoiceVendors {
     private fun volcModels(service: String) = listOf(
         stt(service, VoicePresets.VOLC_STT_MODEL, "Doubao Streaming ASR 2.0",
             SttBinding(SttProtocol.DoubaoStreaming, resourceId = DoubaoProtocol.DURATION)),
+        // 音色清单随 app 更新(VolcVoices),不写进存档
         tts(service, VOLC_TTS_RESOURCE, "Doubao TTS 2.0",
-            TtsBinding(TtsProtocol.VolcSpeech, VOLC_TTS_ENDPOINT, region = VOLC_TTS_RESOURCE,
-                voice = "zh_female_vv_uranus_bigtts",
-                voices = listOf("zh_female_vv_uranus_bigtts", "zh_female_xiaohe_uranus_bigtts"))),
+            TtsBinding(TtsProtocol.VolcSpeech, VOLC_TTS_ENDPOINT, region = VOLC_TTS_RESOURCE, voice = "zh_female_vv_uranus_bigtts")),
+        tts(service, "seed-tts-1.0", "Doubao TTS 1.0",
+            TtsBinding(TtsProtocol.VolcSpeech, VOLC_TTS_ENDPOINT, region = "seed-tts-1.0", voice = "zh_female_cancan_mars_bigtts")),
         VoiceModel(service, VolcRealtimeConfig.MODEL, "Doubao Realtime",
             realtime = RealtimeBinding(RealtimeProtocol.VolcDuplex, VolcRealtimeProtocol.ENDPOINT, VolcRealtimeConfig.DEFAULT_SPEAKER)),
     )
@@ -109,6 +133,10 @@ object VoiceVendors {
             }
             VoicePresetPlan(owned(VoicePresets.VOLC_SERVICE, "Volcano Engine"), credentials, volcModels(VoicePresets.VOLC_SERVICE))
         },
+        // 豆包合成的资源 ID 就是模型 ID,手填的模型要带上它自己的
+        retarget = { m -> m.tts?.let { m.copy(tts = it.copy(region = m.id)) } ?: m },
+        legacyIds = listOf("stt-doubao"),
+        builtins = ::volcModels,
     )
 
     // ---- Alibaba Cloud Bailian ----
@@ -118,7 +146,7 @@ object VoiceVendors {
             SttBinding(SttProtocol.BailianStreaming, endpoint = region.endpoint(workspace), region = region.name, businessSpace = workspace))
     } + tts(service, "qwen3-tts-flash", "Qwen TTS Flash",
         TtsBinding(TtsProtocol.BailianQwenTts, if (region == BailianRegion.Singapore) QWEN_TTS_SINGAPORE else QWEN_TTS_BEIJING,
-            voice = "Cherry", voices = listOf("Cherry", "Ethan", "Serena", "Chelsie")))
+            voice = "Cherry"))
 
     private val bailian = VoiceVendor(
         id = "bailian", name = "Alibaba Cloud Bailian",
@@ -133,13 +161,23 @@ object VoiceVendors {
             val id = "bailian:${region.name.lowercase()}"
             VoicePresetPlan(owned(id, "Bailian ${region.name}"), VoiceCredentials(apiKey = apiKey), bailianModels(id, region, workspace))
         },
+        lister = VoiceModelLister { service, credentials, models ->
+            val host = if (service.id.endsWith(REGION_SINGAPORE)) BAILIAN_INTL else BAILIAN_CN
+            VendorModelLists.bailian(host).list(service, credentials, models)
+        },
+        legacyIds = listOf("stt-bailian"),
+        builtins = { id -> bailianModels(id, if (id.endsWith(REGION_SINGAPORE)) BailianRegion.Singapore else BailianRegion.Beijing, "") },
     )
 
     // ---- MiniMax ----
 
     private fun miniMaxModels(service: String, endpoint: String): List<VoiceModel> {
         val voices = listOf("male-qn-qingse", "female-shaonv", "female-yujie", "presenter_male", "presenter_female")
-        return listOf("speech-2.6-hd" to "Speech 2.6 HD", "speech-2.6-turbo" to "Speech 2.6 Turbo").map { (id, name) ->
+        return listOf(
+            "speech-2.8-hd" to "Speech 2.8 HD", "speech-2.8-turbo" to "Speech 2.8 Turbo",
+            "speech-2.6-hd" to "Speech 2.6 HD", "speech-2.6-turbo" to "Speech 2.6 Turbo",
+            "speech-02-hd" to "Speech 02 HD", "speech-02-turbo" to "Speech 02 Turbo",
+        ).map { (id, name) ->
             tts(service, id, name, TtsBinding(TtsProtocol.MiniMaxT2a, endpoint, voice = voices.first(), voices = voices))
         }
     }
@@ -155,11 +193,12 @@ object VoiceVendors {
             VoicePresetPlan(owned(id, if (intl) "MiniMax Global" else "MiniMax"), VoiceCredentials(apiKey = apiKey),
                 miniMaxModels(id, if (intl) MINIMAX_INTL else MINIMAX_CN))
         },
+        lister = VendorModelLists.miniMax(),
     )
 
     // ---- OpenAI-shaped vendors ----
 
-    private val openAi = keyOnly("openai", "OpenAI") { s ->
+    private val openAi = keyOnly("openai", "OpenAI", VendorModelLists.openAi(OPENAI_BASE)) { s ->
         val voices = VoiceVoices.tts(TtsProtocol.OpenAiSpeech)
         listOf("gpt-4o-transcribe", "gpt-4o-mini-transcribe", "whisper-1").map {
             stt(s, it, it, SttBinding(SttProtocol.AudioTranscriptions, endpoint = OPENAI_BASE))
@@ -169,16 +208,22 @@ object VoiceVendors {
             realtime = RealtimeBinding(RealtimeProtocol.OpenAiRealtime, OpenAiCallProtocol.ENDPOINT, OpenAiCallProtocol.VOICE))
     }
 
-    private val gemini = keyOnly("gemini", "Google Gemini") { s ->
+    private val gemini = keyOnly("gemini", "Google Gemini", VendorModelLists.gemini(GEMINI_BASE)) { s ->
         listOf(stt(s, "gemini-2.5-flash", "Gemini 2.5 Flash", SttBinding(SttProtocol.GeminiInline, endpoint = GEMINI_BASE))) +
-            listOf("gemini-2.5-flash-preview-tts" to "Gemini 2.5 Flash TTS", "gemini-2.5-pro-preview-tts" to "Gemini 2.5 Pro TTS").map { (id, name) ->
+            listOf("gemini-3.8-flash-tts" to "Gemini 3.8 Flash TTS", "gemini-3.8-flash-lite-tts" to "Gemini 3.8 Flash Lite TTS").map { (id, name) ->
                 tts(s, id, name, TtsBinding(TtsProtocol.GeminiTts, GEMINI_BASE, voice = "Kore"))
             }
     }
 
-    private val siliconFlow = keyOnly("siliconflow", "SiliconFlow") { s ->
+    // 系统音色写作「模型:名字」,派生出来的说话模型换成它自己的前缀
+    private val siliconFlow = keyOnly("siliconflow", "SiliconFlow", VendorModelLists.siliconFlow(SILICONFLOW_BASE), retarget = { m ->
+        m.tts?.takeIf { it.voices.all { v -> !v.startsWith("${m.id}:") } }?.let { b ->
+            val (voices, names) = VendorModelLists.siliconFlowModelVoices(m.id, emptyList())
+            m.copy(tts = b.copy(voice = voices.first(), voices = voices, voiceNames = names))
+        } ?: m
+    }) { s ->
         val cosy = "FunAudioLLM/CosyVoice2-0.5B"
-        val voices = listOf("alex", "anna", "bella", "benjamin", "charles", "claire", "david", "diana").map { "$cosy:$it" }
+        val voices = VendorModelLists.SILICONFLOW_VOICES.map { "$cosy:$it" }
         listOf(
             stt(s, "FunAudioLLM/SenseVoiceSmall", "SenseVoice Small", SttBinding(SttProtocol.AudioTranscriptions, endpoint = SILICONFLOW_BASE)),
             tts(s, cosy, "CosyVoice2", TtsBinding(TtsProtocol.OpenAiSpeech, SILICONFLOW_BASE, voice = voices[1], voices = voices)),
@@ -188,20 +233,23 @@ object VoiceVendors {
     private val zhipu = keyOnly("zhipu", "Zhipu") { s ->
         val voices = listOf("tongtong", "chuichui", "xiaochen", "jam", "kazi", "douji", "luodo")
         listOf(
+            stt(s, "glm-asr-2512", "GLM-ASR-2512", SttBinding(SttProtocol.AudioTranscriptions, endpoint = ZHIPU_BASE)),
             stt(s, "glm-asr", "GLM-ASR", SttBinding(SttProtocol.AudioTranscriptions, endpoint = ZHIPU_BASE)),
             tts(s, "glm-tts", "GLM-TTS", TtsBinding(TtsProtocol.OpenAiSpeech, ZHIPU_BASE, voice = voices.first(), voices = voices)),
         )
     }
 
-    private val groq = keyOnly("groq", "Groq") { s ->
+    private val groq = keyOnly("groq", "Groq", VendorModelLists.groq(GROQ_BASE)) { s ->
+        val voices = listOf("autumn", "diana", "hannah", "austin", "daniel", "troy")
         listOf("whisper-large-v3-turbo", "whisper-large-v3").map {
             stt(s, it, it, SttBinding(SttProtocol.AudioTranscriptions, endpoint = GROQ_BASE))
-        }
+        } + tts(s, "canopylabs/orpheus-v1-english", "Orpheus English",
+            TtsBinding(TtsProtocol.OpenAiSpeech, GROQ_BASE, voice = voices.first(), voices = voices))
     }
 
     // ---- Vendors with their own protocols ----
 
-    private val elevenLabs = keyOnly("elevenlabs", "ElevenLabs") { s ->
+    private val elevenLabs = keyOnly("elevenlabs", "ElevenLabs", VendorModelLists.elevenLabs()) { s ->
         val voices = listOf("21m00Tcm4TlvDq8ikWAM", "EXAVITQu4vr4xnSDxMaL", "pNInz6obpgDQGcFmaJgB", "ErXwobaYiN019PkySvjV")
         listOf(stt(s, "scribe_v1", "Scribe", SttBinding(SttProtocol.ElevenLabsUpload))) +
             listOf("eleven_multilingual_v2" to "Multilingual v2", "eleven_flash_v2_5" to "Flash v2.5").map { (id, name) ->
@@ -209,7 +257,7 @@ object VoiceVendors {
             }
     }
 
-    private val deepgram = keyOnly("deepgram", "Deepgram") { s ->
+    private val deepgram = keyOnly("deepgram", "Deepgram", VendorModelLists.deepgram()) { s ->
         val voices = listOf("aura-2-thalia-en", "aura-2-andromeda-en", "aura-2-helena-en", "aura-2-apollo-en", "aura-2-arcas-en")
         listOf(
             stt(s, "nova-3", "Nova-3", SttBinding(SttProtocol.DeepgramUpload)),
@@ -236,6 +284,7 @@ object VoiceVendors {
             val id = "azure:$region"
             VoicePresetPlan(owned(id, "Azure Speech $region"), VoiceCredentials(apiKey = apiKey), azureModels(id, region))
         },
+        lister = VendorModelLists.azure(),
     )
 
     private fun tencentModels(service: String): List<VoiceModel> {

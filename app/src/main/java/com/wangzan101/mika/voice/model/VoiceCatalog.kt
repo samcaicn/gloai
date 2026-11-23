@@ -119,6 +119,8 @@ data class TtsBinding(
     val voice: String = "",
     /** Voices this model offers; empty falls back to the protocol's list. */
     val voices: List<String> = emptyList(),
+    /** Readable names for opaque voice ids (fetched from the vendor), keyed by id. */
+    val voiceNames: Map<String, String> = emptyMap(),
 )
 
 @Serializable
@@ -129,6 +131,16 @@ data class RealtimeBinding(
 )
 
 @Serializable
+enum class VoiceModelOrigin {
+    /** Shipped with the vendor definition. */
+    Builtin,
+    /** Fetched from the vendor's model list. */
+    Listed,
+    /** A model id the user typed in. */
+    Manual,
+}
+
+@Serializable
 data class VoiceModel(
     val serviceId: String,
     val id: String,
@@ -136,6 +148,10 @@ data class VoiceModel(
     val stt: SttBinding? = null,
     val tts: TtsBinding? = null,
     val realtime: RealtimeBinding? = null,
+    /** Where this entry came from; a list refresh replaces only [VoiceModelOrigin.Listed] entries. */
+    val origin: VoiceModelOrigin = VoiceModelOrigin.Builtin,
+    /** The vendor's list did not say what this model does, so it is offered for listening and speaking both. */
+    val guessed: Boolean = false,
 ) {
     val capabilities: Set<VoiceCapability>
         get() = buildSet {

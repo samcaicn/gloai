@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_list_title">Список моделей</string>
+    <string name="voice_list_idle">Получить у сервиса все модели, доступные этому аккаунту</string>
+    <string name="voice_list_running">Получение…</string>
+    <string name="voice_list_done">Получено моделей от сервиса: %1$d</string>
+    <string name="voice_list_done_voices">Получено от сервиса: моделей %1$d, голосов %2$d</string>
+    <string name="voice_list_failed">Не удалось получить: %1$s</string>
+    <string name="voice_list_failed_note">Встроенные модели ниже по-прежнему работают, можно также добавить модель по ID.</string>
+    <string name="voice_list_none">У этого сервиса нет открытого списка моделей. Ниже встроенные модели; другие добавляйте по ID.</string>
+    <string name="voice_other_models">Другие модели · %1$d</string>
+    <string name="voice_other_models_sub">Сервис не указывает их назначение. Проверьте модель перед использованием.</string>
+    <string name="voice_add_model_id">Добавить модель по ID</string>
+    <string name="voice_model_id">ID модели</string>
+    <string name="voice_add">Добавить</string>
+    <string name="voice_enter_voice_id">Ввести ID голоса</string>
+    <string name="voice_voice_id">ID голоса</string>
+    <string name="voice_list_refresh">Обновить</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_list_title">Daftar model</string>
+    <string name="voice_list_idle">Ambil semua model yang bisa dipakai akun ini dari penyedia</string>
+    <string name="voice_list_running">Mengambil…</string>
+    <string name="voice_list_done">%1$d model dari penyedia</string>
+    <string name="voice_list_done_voices">%1$d model dan %2$d suara dari penyedia</string>
+    <string name="voice_list_failed">Gagal mengambil: %1$s</string>
+    <string name="voice_list_failed_note">Model bawaan di bawah tetap berfungsi, dan Anda bisa menambahkan model lewat ID-nya.</string>
+    <string name="voice_list_none">Penyedia ini tidak punya daftar model publik. Model bawaan ada di bawah; tambahkan model lain lewat ID-nya.</string>
+    <string name="voice_other_models">Model lainnya · %1$d</string>
+    <string name="voice_other_models_sub">Penyedia tidak menjelaskan kegunaannya. Uji dulu sebelum dipakai.</string>
+    <string name="voice_add_model_id">Tambah model lewat ID</string>
+    <string name="voice_model_id">ID model</string>
+    <string name="voice_add">Tambah</string>
+    <string name="voice_enter_voice_id">Masukkan ID suara</string>
+    <string name="voice_voice_id">ID suara</string>
+    <string name="voice_list_refresh">Muat ulang</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_list_title">Model listesi</string>
+    <string name="voice_list_idle">Bu hesabın kullanabileceği tüm modelleri sağlayıcıdan getir</string>
+    <string name="voice_list_running">Getiriliyor…</string>
+    <string name="voice_list_done">Sağlayıcıdan %1$d model alındı</string>
+    <string name="voice_list_done_voices">Sağlayıcıdan %1$d model ve %2$d ses alındı</string>
+    <string name="voice_list_failed">Getirilemedi: %1$s</string>
+    <string name="voice_list_failed_note">Aşağıdaki yerleşik modeller çalışmaya devam eder; model kimliğiyle model de ekleyebilirsiniz.</string>
+    <string name="voice_list_none">Bu sağlayıcının herkese açık model listesi yok. Yerleşik modeller aşağıda; diğerlerini kimliğiyle ekleyin.</string>
+    <string name="voice_other_models">Diğer modeller · %1$d</string>
+    <string name="voice_other_models_sub">Sağlayıcı bunların ne yaptığını belirtmiyor. Kullanmadan önce test edin.</string>
+    <string name="voice_add_model_id">Kimlikle model ekle</string>
+    <string name="voice_model_id">Model kimliği</string>
+    <string name="voice_add">Ekle</string>
+    <string name="voice_enter_voice_id">Ses kimliği gir</string>
+    <string name="voice_voice_id">Ses kimliği</string>
+    <string name="voice_list_refresh">Yenile</string>
+</resources>

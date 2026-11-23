@@ -77,7 +77,10 @@ object VoicePresets {
     fun apply(manager: VoiceAccountManager, catalog: VoiceCatalogStore, plan: VoicePresetPlan): List<VoiceModelRef> {
         manager.saveVoiceAccount(plan.service, plan.credentials)
         val keep = plan.models.map { it.id }.toSet()
-        catalog.state.value.models.filter { it.serviceId == plan.service.id && it.id !in keep }.forEach { stale ->
+        // 拉取到的、手填的模型不属于预设,换 key 时留着(下一次刷新会按新账号重拉)
+        catalog.state.value.models.filter {
+            it.serviceId == plan.service.id && it.id !in keep && it.origin == VoiceModelOrigin.Builtin
+        }.forEach { stale ->
             stale.capabilities.forEach { catalog.deleteModel(VoiceModelRef(stale.serviceId, stale.id, it)) }
         }
         plan.models.forEach(catalog::upsertModel)
