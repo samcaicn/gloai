@@ -1,20 +1,20 @@
 package com.wangzan101.mika.core.tool
 
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.knowledge.GuideCatalog
-import com.wangzan101.mika.core.memory.Change
-import com.wangzan101.mika.core.memory.MemoryStore
-import com.wangzan101.mika.core.memory.ProfileStore
-import com.wangzan101.mika.core.memory.UserUtterances
-import com.wangzan101.mika.core.vision.ImageOps
-import com.wangzan101.mika.core.vision.VisionService
-import com.wangzan101.mika.core.visual.Shots
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.memory.Change
+import com.wangzan101.mika.core.learn.memory.MemoryStore
+import com.wangzan101.mika.core.learn.memory.ProfileStore
+import com.wangzan101.mika.core.learn.memory.UserUtterances
+import com.wangzan101.mika.core.screen.vision.ImageOps
+import com.wangzan101.mika.core.screen.vision.VisionService
+import com.wangzan101.mika.core.screen.visual.Shots
 import com.wangzan101.mika.core.capability.CapabilityKey
-import com.wangzan101.mika.core.knowledge.BundledScripts
+import com.wangzan101.mika.core.learn.knowledge.BundledScripts
 import com.wangzan101.mika.core.trigger.Scheduled
 import com.wangzan101.mika.core.trigger.TriggerDefinition
 import com.wangzan101.mika.core.trigger.ScheduleAdmin
-import com.wangzan101.mika.core.child.ChildRunHost
+import com.wangzan101.mika.core.run.ChildRunHost
 import com.wangzan101.mika.core.run.RunSpec
 
 /** 本任务的配置(模型、技能、记忆、开关);能力各自的端口与开关在能力里。 */
@@ -37,13 +37,13 @@ internal class ToolConfig(
     val runSpec: RunSpec? = null,
     val childHost: ChildRunHost? = null,
     /** 这个对话里用户发来的屏幕;没有时不提供 view_user_screen。 */
-    val userScreens: com.wangzan101.mika.core.userscreen.UserScreenSource? = null,
+    val userScreens: com.wangzan101.mika.core.screen.user.UserScreenSource? = null,
     /** 用户的个人技能;给了(且有技能目录、用户本次说的话)才提供 skill_save。 */
-    val personalSkills: com.wangzan101.mika.core.skills.PersonalSkills? = null,
+    val personalSkills: com.wangzan101.mika.core.learn.skills.PersonalSkills? = null,
     /** 改 Mika 自己设置的白名单入口;为空(用户没允许)时不提供 settings_list、settings_set。 */
-    val selfConfig: com.wangzan101.mika.core.settings.SelfConfig? = null,
+    val selfConfig: com.wangzan101.mika.core.self.SelfConfig? = null,
     /** 存下的运行记录;给了、而这个对话之前有记过运行的轮次时提供 history_read。 */
-    val runRecords: com.wangzan101.mika.core.record.RunRecords? = null,
+    val runRecords: com.wangzan101.mika.core.run.record.RunRecords? = null,
     /** 用户配置并启用的网页搜索;为空时不提供 web_search。 */
     val webSearch: com.wangzan101.mika.core.search.WebSearch? = null,
     /** 读 Mika 自己的状态;只对手机上、有用户的 UI 主任务给。 */
@@ -53,7 +53,7 @@ internal class ToolConfig(
     /** Save a captured PNG in this task's workspace; screen tools do not depend on the sandbox capability. */
     val saveScreenshot: (suspend (String, ByteArray) -> String)? = null,
     /** 跨会话任务摘要;给了才提供 task_memory_search / task_memory_timeline / task_memory_step。 */
-    val taskMemory: com.wangzan101.mika.core.memory.TaskMemoryStore? = null,
+    val taskMemory: com.wangzan101.mika.core.learn.memory.TaskMemoryStore? = null,
     /** 这两天的通知原文和存着的各天、各周、各月的归纳(主动能力攒下的);给了才提供 notices_read。 */
     val notices: com.wangzan101.mika.core.proactive.NoticeSource? = null,
 )
@@ -132,7 +132,7 @@ internal class ToolContext(
     /** 这次调用里能力为节奏有意停下的时间(见 [ToolExecution.waitMs]);能力在停下时往上加,分发器每次调用清零后交进结果。 */
     var pacedWaitMs = 0L
 
-    /** 这次调用里停留时轻轻滚了几下页面(见 [com.wangzan101.mika.core.uistate.IdleScroll]);和 [pacedWaitMs] 一样每次调用清零,只进运行记录。 */
+    /** 这次调用里停留时轻轻滚了几下页面(见 [com.wangzan101.mika.core.screen.uistate.IdleScroll]);和 [pacedWaitMs] 一样每次调用清零,只进运行记录。 */
     var idleScrolls = 0
 }
 

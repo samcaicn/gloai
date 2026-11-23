@@ -3,18 +3,18 @@ package com.wangzan101.mika.core.agent
 import com.wangzan101.mika.core.action.ActionExecutor
 import com.wangzan101.mika.core.action.ActionRecorder
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.gate.ConfirmationGate
-import com.wangzan101.mika.core.guard.OperationGuards
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.safety.gate.ConfirmationGate
+import com.wangzan101.mika.core.safety.guard.OperationGuards
+import com.wangzan101.mika.core.run.record.RunSink
 import com.wangzan101.mika.core.testing.BATCHABLE
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.tool.Until
-import com.wangzan101.mika.core.uistate.PageDialog
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
-import com.wangzan101.mika.core.uistate.UiWindowTree
-import com.wangzan101.mika.core.uistate.WebInfo
+import com.wangzan101.mika.core.screen.uistate.PageDialog
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.UiWindowTree
+import com.wangzan101.mika.core.screen.uistate.WebInfo
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
@@ -51,13 +51,13 @@ private class TimedScreen(private val now: () -> Long, vararg val frames: Pair<L
     }
     override suspend fun snapshot(): ScreenSnapshot = build("p${++reads}")
     override suspend fun peek(): ScreenSnapshot = build("peek")
-    override suspend fun back() = com.wangzan101.mika.core.uistate.ActionResult.Ok(changed = true).also { calls += "back" }
+    override suspend fun back() = com.wangzan101.mika.core.screen.uistate.ActionResult.Ok(changed = true).also { calls += "back" }
     override suspend fun waitStable(timeoutMs: Long): Boolean { stableCalls++; return true }
     override suspend fun awaitChange(timeoutMs: Long): Boolean { changeCalls++; kotlinx.coroutines.delay(timeoutMs); return false }
 }
 
 class BatchWaitTest {
-    private val sink = object : RunSink { override fun event(e: com.wangzan101.mika.core.record.RunEvent) {} }
+    private val sink = object : RunSink { override fun event(e: com.wangzan101.mika.core.run.record.RunEvent) {} }
     private fun JsonObject.s(k: String) = this[k]!!.jsonPrimitive.content
     private fun JsonObject.entries() = this["steps"]!!.jsonArray.map { it.jsonObject }
     private fun JsonObject.wait() = this["wait"]!!.jsonObject

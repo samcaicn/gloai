@@ -8,7 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.ChineseUi
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.KeyCipher
-import com.wangzan101.mika.ui.WorkflowsScreen
+import com.wangzan101.mika.workflow.ui.WorkflowsScreen
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Rule

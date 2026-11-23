@@ -1,12 +1,12 @@
 package com.wangzan101.mika.core.tool
 
-import com.wangzan101.mika.core.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.ObsKind
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.PressKeys
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.PressKeys
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -20,7 +20,7 @@ import kotlinx.serialization.json.put
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import com.wangzan101.mika.core.uistate.Verification
+import com.wangzan101.mika.core.screen.uistate.Verification
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -340,8 +340,8 @@ class ToolDispatcherTest {
         assertFalse("screenShareAllowed" in app)
 
         val restricted = object : ScreenPort by FakeScreen() {
-            override val appAccess = com.wangzan101.mika.core.access.AppAccessPolicy {
-                com.wangzan101.mika.core.access.AppAccessState(blocked = setOf("com.x"), shareAllowed = setOf("com.x"))
+            override val appAccess = com.wangzan101.mika.core.device.access.AppAccessPolicy {
+                com.wangzan101.mika.core.device.access.AppAccessState(blocked = setOf("com.x"), shareAllowed = setOf("com.x"))
             }
         }
         val marked = toolDispatcher(restricted).execute(call("phone_list_apps")).content["apps"]!!.jsonArray.single().jsonObject
@@ -379,14 +379,14 @@ class ToolDispatcherTest {
 
     @Test fun lookupToolsListedOnlyWithCatalogAndAreReadOnly() = runTest {
         assertFalse(toolDispatcher(FakeScreen()).definitions().any { it.name in lookupTools })
-        val d = toolDispatcher(FakeScreen(), skills = com.wangzan101.mika.core.knowledge.GuideCatalog.loadBundled())
+        val d = toolDispatcher(FakeScreen(), skills = com.wangzan101.mika.core.learn.knowledge.GuideCatalog.loadBundled())
         assertTrue(d.definitions().map { it.name }.containsAll(lookupTools))
         for (t in lookupTools) assertFalse(t, isWritingTool(t, JsonObject(emptyMap())))
     }
 
     // 知识和技能各查各的、各读各的;读错了组的名字时说清该用哪个工具
     @Test fun knowledgeAndSkillLookupsThroughDispatcher() = runTest {
-        val d = toolDispatcher(FakeScreen(), skills = com.wangzan101.mika.core.knowledge.GuideCatalog.loadBundled())
+        val d = toolDispatcher(FakeScreen(), skills = com.wangzan101.mika.core.learn.knowledge.GuideCatalog.loadBundled())
         val found = d.execute(call("knowledge_search", """{"query":"闲鱼"}""")).content
         val matches = found["matches"]!!.jsonArray
         assertTrue(matches.size in 1..10)

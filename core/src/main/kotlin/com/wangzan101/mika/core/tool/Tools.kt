@@ -1,9 +1,9 @@
 package com.wangzan101.mika.core.tool
 
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.observation.Observation
-import com.wangzan101.mika.core.observation.Place
-import com.wangzan101.mika.core.risk.IrrevAction
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.screen.observation.Observation
+import com.wangzan101.mika.core.screen.observation.Place
+import com.wangzan101.mika.core.safety.gate.IrrevAction
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 
@@ -46,7 +46,7 @@ class ToolExecution(
     val place: Place? = null,
     val waitMs: Long = 0,
     val followUpTools: List<Verb> = emptyList(),
-    val playback: com.wangzan101.mika.core.record.PlaybackCapture? = null,
+    val playback: com.wangzan101.mika.core.run.record.PlaybackCapture? = null,
 ) {
     val image: ByteArray? get() = images.firstOrNull()
 
@@ -56,7 +56,7 @@ class ToolExecution(
         record: JsonObject = this.record, screenElements: JsonArray? = this.screenElements, imageIds: List<Int?> = this.imageIds,
         observations: List<Observation> = this.observations, place: Place? = this.place, waitMs: Long = this.waitMs,
         followUpTools: List<Verb> = this.followUpTools,
-        playback: com.wangzan101.mika.core.record.PlaybackCapture? = this.playback,
+        playback: com.wangzan101.mika.core.run.record.PlaybackCapture? = this.playback,
     ) = ToolExecution(content, changed = changed, outcome = outcome, frame = frame, images = images, record = record,
         screenElements = screenElements, imageIds = imageIds, observations = observations, place = place, waitMs = waitMs, followUpTools = followUpTools, playback = playback)
 

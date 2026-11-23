@@ -2,13 +2,13 @@ package com.wangzan101.mika.core.tool
 
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.FakeModel
-import com.wangzan101.mika.core.gate.ConfirmationGate
+import com.wangzan101.mika.core.safety.gate.ConfirmationGate
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import com.wangzan101.mika.core.cap.web.DEVTOOLS_UNAVAILABLE
 import com.wangzan101.mika.core.cap.web.FakeWebPort
 import kotlinx.coroutines.test.runTest

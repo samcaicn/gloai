@@ -8,7 +8,7 @@ import com.wangzan101.mika.cap.phone.a11y.DeviceSupport
 import com.wangzan101.mika.cap.phone.a11y.DeviceSupport.pollUntil
 import com.wangzan101.mika.core.model.*
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.verify.Verifier
+import com.wangzan101.mika.core.safety.verify.Verifier
 import com.wangzan101.mika.workflow.*
 import org.junit.Assert.*
 import org.junit.Rule

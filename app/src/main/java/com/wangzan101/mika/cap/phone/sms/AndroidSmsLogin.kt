@@ -11,7 +11,7 @@ import androidx.core.content.ContextCompat
 import com.wangzan101.mika.cap.phone.a11y.AndroidScreen
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.core.cap.phone.sms.*
-import com.wangzan101.mika.core.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
 import com.wangzan101.mika.settings.AppAccessStore
 import com.wangzan101.mika.settings.SmsLoginSettings
 import kotlinx.coroutines.*

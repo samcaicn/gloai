@@ -1,9 +1,9 @@
 package com.wangzan101.mika.core.proactive
 
 import com.wangzan101.mika.core.general.NOTICES_READ
-import com.wangzan101.mika.core.memory.TaskMemory
-import com.wangzan101.mika.core.memory.TaskMemoryRecorder
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.learn.memory.TaskMemory
+import com.wangzan101.mika.core.learn.memory.TaskMemoryRecorder
+import com.wangzan101.mika.core.run.record.RunEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

@@ -2,17 +2,17 @@ package com.wangzan101.mika.core.tool
 
 import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.FakeModel
-import com.wangzan101.mika.core.gate.IrreversibleDetector
-import com.wangzan101.mika.core.gate.classify
+import com.wangzan101.mika.core.safety.gate.IrreversibleDetector
+import com.wangzan101.mika.core.safety.gate.classify
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.Json
@@ -26,7 +26,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.uistate.interfaces
+import com.wangzan101.mika.core.screen.uistate.interfaces
 
 /** 每次读屏换下一份元素清单;端口编号每屏从 @e1 起,snapshotId 是 p1、p2…;同名元素位置不变。 */
 private class ScriptedScreen(private vararg val screens: List<String>) : ScreenPort by FakeScreen() {
@@ -162,7 +162,7 @@ class ToolDispatcherStableRefTest {
         val s = ScriptedScreen(listOf("提交订单", "返回"), listOf("新的", "提交订单", "返回"))
         kotlinx.coroutines.runBlocking {
             AgentLoop(m, toolDispatcher(s, stableRefs = true), "BASE", sink = sink,
-                confirmations = com.wangzan101.mika.core.gate.ConfirmationGate()).run("看看")
+                confirmations = com.wangzan101.mika.core.safety.gate.ConfirmationGate()).run("看看")
         }
         assertTrue(s.calls.isEmpty())
         val tap = events.filterIsInstance<RunEvent.ToolResult>().single { it.tool == "phone_tap" }

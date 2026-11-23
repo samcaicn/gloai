@@ -1,7 +1,7 @@
 package com.wangzan101.mika.settings
 
 import com.wangzan101.mika.about.Diagnostics
-import com.wangzan101.mika.core.chatgpt.SignInException
+import com.wangzan101.mika.core.model.chatgpt.SignInException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

@@ -6,7 +6,7 @@ import com.wangzan101.mika.core.agent.Conversation
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.export.json.JsonExportBackend
 import com.wangzan101.mika.core.export.markdown.MarkdownExportBackend
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray

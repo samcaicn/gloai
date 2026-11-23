@@ -1,7 +1,7 @@
 package com.wangzan101.mika.settings
 
 import com.wangzan101.mika.core.cap.phone.OperatingPace
-import com.wangzan101.mika.core.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

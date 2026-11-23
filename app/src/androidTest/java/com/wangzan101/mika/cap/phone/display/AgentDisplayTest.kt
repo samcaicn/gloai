@@ -22,7 +22,7 @@ import com.wangzan101.mika.task.AudioMute
 import com.wangzan101.mika.task.MarkerStore
 import com.wangzan101.mika.task.PrefsMarker
 import com.wangzan101.mika.task.ShellAudio
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking

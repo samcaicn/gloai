@@ -26,6 +26,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import com.wangzan101.mika.personal.ui.PersonalHeader
+import com.wangzan101.mika.personal.ui.PersonalPreviewPlayer
+import com.wangzan101.mika.settings.ui.models.use
 
 @RunWith(AndroidJUnit4::class)
 class PersonalHeaderTest {

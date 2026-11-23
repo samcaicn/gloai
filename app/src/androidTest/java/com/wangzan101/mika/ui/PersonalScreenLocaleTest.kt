@@ -32,6 +32,10 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import com.wangzan101.mika.personal.ui.PersonalProfileDialog
+import com.wangzan101.mika.personal.ui.PersonalProfileTab
+import com.wangzan101.mika.personal.ui.PersonalProfileTabs
+import com.wangzan101.mika.personal.ui.personalDayFormat
 
 @RunWith(AndroidJUnit4::class)
 class PersonalScreenLocaleTest {

@@ -32,12 +32,12 @@ import com.wangzan101.mika.core.proactive.NoticeSource
 import com.wangzan101.mika.core.proactive.NoticeTalk
 import com.wangzan101.mika.core.proactive.TriageConsent
 import com.wangzan101.mika.core.proactive.TriageTarget
-import com.wangzan101.mika.core.shell.ShellCommandRunner
+import com.wangzan101.mika.core.device.shell.ShellCommandRunner
 import com.wangzan101.mika.i18n.AppLanguage
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.KeystoreKeyCipher
-import com.wangzan101.mika.ui.classifierLanguage
+import com.wangzan101.mika.settings.ui.classifierLanguage
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -148,7 +148,7 @@ class ProactiveRuntime(
         digest = { _learnDigest.value },
         journalStore = NoticeJournalFile(app.filesDir, KeystoreKeyCipher(NoticeJournalFile.KEY_ALIAS)),
         digestStore = DigestFile(app.filesDir, KeystoreKeyCipher(DigestFile.KEY_ALIAS)),
-        appLabel = { com.wangzan101.mika.confirm.ConfirmationNotifier.appLabel(app, it) },
+        appLabel = { com.wangzan101.mika.task.ConfirmationNotifier.appLabel(app, it) },
         contactStore = ContactPoolFile(app.filesDir, KeystoreKeyCipher(ContactPoolFile.KEY_ALIAS)),
         purges = prefs,
         log = { Log.i(TAG, it) },
@@ -327,7 +327,7 @@ class ProactiveRuntime(
         if (!tasksMayReadNotices(_enabled.value && FeatureFlags.get(app).proactive(), _learnDigest.value, _learnLevel.value)) return null
         return object : NoticeSource {
             override val zone: java.time.ZoneId get() = java.time.ZoneId.systemDefault()
-            override fun appLabel(packageName: String) = com.wangzan101.mika.confirm.ConfirmationNotifier.appLabel(app, packageName)
+            override fun appLabel(packageName: String) = com.wangzan101.mika.task.ConfirmationNotifier.appLabel(app, packageName)
             // 等太久、存着的那份读不出、任务跑着的时候被关掉:null,工具报读不出来(不是「什么都没收到」)
             override suspend fun read(fromMs: Long, toMs: Long): NoticeView? =
                 kotlinx.coroutines.withTimeoutOrNull(NOTICES_WAIT_MS) {
@@ -637,7 +637,7 @@ class ProactiveRuntime(
 
     /** App 名按包名从系统读(不用通知里的字);时间是当天的只写几点几分。 */
     private fun talkItem(h: com.wangzan101.mika.core.proactive.NoticeHint, now: Long) = NoticeTalk.Item(
-        app = com.wangzan101.mika.confirm.ConfirmationNotifier.appLabel(app, h.packageName),
+        app = com.wangzan101.mika.task.ConfirmationNotifier.appLabel(app, h.packageName),
         time = DateUtils.formatSameDayTime(h.postedAtMs, now, java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).toString(),
         title = h.title, text = h.text, reason = h.reason,
     )

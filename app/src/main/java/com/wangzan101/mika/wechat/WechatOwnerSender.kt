@@ -5,9 +5,9 @@ import com.wangzan101.mika.core.run.Channel
 import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.run.DeliveryState
 import com.wangzan101.mika.core.run.Outbox
-import com.wangzan101.mika.core.wechat.WechatAccount
-import com.wangzan101.mika.core.wechat.WechatOwnerPort
-import com.wangzan101.mika.core.wechat.WechatOwnerResult
+import com.wangzan101.mika.core.cap.wechat.WechatAccount
+import com.wangzan101.mika.core.cap.wechat.WechatOwnerPort
+import com.wangzan101.mika.core.cap.wechat.WechatOwnerResult
 import java.security.MessageDigest
 
 /**

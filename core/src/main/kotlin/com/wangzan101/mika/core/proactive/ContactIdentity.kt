@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.proactive
 
-import com.wangzan101.mika.core.memory.SensitiveFilter
+import com.wangzan101.mika.core.learn.memory.SensitiveFilter
 
 /**
  * 联系人身份怎么算。用的是 [Title];另两种留着,是为了认得出以前按它们算出来的 id(存着的联系人、「不再记录」的名单)。

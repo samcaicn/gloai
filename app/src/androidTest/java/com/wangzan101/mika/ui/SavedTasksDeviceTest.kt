@@ -28,6 +28,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.UUID
+import com.wangzan101.mika.chat.ui.ChatScreen
+import com.wangzan101.mika.chat.ui.ChatViewModel
+import com.wangzan101.mika.chat.ui.TaskActions
+import com.wangzan101.mika.chat.ui.draft
+import com.wangzan101.mika.settings.ui.models.use
+import com.wangzan101.mika.task.ui.RecommendedTasksScreen
 
 @RunWith(AndroidJUnit4::class)
 class SavedTasksDeviceTest {

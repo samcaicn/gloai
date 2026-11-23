@@ -5,7 +5,7 @@ import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.core.agent.StopSummary
 import com.wangzan101.mika.core.agent.Turn
-import com.wangzan101.mika.core.record.RunRecords
+import com.wangzan101.mika.core.run.record.RunRecords
 import com.wangzan101.mika.core.run.Channel
 import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.Delivery

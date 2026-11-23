@@ -15,11 +15,11 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Process
 import android.util.Log
-import com.wangzan101.mika.core.shell.HelperHandoff
-import com.wangzan101.mika.core.shell.HelperRestorePolicy
-import com.wangzan101.mika.core.shell.PermissionCommands
-import com.wangzan101.mika.core.shell.RestoreCommands
-import com.wangzan101.mika.core.shell.RestoreWish
+import com.wangzan101.mika.core.device.shell.HelperHandoff
+import com.wangzan101.mika.core.device.shell.HelperRestorePolicy
+import com.wangzan101.mika.core.device.shell.PermissionCommands
+import com.wangzan101.mika.core.device.shell.RestoreCommands
+import com.wangzan101.mika.core.device.shell.RestoreWish
 import java.io.File
 import java.lang.reflect.Proxy
 import kotlin.system.exitProcess

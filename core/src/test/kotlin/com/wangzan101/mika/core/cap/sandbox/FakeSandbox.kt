@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.file.Files
 import com.wangzan101.mika.core.workspace.NioFdSys
 import com.wangzan101.mika.core.workspace.SandboxPaths
-import com.wangzan101.mika.core.knowledge.ScriptEntry
+import com.wangzan101.mika.core.learn.knowledge.ScriptEntry
 import com.wangzan101.mika.core.workspace.WorkspaceFileGate
 import com.wangzan101.mika.core.workspace.SandboxTree
 

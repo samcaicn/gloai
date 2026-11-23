@@ -6,13 +6,13 @@ import java.io.File
 
 /**
  * 依赖方向:能力 → 核心;核心不引用任何能力,能力之间不互相引用;只有装配层同时认识几种能力。
- * 工具引擎(core/tool)不引用界面状态(core/uistate):界面状态属于有界面的能力,引擎只经 SurfaceLayer 用到它。
+ * 工具引擎(core/tool)不引用界面状态(core/screen/uistate):界面状态属于有界面的能力,引擎只经 SurfaceLayer 用到它。
  * App 里 cap/ 下各能力的目录同样互不引用(core 里对应能力的包除外)。按源码里的 import 和写全的名字查,整行注释不算。
  */
 class PackageDependencyTest {
     private val core = File("src/main/kotlin/com/wangzan101/mika/core")
     private val app = File("../app/src/main/java/com/wangzan101/mika")
-    private val ref = Regex("""com\.wangzan101\.mika\.(core\.)?(cap\.([a-z0-9_]+)|assembly|uistate)\b""")
+    private val ref = Regex("""com\.wangzan101\.mika\.(core\.)?(cap\.([a-z0-9_]+)|assembly|screen\.uistate)\b""")
 
     private class Use(val file: File, val line: Int, val text: String, val target: String)
 
@@ -47,7 +47,7 @@ class PackageDependencyTest {
     }
 
     @Test fun toolEngineDoesNotKnowInterfaceState() {
-        val bad = uses(core).filter { u -> u.file.relativeTo(core).invariantSeparatorsPath.startsWith("tool/") && u.target == "core.uistate" }
+        val bad = uses(core).filter { u -> u.file.relativeTo(core).invariantSeparatorsPath.startsWith("tool/") && u.target == "core.screen.uistate" }
         assertTrue("工具引擎引用了界面状态:\n" + report(bad, core), bad.isEmpty())
     }
 

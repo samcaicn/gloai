@@ -40,10 +40,10 @@ import com.wangzan101.mika.core.proactive.TriageMark
 import com.wangzan101.mika.core.proactive.TriageNote
 import com.wangzan101.mika.core.proactive.TriageTarget
 import com.wangzan101.mika.core.proactive.TriageVerdict
-import com.wangzan101.mika.core.usage.ProactiveBudget
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
-import com.wangzan101.mika.ui.TokenBudgetDialog
-import com.wangzan101.mika.ui.tokenBudgetNumber
+import com.wangzan101.mika.core.model.usage.ProactiveBudget
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
+import com.wangzan101.mika.settings.ui.TokenBudgetDialog
+import com.wangzan101.mika.settings.ui.tokenBudgetNumber
 import com.wangzan101.mika.ui.components.EmptyNote
 import com.wangzan101.mika.ui.components.FooterNote
 import com.wangzan101.mika.ui.components.DetailNote

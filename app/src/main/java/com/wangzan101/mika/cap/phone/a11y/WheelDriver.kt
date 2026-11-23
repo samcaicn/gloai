@@ -7,8 +7,8 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.wangzan101.mika.core.cap.phone.WheelDrags
 import com.wangzan101.mika.core.cap.phone.WheelMath
 import com.wangzan101.mika.core.cap.phone.WheelSteps
-import com.wangzan101.mika.core.uistate.VisibleTextLine
-import com.wangzan101.mika.core.uistate.WheelOutcome
+import com.wangzan101.mika.core.screen.uistate.VisibleTextLine
+import com.wangzan101.mika.core.screen.uistate.WheelOutcome
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.roundToInt

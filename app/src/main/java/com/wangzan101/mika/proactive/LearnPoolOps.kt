@@ -2,7 +2,7 @@ package com.wangzan101.mika.proactive
 
 import com.wangzan101.mika.core.proactive.ContactPool
 import com.wangzan101.mika.core.proactive.TopicPool
-import com.wangzan101.mika.core.usage.ProactiveBudget
+import com.wangzan101.mika.core.model.usage.ProactiveBudget
 import java.time.Instant
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.job

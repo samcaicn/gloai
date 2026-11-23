@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.cap.mcp
 
-import com.wangzan101.mika.core.oauth.Pkce
+import com.wangzan101.mika.core.model.oauth.Pkce
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable

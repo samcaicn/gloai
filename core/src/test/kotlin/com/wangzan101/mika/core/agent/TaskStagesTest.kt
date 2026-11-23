@@ -1,20 +1,20 @@
 package com.wangzan101.mika.core.agent
 
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.knowledge.KnowledgeStore
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeStore
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
-import com.wangzan101.mika.core.observation.Place
+import com.wangzan101.mika.core.screen.observation.Place
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import com.wangzan101.mika.core.testing.answerReply
 import com.wangzan101.mika.core.tool.FakeScreen
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test

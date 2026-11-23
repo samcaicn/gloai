@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.guard.DIAGNOSTIC_VERBS
+import com.wangzan101.mika.core.safety.guard.DIAGNOSTIC_VERBS
 import com.wangzan101.mika.core.model.Author
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ChatModel
@@ -13,18 +13,18 @@ import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.StreamingChatModel
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.model.Usage
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunInbox
 import com.wangzan101.mika.core.run.RunSpec
-import com.wangzan101.mika.core.usage.UsagePurpose
-import com.wangzan101.mika.core.usage.UsageSource
-import com.wangzan101.mika.core.usage.metered
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.model.usage.UsagePurpose
+import com.wangzan101.mika.core.model.usage.UsageSource
+import com.wangzan101.mika.core.model.usage.metered
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.testing.ScriptedScreen
 import com.wangzan101.mika.core.testing.Screen
@@ -115,8 +115,8 @@ class AgentLoopTest {
         val judge = FakeModel()
         val events = mutableListOf<RunEvent>()
         val end = AgentLoop(main, toolDispatcher(FakeScreen()), "BASE", intentJudge = judge,
-            intentDecision = com.wangzan101.mika.core.decision.DecisionModel { _, _, _, _ ->
-                com.wangzan101.mika.core.decision.DecisionChoice("DISCUSS", 0.98)
+            intentDecision = com.wangzan101.mika.core.model.decision.DecisionModel { _, _, _, _ ->
+                com.wangzan101.mika.core.model.decision.DecisionChoice("DISCUSS", 0.98)
             }, sink = object : RunSink { override fun event(e: RunEvent) { events += e } })
             .run("以后可以帮我把内容同步到公众号并发送，对吧？")
         assertTrue(end is TaskState.Succeeded)
@@ -153,10 +153,10 @@ class AgentLoopTest {
 
     @Test fun discussionSkipsMatchingReplayBeforeAnyAction() = runTest {
         val goal = "以后打开备忘录看看，对吧？"
-        val route = com.wangzan101.mika.core.replay.Route("discussion", goal, 0, emptyList(), emptyMap(), emptyList(), lastUsedMs = 0)
-        val store = object : com.wangzan101.mika.core.replay.RouteStore {
+        val route = com.wangzan101.mika.core.learn.replay.Route("discussion", goal, 0, emptyList(), emptyMap(), emptyList(), lastUsedMs = 0)
+        val store = object : com.wangzan101.mika.core.learn.replay.RouteStore {
             override fun all() = listOf(route)
-            override fun put(r: com.wangzan101.mika.core.replay.Route) = Unit
+            override fun put(r: com.wangzan101.mika.core.learn.replay.Route) = Unit
             override fun remove(id: String) = Unit
             override fun clear() = Unit
             override fun count() = 1
@@ -166,7 +166,7 @@ class AgentLoopTest {
         val judge = FakeModel(finish("DISCUSS"))
         val events = mutableListOf<RunEvent>()
         AgentLoop(main, toolDispatcher(FakeScreen()), "BASE", intentJudge = judge,
-            routes = com.wangzan101.mika.core.replay.RouteMatcher(picker, store, null),
+            routes = com.wangzan101.mika.core.learn.replay.RouteMatcher(picker, store, null),
             flags = SpeedFlags(replay = true),
             sink = object : RunSink { override fun event(e: RunEvent) { events += e } }).run(goal)
         assertTrue(picker.requests.isEmpty())
@@ -973,7 +973,7 @@ class AgentLoopTest {
         com.wangzan101.mika.core.testing.assertAnswered(DONE, l.run("长任务"))
         assertEquals(60, m.requests.size)
         // 读一次屏验证观察确实有 ~6000 字:手机那组展开后这一读会被压缩裁成占位,不能看发给模型的那份
-        val rawObservation = com.wangzan101.mika.core.uistate.ScreenJson.elements(screen.snapshot(), Int.MAX_VALUE).first
+        val rawObservation = com.wangzan101.mika.core.screen.uistate.ScreenJson.elements(screen.snapshot(), Int.MAX_VALUE).first
         assertTrue("observation should be about 6000+ chars, was ${rawObservation.toString().length}", rawObservation.toString().length >= 6000)
         val worst = m.requests.maxOf { TokenEstimate.of(it) }
         assertTrue("sent about $worst tokens", worst * ContextCompressor.UNCALIBRATED_SCALE <= ContextLimits.of(32_000).usable)

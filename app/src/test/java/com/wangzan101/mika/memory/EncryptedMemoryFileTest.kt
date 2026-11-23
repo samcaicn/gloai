@@ -1,9 +1,9 @@
 package com.wangzan101.mika.memory
 
-import com.wangzan101.mika.core.memory.MemoryItem
-import com.wangzan101.mika.core.memory.MemoryKind
-import com.wangzan101.mika.core.memory.MemorySource
-import com.wangzan101.mika.core.memory.MemoryStatus
+import com.wangzan101.mika.core.learn.memory.MemoryItem
+import com.wangzan101.mika.core.learn.memory.MemoryKind
+import com.wangzan101.mika.core.learn.memory.MemorySource
+import com.wangzan101.mika.core.learn.memory.MemoryStatus
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals

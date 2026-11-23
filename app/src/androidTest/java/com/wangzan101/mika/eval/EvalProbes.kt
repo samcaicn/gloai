@@ -9,7 +9,7 @@ import com.wangzan101.mika.cap.phone.a11y.DeviceSupport
 import com.wangzan101.mika.core.eval.APP_CAPABILITIES
 import com.wangzan101.mika.core.eval.AppCapabilities
 import com.wangzan101.mika.core.eval.PROBE_ALLOWLIST
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import com.wangzan101.mika.cap.phone.display.AgentDisplay
 import com.wangzan101.mika.core.cap.web.WebUrlPolicy
 import com.wangzan101.mika.cap.web.PageScript

@@ -6,7 +6,7 @@ import com.wangzan101.mika.core.cap.mcp.McpPreset
 import com.wangzan101.mika.core.cap.mcp.McpPresetField
 import com.wangzan101.mika.core.cap.mcp.McpStdioLauncher
 import com.wangzan101.mika.core.cap.mcp.McpStdioProcess
-import com.wangzan101.mika.core.resource.ResourceScope
+import com.wangzan101.mika.core.run.ResourceScope
 import com.wangzan101.mika.core.workspace.SandboxTree
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin

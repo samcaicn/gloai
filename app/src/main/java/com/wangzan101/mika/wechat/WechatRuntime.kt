@@ -16,10 +16,10 @@ import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.run.MemoryOwnerIdentity
 import com.wangzan101.mika.core.run.RunId
-import com.wangzan101.mika.core.wechat.WechatAccount
-import com.wangzan101.mika.core.wechat.WechatApi
-import com.wangzan101.mika.core.wechat.WechatHttpException
-import com.wangzan101.mika.core.wechat.WechatQrStart
+import com.wangzan101.mika.core.cap.wechat.WechatAccount
+import com.wangzan101.mika.core.cap.wechat.WechatApi
+import com.wangzan101.mika.core.cap.wechat.WechatHttpException
+import com.wangzan101.mika.core.cap.wechat.WechatQrStart
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.task.TaskService
 import kotlinx.coroutines.CancellationException

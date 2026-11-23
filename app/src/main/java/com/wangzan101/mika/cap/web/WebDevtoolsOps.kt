@@ -8,10 +8,10 @@ import com.wangzan101.mika.core.cap.web.cdp.InputOutcome
 import com.wangzan101.mika.core.cap.web.cdp.InputTrack
 import com.wangzan101.mika.core.cap.web.cdp.input
 import com.wangzan101.mika.core.cap.web.cdp.mouseClick
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.Relocation
-import com.wangzan101.mika.core.uistate.UiElement
-import com.wangzan101.mika.core.uistate.relocate
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.Relocation
+import com.wangzan101.mika.core.screen.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.relocate
 import com.wangzan101.mika.core.cap.web.DEVTOOLS_UNAVAILABLE
 import com.wangzan101.mika.core.cap.web.ElementProbe
 import com.wangzan101.mika.core.cap.web.WebPoint

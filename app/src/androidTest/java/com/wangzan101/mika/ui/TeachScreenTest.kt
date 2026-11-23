@@ -18,6 +18,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.teach.ui.Summarizing
+import com.wangzan101.mika.teach.ui.TeachDonePage
+import com.wangzan101.mika.teach.ui.TeachIntroPage
+import com.wangzan101.mika.teach.ui.TeachSummaryPage
+import com.wangzan101.mika.teach.ui.TeachSummaryView
 
 @RunWith(AndroidJUnit4::class)
 class TeachScreenTest {

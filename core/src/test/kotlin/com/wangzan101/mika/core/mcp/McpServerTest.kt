@@ -6,8 +6,8 @@ import com.wangzan101.mika.core.cap.mcp.McpConnection
 import com.wangzan101.mika.core.cap.mcp.McpEndpoint
 import com.wangzan101.mika.core.cap.mcp.McpResult
 import com.wangzan101.mika.core.cap.mcp.McpToolDescriptor
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
 import com.wangzan101.mika.core.run.Attendance
 import com.wangzan101.mika.core.run.MemoryRunStore
 import com.wangzan101.mika.core.run.RunEventBus

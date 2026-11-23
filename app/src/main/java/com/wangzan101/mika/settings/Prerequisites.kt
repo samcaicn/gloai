@@ -1,10 +1,10 @@
 package com.wangzan101.mika.settings
 
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
-import com.wangzan101.mika.core.shell.HelperRestart
-import com.wangzan101.mika.core.shell.PairingChannelHealth
-import com.wangzan101.mika.core.shell.ShellTransport
-import com.wangzan101.mika.core.shell.ShizukuPlatformState
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.HelperRestart
+import com.wangzan101.mika.core.device.shell.PairingChannelHealth
+import com.wangzan101.mika.core.device.shell.ShellTransport
+import com.wangzan101.mika.core.device.shell.ShizukuPlatformState
 
 enum class AccessibilityState {
     Off,

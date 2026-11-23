@@ -8,9 +8,9 @@ import com.wangzan101.mika.core.agent.AgentLoop
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.observation.Trust
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.screen.observation.Trust
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
 import com.wangzan101.mika.core.run.Attendance
 import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunOrigin
@@ -74,7 +74,7 @@ class McpClientTest {
         val endpoint = FakeEndpoint().apply { instructions = "Use search before fetching a result." }
         val tools = toolDispatcher(FakeScreen(), mcpServers = listOf(McpConnection(endpoint)))
         val sections = tools.promptSections(tools.definitions()).joinToString("\n")
-        assertTrue(sections, com.wangzan101.mika.core.observation.Untrusted.wrap(endpoint.instructions!!) in sections)
+        assertTrue(sections, com.wangzan101.mika.core.screen.observation.Untrusted.wrap(endpoint.instructions!!) in sections)
         assertEquals(ActionRisk.Change, tools.approvalRisk("mcp_demo__search")?.level)
     }
 

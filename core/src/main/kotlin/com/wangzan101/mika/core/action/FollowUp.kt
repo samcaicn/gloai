@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.action
 
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.guard.GuardVerdict
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.guard.GuardVerdict
 import com.wangzan101.mika.core.tool.ToolExecution
 import kotlinx.serialization.json.JsonObject
 

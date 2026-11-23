@@ -47,7 +47,7 @@ object DeveloperSettings {
 
     /**
      * 把无线调试开关写成打开(要有修改系统设置的授权)。写入被拒(抛异常或返回 false)返回 false;
-     * 写进去之后系统还可能马上拨回去(见 [com.wangzan101.mika.core.shell.WirelessDebuggingAutoOn]),由调用方再读。
+     * 写进去之后系统还可能马上拨回去(见 [com.wangzan101.mika.core.device.shell.WirelessDebuggingAutoOn]),由调用方再读。
      */
     fun turnOnWirelessDebugging(cr: ContentResolver): Boolean =
         runCatching { Settings.Global.putInt(cr, ADB_WIFI_ENABLED, 1) }.getOrDefault(false)

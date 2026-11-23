@@ -25,7 +25,7 @@ import com.wangzan101.mika.cap.web.WebSites
 import com.wangzan101.mika.cap.web.WebTab
 import com.wangzan101.mika.core.cap.web.ExternalLink
 import com.wangzan101.mika.core.cap.web.WebUrlPolicy
-import com.wangzan101.mika.core.uistate.PageDialog
+import com.wangzan101.mika.core.screen.uistate.PageDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

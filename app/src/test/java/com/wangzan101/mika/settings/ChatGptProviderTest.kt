@@ -1,7 +1,7 @@
 package com.wangzan101.mika.settings
 
-import com.wangzan101.mika.core.chatgpt.ChatGptAuth
-import com.wangzan101.mika.core.chatgpt.ChatGptSession
+import com.wangzan101.mika.core.model.chatgpt.ChatGptAuth
+import com.wangzan101.mika.core.model.chatgpt.ChatGptSession
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ListFailure
 import com.wangzan101.mika.core.model.ListedModel

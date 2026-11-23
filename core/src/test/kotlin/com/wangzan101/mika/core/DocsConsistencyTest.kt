@@ -183,7 +183,7 @@ class DocsConsistencyTest {
     @Test fun docsMentionOnlyThingsThatExist() {
         // Implementation plans intentionally name files and classes that later tasks will create.
         val bad = docs().filterNot {
-            it.relativeTo(root).invariantSeparatorsPath.startsWith("docs/superpowers/plans/")
+            it.relativeTo(root).invariantSeparatorsPath.startsWith("docs/design/plans/")
         }.flatMap(::problems)
         assertTrue("文档里提到了仓库里没有的东西:\n" + bad.joinToString("\n"), bad.isEmpty())
     }

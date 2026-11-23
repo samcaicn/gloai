@@ -4,7 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.AlarmClock
 import android.provider.CalendarContract
-import com.wangzan101.mika.core.uistate.SystemAction
+import com.wangzan101.mika.core.screen.uistate.SystemAction
 
 /**
  * 系统动作用的安卓标准 intent:设闹钟、计时器、打开闹钟列表(AlarmClock),打开预填好的新日程(CalendarContract 的插入页)。

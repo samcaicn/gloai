@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.observation.Place
+import com.wangzan101.mika.core.screen.observation.Place
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.action.ActionRecorder
 import com.wangzan101.mika.core.model.Author
@@ -12,8 +12,8 @@ import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
-import com.wangzan101.mika.core.record.Redactor
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.Redactor
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.run.RunInbox
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async

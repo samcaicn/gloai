@@ -1,13 +1,13 @@
 package com.wangzan101.mika.core.action
 
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.guard.OperationGuards
+import com.wangzan101.mika.core.safety.guard.OperationGuards
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.run.ManualControl
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.tool.execute
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.async
 import org.junit.Assert.assertEquals
@@ -31,7 +31,7 @@ class ManualControlExecutionTest {
         val tools = toolDispatcher(FakeScreen(), web = web).also { it.manualControl = control }
         tools.execute(Part.ToolCall("nav", "web_navigate", """{"url":"https://example.com"}"""))
         val executor = ActionExecutor(tools, OperationGuards(), null, gate = {},
-            recorder = ActionRecorder(com.wangzan101.mika.core.record.RunSink.NONE), autonomous = true)
+            recorder = ActionRecorder(com.wangzan101.mika.core.run.record.RunSink.NONE), autonomous = true)
         val script = async {
             executor.run(Part.ToolCall("script", com.wangzan101.mika.core.testing.WEB_SCRIPT_TOOL, """{"code":"wait"}"""), Origin.Model(1))
         }
@@ -56,8 +56,8 @@ class ManualControlExecutionTest {
             }
             val control = ManualControl()
             val tools = toolDispatcher(screen).also { it.manualControl = control }
-            val recorder = ActionRecorder(object : com.wangzan101.mika.core.record.RunSink {
-                override fun event(e: com.wangzan101.mika.core.record.RunEvent) = Unit
+            val recorder = ActionRecorder(object : com.wangzan101.mika.core.run.record.RunSink {
+                override fun event(e: com.wangzan101.mika.core.run.record.RunEvent) = Unit
             })
             val executor = ActionExecutor(tools, OperationGuards(), null, gate = {}, recorder = recorder, autonomous = true)
             val tap = Part.ToolCall("tap", "phone_tap", """{"x":50,"y":50}""")

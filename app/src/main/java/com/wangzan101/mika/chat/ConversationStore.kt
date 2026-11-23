@@ -2,16 +2,16 @@ package com.wangzan101.mika.chat
 
 import android.content.Context
 import com.wangzan101.mika.core.agent.NoticeTurn
-import com.wangzan101.mika.core.record.RunMetricsStore
-import com.wangzan101.mika.core.usage.ConversationMeter
-import com.wangzan101.mika.core.usage.ConversationUsage
+import com.wangzan101.mika.core.run.record.RunMetricsStore
+import com.wangzan101.mika.core.model.usage.ConversationMeter
+import com.wangzan101.mika.core.model.usage.ConversationUsage
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.settings.PersonaStore
 import com.wangzan101.mika.core.chat.GeneratedAudio
 import com.wangzan101.mika.core.chat.GeneratedPhoto
-import com.wangzan101.mika.core.memory.MemoryNote
-import com.wangzan101.mika.core.memory.NoteKind
-import com.wangzan101.mika.core.skills.SkillNote
+import com.wangzan101.mika.core.learn.memory.MemoryNote
+import com.wangzan101.mika.core.learn.memory.NoteKind
+import com.wangzan101.mika.core.learn.skills.SkillNote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged

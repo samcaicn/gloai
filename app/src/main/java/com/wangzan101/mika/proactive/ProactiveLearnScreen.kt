@@ -57,7 +57,7 @@ import com.wangzan101.mika.core.proactive.TopicKind
 import com.wangzan101.mika.core.proactive.TopicPool
 import com.wangzan101.mika.core.proactive.TriageGate
 import com.wangzan101.mika.core.proactive.TriageTarget
-import com.wangzan101.mika.core.usage.ProactiveBudget
+import com.wangzan101.mika.core.model.usage.ProactiveBudget
 import com.wangzan101.mika.ui.components.EmptyNote
 import com.wangzan101.mika.ui.components.FooterNote
 import com.wangzan101.mika.ui.components.GroupCard

@@ -4,12 +4,12 @@ import android.graphics.Bitmap
 import android.util.Log
 import android.view.Display
 import android.view.accessibility.AccessibilityWindowInfo
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.normalize
-import com.wangzan101.mika.core.userscreen.CapturedScreen
-import com.wangzan101.mika.core.userscreen.UserScreen
-import com.wangzan101.mika.core.userscreen.UserScreenText
-import com.wangzan101.mika.vision.BitmapImageOps
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.normalize
+import com.wangzan101.mika.core.screen.user.CapturedScreen
+import com.wangzan101.mika.core.screen.user.UserScreen
+import com.wangzan101.mika.core.screen.user.UserScreenText
+import com.wangzan101.mika.media.BitmapImageOps
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -80,7 +80,7 @@ internal object MainScreenCapture {
                     val ocr = if (snap != null && UserScreenText.needsOcr(snap)) recognize(bmp) else null
                     val (lines, fromOcr) = snap?.let {
                         UserScreenText.lines(it, ocr, top = normalize(topInset, bmp.height), bottom = normalize(bmp.height - bottomInset, bmp.height))
-                    } ?: (emptyList<com.wangzan101.mika.core.userscreen.ScreenLine>() to false)
+                    } ?: (emptyList<com.wangzan101.mika.core.screen.user.ScreenLine>() to false)
                     Result.Captured(CapturedScreen(jpeg, UserScreen("", now, pkg, label, lines = lines, fromOcr = fromOcr)))
                 } finally {
                     bmp.recycle()

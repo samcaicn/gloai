@@ -8,9 +8,9 @@ import android.os.SystemClock
 import android.util.Log
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.cap.phone.PhoneServices
-import com.wangzan101.mika.core.shell.BuiltinShellControl
-import com.wangzan101.mika.core.shell.PairingCode
-import com.wangzan101.mika.ui.PhoneSetupCopy
+import com.wangzan101.mika.core.device.shell.BuiltinShellControl
+import com.wangzan101.mika.core.device.shell.PairingCode
+import com.wangzan101.mika.settings.ui.PhoneSetupCopy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineStart

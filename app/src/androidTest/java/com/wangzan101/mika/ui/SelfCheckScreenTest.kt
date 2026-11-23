@@ -19,6 +19,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.selfcheck.ui.SelfCheckContent
+import com.wangzan101.mika.selfcheck.ui.SelfCheckCopy
 
 /** 设置 › 恢复与修复 › 兼容性自检:不带真实自检的页面,看各状态下显示什么、按钮交给谁。 */
 @RunWith(AndroidJUnit4::class)

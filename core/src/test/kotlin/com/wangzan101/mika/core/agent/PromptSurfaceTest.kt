@@ -2,11 +2,11 @@ package com.wangzan101.mika.core.agent
 
 import com.wangzan101.mika.core.cap.root.RootPort
 import com.wangzan101.mika.core.cap.root.RootRun
-import com.wangzan101.mika.core.knowledge.GuideCatalog
-import com.wangzan101.mika.core.memory.MemoryItem
-import com.wangzan101.mika.core.memory.MemoryPersistence
-import com.wangzan101.mika.core.memory.MemoryStore
-import com.wangzan101.mika.core.memory.UserUtterances
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.memory.MemoryItem
+import com.wangzan101.mika.core.learn.memory.MemoryPersistence
+import com.wangzan101.mika.core.learn.memory.MemoryStore
+import com.wangzan101.mika.core.learn.memory.UserUtterances
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
@@ -15,14 +15,14 @@ import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.testing.PromptSurface
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.tool.ToolDispatcher
-import com.wangzan101.mika.core.vision.JvmTestImageOps
-import com.wangzan101.mika.core.vision.VisionService
-import com.wangzan101.mika.core.vision.says
+import com.wangzan101.mika.core.screen.vision.JvmTestImageOps
+import com.wangzan101.mika.core.screen.vision.VisionService
+import com.wangzan101.mika.core.screen.vision.says
 import com.wangzan101.mika.core.cap.web.FakeWebPort
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.knowledge.KnowledgeStore
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeStore
 
 /**
  * 模型能看到的全部提示词表面:每种能力组合的完整系统提示词、每个工具的定义(名字、说明、参数 schema)、
@@ -58,12 +58,12 @@ class PromptSurfaceTest {
                     FakeScreen(), visionEnabled = true, skills = GuideCatalog.loadBundled(), vision = VisionService(says(), JvmTestImageOps),
                     web = FakeWebPort(), inlineScreen = true, deepLinks = true,
                     memory = mem, utterances = UserUtterances(), sandbox = FakeSandbox(SandboxStatus.Ready(network = false)), workspace = { "w" },
-                    personalSkills = com.wangzan101.mika.core.skills.InMemoryPersonalSkills(),
+                    personalSkills = com.wangzan101.mika.core.learn.skills.InMemoryPersonalSkills(),
                     // 子任务和之前几轮的记录:之前有记过运行的一轮时才有 history_read
                     runSpec = com.wangzan101.mika.core.run.RunSpec(com.wangzan101.mika.core.run.RunId("t"), "t", "thread",
                         priorTurns = listOf(Turn("之前", "好", "succeeded", runId = "r1"))),
-                    childHost = com.wangzan101.mika.core.child.ChildRunHost { spec, _ ->
-                        com.wangzan101.mika.core.child.ChildResult(spec.id, com.wangzan101.mika.core.child.ChildPhase.Completed, "") },
+                    childHost = com.wangzan101.mika.core.run.ChildRunHost { spec, _ ->
+                        com.wangzan101.mika.core.run.ChildResult(spec.id, com.wangzan101.mika.core.run.ChildPhase.Completed, "") },
                     runRecords = NoRecords,
                 )
             }, SpeedFlags(inlineScreen = true, batchSteps = true, deepLinks = true), mem)
@@ -150,9 +150,9 @@ class PromptSurfaceTest {
         PromptSurface.check("feedback-loop", PromptSurfaceFeedback.loop())
     }
 
-    private object NoRecords : com.wangzan101.mika.core.record.RunRecords {
-        override suspend fun summary(runId: String): com.wangzan101.mika.core.record.RunSummary? = null
-        override suspend fun events(runId: String) = emptyList<com.wangzan101.mika.core.record.RunEvent>()
+    private object NoRecords : com.wangzan101.mika.core.run.record.RunRecords {
+        override suspend fun summary(runId: String): com.wangzan101.mika.core.run.record.RunSummary? = null
+        override suspend fun events(runId: String) = emptyList<com.wangzan101.mika.core.run.record.RunEvent>()
     }
 
     /** 只回一个 finish:记下开工那次请求的系统提示词和工具。 */

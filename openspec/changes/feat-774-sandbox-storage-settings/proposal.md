@@ -41,7 +41,7 @@ issue #774 报了三处写死的沙箱限额：预算时间（PR #780 已做成�
   `limits: () -> AttachmentLimits` provider，`copy()` 逐次现取传给 `Attachments.importOne`；
   `TaskRun.kt` 构造点接 FeatureFlags。微信/电脑路径不改（`WechatImageFiles.kt`、`PhoneTaskFiles.kt`
   与 main 零差异）。
-- `app/src/main/java/com/wangzan101/mika/ui/SettingsSubPages.kt`、`SettingsScreen.kt`：设置行 + 档位弹窗。
+- `app/src/main/java/com/wangzan101/mika/settings/ui/SettingsSubPages.kt`、`SettingsScreen.kt`：设置行 + 档位弹窗。
 - `app/src/main/res/values*/strings_chat.xml`：`chat_attach_too_large` 加 `%2$s` 占位符，全部语言同步。
 - `app/src/main/res/values*/strings_settings.xml`：新字符串 ×12 语言。
 - 单测：FeatureFlags 档位解析、Attachments 限额注入（小限额拒绝/放宽后放行）、文案格式化。

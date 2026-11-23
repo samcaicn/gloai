@@ -25,6 +25,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.personal.ui.PersonalReply
 
 @RunWith(AndroidJUnit4::class)
 class PersonalReplyCopyTest {

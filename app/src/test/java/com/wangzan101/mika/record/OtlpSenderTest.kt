@@ -1,7 +1,7 @@
 package com.wangzan101.mika.record
 
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.trace.TraceStore
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.trace.TraceStore
 import io.opentelemetry.proto.collector.trace.v1.ExportTracePartialSuccess
 import io.opentelemetry.proto.collector.trace.v1.ExportTraceServiceResponse
 import kotlinx.coroutines.runBlocking

@@ -2,14 +2,14 @@ package com.wangzan101.mika.settings
 
 import android.content.Context
 import com.wangzan101.mika.MikaApp
-import com.wangzan101.mika.core.decision.DecisionConfig
-import com.wangzan101.mika.core.decision.DecisionModel
-import com.wangzan101.mika.core.decision.DecisionProtocol
-import com.wangzan101.mika.core.decision.GoogleDecisionModel
-import com.wangzan101.mika.core.decision.SystemOneDecisionModel
-import com.wangzan101.mika.core.usage.UsagePurpose
-import com.wangzan101.mika.core.usage.UsageSink
-import com.wangzan101.mika.core.usage.UsageSource
+import com.wangzan101.mika.core.model.decision.DecisionConfig
+import com.wangzan101.mika.core.model.decision.DecisionModel
+import com.wangzan101.mika.core.model.decision.DecisionProtocol
+import com.wangzan101.mika.core.model.decision.GoogleDecisionModel
+import com.wangzan101.mika.core.model.decision.SystemOneDecisionModel
+import com.wangzan101.mika.core.model.usage.UsagePurpose
+import com.wangzan101.mika.core.model.usage.UsageSink
+import com.wangzan101.mika.core.model.usage.UsageSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

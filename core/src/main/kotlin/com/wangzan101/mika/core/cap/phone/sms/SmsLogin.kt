@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.cap.phone.sms
 
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
 
 /** Only status crosses the host boundary. SMS text, sender, account and code stay on device. */
 interface SmsLoginPort {

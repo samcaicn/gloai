@@ -27,7 +27,7 @@
 - `:app`
   - `settings/McpSettings.kt`：`port` 可写（`setPort`，范围校验、落盘）
   - `mcp/McpRuntime.kt`：`setPort()`（写设置 + 重写 USB 脚本 + `apply()`）；`sync()` 在端口变化时重绑监听
-  - `ui/McpScreen.kt`：高级区「监听端口」行 + 编辑对话框（`ComputerAccessUi` 增加 `onPortChange`）
+  - `mcp/ui/McpScreen.kt`：高级区「监听端口」行 + 编辑对话框（`ComputerAccessUi` 增加 `onPortChange`）
   - `res/values*/strings_mcp*.xml`（10 语言）
 - `docs/mcp.md`（或 computer.md 相应段落）：一句说明
 - 单测：McpSettings 端口存取/校验（app）；`McpUsb` 已有端口透传测试的话补脚本含新端口的断言（core）

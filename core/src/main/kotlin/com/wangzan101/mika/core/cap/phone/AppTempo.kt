@@ -2,7 +2,7 @@ package com.wangzan101.mika.core.cap.phone
 
 /**
  * 一个 App 在任务里实际按哪套节奏操作:设置里「操作节奏」的全局档位和按应用覆盖解析出来的结果
- * (见 [OperatingPace] 与 app 设置里的按应用列表)。和 App 知识里两态的 [com.wangzan101.mika.core.uistate.PlacePace]
+ * (见 [OperatingPace] 与 app 设置里的按应用列表)。和 App 知识里两态的 [com.wangzan101.mika.core.screen.uistate.PlacePace]
  * 分开:知识只说「这个 App 限制浏览快慢」([AppTempo.CAREFUL]),没有「快」——快来自用户的设置。
  */
 enum class AppTempo {

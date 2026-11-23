@@ -2,14 +2,14 @@ package com.wangzan101.mika.core.general
 
 import com.wangzan101.mika.core.agent.NoticeTurn
 import com.wangzan101.mika.core.agent.Turn
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Observation
-import com.wangzan101.mika.core.observation.Trust
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Observation
+import com.wangzan101.mika.core.screen.observation.Trust
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunRecords
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunRecords
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.Args
 import com.wangzan101.mika.core.tool.Concurrency
@@ -184,7 +184,7 @@ internal object HistoryRead : AgentTool {
 
     /**
      * 一轮的结果。通知提醒那一轮([NoticeTurn])列的是别的 App、别人写的字:套上不可信标记再给,并标上 [NOTICE]——
-     * 模型据此知道这一轮不是用户说的;记运行记录时据此不记它的内容([com.wangzan101.mika.core.record.Redactor.result])。
+     * 模型据此知道这一轮不是用户说的;记运行记录时据此不记它的内容([com.wangzan101.mika.core.run.record.Redactor.result])。
      */
     private fun outcome(t: Turn, max: Int): String = clip(t.outcome, max).let { if (NoticeTurn.isNotice(t)) NoticeTurn.untrusted(it) else it }
 

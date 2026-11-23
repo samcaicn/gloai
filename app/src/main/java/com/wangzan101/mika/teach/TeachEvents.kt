@@ -1,8 +1,8 @@
 package com.wangzan101.mika.teach
 
 import android.view.accessibility.AccessibilityEvent
-import com.wangzan101.mika.core.teach.TeachEventKind
-import com.wangzan101.mika.core.teach.TeachObservation
+import com.wangzan101.mika.core.learn.teach.TeachEventKind
+import com.wangzan101.mika.core.learn.teach.TeachObservation
 
 /** 把一次无障碍事件抄成纯数据。不保留节点，也不在这里写日志。 */
 object TeachEvents {

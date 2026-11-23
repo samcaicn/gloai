@@ -1,10 +1,11 @@
 package com.wangzan101.mika.ui
 
-import com.wangzan101.mika.core.teach.TeachPhase
-import com.wangzan101.mika.core.teach.TeachSession
+import com.wangzan101.mika.core.learn.teach.TeachPhase
+import com.wangzan101.mika.core.learn.teach.TeachSession
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.wangzan101.mika.teach.ui.showDone
 
 class TeachEntryTest {
     private fun saved(goal: String) = TeachSession(id = "s1", goal = goal, phase = TeachPhase.Saved)

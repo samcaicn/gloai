@@ -5,7 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Process
 import android.util.Log
 import com.wangzan101.mika.cap.phone.shell.HelperHub
-import com.wangzan101.mika.core.shell.HelperHandoff
+import com.wangzan101.mika.core.device.shell.HelperHandoff
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

@@ -187,7 +187,7 @@ class CompanionApiTest {
         assertTrue(answer.needsYou)
 
         val confirmation = RemoteRunningView.of("c4", "买一件", com.wangzan101.mika.core.agent.TaskState.WaitingConfirmation(
-            com.wangzan101.mika.core.gate.ConfirmationRequest(com.wangzan101.mika.core.risk.IrrevAction.pay, "订单", "内容", "¥10", "购物 App")
+            com.wangzan101.mika.core.safety.gate.ConfirmationRequest(com.wangzan101.mika.core.safety.gate.IrrevAction.pay, "订单", "内容", "¥10", "购物 App")
         ))
         assertEquals("waiting_on_phone", confirmation.status)
         assertEquals("购物 App", confirmation.progress)

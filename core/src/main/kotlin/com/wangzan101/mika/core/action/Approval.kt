@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.action
 
-import com.wangzan101.mika.core.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
 import com.wangzan101.mika.core.run.Attendance
 import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.core.run.RunProvenance

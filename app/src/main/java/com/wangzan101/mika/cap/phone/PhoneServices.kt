@@ -8,7 +8,7 @@ import com.wangzan101.mika.cap.phone.setup.PhoneSetupPrompt
 import com.wangzan101.mika.cap.phone.shell.BuiltinShellConnection
 import com.wangzan101.mika.cap.phone.shell.HelperHub
 import com.wangzan101.mika.cap.phone.shell.SharedShell
-import com.wangzan101.mika.core.shell.BuiltinShellControl
+import com.wangzan101.mika.core.device.shell.BuiltinShellControl
 import com.wangzan101.mika.settings.RecoverySettings
 
 /**

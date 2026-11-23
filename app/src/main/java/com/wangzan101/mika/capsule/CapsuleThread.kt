@@ -5,13 +5,13 @@ import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.core.agent.Conversation
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.tool.PACKAGE_NAME_RE
-import com.wangzan101.mika.ui.StatusCopy
-import com.wangzan101.mika.ui.answerParts
+import com.wangzan101.mika.settings.ui.StatusCopy
+import com.wangzan101.mika.chat.ui.answerParts
 import com.wangzan101.mika.task.SteerNote
-import com.wangzan101.mika.ui.steerLabel
-import com.wangzan101.mika.ui.steersAroundDraft
+import com.wangzan101.mika.chat.ui.steerLabel
+import com.wangzan101.mika.chat.ui.steersAroundDraft
 
 /**
  * 对话卡片里的一条。[key] 在同一个对话里不变(有运行记录编号时按它,没有时按这一轮在对话里的位置):

@@ -19,6 +19,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExternalResource
+import com.wangzan101.mika.settings.ui.models.edit
 
 /** 在展开的设备上验证真实侧栏入口、页面布局、系统返回和聊天草稿。 */
 class SidebarDestinationsDeviceTest {

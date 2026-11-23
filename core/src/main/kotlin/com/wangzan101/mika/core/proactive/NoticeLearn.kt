@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.proactive
 
-import com.wangzan101.mika.core.memory.SensitiveFilter
+import com.wangzan101.mika.core.learn.memory.SensitiveFilter
 import com.wangzan101.mika.core.model.Author
 import com.wangzan101.mika.core.model.ChatModel
 import com.wangzan101.mika.core.model.Message
@@ -8,7 +8,7 @@ import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.model.ModelJson.field
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Prompts
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext

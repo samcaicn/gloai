@@ -11,8 +11,8 @@ import com.wangzan101.mika.core.tool.ToolContext
 import com.wangzan101.mika.core.tool.ToolDef
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
-import com.wangzan101.mika.core.uistate.session
-import com.wangzan101.mika.core.uistate.screenAttempt
+import com.wangzan101.mika.core.screen.uistate.session
+import com.wangzan101.mika.core.screen.uistate.screenAttempt
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject

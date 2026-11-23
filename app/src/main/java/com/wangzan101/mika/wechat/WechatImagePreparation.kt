@@ -2,7 +2,7 @@ package com.wangzan101.mika.wechat
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import com.wangzan101.mika.core.wechat.WechatDownloadedImage
+import com.wangzan101.mika.core.cap.wechat.WechatDownloadedImage
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 

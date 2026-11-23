@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.cap.phone
 
-import com.wangzan101.mika.core.uistate.DOUBLE_TAP_GAP_MS
+import com.wangzan101.mika.core.screen.uistate.DOUBLE_TAP_GAP_MS
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

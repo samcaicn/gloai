@@ -4,7 +4,7 @@ import kotlinx.coroutines.delay
 
 import androidx.compose.runtime.produceState
 
-import com.wangzan101.mika.ui.KeptPageCopy
+import com.wangzan101.mika.chat.ui.KeptPageCopy
 
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
@@ -51,8 +51,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.wangzan101.mika.confirm.ConfirmationCopy
-import com.wangzan101.mika.ui.ScreenCopy
+import com.wangzan101.mika.task.ConfirmationCopy
+import com.wangzan101.mika.chat.ui.ScreenCopy
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.MikaLogo
 import com.wangzan101.mika.ui.theme.MikaIcons

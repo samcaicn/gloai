@@ -19,7 +19,7 @@ Below, `<tag>` is that value (e.g. `v0.1.31`) and `<ver>` is the version without
 ## 2. CLI or Skill
 
 - Agent supports skills: **install the Skill by default**; it bundles the CLI script.
-- Otherwise install the CLI: `pipx install 'git+https://github.com/wangzan101/Mika.git@<tag>#subdirectory=tools/mika'`.
+- Otherwise install the CLI: `pipx install 'git+https://github.com/wangzan101/Mika.git@<tag>#subdirectory=companions/mika'`.
 
 ## 3. Install the Skill
 
@@ -30,7 +30,7 @@ POSIX:
 ```sh
 curl -L -o mika.zip https://github.com/wangzan101/Mika/archive/refs/tags/<tag>.zip
 unzip -q mika.zip -d mika-src
-mkdir -p <skills-directory> && cp -R mika-src/Mika-<ver>/tools/mika <skills-directory>/mika
+mkdir -p <skills-directory> && cp -R mika-src/Mika-<ver>/companions/mika <skills-directory>/mika
 python3 <skills-directory>/mika/scripts/mika_cli.py --version
 ```
 

@@ -11,9 +11,9 @@ import android.util.Log
 import android.view.Display
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityWindowInfo
-import com.wangzan101.mika.core.uistate.LaunchChoice
-import com.wangzan101.mika.core.uistate.LaunchChooser
-import com.wangzan101.mika.core.uistate.OpenedElsewhere
+import com.wangzan101.mika.core.screen.uistate.LaunchChoice
+import com.wangzan101.mika.core.screen.uistate.LaunchChooser
+import com.wangzan101.mika.core.screen.uistate.OpenedElsewhere
 import com.wangzan101.mika.cap.phone.shell.MainScreenWatch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart

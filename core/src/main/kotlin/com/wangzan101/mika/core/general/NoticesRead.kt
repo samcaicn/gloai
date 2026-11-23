@@ -44,7 +44,7 @@ const val NOTICES_READ = "notices_read"
  *
  * 只读,不碰屏幕。数据由 App 给([com.wangzan101.mika.core.proactive.NoticeSource]);没给(功能没开、不是用户在手机上发起的任务)时不出现。
  * 读到的都是别的 App、别人写的字:每一样都套不可信标记(里面自带的标记先弄坏)。不作为观察记进核查的账本;
- * 进运行记录前文字遮掉(见 [com.wangzan101.mika.core.record.Redactor.result]):通知原文只在本机留两天,不能借运行记录多留。
+ * 进运行记录前文字遮掉(见 [com.wangzan101.mika.core.run.record.Redactor.result]):通知原文只在本机留两天,不能借运行记录多留。
  * 读过通知的任务,结束后不自动提取记忆(见 RunLearning)。
  */
 internal object NoticesRead : AgentTool {

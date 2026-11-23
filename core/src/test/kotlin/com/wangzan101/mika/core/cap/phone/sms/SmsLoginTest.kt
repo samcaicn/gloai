@@ -4,7 +4,7 @@ import com.wangzan101.mika.core.assembly.toolDispatcher
 import com.wangzan101.mika.core.cap.phone.PhoneSmsLogin
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.tool.*
-import com.wangzan101.mika.core.uistate.*
+import com.wangzan101.mika.core.screen.uistate.*
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.*

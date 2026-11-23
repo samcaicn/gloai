@@ -1,6 +1,6 @@
 ## Context
 
-`StepRow.shouldHideRawReason`（app/src/main/java/com/wangzan101/mika/ui/ChatViewModel.kt）是 #765（v0.1.50）引入的纯函数判别：非中文界面 + 用意含汉字 → 隐藏。调用方 `StepRow.text` 与收起态末行摘要都依赖它。已有单测 `StepRowLanguageTest`（app/src/test/.../ui/StepRowLanguageTest.kt）以注入 `isChineseLocale` 参数的方式覆盖了 en 界面隐藏中文、zh 界面不隐藏等场景。
+`StepRow.shouldHideRawReason`（app/src/main/java/com/wangzan101/mika/chat/ui/ChatViewModel.kt）是 #765（v0.1.50）引入的纯函数判别：非中文界面 + 用意含汉字 → 隐藏。调用方 `StepRow.text` 与收起态末行摘要都依赖它。已有单测 `StepRowLanguageTest`（app/src/test/.../ui/StepRowLanguageTest.kt）以注入 `isChineseLocale` 参数的方式覆盖了 en 界面隐藏中文、zh 界面不隐藏等场景。
 
 ## Goals / Non-Goals
 

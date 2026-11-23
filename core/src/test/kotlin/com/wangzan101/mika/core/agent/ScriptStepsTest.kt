@@ -1,8 +1,8 @@
 package com.wangzan101.mika.core.agent
 
 import com.wangzan101.mika.core.tool.execute
-import com.wangzan101.mika.core.guard.OperationGuards
-import com.wangzan101.mika.core.guard.GuardVerdict
+import com.wangzan101.mika.core.safety.guard.OperationGuards
+import com.wangzan101.mika.core.safety.guard.GuardVerdict
 import com.wangzan101.mika.core.action.ActionExecutor
 import com.wangzan101.mika.core.action.ActionOutcome
 import com.wangzan101.mika.core.action.ActionRecorder
@@ -12,9 +12,9 @@ import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.tool.ScriptWebPort
 import com.wangzan101.mika.core.tool.ToolDispatcher
@@ -62,7 +62,7 @@ class ScriptStepsTest {
     }
 
     private fun steps(d: ToolDispatcher, guards: OperationGuards = OperationGuards()) =
-        Steps(ActionExecutor(d, guards, com.wangzan101.mika.core.gate.ConfirmationGate(), gate = { gates++ }, recorder = ActionRecorder(sink)), step = 4)
+        Steps(ActionExecutor(d, guards, com.wangzan101.mika.core.safety.gate.ConfirmationGate(), gate = { gates++ }, recorder = ActionRecorder(sink)), step = 4)
 
     @Test fun ordinaryActionRunsAndIsRecordedAsScriptStep() = runTest {
         val web = shop()
@@ -97,7 +97,7 @@ class ScriptStepsTest {
     @Test fun startedActionFinishesAndIsRecordedEvenIfCancelled() = runTest {
         val web = shop()
         val slow = object : com.wangzan101.mika.core.cap.web.WebPort by web {
-            override suspend fun tapRef(ref: String, snapshotId: String): com.wangzan101.mika.core.uistate.ActionResult {
+            override suspend fun tapRef(ref: String, snapshotId: String): com.wangzan101.mika.core.screen.uistate.ActionResult {
                 kotlinx.coroutines.delay(5_000); return web.tapRef(ref, snapshotId)
             }
         }

@@ -29,7 +29,7 @@ import com.wangzan101.mika.core.self.SelfResult
 import com.wangzan101.mika.core.self.SelfScreen
 import com.wangzan101.mika.core.self.SelfSite
 import com.wangzan101.mika.core.self.SelfStatus
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
 import com.wangzan101.mika.core.cap.web.WebUrlPolicy
 import com.wangzan101.mika.settings.AccessibilityState
 import com.wangzan101.mika.settings.FeatureFlags

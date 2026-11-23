@@ -14,8 +14,8 @@ import android.os.UserManager
 import android.provider.Settings
 import com.wangzan101.mika.cap.phone.PhoneServices
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
-import com.wangzan101.mika.core.shell.BuiltinShellControl
-import com.wangzan101.mika.core.shell.ShizukuPlatformState
+import com.wangzan101.mika.core.device.shell.BuiltinShellControl
+import com.wangzan101.mika.core.device.shell.ShizukuPlatformState
 import com.wangzan101.mika.cap.phone.setup.DeveloperSettings
 import com.wangzan101.mika.cap.phone.setup.PairingNotifier
 import kotlinx.coroutines.CoroutineScope

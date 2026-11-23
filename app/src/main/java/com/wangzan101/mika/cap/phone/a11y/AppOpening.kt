@@ -4,9 +4,9 @@ import android.content.Intent
 import android.os.SystemClock
 import android.util.Log
 import android.view.KeyEvent
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.AppWait
-import com.wangzan101.mika.core.uistate.LaunchChooser
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.AppWait
+import com.wangzan101.mika.core.screen.uistate.LaunchChooser
 import com.wangzan101.mika.cap.phone.shell.ShellService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

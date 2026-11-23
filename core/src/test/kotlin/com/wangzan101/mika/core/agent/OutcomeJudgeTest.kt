@@ -5,8 +5,8 @@ import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.ToolSpec
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSummary
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSummary
 import com.wangzan101.mika.core.testing.answerReply
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest

@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.proactive
 
 import com.wangzan101.mika.core.agent.TokenEstimate
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

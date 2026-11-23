@@ -4,13 +4,13 @@ import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import com.wangzan101.mika.core.cap.phone.WheelMath
-import com.wangzan101.mika.core.uistate.ElementLocator
-import com.wangzan101.mika.core.uistate.UiElement
-import com.wangzan101.mika.core.uistate.UiStates
-import com.wangzan101.mika.core.uistate.UiTreeNode
-import com.wangzan101.mika.core.uistate.UiWindowTree
-import com.wangzan101.mika.core.uistate.ambiguousFieldReadback
-import com.wangzan101.mika.core.uistate.normalize
+import com.wangzan101.mika.core.screen.uistate.ElementLocator
+import com.wangzan101.mika.core.screen.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.UiStates
+import com.wangzan101.mika.core.screen.uistate.UiTreeNode
+import com.wangzan101.mika.core.screen.uistate.UiWindowTree
+import com.wangzan101.mika.core.screen.uistate.ambiguousFieldReadback
+import com.wangzan101.mika.core.screen.uistate.normalize
 
 /**
  * 读一次屏的结果。[hash] 覆盖所有可见节点(含标成「对无障碍不重要」的)的文字、类型、位置、勾选、

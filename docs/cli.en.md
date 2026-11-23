@@ -156,7 +156,7 @@ Only `offset` and `limit` query parameters are accepted. Pages default to 20 ite
 ```bash
 ./gradlew :core:test :core:cliTest :app:testDebugUnitTest :app:assembleDebug
 # Python tests alone; use -PmikaPython=/path/to/python3 to select an interpreter
-python3 -m unittest discover -s tools/mika/tests -v
+python3 -m unittest discover -s companions/mika/tests -v
 ```
 
 Pure JVM tests cover the shared service, API/MCP interoperability, authentication, states and existing protocol regressions. `cliTest` (needs Python 3.10+; not part of `check`, run it explicitly) runs the real CLI against the Kotlin HTTP server, checking it only requests `/api/v1`, plus fake-ADB, lost-response, token-rotation, forwarding-cleanup and standalone-Skill tests. No phone or model key is required. Actual wireless disconnects, phone reboot and real agent execution need separate device acceptance; isolated tests do not establish those results.

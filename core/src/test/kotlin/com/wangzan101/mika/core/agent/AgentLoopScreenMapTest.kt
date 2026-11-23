@@ -1,16 +1,16 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.knowledge.KnowledgeEntry
-import com.wangzan101.mika.core.knowledge.KnowledgeStore
-import com.wangzan101.mika.core.knowledge.Surface
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeEntry
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeStore
+import com.wangzan101.mika.core.learn.knowledge.Surface
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.screenmap.ScreenGraph
-import com.wangzan101.mika.core.screenmap.ScreenMapStore
-import com.wangzan101.mika.core.screenmap.ScreenNode
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.screen.map.ScreenGraph
+import com.wangzan101.mika.core.screen.map.ScreenMapStore
+import com.wangzan101.mika.core.screen.map.ScreenNode
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import com.wangzan101.mika.core.tool.FakeScreen
 import com.wangzan101.mika.core.assembly.toolDispatcher
 import kotlinx.coroutines.runBlocking

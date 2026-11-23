@@ -1,14 +1,14 @@
 package com.wangzan101.mika.about
 
-import com.wangzan101.mika.core.adb.ConnectCandidates
-import com.wangzan101.mika.core.shell.BuiltinShellFailure
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
-import com.wangzan101.mika.core.shell.HelperRestart
-import com.wangzan101.mika.core.shell.PairingChannelHealth
-import com.wangzan101.mika.core.shell.PairingDiscovery
-import com.wangzan101.mika.core.shell.RecoveryCapability
-import com.wangzan101.mika.core.shell.RecoveryConsent
-import com.wangzan101.mika.core.shell.SetupStep
+import com.wangzan101.mika.core.device.adb.ConnectCandidates
+import com.wangzan101.mika.core.device.shell.BuiltinShellFailure
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.HelperRestart
+import com.wangzan101.mika.core.device.shell.PairingChannelHealth
+import com.wangzan101.mika.core.device.shell.PairingDiscovery
+import com.wangzan101.mika.core.device.shell.RecoveryCapability
+import com.wangzan101.mika.core.device.shell.RecoveryConsent
+import com.wangzan101.mika.core.device.shell.SetupStep
 import com.wangzan101.mika.settings.AccessibilityState
 import com.wangzan101.mika.settings.ChatGptSignInFailureRecord
 import com.wangzan101.mika.settings.SystemStatus
@@ -240,8 +240,8 @@ class DiagnosticsTest {
         assertTrue(none, none.contains("restored by helper: never"))
         assertTrue(none, none.contains("accessibility on start: ok"))
         val t = Diagnostics.render(base.copy(recovery = base.recovery.copy(
-            helperRestores = com.wangzan101.mika.core.shell.HelperRestoreReport(now - 3 * 60_000, 2, now - 60_000),
-            lastA11yLoss = com.wangzan101.mika.core.shell.A11yLossRecord(com.wangzan101.mika.core.shell.A11yLoss.Removed, now - 2 * 3_600_000),
+            helperRestores = com.wangzan101.mika.core.device.shell.HelperRestoreReport(now - 3 * 60_000, 2, now - 60_000),
+            lastA11yLoss = com.wangzan101.mika.core.device.shell.A11yLossRecord(com.wangzan101.mika.core.device.shell.A11yLoss.Removed, now - 2 * 3_600_000),
         )))
         assertTrue(t, t.contains("restored by helper: 3m ago, 2 recently, backed off 1m ago"))
         assertTrue(t, t.contains("accessibility on start: removed 2h ago"))

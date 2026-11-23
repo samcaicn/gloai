@@ -1,7 +1,7 @@
 package com.wangzan101.mika.task
 
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
 import com.wangzan101.mika.core.cap.phone.OperatingPace
 
 /**

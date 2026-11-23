@@ -8,6 +8,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import com.wangzan101.mika.chat.ui.StepRow
+import com.wangzan101.mika.chat.ui.StepState
 
 class StepRowLanguageTest {
 

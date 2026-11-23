@@ -1,6 +1,6 @@
 package com.wangzan101.mika.skills
 
-import com.wangzan101.mika.core.skills.PersonalSkills
+import com.wangzan101.mika.core.learn.skills.PersonalSkills
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response

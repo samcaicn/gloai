@@ -23,6 +23,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.chat.ui.draft
+import com.wangzan101.mika.settings.ui.models.use
 
 @RunWith(AndroidJUnit4::class)
 class SharedImageDeviceTest {

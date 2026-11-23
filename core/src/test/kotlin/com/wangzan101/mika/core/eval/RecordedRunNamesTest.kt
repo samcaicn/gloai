@@ -1,10 +1,10 @@
 package com.wangzan101.mika.core.eval
 
 import com.wangzan101.mika.core.assembly.legacyNames
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.testing.RECORDED_TOOLS
 import com.wangzan101.mika.core.testing.TOOLS
-import com.wangzan101.mika.core.verify.RecordedVerifications
+import com.wangzan101.mika.core.safety.verify.RecordedVerifications
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test

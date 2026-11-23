@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.cap.web
 
-import com.wangzan101.mika.core.uistate.PageDialog
+import com.wangzan101.mika.core.screen.uistate.PageDialog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

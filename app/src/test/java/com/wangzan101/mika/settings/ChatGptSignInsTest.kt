@@ -1,7 +1,7 @@
 package com.wangzan101.mika.settings
 
-import com.wangzan101.mika.core.chatgpt.SignInException
-import com.wangzan101.mika.core.chatgpt.SignInFailure
+import com.wangzan101.mika.core.model.chatgpt.SignInException
+import com.wangzan101.mika.core.model.chatgpt.SignInFailure
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation

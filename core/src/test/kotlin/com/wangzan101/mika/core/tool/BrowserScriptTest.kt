@@ -104,7 +104,7 @@ class BrowserScriptTest {
             ScriptRun.Done("""{"n":2}""")
         }
         val r = d.script(sub = passthrough(d))
-        assertEquals("true", r.s("ok")); assertEquals(com.wangzan101.mika.core.observation.Untrusted.wrap("""{"n":2}"""), r.s("result")); assertEquals("return", r.s("endedBy"))
+        assertEquals("true", r.s("ok")); assertEquals(com.wangzan101.mika.core.screen.observation.Untrusted.wrap("""{"n":2}"""), r.s("result")); assertEquals("return", r.s("endedBy"))
         val v = seen!!["value"]!!.jsonObject
         val e1 = v["elements"]!!.jsonArray[0].jsonObject
         assertEquals("@e1", e1.s("ref")); assertEquals("搜索", e1.s("name")); assertTrue("center" in e1)

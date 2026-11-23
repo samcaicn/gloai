@@ -6,7 +6,7 @@ import com.wangzan101.mika.core.run.RunId
 import com.wangzan101.mika.core.run.RunPhase
 import com.wangzan101.mika.core.run.RunStore
 import com.wangzan101.mika.core.run.StoredRun
-import com.wangzan101.mika.core.uistate.AppWait
+import com.wangzan101.mika.core.screen.uistate.AppWait
 
 sealed interface StartResult<out R> {
     data class Started<R>(val run: R) : StartResult<R>

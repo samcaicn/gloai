@@ -7,7 +7,7 @@ import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.model.ModelJson.field
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Prompts
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext

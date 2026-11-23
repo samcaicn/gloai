@@ -4,13 +4,13 @@ import com.wangzan101.mika.R
 import com.wangzan101.mika.cap.web.KeptPage
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural
-import com.wangzan101.mika.confirm.ConfirmationCopy
-import com.wangzan101.mika.ui.StatusCopy
+import com.wangzan101.mika.task.ConfirmationCopy
+import com.wangzan101.mika.settings.ui.StatusCopy
 import com.wangzan101.mika.core.agent.RunProgress
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.takeover.Takeover
 import com.wangzan101.mika.task.SteerNote
-import com.wangzan101.mika.ui.Exchange
+import com.wangzan101.mika.chat.ui.Exchange
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 

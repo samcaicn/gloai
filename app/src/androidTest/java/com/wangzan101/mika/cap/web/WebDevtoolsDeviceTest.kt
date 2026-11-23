@@ -9,7 +9,7 @@ import androidx.webkit.WebViewAssetLoader
 import com.wangzan101.mika.core.cap.web.cdp.CdpSession
 import com.wangzan101.mika.core.cap.web.cdp.dispatchMouseEvent
 import com.wangzan101.mika.core.cap.web.cdp.evaluate
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import com.wangzan101.mika.cap.phone.PhoneServices
 import com.wangzan101.mika.cap.web.cdp.WebDevtools
 import kotlinx.coroutines.Dispatchers

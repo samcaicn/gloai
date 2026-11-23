@@ -2,7 +2,7 @@ package com.wangzan101.mika.core.cap.web
 
 import com.wangzan101.mika.core.prompt.Feedback
 import kotlinx.serialization.json.JsonObject
-import com.wangzan101.mika.core.observation.Untrusted
+import com.wangzan101.mika.core.screen.observation.Untrusted
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.ArgError
 import com.wangzan101.mika.core.tool.Args
@@ -17,7 +17,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
-import com.wangzan101.mika.core.uistate.lastSnapshot
+import com.wangzan101.mika.core.screen.uistate.lastSnapshot
 
 /**
  * 页面脚本:自己不动页面,脚本里的每个动作经执行入口回来(守卫、关卡、不可逆判定、记录照常);

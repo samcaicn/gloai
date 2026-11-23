@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

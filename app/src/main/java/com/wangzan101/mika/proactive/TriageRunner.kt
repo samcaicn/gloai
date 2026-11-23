@@ -12,7 +12,7 @@ import com.wangzan101.mika.core.proactive.TriagePlan
 import com.wangzan101.mika.core.proactive.TriagePlanner
 import com.wangzan101.mika.core.proactive.TriageResult
 import com.wangzan101.mika.core.proactive.TriageTarget
-import com.wangzan101.mika.core.usage.ProactiveBudget
+import com.wangzan101.mika.core.model.usage.ProactiveBudget
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart

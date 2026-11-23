@@ -1,7 +1,7 @@
 package com.wangzan101.mika.frontdesk
 
-import com.wangzan101.mika.core.memory.MemoryIndex
-import com.wangzan101.mika.core.memory.MemoryItem
+import com.wangzan101.mika.core.learn.memory.MemoryIndex
+import com.wangzan101.mika.core.learn.memory.MemoryItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withTimeoutOrNull

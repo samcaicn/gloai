@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.cap.web
 
-import com.wangzan101.mika.core.uistate.ScreenFamily
-import com.wangzan101.mika.core.uistate.tools.ScreenTool
+import com.wangzan101.mika.core.screen.uistate.ScreenFamily
+import com.wangzan101.mika.core.screen.uistate.tools.ScreenTool
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.ToolContext
 

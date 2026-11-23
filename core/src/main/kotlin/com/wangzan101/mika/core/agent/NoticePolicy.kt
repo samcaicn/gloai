@@ -1,8 +1,8 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.guard.DIAGNOSTIC_VERBS
-import com.wangzan101.mika.core.observation.Place
-import com.wangzan101.mika.core.observation.PlaceKind
+import com.wangzan101.mika.core.safety.guard.DIAGNOSTIC_VERBS
+import com.wangzan101.mika.core.screen.observation.Place
+import com.wangzan101.mika.core.screen.observation.PlaceKind
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.tool.Verb
 

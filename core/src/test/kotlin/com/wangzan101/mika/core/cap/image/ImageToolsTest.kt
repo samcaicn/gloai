@@ -9,7 +9,7 @@ import com.wangzan101.mika.core.model.ImageRequest
 import com.wangzan101.mika.core.model.ImageResponse
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.tool.ActionPass
-import com.wangzan101.mika.core.vision.LocScreen
+import com.wangzan101.mika.core.screen.vision.LocScreen
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray

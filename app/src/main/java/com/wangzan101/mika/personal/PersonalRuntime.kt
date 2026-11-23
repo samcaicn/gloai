@@ -6,7 +6,7 @@ import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.capsule.previewFrames
 import com.wangzan101.mika.capsule.sameFrame
 import com.wangzan101.mika.core.agent.TaskState
-import com.wangzan101.mika.core.memory.*
+import com.wangzan101.mika.core.learn.memory.*
 import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.ModelSession
 import com.wangzan101.mika.core.personal.*

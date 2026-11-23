@@ -55,10 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
-import com.wangzan101.mika.ui.ChatCopy
-import com.wangzan101.mika.ui.Spinner
-import com.wangzan101.mika.ui.VoiceCopy
-import com.wangzan101.mika.ui.VoiceWave
+import com.wangzan101.mika.chat.ui.ChatCopy
+import com.wangzan101.mika.chat.ui.Spinner
+import com.wangzan101.mika.voice.ui.VoiceCopy
+import com.wangzan101.mika.voice.ui.VoiceWave
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.voice.HoldToTalk
@@ -481,7 +481,7 @@ private fun Panel(talk: CapsuleTalk, state: HoldToTalk.State, below: Boolean) {
             val modifier = Modifier.fillMaxWidth().padding(top = 10.dp).heightIn(min = 52.dp).alpha(if (cancel) 0.4f else 1f)
             if (heard.isEmpty()) Text(ghost, modifier, style = style, color = c.ink3, maxLines = 5, overflow = TextOverflow.Ellipsis)
             // 字太多时去掉前面说完的整句,最新的字一直看得见(和输入框同一套)
-            else com.wangzan101.mika.ui.HeardText(listening?.stable.orEmpty(), listening?.tail.orEmpty(), style, maxLines = 5, modifier)
+            else com.wangzan101.mika.voice.ui.HeardText(listening?.stable.orEmpty(), listening?.tail.orEmpty(), style, maxLines = 5, modifier)
         }
         if (!converting) {
             Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {

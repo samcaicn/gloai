@@ -1,12 +1,12 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.knowledge.KnowledgeEntry
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeEntry
 import com.wangzan101.mika.core.model.Author
 import com.wangzan101.mika.core.model.ChatModel
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.Role
-import com.wangzan101.mika.core.observation.PlaceKind
+import com.wangzan101.mika.core.screen.observation.PlaceKind
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.ToolExecution

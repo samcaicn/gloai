@@ -8,6 +8,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
+import com.wangzan101.mika.chat.ui.ScreenRow
+import com.wangzan101.mika.chat.ui.ScreensCopy
+import com.wangzan101.mika.chat.ui.orderedScreens
 
 /** 「后台屏」那一页的排序和文字(不碰界面,也不碰真任务)。 */
 class ScreensCopyTest {

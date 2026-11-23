@@ -1,10 +1,10 @@
 package com.wangzan101.mika.core.general
 
-import com.wangzan101.mika.core.memory.TaskMemory
-import com.wangzan101.mika.core.memory.TaskMemoryIndex
-import com.wangzan101.mika.core.memory.TaskMemoryStore
-import com.wangzan101.mika.core.observation.ObsKind
-import com.wangzan101.mika.core.observation.Observation
+import com.wangzan101.mika.core.learn.memory.TaskMemory
+import com.wangzan101.mika.core.learn.memory.TaskMemoryIndex
+import com.wangzan101.mika.core.learn.memory.TaskMemoryStore
+import com.wangzan101.mika.core.screen.observation.ObsKind
+import com.wangzan101.mika.core.screen.observation.Observation
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.tool.AgentTool

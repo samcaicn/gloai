@@ -3,9 +3,9 @@ package com.wangzan101.mika.task
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.core.cap.phone.AppPacePlan
-import com.wangzan101.mika.core.shell.AccessibilityRepair
-import com.wangzan101.mika.core.shell.HelperRestart
-import com.wangzan101.mika.ui.StatusCopy
+import com.wangzan101.mika.core.device.shell.AccessibilityRepair
+import com.wangzan101.mika.core.device.shell.HelperRestart
+import com.wangzan101.mika.settings.ui.StatusCopy
 import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.IBinder
@@ -19,7 +19,7 @@ import com.wangzan101.mika.cap.phone.a11y.LazyPhoneScreen
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.cap.phone.a11y.PhoneUnavailable
 import com.wangzan101.mika.cap.phone.a11y.launchableApps
-import com.wangzan101.mika.confirm.ConfirmationNotifier
+import com.wangzan101.mika.task.ConfirmationNotifier
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.core.agent.GateReason
 import com.wangzan101.mika.core.agent.TaskState
@@ -80,7 +80,7 @@ internal suspend fun TaskRun.assemblePhone(a: RunAssembly): RunPhone {
             withContext(Dispatchers.IO) { CalendarBulkWriter.insert(service, events) }
         },
     ) { connectPhone(a, appAccess, metrics, pace, shellUp, states) }
-    val accessedPhone = com.wangzan101.mika.core.uistate.AppAccessScreenPort(
+    val accessedPhone = com.wangzan101.mika.core.screen.uistate.AppAccessScreenPort(
         phoneScreen, appAccess,
         packages = { phone?.screen?.accessPackages().orEmpty() },
         protectedUi = { appAccess.sensitiveUi }, ownPackage = service.packageName,

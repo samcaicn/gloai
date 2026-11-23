@@ -1,6 +1,6 @@
 # 桌面检查「用 ChatGPT 登录」
 
-上手机之前,先在电脑(macOS)上把 OpenAI 那一侧走通。这个检查用的是 App 同一套代码:登录在 `core/src/main/kotlin/com/wangzan101/mika/core/chatgpt/`,模型列表是 `ModelCatalog`,调用是 `ResponsesModel`;入口在 `core/src/chatgptCheck/`,不进 App。
+上手机之前,先在电脑(macOS)上把 OpenAI 那一侧走通。这个检查用的是 App 同一套代码:登录在 `core/src/main/kotlin/com/wangzan101/mika/core/model/chatgpt/`,模型列表是 `ModelCatalog`,调用是 `ResponsesModel`;入口在 `core/src/chatgptCheck/`,不进 App。
 
 ## 命令
 

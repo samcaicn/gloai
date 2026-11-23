@@ -10,12 +10,12 @@ import com.wangzan101.mika.core.model.Role
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.core.prompt.Feedback
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import com.wangzan101.mika.core.testing.answerReply
 import com.wangzan101.mika.core.tool.FakeScreen
-import com.wangzan101.mika.core.verify.Verifier
+import com.wangzan101.mika.core.safety.verify.Verifier
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
@@ -147,8 +147,8 @@ class AgentLoopVerifyTest {
         lateinit var l: AgentLoop
         var seen: TaskState? = null
         val base = FakeScreen()
-        val screen = object : com.wangzan101.mika.core.uistate.ScreenPort by base {
-            override suspend fun snapshot(): com.wangzan101.mika.core.uistate.ScreenSnapshot = base.snapshot().also { if (seen == null) seen = l.state.value }
+        val screen = object : com.wangzan101.mika.core.screen.uistate.ScreenPort by base {
+            override suspend fun snapshot(): com.wangzan101.mika.core.screen.uistate.ScreenSnapshot = base.snapshot().also { if (seen == null) seen = l.state.value }
         }
         val main = FakeModel(ModelReply(listOf(Part.Text("先看看首页"), call("phone_observe")), StopReason.ToolUse, null), text(GROUNDED))
         l = AgentLoop(main, toolDispatcher(screen), "BASE", verifier = Verifier(FakeModel(), null))

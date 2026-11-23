@@ -34,7 +34,7 @@ import com.wangzan101.mika.core.tool.ToolIndex
 import com.wangzan101.mika.core.tool.OutputClip
 import com.wangzan101.mika.core.workspace.GatedFile
 import com.wangzan101.mika.core.workspace.SandboxError
-import com.wangzan101.mika.core.knowledge.ScriptManifest
+import com.wangzan101.mika.core.learn.knowledge.ScriptManifest
 import com.wangzan101.mika.core.workspace.WorkspaceFileGate
 import com.wangzan101.mika.core.workspace.SandboxPaths
 

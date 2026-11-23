@@ -2,8 +2,8 @@ package com.wangzan101.mika.cap.phone.a11y
 
 import android.view.accessibility.AccessibilityNodeInfo
 import com.wangzan101.mika.core.cap.phone.PHONE_SNAPSHOT_PREFIX
-import com.wangzan101.mika.core.uistate.ElementLocator
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.ElementLocator
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import java.util.UUID
 
 /** 手机读屏的 snapshotId:手机的前缀加随机串(看编号就知道是手机的,和网页的分得开)。 */

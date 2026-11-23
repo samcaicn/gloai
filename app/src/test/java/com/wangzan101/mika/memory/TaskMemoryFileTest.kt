@@ -1,7 +1,7 @@
 package com.wangzan101.mika.memory
 
-import com.wangzan101.mika.core.memory.TaskMemory
-import com.wangzan101.mika.core.memory.TaskMemoryStep
+import com.wangzan101.mika.core.learn.memory.TaskMemory
+import com.wangzan101.mika.core.learn.memory.TaskMemoryStep
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.KeyCipher
 import org.junit.Assert.assertArrayEquals

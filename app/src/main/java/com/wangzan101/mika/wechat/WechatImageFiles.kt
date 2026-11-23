@@ -9,10 +9,10 @@ import com.wangzan101.mika.cap.sandbox.SandboxState
 import com.wangzan101.mika.chat.WorkspaceResolver
 import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.Delivery
-import com.wangzan101.mika.core.wechat.WechatApi
-import com.wangzan101.mika.core.wechat.WechatDownloadedImage
-import com.wangzan101.mika.core.wechat.WechatImage
-import com.wangzan101.mika.core.wechat.WechatImages
+import com.wangzan101.mika.core.cap.wechat.WechatApi
+import com.wangzan101.mika.core.cap.wechat.WechatDownloadedImage
+import com.wangzan101.mika.core.cap.wechat.WechatImage
+import com.wangzan101.mika.core.cap.wechat.WechatImages
 import com.wangzan101.mika.core.workspace.SandboxTree
 import com.wangzan101.mika.core.workspace.WorkspaceFileGate
 import kotlinx.coroutines.Dispatchers

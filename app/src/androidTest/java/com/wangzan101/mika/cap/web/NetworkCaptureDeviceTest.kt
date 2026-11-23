@@ -15,7 +15,7 @@ import com.wangzan101.mika.core.cap.web.cdp.CdpSession
 import com.wangzan101.mika.core.cap.web.cdp.CdpStream
 import com.wangzan101.mika.core.cap.web.cdp.CdpTransport
 import com.wangzan101.mika.core.cap.web.cdp.evaluate
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import com.wangzan101.mika.core.cap.web.CapturedResponse
 import com.wangzan101.mika.core.cap.web.WaitKind
 import com.wangzan101.mika.cap.web.cdp.NetworkTracker

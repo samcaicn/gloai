@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
-import com.wangzan101.mika.core.shell.BuiltinShellFailure
-import com.wangzan101.mika.core.shell.ShizukuPlatformState
+import com.wangzan101.mika.core.device.shell.BuiltinShellFailure
+import com.wangzan101.mika.core.device.shell.ShizukuPlatformState
 import com.wangzan101.mika.shell.IMikaShell
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking

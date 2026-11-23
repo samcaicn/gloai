@@ -33,23 +33,23 @@ import com.wangzan101.mika.core.agent.TaskStages
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.assembly.toolDispatcher
-import com.wangzan101.mika.core.child.ChildAgentRunner
+import com.wangzan101.mika.core.run.ChildAgentRunner
 import com.wangzan101.mika.core.model.ModelSession
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
-import com.wangzan101.mika.core.resource.ResourceScope
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
+import com.wangzan101.mika.core.run.ResourceScope
 import com.wangzan101.mika.core.run.ChannelPeer
 import com.wangzan101.mika.core.run.Delivery
 import com.wangzan101.mika.core.run.RunInbox
 import com.wangzan101.mika.core.run.RunOrigin
 import com.wangzan101.mika.core.run.RunProvenance
-import com.wangzan101.mika.core.usage.DeepSeekPriceCache
-import com.wangzan101.mika.core.usage.RunUsageTally
+import com.wangzan101.mika.core.model.usage.DeepSeekPriceCache
+import com.wangzan101.mika.core.model.usage.RunUsageTally
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.memory.MemoryRuntime
 import com.wangzan101.mika.record.RunHandle
 import com.wangzan101.mika.record.RunStore
-import com.wangzan101.mika.replay.FileRouteStore
+import com.wangzan101.mika.knowledge.FileRouteStore
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.RunApproval
@@ -121,7 +121,7 @@ class TaskRun(
     val parallel: Boolean = false,
 ) : ScreenControl {
     override val manualControl = com.wangzan101.mika.core.run.ManualControl()
-    internal data class ManualTarget(val port: com.wangzan101.mika.core.uistate.ScreenPort, val identity: String, val width: Int, val height: Int, val inputWidth: Int, val inputHeight: Int)
+    internal data class ManualTarget(val port: com.wangzan101.mika.core.screen.uistate.ScreenPort, val identity: String, val width: Int, val height: Int, val inputWidth: Int, val inputHeight: Int)
     private var manualTarget: ManualTarget? = null
     internal var manualTargetNow: (suspend () -> ManualTarget?)? = null
 
@@ -148,7 +148,7 @@ class TaskRun(
         if (waitingTakeover) takeover?.handBack()
     }
 
-    private suspend fun manualInput(width: Int, height: Int, act: suspend (ManualTarget) -> com.wangzan101.mika.core.uistate.ActionResult): Boolean {
+    private suspend fun manualInput(width: Int, height: Int, act: suspend (ManualTarget) -> com.wangzan101.mika.core.screen.uistate.ActionResult): Boolean {
         val version = manualControl.version
         return manualControl.userInput {
             if (manualControl.version != version) return@userInput false
@@ -156,7 +156,7 @@ class TaskRun(
             val target = manualTarget ?: return@userInput false
             if (target.identity != current.identity || width != current.width || height != current.height ||
                 target.width != width || target.height != height || target.inputWidth != current.inputWidth || target.inputHeight != current.inputHeight) return@userInput false
-            try { target.port.checkAppAccess(); act(target) is com.wangzan101.mika.core.uistate.ActionResult.Ok }
+            try { target.port.checkAppAccess(); act(target) is com.wangzan101.mika.core.screen.uistate.ActionResult.Ok }
             catch (e: CancellationException) { throw e }
             catch (_: Exception) { false }
         } ?: false

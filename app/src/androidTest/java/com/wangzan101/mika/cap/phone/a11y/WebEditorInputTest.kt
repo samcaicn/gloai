@@ -10,9 +10,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.ui.MainActivity
 import com.wangzan101.mika.a11y.WebEditorTestActivity
 import java.io.File
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.Verification
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.Verification
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals

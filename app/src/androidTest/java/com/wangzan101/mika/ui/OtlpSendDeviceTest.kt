@@ -8,7 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wangzan101.mika.ChineseUi
 import com.wangzan101.mika.MikaApp
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.record.RunStore
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -21,6 +21,9 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
+import com.wangzan101.mika.settings.ui.models.use
+import com.wangzan101.mika.task.ui.RunTimelineScreen
+import com.wangzan101.mika.task.ui.RunTimelineViewModel
 
 @RunWith(AndroidJUnit4::class)
 class OtlpSendDeviceTest {

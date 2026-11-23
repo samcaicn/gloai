@@ -1,9 +1,9 @@
 package com.wangzan101.mika.settings
 
-import com.wangzan101.mika.core.access.AppAccessPolicy
-import com.wangzan101.mika.core.access.AppAccessState
-import com.wangzan101.mika.core.access.AppCategory
-import com.wangzan101.mika.core.access.AppClassification
+import com.wangzan101.mika.core.device.access.AppAccessPolicy
+import com.wangzan101.mika.core.device.access.AppAccessState
+import com.wangzan101.mika.core.device.access.AppCategory
+import com.wangzan101.mika.core.device.access.AppClassification
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption

@@ -16,12 +16,12 @@ import com.wangzan101.mika.core.cap.sandbox.FolderFiles
 import com.wangzan101.mika.core.cap.sandbox.FolderFileImporter
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.model.Part
-import com.wangzan101.mika.core.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
 import com.wangzan101.mika.core.run.*
 import com.wangzan101.mika.runAction
 import com.wangzan101.mika.core.workspace.SandboxError
-import com.wangzan101.mika.ui.DeviceDirectoriesScreen
-import com.wangzan101.mika.ui.FolderGrantPicker
+import com.wangzan101.mika.files.ui.DeviceDirectoriesScreen
+import com.wangzan101.mika.files.ui.FolderGrantPicker
 import com.wangzan101.mika.settings.DeviceDirectoryStore
 import com.wangzan101.mika.task.DeviceImportStore
 import com.wangzan101.mika.task.DeviceWorkspaceImports
@@ -82,7 +82,7 @@ class GrantedFolderFilesDeviceTest {
             snapshot("authorized")
             val screen = Proxy.newProxyInstance(ScreenPort::class.java.classLoader, arrayOf(ScreenPort::class.java)) { _, m, _ ->
                 when (m.name) {
-                    "getAppAccess" -> com.wangzan101.mika.core.access.AppAccessPolicy.ALLOW
+                    "getAppAccess" -> com.wangzan101.mika.core.device.access.AppAccessPolicy.ALLOW
                     "getCanShareAudio", "getCanShareImage" -> false
                     else -> throw AssertionError("Unexpected screen call: ${m.name}")
                 }

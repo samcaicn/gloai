@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.tool
 
 import com.wangzan101.mika.core.net.UrlHost
-import com.wangzan101.mika.core.observation.Place
+import com.wangzan101.mika.core.screen.observation.Place
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject

@@ -60,7 +60,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-provider: basic
-      # cliTest 先跑 cliContractTest（经真实子进程调 Python CLI），再跑 tools/mika/tests 下的 unittest。
+      # cliTest 先跑 cliContractTest（经真实子进程调 Python CLI），再跑 companions/mika/tests 下的 unittest。
       - name: CLI tests
         run: ./gradlew :core:cliTest -PmikaPython=python3 --stacktrace
       - name: Translation tool tests
@@ -124,14 +124,14 @@ jobs:
           java-version: "17"
       - uses: actions/setup-go@v7
         with:
-          go-version-file: tools/relay/go.mod
+          go-version-file: companions/relay/go.mod
           cache: true
-          cache-dependency-path: tools/relay/go.sum
+          cache-dependency-path: companions/relay/go.sum
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-provider: basic
       - name: Relay Go unit tests
-        working-directory: tools/relay
+        working-directory: companions/relay
         run: go test ./...
       # relayTest 会先 go build 出真实网关，再在回环上跑 Kotlin→网关→隧道全链路。
       - name: Relay integration test

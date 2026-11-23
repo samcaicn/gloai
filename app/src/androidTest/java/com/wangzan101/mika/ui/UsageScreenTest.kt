@@ -16,15 +16,15 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.wangzan101.mika.core.usage.UsageCounts
-import com.wangzan101.mika.core.usage.UsageKey
-import com.wangzan101.mika.core.usage.UsageLedger
-import com.wangzan101.mika.core.usage.UsagePurpose
-import com.wangzan101.mika.core.usage.UsageQuery
-import com.wangzan101.mika.core.usage.UsageRange
-import com.wangzan101.mika.core.usage.UsageReport
-import com.wangzan101.mika.core.usage.UsageRow
-import com.wangzan101.mika.core.usage.UsageSnapshot
+import com.wangzan101.mika.core.model.usage.UsageCounts
+import com.wangzan101.mika.core.model.usage.UsageKey
+import com.wangzan101.mika.core.model.usage.UsageLedger
+import com.wangzan101.mika.core.model.usage.UsagePurpose
+import com.wangzan101.mika.core.model.usage.UsageQuery
+import com.wangzan101.mika.core.model.usage.UsageRange
+import com.wangzan101.mika.core.model.usage.UsageReport
+import com.wangzan101.mika.core.model.usage.UsageRow
+import com.wangzan101.mika.core.model.usage.UsageSnapshot
 import com.wangzan101.mika.ui.theme.MikaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -33,6 +33,9 @@ import org.junit.runner.RunWith
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.wangzan101.mika.settings.ui.UsageContent
+import com.wangzan101.mika.settings.ui.UsageCopy
+import com.wangzan101.mika.settings.ui.UsagePreset
 
 @RunWith(AndroidJUnit4::class)
 class UsageScreenTest {

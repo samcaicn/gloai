@@ -6,10 +6,10 @@ import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.model.ToolSpec
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSink
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSink
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import com.wangzan101.mika.core.tool.FakeScreen
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -33,7 +33,7 @@ private fun tools(vararg calls: Part.ToolCall) = ModelReply(calls.toList(), Stop
 private fun finish() = com.wangzan101.mika.core.testing.answerReply("done")
 
 /** 屏上有一个操作按钮;每次读取另有新序号,路由测试不会被无新数据收尾打断。 */
-private class SendScreen(private val label: String = "发送", private val inner: FakeScreen = FakeScreen()) : com.wangzan101.mika.core.uistate.ScreenPort by inner {
+private class SendScreen(private val label: String = "发送", private val inner: FakeScreen = FakeScreen()) : com.wangzan101.mika.core.screen.uistate.ScreenPort by inner {
     private var reads = 0
     override suspend fun snapshot() = ScreenSnapshot("s1", "com.x",
         listOf(
@@ -45,7 +45,7 @@ private class SendScreen(private val label: String = "发送", private val inner
 class AgentLoopLightTest {
     private val on = SpeedFlags(lightSteps = true)
 
-    private fun loop(main: ChatModel, light: ChatModel, sink: RunSink = RunSink.NONE, screen: com.wangzan101.mika.core.uistate.ScreenPort = FakeScreen()) =
+    private fun loop(main: ChatModel, light: ChatModel, sink: RunSink = RunSink.NONE, screen: com.wangzan101.mika.core.screen.uistate.ScreenPort = FakeScreen()) =
         AgentLoop(main, toolDispatcher(screen), "BASE", sink = sink, flags = on, router = ModelRouter(main, light))
 
     @Test fun cleanStepsGoToLightAndAreRecorded() = runTest {

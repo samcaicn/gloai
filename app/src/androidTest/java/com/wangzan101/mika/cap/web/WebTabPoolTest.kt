@@ -9,8 +9,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.webkit.WebViewAssetLoader
 import com.wangzan101.mika.cap.phone.a11y.DeviceSupport
 import com.wangzan101.mika.core.cap.web.PageRead
-import com.wangzan101.mika.core.resource.ResourceScope
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.run.ResourceScope
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers

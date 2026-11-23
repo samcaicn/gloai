@@ -1,8 +1,8 @@
 package com.wangzan101.mika.knowledge
 
-import com.wangzan101.mika.core.knowledge.AppKnowledgeDraft
-import com.wangzan101.mika.core.knowledge.AppKnowledgeStage
-import com.wangzan101.mika.core.knowledge.LearnedNote
+import com.wangzan101.mika.core.learn.knowledge.AppKnowledgeDraft
+import com.wangzan101.mika.core.learn.knowledge.AppKnowledgeStage
+import com.wangzan101.mika.core.learn.knowledge.LearnedNote
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

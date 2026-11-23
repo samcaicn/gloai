@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.eval
 
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,7 +16,7 @@ class RunFactsTest {
         val ev = listOf(screen(1, "旧"), screen(2, "甲"), screen(3, "乙"), screen(4, *long))
         // 不再只留最后 3 次:最早读的那屏也在账本里
         val l = RunFacts.ledger(ev, TOOLS).all
-        assertEquals(listOf("旧", "甲", "乙", long.joinToString("\n").take(com.wangzan101.mika.core.verify.EvidenceLedger.READ_CHARS)), l.map { it.text })
+        assertEquals(listOf("旧", "甲", "乙", long.joinToString("\n").take(com.wangzan101.mika.core.safety.verify.EvidenceLedger.READ_CHARS)), l.map { it.text })
         assertEquals(listOf(1, 2, 3, 4), l.map { it.step })
         assertEquals("com.x", l.first().where)
     }
@@ -39,7 +39,7 @@ class RunFactsTest {
             result(1, "web_read_page", """{"ok":true,"url":"https://a.example.com/","text":"长江全长 6300 公里","hint":"Mika 提示 9999 公里"}"""),
             result(2, "web_read_page", """{"ok":false,"error":"timeout","message":"超时 8888 公里"}"""),
         )
-        val l = RunFacts.ledger(ev, TOOLS).all.filter { it.kind == com.wangzan101.mika.core.observation.ObsKind.Read }
+        val l = RunFacts.ledger(ev, TOOLS).all.filter { it.kind == com.wangzan101.mika.core.screen.observation.ObsKind.Read }
         assertEquals(1, l.size)
         assertEquals("https://a.example.com/", l.single().where)
         assertTrue("6300" in l.single().text && "9999" !in l.single().text)

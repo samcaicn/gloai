@@ -6,10 +6,10 @@
 
 ## 全局约定
 
-- 新模块：core 侧 `com.wangzan101.mika.core.screenmap`；app 侧落盘 `app/src/main/java/com/wangzan101/mika/knowledge/`。
+- 新模块：core 侧 `com.wangzan101.mika.core.screen.map`；app 侧落盘 `app/src/main/java/com/wangzan101/mika/knowledge/`。
 - 认屏口径复用 `RouteAnchors.texts(snapshot)`（固定骨架：去数字、去列表/可滚动内容、去输入框、去用户打的字，只留标题栏/标签/按钮）。
 - 屏身份确定性：屏 id = `sha256(app + "\u0000" + 首次骨架锚点签名)` 截前 16 hex；同一批运行记录重建两遍 → 逐字节相同（可整体 `rebuild`）。
-- 序列化用 kotlinx.serialization（先例：`core/replay/Route.kt` 的 `RouteCodec`）。
+- 序列化用 kotlinx.serialization（先例：`core/learn/replay/Route.kt` 的 `RouteCodec`）。
 - 测试命令：core 单测 `./gradlew :core:test`；app 单测 `./gradlew :app:testDebugUnitTest`。
 - 中文提交信息，每个任务单独 commit。
 
@@ -26,8 +26,8 @@
 ### Task 1：屏实体 + 确定性屏 id（core）
 
 **Files:**
-- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screenmap/ScreenNode.kt`
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screenmap/ScreenNodeTest.kt`
+- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screen/map/ScreenNode.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screen/map/ScreenNodeTest.kt`
 
 **Interfaces:**
 - Produces（后续任务都用）:
@@ -48,11 +48,11 @@
 ### Task 2：认屏 `ScreenRecognizer`（core，纯函数零模型调用）
 
 **Files:**
-- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screenmap/ScreenRecognizer.kt`
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screenmap/ScreenRecognizerTest.kt`
+- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screen/map/ScreenRecognizer.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screen/map/ScreenRecognizerTest.kt`
 
 **Interfaces:**
-- Consumes: `ScreenNode`、`RouteAnchors.texts`（`core/replay/Route.kt`，签名 `fun texts(s: ScreenSnapshot): List<String>`）
+- Consumes: `ScreenNode`、`RouteAnchors.texts`（`core/learn/replay/Route.kt`，签名 `fun texts(s: ScreenSnapshot): List<String>`）
 - Produces:
   - `data class Recognition(val id: String, val confidence: Double, val matched: Set<String>)`
   - `fun identify(texts: Set<String>, nodes: List<ScreenNode>, confidenceMin: Double = 0.5): Recognition?` —— 按 `(重合数, 覆盖率, 稀有度)` 排序取最像，置信度低于阈值返回 null；见 design D2。
@@ -73,11 +73,11 @@
 ### Task 3：建图 `ScreenMapBuilder`（从运行记录确定性重建）
 
 **Files:**
-- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screenmap/ScreenMapBuilder.kt`
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screenmap/ScreenMapBuilderTest.kt`
+- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screen/map/ScreenMapBuilder.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screen/map/ScreenMapBuilderTest.kt`
 
 **Interfaces:**
-- Consumes: `ScreenNode`、`Transition`、`RunEvent.ActionTarget`（`core/record/RunEvent.kt`，含 `before/after: Anchors`、`tool`、`target`）、`RouteAnchors`
+- Consumes: `ScreenNode`、`Transition`、`RunEvent.ActionTarget`（`core/run/record/RunEvent.kt`，含 `before/after: Anchors`、`tool`、`target`）、`RouteAnchors`
 - Produces:
   - `class ScreenGraph(val app: String, val nodes: Map<String, ScreenNode>)`，`fun nodes(): List<ScreenNode>`
   - `class ScreenMapBuilder { fun apply(runId: String, events: List<RunEvent>): Map<String, ScreenGraph> }` —— 返回「app slug → 图」；visit/建屏、加转移边（effect 分类见 design D1）。
@@ -95,8 +95,8 @@
 ### Task 4：相对导航 `ScreenGraph.path`
 
 **Files:**
-- Modify: `core/src/main/kotlin/com/wangzan101/mika/core/screenmap/ScreenMapBuilder.kt`（或拆 `ScreenGraph.kt`）
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screenmap/ScreenGraphTest.kt`
+- Modify: `core/src/main/kotlin/com/wangzan101/mika/core/screen/map/ScreenMapBuilder.kt`（或拆 `ScreenGraph.kt`）
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screen/map/ScreenGraphTest.kt`
 
 **Interfaces:**
 - Consumes: `ScreenGraph`（任务 3）
@@ -115,8 +115,8 @@
 ### Task 5：图渲染 `ScreenMapRender`（给模型的紧凑地图文字）
 
 **Files:**
-- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screenmap/ScreenMapRender.kt`
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screenmap/ScreenMapRenderTest.kt`
+- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screen/map/ScreenMapRender.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screen/map/ScreenMapRenderTest.kt`
 
 **Interfaces:**
 - Consumes: `ScreenGraph`、`ScreenNode`
@@ -135,7 +135,7 @@
 ### Task 6：存储 `ScreenMapStore` / `FileScreenMapStore`（core 接口 + app 落盘）
 
 **Files:**
-- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screenmap/ScreenMapStore.kt`（接口）
+- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screen/map/ScreenMapStore.kt`（接口）
 - Create: `app/src/main/java/com/wangzan101/mika/knowledge/FileScreenMapStore.kt`
 - Test: `app/src/test/java/com/wangzan101/mika/knowledge/FileScreenMapStoreTest.kt`
 
@@ -156,12 +156,12 @@
 ### Task 7：回放接图（`Replayer` 认屏 + 落错屏重试 + 交还文案）
 
 **Files:**
-- Modify: `core/src/main/kotlin/com/wangzan101/mika/core/replay/Replayer.kt`
+- Modify: `core/src/main/kotlin/com/wangzan101/mika/core/learn/replay/Replayer.kt`
 - Modify: `core/src/main/kotlin/com/wangzan101/mika/core/agent/RouteReplay.kt`
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/replay/ReplayerScreenMapTest.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/learn/replay/ReplayerScreenMapTest.kt`
 
 **Interfaces:**
-- Consumes: `ScreenRecognizer.identify`（任务 2）、`ScreenGraph`/`ScreenMapStore`（任务 3/6）、现有 `Replayer`（`core/replay/Replayer.kt`）
+- Consumes: `ScreenRecognizer.identify`（任务 2）、`ScreenGraph`/`ScreenMapStore`（任务 3/6）、现有 `Replayer`（`core/learn/replay/Replayer.kt`）
 - Produces: `Replayer` 每步改用 `identify` 核对 before 屏（认出的屏 == 预期，或锚点仍命中）；动作后 `identify` 认落屏，非预期落屏重试一次（仍不对 Diverged）；`RouteReplay` 交还文案从「第 N 步失败」改为「落在屏 X + 从这屏出发的路」（`ScreenMapRender.renderMap`）。
 
 - [ ] **7.1 写失败测试**：落错屏 → 重试一次 → 仍错则 Diverged 且 `executed` 语义正确（Review Focus #4）；对得上 → Completed；交还文案含「落在屏 X / 可从这里走」。
@@ -213,8 +213,8 @@
 ### Task 10：merge gate 自检（wrong-merge / wrong-owner 归零）
 
 **Files:**
-- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screenmap/ScreenMapMergeGate.kt`
-- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screenmap/ScreenMapMergeGateTest.kt`
+- Create: `core/src/main/kotlin/com/wangzan101/mika/core/screen/map/ScreenMapMergeGate.kt`
+- Test: `core/src/test/kotlin/com/wangzan101/mika/core/screen/map/ScreenMapMergeGateTest.kt`
 
 **Interfaces:**
 - Consumes: `ScreenNode`、`ScreenRecognizer`（任务 2）

@@ -1,12 +1,12 @@
 package com.wangzan101.mika.core.cap.web
 
-import com.wangzan101.mika.core.uistate.CdpKeys
-import com.wangzan101.mika.core.uistate.KeyModifier
-import com.wangzan101.mika.core.risk.GateTarget
+import com.wangzan101.mika.core.screen.uistate.CdpKeys
+import com.wangzan101.mika.core.screen.uistate.KeyModifier
+import com.wangzan101.mika.core.safety.gate.GateTarget
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.Resolved
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.Resolved
 import com.wangzan101.mika.core.tool.ArgError
 import com.wangzan101.mika.core.tool.Args
 import com.wangzan101.mika.core.tool.PAGE_REF_RE
@@ -20,15 +20,15 @@ import com.wangzan101.mika.core.tool.failCode
 import com.wangzan101.mika.core.tool.int
 import com.wangzan101.mika.core.tool.refExpired
 import com.wangzan101.mika.core.tool.str
-import com.wangzan101.mika.core.uistate.toPx
+import com.wangzan101.mika.core.screen.uistate.toPx
 import kotlinx.serialization.json.JsonObject
-import com.wangzan101.mika.core.uistate.action
-import com.wangzan101.mika.core.uistate.lastOrSnapshot
-import com.wangzan101.mika.core.uistate.lastSnapshot
-import com.wangzan101.mika.core.uistate.session
-import com.wangzan101.mika.core.uistate.withPortRef
-import com.wangzan101.mika.core.uistate.DwellStop
-import com.wangzan101.mika.core.uistate.dwellStopped
+import com.wangzan101.mika.core.screen.uistate.action
+import com.wangzan101.mika.core.screen.uistate.lastOrSnapshot
+import com.wangzan101.mika.core.screen.uistate.lastSnapshot
+import com.wangzan101.mika.core.screen.uistate.session
+import com.wangzan101.mika.core.screen.uistate.withPortRef
+import com.wangzan101.mika.core.screen.uistate.DwellStop
+import com.wangzan101.mika.core.screen.uistate.dwellStopped
 
 /** 复制、剪切、粘贴。 */
 private val CLIPBOARD_KEYS = setOf("KeyC", "KeyX", "KeyV")

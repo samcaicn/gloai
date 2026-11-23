@@ -3,8 +3,8 @@ package com.wangzan101.mika.core.agent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.awaitCancellation
-import com.wangzan101.mika.core.decision.DecisionModel
-import com.wangzan101.mika.core.decision.DecisionChoice
+import com.wangzan101.mika.core.model.decision.DecisionModel
+import com.wangzan101.mika.core.model.decision.DecisionChoice
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals

@@ -1,6 +1,6 @@
 package com.wangzan101.mika.proactive
 
-import com.wangzan101.mika.core.access.AppAccessState
+import com.wangzan101.mika.core.device.access.AppAccessState
 import com.wangzan101.mika.core.proactive.NoticeDecision
 import com.wangzan101.mika.core.proactive.NoticeFilter
 import com.wangzan101.mika.core.proactive.NoticeInbox

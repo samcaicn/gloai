@@ -2,6 +2,7 @@ package com.wangzan101.mika.ui
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import com.wangzan101.mika.chat.ui.matchRanges
 
 class SearchHighlightTest {
     @Test fun findsEveryOccurrenceIgnoringCase() {

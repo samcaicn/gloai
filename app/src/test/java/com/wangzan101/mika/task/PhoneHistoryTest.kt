@@ -9,9 +9,9 @@ import com.wangzan101.mika.core.model.BearerToken
 import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ResponsesModel
 import com.wangzan101.mika.cap.phone.a11y.LazyPhoneScreen
-import com.wangzan101.mika.core.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunEvent
 import com.wangzan101.mika.core.remote.RemoteTask
-import com.wangzan101.mika.core.trace.TraceStore
+import com.wangzan101.mika.core.run.trace.TraceStore
 import com.wangzan101.mika.record.RunStore
 import kotlinx.serialization.json.*
 import kotlinx.coroutines.runBlocking

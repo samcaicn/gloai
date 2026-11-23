@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.gate.ConfirmationRequest
-import com.wangzan101.mika.core.verify.AnswerSource
+import com.wangzan101.mika.core.safety.gate.ConfirmationRequest
+import com.wangzan101.mika.core.safety.verify.AnswerSource
 
 /** 按首轮清单的顺序编号（从 1 开始）；仅包含模型已用证据确认的目标。 */
 data class GoalChecklist(val items: List<String>, val confirmed: Set<Int>, val stale: Boolean)

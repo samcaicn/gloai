@@ -12,6 +12,7 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.UUID
+import com.wangzan101.mika.settings.ui.models.edit
 
 /** 模型管理宿主 → 本机归属校验 → 持久化和重排期；工具解析另由 core 契约测试覆盖。 */
 @RunWith(AndroidJUnit4::class)

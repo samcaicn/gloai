@@ -11,7 +11,7 @@ Requirements: Python 3.10+, pipx, a **Feishu enterprise custom app** with bot ca
 From a repository checkout:
 
 ```bash
-pipx install ./tools/mika-feishu
+pipx install ./companions/mika-feishu
 mika-feishu setup
 ```
 
@@ -77,7 +77,7 @@ Configuration defaults to `$XDG_CONFIG_HOME/mika-feishu/config.json` or `~/.conf
 
 SQLite state, grouped by app and phone address, stores the paired user, message deduplication and task/conversation association, including task text. Changing the app or phone address requires fresh pairing. Rotating only a secret/token preserves pairing. Stop `run` before rerunning `setup` or `unpair`; a process lock prevents simultaneous consumers of the same configuration.
 
-Updates to the connector do not replace configuration or require modifying/rebuilding Mika. After updating the checkout, run `pipx install --force ./tools/mika-feishu`, then `doctor` and a read-only task. Before every write, the adapter checks public API version 1 and capabilities. Additive response fields are tolerated; unknown API versions/statuses or missing capabilities stop the corresponding operation. Future incompatible API changes need an adapter update, not a silent fallback.
+Updates to the connector do not replace configuration or require modifying/rebuilding Mika. After updating the checkout, run `pipx install --force ./companions/mika-feishu`, then `doctor` and a read-only task. Before every write, the adapter checks public API version 1 and capabilities. Additive response fields are tolerated; unknown API versions/statuses or missing capabilities stop the corresponding operation. Future incompatible API changes need an adapter update, not a silent fallback.
 
 Incoming message IDs are durably deduplicated. A write whose response is lost is **not automatically repeated**; a crash during processing blocks new writes until the owner checks the phone and sends `/reset checked`. The phone API currently has no idempotency key, so the connector does not promise exactly-once execution. Unknown outcomes must be inspected. If the phone restarts and loses an old task ID, it is reported, not resubmitted. Notifications use deterministic Feishu UUIDs to reduce duplicate replies.
 

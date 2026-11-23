@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import com.wangzan101.mika.ui.theme.MikaTheme
+import com.wangzan101.mika.browser.ui.findActivity
 
 internal val LocalAdaptiveLayout = staticCompositionLocalOf { AdaptiveLayout(PaneBounds(0f, 0f, 0f, 0f)) }
 

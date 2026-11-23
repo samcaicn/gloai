@@ -5,6 +5,10 @@ import com.wangzan101.mika.i18n.ChineseTexts
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import com.wangzan101.mika.chat.ui.AttachmentMessage
+import com.wangzan101.mika.chat.ui.ChatCopy
+import com.wangzan101.mika.chat.ui.ChatViewModel
+import com.wangzan101.mika.chat.ui.ScreenCopy
 
 /** 对话页上的引用:和附件一起时各归各,标题里不带引用;回答复制成纯文字。写进话里的样子见 core 的 QuoteMessageTest。 */
 class QuoteMessageTest {

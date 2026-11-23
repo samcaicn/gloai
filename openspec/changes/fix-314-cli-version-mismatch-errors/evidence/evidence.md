@@ -20,4 +20,4 @@ exit=2
 
 ## 单测
 
-`python3 -m unittest discover -s tools/mika/tests`：89 个全过（含新增 2 个用例与 3 处补强断言）。
+`python3 -m unittest discover -s companions/mika/tests`：89 个全过（含新增 2 个用例与 3 处补强断言）。

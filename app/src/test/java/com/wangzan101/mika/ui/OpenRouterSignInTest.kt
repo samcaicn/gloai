@@ -2,7 +2,7 @@ package com.wangzan101.mika.ui
 
 import com.wangzan101.mika.core.model.ListedModel
 import com.wangzan101.mika.core.model.ModelListResult
-import com.wangzan101.mika.core.oauth.OpenRouterAuth
+import com.wangzan101.mika.core.model.oauth.OpenRouterAuth
 import com.wangzan101.mika.i18n.ChineseTexts
 import com.wangzan101.mika.settings.AesGcmKeyCipher
 import com.wangzan101.mika.settings.ChatGptSignIns
@@ -37,6 +37,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import com.wangzan101.mika.settings.ui.models.AccountProvider
+import com.wangzan101.mika.settings.ui.models.ModelSetupViewModel
+import com.wangzan101.mika.settings.ui.models.SignInBrowser
+import com.wangzan101.mika.settings.ui.models.signInWithAccount
+import com.wangzan101.mika.settings.ui.models.signOutAccount
+import com.wangzan101.mika.settings.ui.models.signedInShown
 
 /**
  * 用 OpenRouter 账号登录走一遍:浏览器(假的)打开授权页,带着 code 回到本机回调,换到 Key,

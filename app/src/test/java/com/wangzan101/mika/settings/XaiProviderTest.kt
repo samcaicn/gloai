@@ -4,8 +4,8 @@ import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.ListedModel
 import com.wangzan101.mika.core.model.ModelListResult
 import com.wangzan101.mika.core.model.ModelRole
-import com.wangzan101.mika.core.oauth.AccountSession
-import com.wangzan101.mika.core.oauth.XaiAuth
+import com.wangzan101.mika.core.model.oauth.AccountSession
+import com.wangzan101.mika.core.model.oauth.XaiAuth
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

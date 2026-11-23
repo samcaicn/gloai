@@ -69,7 +69,7 @@ class AgentLoopFrameTest {
     }
 
     @Test fun adaptiveBatchExecutesTwoActionsInOneModelRoundWithoutImages() = runTest {
-        val screen = FakeScreen().apply { result = com.wangzan101.mika.core.uistate.ActionResult.Ok(changed = true) }
+        val screen = FakeScreen().apply { result = com.wangzan101.mika.core.screen.uistate.ActionResult.Ok(changed = true) }
         val batch = call("do_steps", """{"steps":[{"tool":"phone_back","args":{}},{"tool":"phone_back","args":{}}]}""")
         val m = FakeModel(tools(batch), finish())
         AgentLoop(m, toolDispatcher(screen, visionEnabled = true, adaptiveVision = true, inlineScreen = true), "BASE",

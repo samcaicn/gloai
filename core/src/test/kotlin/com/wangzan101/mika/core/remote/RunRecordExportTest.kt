@@ -1,8 +1,8 @@
 package com.wangzan101.mika.core.remote
 
 import com.wangzan101.mika.core.mcp.FakeRemoteTasks
-import com.wangzan101.mika.core.record.RunEvent
-import com.wangzan101.mika.core.record.RunSummary
+import com.wangzan101.mika.core.run.record.RunEvent
+import com.wangzan101.mika.core.run.record.RunSummary
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.add

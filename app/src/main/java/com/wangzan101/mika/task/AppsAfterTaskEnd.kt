@@ -2,7 +2,7 @@ package com.wangzan101.mika.task
 
 import android.util.Log
 import com.wangzan101.mika.cap.phone.shell.AppsAfterTask
-import com.wangzan101.mika.core.uistate.AfterTaskMarks
+import com.wangzan101.mika.core.screen.uistate.AfterTaskMarks
 import com.wangzan101.mika.shell.IMikaShell
 
 /**

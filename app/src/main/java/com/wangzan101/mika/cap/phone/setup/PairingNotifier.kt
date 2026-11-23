@@ -10,13 +10,13 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.shell.BuiltinShellFix
-import com.wangzan101.mika.core.shell.BuiltinShellStatus
-import com.wangzan101.mika.core.shell.PairingChannelHealth
-import com.wangzan101.mika.core.shell.PairingDiscovery
-import com.wangzan101.mika.core.shell.PhoneSetupFlow
+import com.wangzan101.mika.core.device.shell.BuiltinShellFix
+import com.wangzan101.mika.core.device.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.device.shell.PairingChannelHealth
+import com.wangzan101.mika.core.device.shell.PairingDiscovery
+import com.wangzan101.mika.core.device.shell.PhoneSetupFlow
 import com.wangzan101.mika.ui.MainActivity
-import com.wangzan101.mika.ui.PhoneSetupCopy
+import com.wangzan101.mika.settings.ui.PhoneSetupCopy
 import com.wangzan101.mika.setup.PairingCodeReceiver
 
 /** 配对通知此刻该显示什么。 */

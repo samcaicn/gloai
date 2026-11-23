@@ -15,7 +15,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
-import com.wangzan101.mika.core.uistate.WebInfo
+import com.wangzan101.mika.core.screen.uistate.WebInfo
 
 class ElementProbeTest {
     private val info = WebInfo("https://a.test/", "t", "t1", null)

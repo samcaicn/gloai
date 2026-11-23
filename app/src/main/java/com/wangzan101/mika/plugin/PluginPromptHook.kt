@@ -1,6 +1,6 @@
 package com.wangzan101.mika.plugin
 
-import com.wangzan101.mika.core.plugin.ScriptRunner
+import com.wangzan101.mika.core.tool.ScriptRunner
 import java.io.File
 
 /**

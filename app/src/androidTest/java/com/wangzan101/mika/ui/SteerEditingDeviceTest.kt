@@ -42,6 +42,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.wangzan101.mika.chat.ui.draft
+import com.wangzan101.mika.settings.ui.models.edit
+import com.wangzan101.mika.settings.ui.models.use
 
 /** 真实对话页与任务服务;脚本模型延迟取消收尾,让消息稳定停在尚未交给模型的阶段。 */
 @RunWith(AndroidJUnit4::class)

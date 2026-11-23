@@ -5,9 +5,9 @@ import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.agent.AttachedPage
 import com.wangzan101.mika.core.cap.web.WebUrlPolicy
-import com.wangzan101.mika.core.userscreen.UserScreenMessage
-import com.wangzan101.mika.ui.AttachmentMessage
-import com.wangzan101.mika.ui.ChatTarget
+import com.wangzan101.mika.core.screen.user.UserScreenMessage
+import com.wangzan101.mika.chat.ui.AttachmentMessage
+import com.wangzan101.mika.chat.ui.ChatTarget
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import java.io.File

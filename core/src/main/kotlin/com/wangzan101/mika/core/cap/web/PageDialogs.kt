@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.cap.web
 
-import com.wangzan101.mika.core.uistate.PageDialog
+import com.wangzan101.mika.core.screen.uistate.PageDialog
 
 /** 页面弹框的回话:浏览器等着这一句才让页面接着跑。各实现只会被调用一次。 */
 interface DialogReply {

@@ -11,7 +11,7 @@ import android.os.Bundle
 import android.os.UserHandle
 import android.os.UserManager
 import android.util.Log
-import com.wangzan101.mika.core.uistate.AppCopies
+import com.wangzan101.mika.core.screen.uistate.AppCopies
 import com.wangzan101.mika.cap.phone.shell.ShellService.Companion.TAG
 import com.wangzan101.mika.cap.phone.shell.ShellService.Companion.PER_USER_RANGE
 import com.wangzan101.mika.cap.phone.shell.ShellService.Companion.START_OK

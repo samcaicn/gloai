@@ -1,7 +1,7 @@
 package com.wangzan101.mika.core.agent
 
 import com.wangzan101.mika.core.net.ProxyFailure
-import com.wangzan101.mika.core.guard.GuardVerdict
+import com.wangzan101.mika.core.safety.guard.GuardVerdict
 import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.tool.Outcome
 import kotlinx.serialization.json.JsonPrimitive

@@ -3,8 +3,8 @@ package com.wangzan101.mika.cap.phone.a11y
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wangzan101.mika.cap.phone.a11y.DeviceSupport.TEST_PACKAGE
 import com.wangzan101.mika.core.cap.phone.WheelMath
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.UiElement
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.UiElement
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -39,7 +39,7 @@ class WheelPickerDeviceTest {
         return if (label == WheelPickerTestActivity.MINUTES) pickers[0] else pickers[1]
     }
 
-    private fun flatten(n: com.wangzan101.mika.core.uistate.UiTreeNode): List<com.wangzan101.mika.core.uistate.UiTreeNode> =
+    private fun flatten(n: com.wangzan101.mika.core.screen.uistate.UiTreeNode): List<com.wangzan101.mika.core.screen.uistate.UiTreeNode> =
         listOf(n) + n.children.flatMap(::flatten)
 
     /** 再让工具调到同一个值一次:滚轮真的已经停在那里,就一下都不用动、起点就是它。 */

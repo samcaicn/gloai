@@ -1,20 +1,20 @@
 package com.wangzan101.mika.core.agent
 
-import com.wangzan101.mika.core.memory.MemoryItem
-import com.wangzan101.mika.core.memory.MemoryPersistence
-import com.wangzan101.mika.core.memory.MemoryStore
-import com.wangzan101.mika.core.memory.UserUtterances
+import com.wangzan101.mika.core.learn.memory.MemoryItem
+import com.wangzan101.mika.core.learn.memory.MemoryPersistence
+import com.wangzan101.mika.core.learn.memory.MemoryStore
+import com.wangzan101.mika.core.learn.memory.UserUtterances
 import com.wangzan101.mika.core.model.ModelReply
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.StopReason
 import com.wangzan101.mika.core.cap.sandbox.FakeSandbox
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
-import com.wangzan101.mika.core.uistate.ActionResult
-import com.wangzan101.mika.core.uistate.ScreenCheck
-import com.wangzan101.mika.core.uistate.ScreenDiagnosis
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenState
-import com.wangzan101.mika.core.uistate.Verification
+import com.wangzan101.mika.core.screen.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenCheck
+import com.wangzan101.mika.core.screen.uistate.ScreenDiagnosis
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenState
+import com.wangzan101.mika.core.screen.uistate.Verification
 import com.wangzan101.mika.core.testing.PromptSurface
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.tool.FakeScreen
@@ -23,8 +23,8 @@ import com.wangzan101.mika.core.tool.execute
 import com.wangzan101.mika.core.cap.web.FakeWebPort
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
-import com.wangzan101.mika.core.guard.GuardVerdict
-import com.wangzan101.mika.core.guard.Severity
+import com.wangzan101.mika.core.safety.guard.GuardVerdict
+import com.wangzan101.mika.core.safety.guard.Severity
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.assembly.toolDispatcher
 
@@ -129,15 +129,15 @@ internal object PromptSurfaceFeedback {
         }, clock = { 1L }, ids = { "m" })
         val withMem = toolDispatcher(FakeScreen(), memory = mem, utterances = UserUtterances().apply { add("帮我看看订单") })
         add("memory quote not from user", withMem, "memory_save", """{"kind":"fact","content":"x","quote":"别的话"}""")
-        val withSkills = toolDispatcher(FakeScreen(), skills = com.wangzan101.mika.core.knowledge.GuideCatalog.loadBundled(), utterances = UserUtterances().apply { add("帮我建一个技能") },
-            personalSkills = com.wangzan101.mika.core.skills.InMemoryPersonalSkills())
+        val withSkills = toolDispatcher(FakeScreen(), skills = com.wangzan101.mika.core.learn.knowledge.GuideCatalog.loadBundled(), utterances = UserUtterances().apply { add("帮我建一个技能") },
+            personalSkills = com.wangzan101.mika.core.learn.skills.InMemoryPersonalSkills())
         add("skill save missing section", withSkills, "skill_save",
             """{"markdown":"---\nname: order-coffee\ndisplay: 点咖啡\ndescription: 点咖啡时用\n---\n## 入口\n打开 App","quote":"帮我建一个技能"}""")
 
         val withHistory = toolDispatcher(FakeScreen(), runSpec = com.wangzan101.mika.core.run.RunSpec(com.wangzan101.mika.core.run.RunId("t"), "t", "thread",
-            priorTurns = listOf(Turn("之前", "好", "succeeded", runId = "r1"))), runRecords = object : com.wangzan101.mika.core.record.RunRecords {
-                override suspend fun summary(runId: String): com.wangzan101.mika.core.record.RunSummary? = null
-                override suspend fun events(runId: String) = emptyList<com.wangzan101.mika.core.record.RunEvent>()
+            priorTurns = listOf(Turn("之前", "好", "succeeded", runId = "r1"))), runRecords = object : com.wangzan101.mika.core.run.record.RunRecords {
+                override suspend fun summary(runId: String): com.wangzan101.mika.core.run.record.RunSummary? = null
+                override suspend fun events(runId: String) = emptyList<com.wangzan101.mika.core.run.record.RunEvent>()
             })
         add("history turn not found", withHistory, "history_read", """{"turn":5}""")
         add("history not recorded", withHistory, "history_read", """{"turn":1}""")

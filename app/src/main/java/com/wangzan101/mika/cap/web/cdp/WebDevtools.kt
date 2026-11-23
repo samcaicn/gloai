@@ -16,7 +16,7 @@ import com.wangzan101.mika.core.cap.web.cdp.CdpDiscovery
 import com.wangzan101.mika.core.cap.web.cdp.CdpSession
 import com.wangzan101.mika.core.cap.web.cdp.CdpTransport
 import com.wangzan101.mika.core.cap.web.cdp.evaluate
-import com.wangzan101.mika.core.shell.DevtoolsSocket
+import com.wangzan101.mika.core.device.shell.DevtoolsSocket
 import com.wangzan101.mika.core.cap.web.WebUrlPolicy
 import android.os.ParcelFileDescriptor
 import com.wangzan101.mika.cap.web.WebHost

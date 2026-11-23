@@ -1,8 +1,8 @@
 package com.wangzan101.mika.core.cap.phone
 
-import com.wangzan101.mika.core.uistate.Pace
+import com.wangzan101.mika.core.screen.uistate.Pace
 import kotlin.random.Random
-import com.wangzan101.mika.core.uistate.IdleScroll
+import com.wangzan101.mika.core.screen.uistate.IdleScroll
 
 /**
  * 在 App 里一步一步操作的节奏(纯逻辑,不碰时钟和界面):人点完一下总要看一眼才点下一下,到了新的一屏还要先看一会儿。
@@ -46,7 +46,7 @@ class AppPacing(
         val pauseMs: LongRange = 600L..1_500L,
         /** 一次停留的上限。 */
         val maxDwellMs: Long = 3_500L,
-        /** 新的一屏上停得够久时,停留里可以轻轻滚几下(见 [com.wangzan101.mika.core.uistate.IdleScroll])。 */
+        /** 新的一屏上停得够久时,停留里可以轻轻滚几下(见 [com.wangzan101.mika.core.screen.uistate.IdleScroll])。 */
         val idleScroll: Boolean = false,
     ) {
         companion object {

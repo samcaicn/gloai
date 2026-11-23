@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.cap.phone.sms
 
-import com.wangzan101.mika.core.uistate.*
+import com.wangzan101.mika.core.screen.uistate.*
 
 /** Private during login; after verified success restore native text observations with code redaction.
  * Images remain local for the rest of this run. Only a task-local fingerprint is retained, never SMS/code text.

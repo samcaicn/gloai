@@ -114,8 +114,8 @@ class RemoteTaskServiceTest {
         val task = service.start("read")
         val states = listOf(null, TaskState.Idle, TaskState.WaitingInput("Which one?"),
             TaskState.WaitingTakeover("payment", "Use the phone"),
-            TaskState.WaitingConfirmation(com.wangzan101.mika.core.gate.ConfirmationRequest(
-                com.wangzan101.mika.core.risk.IrrevAction.order, "Shop", "item", "$25", "shop")),
+            TaskState.WaitingConfirmation(com.wangzan101.mika.core.safety.gate.ConfirmationRequest(
+                com.wangzan101.mika.core.safety.gate.IrrevAction.order, "Shop", "item", "$25", "shop")),
             TaskState.Held(com.wangzan101.mika.core.agent.GateReason("paused")),
             TaskState.Succeeded("done"), TaskState.Failed("failed", com.wangzan101.mika.core.agent.FailKind.Environment), TaskState.Cancelled)
         for (state in states) {

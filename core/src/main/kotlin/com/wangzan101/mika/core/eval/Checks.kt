@@ -1,6 +1,6 @@
 package com.wangzan101.mika.core.eval
 
-import com.wangzan101.mika.core.verify.Grounding
+import com.wangzan101.mika.core.safety.verify.Grounding
 
 /** 一次任务跑完后评测器收集到的事实,打分只看它。 */
 data class Observed(
@@ -52,8 +52,8 @@ data class Observed(
     val today: java.time.LocalDate? = null,
     /** 交出回答后判的结局(运行记录里的 outcome 事件:done / partial / not_possible / unknown);没判过为 null。打分按它,见 [Scoring.recorded]。 */
     val judged: String? = null,
-    /** 这次运行的小结(用时去向、第一次反馈、来回次数等,见 [com.wangzan101.mika.core.record.RunMetrics]);没有运行记录为 null。 */
-    val metrics: com.wangzan101.mika.core.record.RunMetrics? = null,
+    /** 这次运行的小结(用时去向、第一次反馈、来回次数等,见 [com.wangzan101.mika.core.run.record.RunMetrics]);没有运行记录为 null。 */
+    val metrics: com.wangzan101.mika.core.run.record.RunMetrics? = null,
 )
 
 object Checks {

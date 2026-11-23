@@ -119,7 +119,7 @@ curl -s http://192.168.1.23:8765/mcp \
 
 ## Self-hosted remote access
 
-For public remote access, deploy the optional self-hosted gateway. Pair and explicitly enable access under **MCP → Remote**, then copy the config to a client supporting Authorization headers. **CLI / Skill → Remote** uses the same gateway and phone LAN access token. The phone authenticates requests; the gateway manages pairing and forwards requests, without access-token management or OAuth flows. No shared Wi-Fi or VPN is required. The first version is single-owner, single-device. See the [deployment guide](../tools/relay/README.md). HTTPS ends at the gateway, which can read forwarded contents; use one you trust.
+For public remote access, deploy the optional self-hosted gateway. Pair and explicitly enable access under **MCP → Remote**, then copy the config to a client supporting Authorization headers. **CLI / Skill → Remote** uses the same gateway and phone LAN access token. The phone authenticates requests; the gateway manages pairing and forwards requests, without access-token management or OAuth flows. No shared Wi-Fi or VPN is required. The first version is single-owner, single-device. See the [deployment guide](../companions/relay/README.md). HTTPS ends at the gateway, which can read forwarded contents; use one you trust.
 
 ## Tools
 

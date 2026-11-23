@@ -32,7 +32,7 @@
 5. 期间三次复跑 connected 测试，同样失败在 service() 获取实例（环境问题，非本次改动引入——
    首次失败发生在任何源码改动安装之前的新装包上；且改动不触碰无障碍/服务路径）。
 6. 过程中定位并修复了一个测试基建 bug（随本 PR）：App 自己的恢复逻辑
-   （`core/shell/RecoveryPermissions.kt` 的 `PermissionCommands.accessibilityService`）写
+   （`core/device/shell/RecoveryPermissions.kt` 的 `PermissionCommands.accessibilityService`）写
    `enabled_accessibility_services` 用的是短形式（`包名/.a11y.MikaAccessibilityService`），而
    `DeviceSupport.rebindAccessibility()` 只按完整形式做字符串匹配——凡是 App 自动修复跑过的机器，
    重绑都被静默跳过（本机 SPMN 日志证实 App 启动即改写；维护者在 41468b39 也提过「该像素测试尚未在

@@ -1,16 +1,16 @@
 package com.wangzan101.mika.settings
 
-import com.wangzan101.mika.core.decision.DecisionConfig
-import com.wangzan101.mika.core.decision.DecisionError
-import com.wangzan101.mika.core.decision.DecisionProtocol
-import com.wangzan101.mika.core.decision.GoogleDecisionModel
-import com.wangzan101.mika.core.decision.SystemOneDecisionModel
+import com.wangzan101.mika.core.model.decision.DecisionConfig
+import com.wangzan101.mika.core.model.decision.DecisionError
+import com.wangzan101.mika.core.model.decision.DecisionProtocol
+import com.wangzan101.mika.core.model.decision.GoogleDecisionModel
+import com.wangzan101.mika.core.model.decision.SystemOneDecisionModel
 import com.wangzan101.mika.core.model.ModelError
 import com.wangzan101.mika.core.model.Usage
-import com.wangzan101.mika.core.usage.UsagePurpose
-import com.wangzan101.mika.core.usage.UsageSink
-import com.wangzan101.mika.core.usage.UsageSource
-import com.wangzan101.mika.ui.testDecisionConnection
+import com.wangzan101.mika.core.model.usage.UsagePurpose
+import com.wangzan101.mika.core.model.usage.UsageSink
+import com.wangzan101.mika.core.model.usage.UsageSource
+import com.wangzan101.mika.settings.ui.testDecisionConnection
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive

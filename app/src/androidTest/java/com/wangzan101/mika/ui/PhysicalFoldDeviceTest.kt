@@ -31,6 +31,10 @@ import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExternalResource
+import com.wangzan101.mika.chat.ui.Composer
+import com.wangzan101.mika.chat.ui.draft
+import com.wangzan101.mika.settings.ui.models.edit
+import com.wangzan101.mika.settings.ui.models.use
 
 /** 人工配合的物理姿态验收；仅显式传入 -e physicalFold true 时执行，不模拟设备状态。 */
 class PhysicalFoldDeviceTest {

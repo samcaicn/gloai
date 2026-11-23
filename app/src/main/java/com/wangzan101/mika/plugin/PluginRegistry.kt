@@ -1,8 +1,8 @@
 package com.wangzan101.mika.plugin
 
 import com.wangzan101.mika.BuildConfig
-import com.wangzan101.mika.core.plugin.PluginToolSpec
-import com.wangzan101.mika.core.skills.PluginSkills
+import com.wangzan101.mika.core.tool.PluginToolSpec
+import com.wangzan101.mika.core.learn.skills.PluginSkills
 import com.wangzan101.mika.core.tool.Risk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

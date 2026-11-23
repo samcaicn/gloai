@@ -1,13 +1,13 @@
 package com.wangzan101.mika.settings
 
-import com.wangzan101.mika.core.chatgpt.ChatGptAuth
-import com.wangzan101.mika.core.chatgpt.ChatGptSession
-import com.wangzan101.mika.core.chatgpt.ChatGptTokens
-import com.wangzan101.mika.core.oauth.AccountSession
-import com.wangzan101.mika.core.oauth.AccountTokens
-import com.wangzan101.mika.core.oauth.OauthTokenResult
-import com.wangzan101.mika.core.oauth.OpenRouterAuth
-import com.wangzan101.mika.core.oauth.XaiAuth
+import com.wangzan101.mika.core.model.chatgpt.ChatGptAuth
+import com.wangzan101.mika.core.model.chatgpt.ChatGptSession
+import com.wangzan101.mika.core.model.chatgpt.ChatGptTokens
+import com.wangzan101.mika.core.model.oauth.AccountSession
+import com.wangzan101.mika.core.model.oauth.AccountTokens
+import com.wangzan101.mika.core.model.oauth.OauthTokenResult
+import com.wangzan101.mika.core.model.oauth.OpenRouterAuth
+import com.wangzan101.mika.core.model.oauth.XaiAuth
 import com.wangzan101.mika.core.model.ListedModel
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject

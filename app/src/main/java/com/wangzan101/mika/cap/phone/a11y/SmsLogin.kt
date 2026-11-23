@@ -1,7 +1,7 @@
 package com.wangzan101.mika.cap.phone.a11y
 
 import android.view.accessibility.AccessibilityNodeInfo
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

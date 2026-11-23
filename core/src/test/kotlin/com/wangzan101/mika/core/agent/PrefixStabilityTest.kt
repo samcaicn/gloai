@@ -4,7 +4,7 @@ import com.wangzan101.mika.core.model.Capabilities
 import com.wangzan101.mika.core.model.OpenAiCompatModel
 import com.wangzan101.mika.core.cap.sandbox.CommandResult
 import com.wangzan101.mika.core.cap.sandbox.FakeSandbox
-import com.wangzan101.mika.core.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
 import com.wangzan101.mika.core.testing.Screen
 import com.wangzan101.mika.core.testing.ScriptedScreen
 import com.wangzan101.mika.core.testing.label

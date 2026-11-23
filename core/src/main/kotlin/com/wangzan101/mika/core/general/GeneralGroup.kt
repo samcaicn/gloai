@@ -8,6 +8,6 @@ internal object GeneralGroup {
         Wait, ViewPastScreens, ViewUserScreen, AskUser, RequestConfirmation, HandToUser, HandleObstacle, EndNotDone,
         KnowledgeSearch, KnowledgeRead, SkillSearch, SkillRead, SkillSave, MemorySearch, MemorySave, MemoryEdit, ProfileEdit, HistoryRead, NoticesRead, WebSearchTool, ScheduleTask, SpawnAgent,
         TaskMemorySearch, TaskMemoryTimeline, TaskMemoryStepRead,
-        com.wangzan101.mika.core.settings.SettingsList, com.wangzan101.mika.core.settings.SettingsSet,
+        com.wangzan101.mika.core.self.SettingsList, com.wangzan101.mika.core.self.SettingsSet,
     ) + com.wangzan101.mika.core.self.SelfGroup.tools
 }

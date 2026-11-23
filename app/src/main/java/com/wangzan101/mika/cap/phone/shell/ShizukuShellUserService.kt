@@ -13,7 +13,7 @@ import android.os.Process
 import android.view.Surface
 import androidx.annotation.Keep
 import com.wangzan101.mika.BuildConfig
-import com.wangzan101.mika.core.shell.HelperHandoff
+import com.wangzan101.mika.core.device.shell.HelperHandoff
 import com.wangzan101.mika.shell.IMikaShell
 import kotlin.system.exitProcess
 

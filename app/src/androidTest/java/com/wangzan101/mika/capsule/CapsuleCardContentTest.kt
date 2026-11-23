@@ -27,7 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.wangzan101.mika.confirm.ConfirmationCopy
+import com.wangzan101.mika.task.ConfirmationCopy
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.ui.theme.MikaTheme
 import org.junit.Assert.assertEquals
@@ -59,7 +59,7 @@ class CapsuleCardContentTest {
         override fun loadEarlier() { calls += "earlier" }
         override fun captureScreen() { calls += "capture" }
         override fun dropScreen() { calls += "drop" }
-        override fun setFollowUpMode(mode: com.wangzan101.mika.ui.FollowUpMode) { calls += "mode:$mode" }
+        override fun setFollowUpMode(mode: com.wangzan101.mika.chat.ui.FollowUpMode) { calls += "mode:$mode" }
         override fun askQuit() { calls += "askQuit" }
         override fun cancelQuit() { calls += "cancelQuit" }
         override fun quit() { calls += "quit" }
@@ -75,7 +75,7 @@ class CapsuleCardContentTest {
     private fun show(card: CardView, preview: Bitmap? = null, zoomed: Boolean = false, thread: ChatThread? = null, input: CardInputUi = CardInputUi()) {
         compose.setContent {
             MikaTheme(dark = false, reduceMotion = true) {
-                androidx.compose.runtime.CompositionLocalProvider(com.wangzan101.mika.ui.LocalScreenShots provides shots) {
+                androidx.compose.runtime.CompositionLocalProvider(com.wangzan101.mika.chat.ui.LocalScreenShots provides shots) {
                     CapsuleCard(card, preview, zoomed, actions, { if (it == null) null else "0:23" }, thread = thread, height = 420.dp, input = input)
                 }
             }
@@ -84,11 +84,11 @@ class CapsuleCardContentTest {
 
     /** 假的屏幕存储:s1 是设置页的一屏,s2 是不让截图的页面。 */
     private val at = java.time.LocalDateTime.of(2026, 10, 28, 19, 42).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-    private val shots = com.wangzan101.mika.ui.ScreenShots { _, id ->
+    private val shots = com.wangzan101.mika.chat.ui.ScreenShots { _, id ->
         when (id) {
-            "s1" -> com.wangzan101.mika.ui.ShownScreen(com.wangzan101.mika.core.userscreen.UserScreen("s1", at, "com.android.settings", "设置"),
+            "s1" -> com.wangzan101.mika.chat.ui.ShownScreen(com.wangzan101.mika.core.screen.user.UserScreen("s1", at, "com.android.settings", "设置"),
                 Bitmap.createBitmap(90, 200, Bitmap.Config.ARGB_8888).asImageBitmap())
-            "s2" -> com.wangzan101.mika.ui.ShownScreen(com.wangzan101.mika.core.userscreen.UserScreen("s2", at, "com.example.bank", "银行", blocked = true), null)
+            "s2" -> com.wangzan101.mika.chat.ui.ShownScreen(com.wangzan101.mika.core.screen.user.UserScreen("s2", at, "com.example.bank", "银行", blocked = true), null)
             else -> null
         }
     }
@@ -105,7 +105,7 @@ class CapsuleCardContentTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithText(tag, useUnmergedTree = true).fetchSemanticsNodes().size == 1 }
         compose.onAllNodesWithTag("screen-thumb", useUnmergedTree = true).assertCountEquals(1)
         compose.onNodeWithText("第三条有没有坑?", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText(com.wangzan101.mika.ui.ScreenCopy.BLOCKED, useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText(com.wangzan101.mika.chat.ui.ScreenCopy.BLOCKED, useUnmergedTree = true).assertIsDisplayed()
         // 带屏幕的那句不把编号那一行当成字显示
         compose.onAllNodesWithText("[[screen:", substring = true, useUnmergedTree = true).assertCountEquals(0)
         // 往上翻到第一句:只发了屏幕,没有附言气泡
@@ -125,12 +125,12 @@ class CapsuleCardContentTest {
     }
 
     @Test fun attachmentChipShowsScreenAndCanBeSentOrRemoved() {
-        val screen = com.wangzan101.mika.core.userscreen.UserScreen("", at, "com.android.settings", "设置")
-        val pending = PendingScreen(com.wangzan101.mika.core.userscreen.CapturedScreen(byteArrayOf(1), screen),
+        val screen = com.wangzan101.mika.core.screen.user.UserScreen("", at, "com.android.settings", "设置")
+        val pending = PendingScreen(com.wangzan101.mika.core.screen.user.CapturedScreen(byteArrayOf(1), screen),
             Bitmap.createBitmap(90, 200, Bitmap.Config.ARGB_8888).asImageBitmap())
         show(CardView.Chat("c1", title = "t"), thread = idleThread(), input = CardInputUi(screen = pending))
         compose.onNodeWithTag("capsule-attachment").assertIsDisplayed()
-        compose.onNodeWithText(com.wangzan101.mika.ui.ScreenCopy.TAG, useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText(com.wangzan101.mika.chat.ui.ScreenCopy.TAG, useUnmergedTree = true).assertIsDisplayed()
         compose.onNodeWithText("设置 · 19:42", useUnmergedTree = true).assertIsDisplayed()
         // 只挂着截图、没写字也能直接发
         compose.onNodeWithTag("capsule-send").performClick()
@@ -139,10 +139,10 @@ class CapsuleCardContentTest {
     }
 
     @Test fun blockedChipSaysNotCaptured() {
-        val screen = com.wangzan101.mika.core.userscreen.UserScreen("", at, "com.example.bank", "银行", blocked = true)
+        val screen = com.wangzan101.mika.core.screen.user.UserScreen("", at, "com.example.bank", "银行", blocked = true)
         show(CardView.Chat("c1", title = "t"), thread = idleThread(),
-            input = CardInputUi(screen = PendingScreen(com.wangzan101.mika.core.userscreen.CapturedScreen(null, screen), null)))
-        compose.onNodeWithText(com.wangzan101.mika.ui.ScreenCopy.BLOCKED, useUnmergedTree = true).assertIsDisplayed()
+            input = CardInputUi(screen = PendingScreen(com.wangzan101.mika.core.screen.user.CapturedScreen(null, screen), null)))
+        compose.onNodeWithText(com.wangzan101.mika.chat.ui.ScreenCopy.BLOCKED, useUnmergedTree = true).assertIsDisplayed()
     }
 
     private fun chat(r: CardRun) = CardView.Chat(r.run.conversationId, r, CapsuleCards.content(r))

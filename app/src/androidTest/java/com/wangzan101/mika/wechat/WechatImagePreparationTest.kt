@@ -3,8 +3,8 @@ package com.wangzan101.mika.wechat
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import com.wangzan101.mika.core.wechat.WechatDownloadedImage
-import com.wangzan101.mika.core.wechat.WechatImages
+import com.wangzan101.mika.core.cap.wechat.WechatDownloadedImage
+import com.wangzan101.mika.core.cap.wechat.WechatImages
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.ByteArrayOutputStream

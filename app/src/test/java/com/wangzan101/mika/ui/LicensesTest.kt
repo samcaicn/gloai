@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import com.wangzan101.mika.about.ui.Licenses
 
 class LicensesTest {
     /** 单元测试的工作目录是 app/;仓库根目录在上一级。 */

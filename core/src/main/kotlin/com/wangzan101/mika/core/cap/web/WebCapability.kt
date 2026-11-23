@@ -5,22 +5,22 @@ import com.wangzan101.mika.core.capability.Capability
 import com.wangzan101.mika.core.capability.CapabilityKey
 import com.wangzan101.mika.core.capability.CapabilityStatus
 import com.wangzan101.mika.core.capability.PromptEnv
-import com.wangzan101.mika.core.uistate.Surface
-import com.wangzan101.mika.core.observation.Look
+import com.wangzan101.mika.core.screen.uistate.Surface
+import com.wangzan101.mika.core.screen.observation.Look
 import com.wangzan101.mika.core.net.UrlHost
 import com.wangzan101.mika.core.prompt.Prompts
-import com.wangzan101.mika.core.uistate.ScreenPort
-import com.wangzan101.mika.core.uistate.ScreenSnapshot
-import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.screen.uistate.ScreenPort
+import com.wangzan101.mika.core.screen.uistate.ScreenSnapshot
+import com.wangzan101.mika.core.screen.uistate.ActionResult
 import com.wangzan101.mika.core.tool.AgentTool
 import com.wangzan101.mika.core.tool.ArgError
 import com.wangzan101.mika.core.tool.ToolContext
 import com.wangzan101.mika.core.workspace.WorkspacePathCheck
 import kotlinx.coroutines.CancellationException
-import com.wangzan101.mika.core.uistate.sessions
-import com.wangzan101.mika.core.uistate.DwellStop
-import com.wangzan101.mika.core.uistate.IdleScroll
-import com.wangzan101.mika.core.uistate.PlacePace
+import com.wangzan101.mika.core.screen.uistate.sessions
+import com.wangzan101.mika.core.screen.uistate.DwellStop
+import com.wangzan101.mika.core.screen.uistate.IdleScroll
+import com.wangzan101.mika.core.screen.uistate.PlacePace
 
 private const val EVIDENCE_PAGE_CHARS = 3000
 private val HOST_RE = Regex("^[a-z0-9-]+(\\.[a-z0-9-]+)+$")

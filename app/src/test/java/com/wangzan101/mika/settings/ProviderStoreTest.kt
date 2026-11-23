@@ -22,11 +22,11 @@ import com.wangzan101.mika.core.model.TtsCapabilities
 import com.wangzan101.mika.core.model.Usage
 import com.wangzan101.mika.core.search.GoogleGroundingSearch
 import com.wangzan101.mika.core.search.WebSearchResult
-import com.wangzan101.mika.core.usage.ProactiveBudget
-import com.wangzan101.mika.core.usage.UsageKey
-import com.wangzan101.mika.core.usage.UsageLedger
-import com.wangzan101.mika.core.usage.UsagePurpose
-import com.wangzan101.mika.core.usage.UsageSource
+import com.wangzan101.mika.core.model.usage.ProactiveBudget
+import com.wangzan101.mika.core.model.usage.UsageKey
+import com.wangzan101.mika.core.model.usage.UsageLedger
+import com.wangzan101.mika.core.model.usage.UsagePurpose
+import com.wangzan101.mika.core.model.usage.UsageSource
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer

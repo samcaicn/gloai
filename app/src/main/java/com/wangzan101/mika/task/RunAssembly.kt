@@ -6,25 +6,25 @@ import com.wangzan101.mika.browser.PageLoans
 import com.wangzan101.mika.cap.phone.a11y.LazyPhoneScreen
 import com.wangzan101.mika.cap.web.WebStack
 import com.wangzan101.mika.cap.web.WebTab
-import com.wangzan101.mika.core.access.AppAccessDenied
+import com.wangzan101.mika.core.device.access.AppAccessDenied
 import com.wangzan101.mika.core.agent.SpeedFlags
 import com.wangzan101.mika.core.cap.phone.AppPacePlan
-import com.wangzan101.mika.core.decision.DecisionModel
-import com.wangzan101.mika.core.knowledge.GuideCatalog
-import com.wangzan101.mika.core.knowledge.KnowledgeStore
-import com.wangzan101.mika.core.memory.MemoryStore
-import com.wangzan101.mika.core.memory.ProfileEntry
-import com.wangzan101.mika.core.memory.TaskMemoryStore
-import com.wangzan101.mika.core.memory.UserUtterances
+import com.wangzan101.mika.core.model.decision.DecisionModel
+import com.wangzan101.mika.core.learn.knowledge.GuideCatalog
+import com.wangzan101.mika.core.learn.knowledge.KnowledgeStore
+import com.wangzan101.mika.core.learn.memory.MemoryStore
+import com.wangzan101.mika.core.learn.memory.ProfileEntry
+import com.wangzan101.mika.core.learn.memory.TaskMemoryStore
+import com.wangzan101.mika.core.learn.memory.UserUtterances
 import com.wangzan101.mika.core.model.ChatModel
-import com.wangzan101.mika.core.record.RunSink
-import com.wangzan101.mika.core.resource.ResourceScope
-import com.wangzan101.mika.core.trace.RunTrace
-import com.wangzan101.mika.core.usage.RunUsageTally
-import com.wangzan101.mika.core.usage.DeepSeekRunCost
+import com.wangzan101.mika.core.run.record.RunSink
+import com.wangzan101.mika.core.run.ResourceScope
+import com.wangzan101.mika.core.run.trace.RunTrace
+import com.wangzan101.mika.core.model.usage.RunUsageTally
+import com.wangzan101.mika.core.model.usage.DeepSeekRunCost
 import com.wangzan101.mika.core.run.RunSpec
 import com.wangzan101.mika.core.tool.ToolDispatcher
-import com.wangzan101.mika.core.userscreen.UserScreenSource
+import com.wangzan101.mika.core.screen.user.UserScreenSource
 import com.wangzan101.mika.record.DetailedTraces
 import com.wangzan101.mika.record.RunHandle
 import com.wangzan101.mika.record.RunStore
@@ -59,7 +59,7 @@ internal class RunAssembly(
     var watcher: DeviceStateWatcher? = null
     var mute: AudioMute? = null
     // 模型标下的任务结束时各 App 的去留(在手机端口上);收尾时交给内置助手
-    var afterTask: com.wangzan101.mika.core.uistate.AfterTaskMarks? = null
+    var afterTask: com.wangzan101.mika.core.screen.uistate.AfterTaskMarks? = null
     var shellDeath: IBinder.DeathRecipient? = null
     var shellBinder: IBinder? = null
     var record: RunHandle? = null
@@ -72,7 +72,7 @@ internal class RunAssembly(
     var liveFeed: AutoCloseable? = null
     var approval: RunApproval? = null
     // 应用访问边界:工具和预览画面共用一份(接手机端口时建),窗口没变时核对结果直接沿用,预览不必每一帧都问窗口
-    var accessGuard: com.wangzan101.mika.core.uistate.AppAccessScreenPort? = null
+    var accessGuard: com.wangzan101.mika.core.screen.uistate.AppAccessScreenPort? = null
     var smsPrivacy: com.wangzan101.mika.core.cap.phone.sms.SmsPrivateScreen? = null
 
     suspend fun previewAllowed(): Boolean {
@@ -107,7 +107,7 @@ internal class RunPhone(
     val shellUp: MutableStateFlow<Boolean>,
     val states: DeviceStateWatcher,
     val phoneScreen: LazyPhoneScreen,
-    val accessedPhone: com.wangzan101.mika.core.uistate.AppAccessScreenPort,
+    val accessedPhone: com.wangzan101.mika.core.screen.uistate.AppAccessScreenPort,
     val privatePhone: com.wangzan101.mika.core.cap.phone.sms.SmsPrivateScreen,
 )
 
