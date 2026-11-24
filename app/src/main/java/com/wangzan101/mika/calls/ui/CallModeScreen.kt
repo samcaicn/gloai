@@ -61,6 +61,12 @@ internal fun callModeLine(snapshot: VoiceCatalogSnapshot, engine: CallEngine): S
     )
 }
 
+/** 「想」那一行的提示:选了轻模型时说明没配轻模型会用主模型([deskModel] 就是这样退的);选主模型不用提示。 */
+internal fun thinkFallbackHint(think: ThinkModel): Int? = when (think) {
+    ThinkModel.Light -> R.string.call_mode_think_light_note
+    ThinkModel.Main -> null
+}
+
 internal fun silenceSeconds(ms: Int): String = String.format(Locale.getDefault(), "%.1f", ms / 1000f)
 
 /**
@@ -107,6 +113,7 @@ fun CallModeScreen(onBack: () -> Unit, onOpenStt: () -> Unit, onOpenTts: () -> U
                 ListRow(
                     MikaIcons.Spark, stringResource(R.string.call_mode_think),
                     stringResource(R.string.call_mode_think_note),
+                    detail = thinkFallbackHint(s.think)?.let { stringResource(it) },
                 ) {}
                 SegmentedControl(
                     listOf(stringResource(R.string.call_mode_think_light), stringResource(R.string.call_mode_think_main)),

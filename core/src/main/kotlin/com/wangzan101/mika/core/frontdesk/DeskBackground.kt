@@ -1,5 +1,7 @@
 package com.wangzan101.mika.core.frontdesk
 
+import com.wangzan101.mika.core.agent.Turn
+import com.wangzan101.mika.core.agent.UserWords
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -34,6 +36,13 @@ fun deskBackground(tasks: () -> List<DeskTaskView>, memory: suspend (String) -> 
         ).takeIf { it.isNotEmpty() }?.joinToString("\n\n")
     }
 }
+
+/**
+ * 开场时画一次的背景,给没有每轮附注的入口(实时通话):任务板,加按这条会话最近一句用户原话([prior] 里最后一句,
+ * 只取他自己说的部分)检索的记忆。会话还没有用户说过的话时不检索记忆。
+ */
+suspend fun DeskBackground.opening(prior: List<Turn>): String? =
+    render(prior.asReversed().firstNotNullOfOrNull { UserWords.saidToDesk(it.userText).ifBlank { null } }.orEmpty())
 
 /** 记住上一句用户原话检索到的记忆(包括没检索到),同一句再问直接给;并发来问同一句只检索一次。 */
 private class RecallOncePerText(private val memory: suspend (String) -> String?) {

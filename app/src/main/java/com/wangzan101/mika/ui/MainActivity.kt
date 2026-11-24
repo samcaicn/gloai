@@ -521,6 +521,7 @@ private fun MikaRoot(
             turns = { ConversationStore.shared(context).turns(it) },
             appendTurn = { id, turn -> ConversationStore.shared(context).append(id, turn) },
             attachService = { VoiceCallService.attach(context, it) },
+            persona = { com.wangzan101.mika.frontdesk.deskPersona(app) },
         )
     }
     // 查到的新版本:侧栏、设置首页、关于页的红点都看它

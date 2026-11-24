@@ -16,6 +16,7 @@
     <string name="call_mode_think_light">Light model</string>
     <string name="call_mode_think_main">Main model</string>
     <string name="call_mode_think_note">The model the front desk uses (chat and calls)</string>
+    <string name="call_mode_think_light_note">Replies sooner; uses the main model when no light model is set</string>
     <string name="call_mode_listen_device">Device recognition can\'t hear call audio. Pick a service model to listen.</string>
     <string name="call_mode_rhythm">Turn taking</string>
     <string name="call_mode_silence">When they\'re done</string>

@@ -16,6 +16,7 @@
     <string name="call_mode_think_light">مدل سبک</string>
     <string name="call_mode_think_main">مدل اصلی</string>
     <string name="call_mode_think_note">مدلی که میز پذیرش استفاده می‌کند (گفتگو و تماس‌ها)</string>
+    <string name="call_mode_think_light_note">پاسخ سریع‌تر؛ بدون مدل سبک از مدل اصلی استفاده می‌کند</string>
     <string name="call_mode_listen_device">تشخیص داخلی گوشی صدای تماس را نمی‌شنود. برای «شنیدن» یک مدل از سرویس‌ها انتخاب کنید.</string>
     <string name="call_mode_rhythm">نوبت گفتگو</string>
     <string name="call_mode_silence">چه وقت حرفش تمام شده</string>

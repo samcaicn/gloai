@@ -28,11 +28,13 @@ import com.wangzan101.mika.calls.VolcRealtimeConfig
 import com.wangzan101.mika.calls.VolcRealtimeCredentials
 import com.wangzan101.mika.calls.VolcRealtimeException
 import com.wangzan101.mika.core.agent.Turn as ChatTurn
+import com.wangzan101.mika.core.frontdesk.DeskPersona
 import com.wangzan101.mika.core.frontdesk.DeskPrompt
 import com.wangzan101.mika.core.frontdesk.DeskTaskPhase
 import com.wangzan101.mika.core.frontdesk.DeskToolSet
 import com.wangzan101.mika.core.frontdesk.DeskTools
 import com.wangzan101.mika.core.frontdesk.LlmBrain
+import com.wangzan101.mika.core.frontdesk.opening
 import com.wangzan101.mika.frontdesk.DeskRegistry
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.browser.ui.findActivity
@@ -259,7 +261,7 @@ class VoiceCallController(
                     return@connect try {
                         cascade.open(
                             CallUse.InApp,
-                            DeskPrompt.user(spoken = true),
+                            DeskPrompt.user(spoken = true, persona = deps.persona()),
                             DeskTools.specs(DeskToolSet.User).map(LlmBrain::toolSpec),
                             language = null,
                             prior = deps.turns(conversation),
@@ -272,8 +274,9 @@ class VoiceCallController(
                 val profile = profile!!
                 val credentials = activeCredentials(profile)
                     ?: throw VolcRealtimeException(VolcRealtimeException.Kind.AUTH)
-                // 实时模型没有每轮的背景附注:开场时把任务板放进说明,之后的变化由前台汇报念给它听。
-                val board = deps.desks.background(conversation).render("").orEmpty().take(MAX_OPENING_BOARD_CHARS)
+                // 实时模型没有每轮的背景附注:开场时把任务板和相关记忆放进说明(记忆按这条会话最近一句用户原话检索一次),
+                // 之后的变化由前台汇报念给它听。
+                val board = deps.desks.background(conversation).opening(deps.turns(conversation)).orEmpty().take(MAX_OPENING_BOARD_CHARS)
                 VolcRealtimeClient(endpoint = profile.endpoint).connect(
                     credentials,
                     VolcRealtimeConfig(
@@ -282,6 +285,7 @@ class VoiceCallController(
                         model = profile.model,
                         agentTools = true,
                         protocol = profile.protocol,
+                        deskPersona = deps.persona(),
                     ),
                 ).also { currentRealtime = it }
             },
@@ -347,7 +351,7 @@ class VoiceCallController(
     }
 
     private companion object {
-        /** 实时会话开场说明里任务板最多放这么多字(说明总长有上限)。 */
+        /** 实时会话开场说明里任务板和记忆最多放这么多字(说明总长有上限)。 */
         const val MAX_OPENING_BOARD_CHARS = 4_000
     }
 }
@@ -370,6 +374,8 @@ class VoiceCallDeps(
     val turns: (String) -> List<ChatTurn>,
     val appendTurn: suspend (String, ChatTurn) -> Unit,
     val attachService: (VoiceCallSession) -> Boolean,
+    /** 前台此刻用的人格(称呼和人格层),每次接通时取一次。 */
+    val persona: () -> DeskPersona = { DeskPersona() },
 )
 
 /**

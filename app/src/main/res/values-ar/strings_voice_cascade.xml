@@ -16,6 +16,7 @@
     <string name="call_mode_think_light">النموذج الخفيف</string>
     <string name="call_mode_think_main">النموذج الرئيسي</string>
     <string name="call_mode_think_note">النموذج الذي يستخدمه مكتب الاستقبال (للمحادثة والمكالمات)</string>
+    <string name="call_mode_think_light_note">يرد أسرع؛ يستخدم الرئيسي إن لم يُضبط خفيف</string>
     <string name="call_mode_listen_device">التعرف المدمج في الهاتف لا يسمع صوت المكالمة. اختر نموذجًا من خدمة للاستماع.</string>
     <string name="call_mode_rhythm">تبادل الأدوار</string>
     <string name="call_mode_silence">متى انتهى من الكلام</string>

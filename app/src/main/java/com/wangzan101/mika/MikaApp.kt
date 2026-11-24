@@ -609,7 +609,9 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                     com.wangzan101.mika.frontdesk.deskModel(app)?.let { model ->
                         com.wangzan101.mika.core.frontdesk.LlmBrain(
                             model,
-                            com.wangzan101.mika.core.frontdesk.DeskPrompt.user(spoken = false),
+                            com.wangzan101.mika.core.frontdesk.DeskPrompt.user(
+                                spoken = false, persona = com.wangzan101.mika.frontdesk.deskPersona(app),
+                            ),
                             com.wangzan101.mika.core.frontdesk.DeskTools.specs(com.wangzan101.mika.core.frontdesk.DeskToolSet.User)
                                 .map(com.wangzan101.mika.core.frontdesk.LlmBrain::toolSpec),
                             background = desks.background(id),

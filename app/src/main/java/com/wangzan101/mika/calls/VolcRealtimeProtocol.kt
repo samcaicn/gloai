@@ -1,5 +1,6 @@
 package com.wangzan101.mika.calls
 
+import com.wangzan101.mika.core.frontdesk.DeskPersona
 import com.wangzan101.mika.core.frontdesk.DeskPrompt
 import com.wangzan101.mika.core.frontdesk.DeskToolSet
 import com.wangzan101.mika.core.frontdesk.DeskTools
@@ -21,6 +22,8 @@ data class VolcRealtimeConfig(
     /** 应用内语音通话:模型当前台,带前台的用户工具(派单、补充、回答、取消),[systemPrompt] 只放开场时的任务板。 */
     val agentTools: Boolean = false,
     val protocol: CallVoiceProtocol = CallVoiceProtocol.VOLC_DUPLEX,
+    /** [agentTools] 时前台说明用的人格(称呼和人格层),和聊天里的前台同一套。 */
+    val deskPersona: DeskPersona = DeskPersona(),
 ) {
     init {
         require(systemPrompt.length <= MAX_PROMPT_CHARS) { "Realtime system prompt is too long" }
@@ -81,7 +84,7 @@ internal object VolcRealtimeProtocol {
             put("model", config.model)
             // 前台说明在前,开场时的任务板(若有)接在后面。
             val instructions = if (config.agentTools) {
-                listOf(DeskPrompt.user(spoken = true), config.systemPrompt).filter { it.isNotBlank() }.joinToString("\n\n")
+                listOf(DeskPrompt.user(spoken = true, persona = config.deskPersona), config.systemPrompt).filter { it.isNotBlank() }.joinToString("\n\n")
             } else {
                 config.systemPrompt
             }

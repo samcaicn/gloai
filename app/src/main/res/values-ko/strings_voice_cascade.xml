@@ -16,6 +16,7 @@
     <string name="call_mode_think_light">경량 모델</string>
     <string name="call_mode_think_main">메인 모델</string>
     <string name="call_mode_think_note">프런트 데스크가 사용하는 모델(채팅 및 통화)</string>
+    <string name="call_mode_think_light_note">더 빨리 답함. 경량 모델이 없으면 메인 모델 사용</string>
     <string name="call_mode_listen_device">기기 음성 인식은 통화 소리를 들을 수 없습니다. \'듣기\'에 서비스 모델을 고르세요.</string>
     <string name="call_mode_rhythm">대화 흐름</string>
     <string name="call_mode_silence">말이 끝났다는 판단</string>

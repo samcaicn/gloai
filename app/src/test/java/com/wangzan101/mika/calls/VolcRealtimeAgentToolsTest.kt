@@ -1,6 +1,8 @@
 package com.wangzan101.mika.calls
 
+import com.wangzan101.mika.core.frontdesk.DeskPersona
 import com.wangzan101.mika.core.frontdesk.DeskPrompt
+import com.wangzan101.mika.core.prompt.PersonaPrompt
 import com.wangzan101.mika.core.frontdesk.DeskToolSet
 import com.wangzan101.mika.core.frontdesk.DeskTools
 import kotlinx.coroutines.CompletableDeferred
@@ -342,5 +344,15 @@ class VolcRealtimeAgentToolsTest {
             http.connectionPool.evictAll()
             server.shutdown()
         }
+    }
+
+    // 实时通话的前台说明也带用户选的人格:称呼进第一句,人格层接在前台说明后面,开场的任务板在最后
+    @Test fun realtimeDeskInstructionsCarryThePersona() {
+        val layer = PersonaPrompt.layer("温柔", "说话温柔一点。", assistant = "小薇")!!
+        val config = VolcRealtimeConfig(systemPrompt = "任务板", agentTools = true, deskPersona = DeskPersona("小薇", layer))
+        val session = Json.parseToJsonElement(VolcRealtimeProtocol.create("e1", config)).jsonObject.getValue("session").jsonObject
+        val instructions = session.getValue("instructions").jsonPrimitive.content
+        assertEquals(DeskPrompt.user(spoken = true, persona = DeskPersona("小薇", layer)) + "\n\n任务板", instructions)
+        assertTrue(instructions.contains(layer))
     }
 }

@@ -16,6 +16,7 @@
     <string name="call_mode_think_light">Hafif model</string>
     <string name="call_mode_think_main">Ana model</string>
     <string name="call_mode_think_note">Ön büronun kullandığı model (sohbet ve aramalar)</string>
+    <string name="call_mode_think_light_note">Daha hızlı yanıtlar; hafif model yoksa ana model</string>
     <string name="call_mode_listen_device">Cihazın tanıması arama sesini duyamaz. Dinlemek için bir servis modeli seç.</string>
     <string name="call_mode_rhythm">Konuşma sırası</string>
     <string name="call_mode_silence">Ne zaman bitti</string>
