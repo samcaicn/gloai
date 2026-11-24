@@ -92,6 +92,23 @@ class MikaColors(
         )
     }
 
+    /**
+     * AI 电话几页用的配色:白页面、浅灰实色分组、白底图标块,分组不描边不投影。
+     * 深色下分组比页面亮一级,图标块再亮一级。
+     */
+    fun forCalls(): MikaColors = MikaColors(
+        bg = if (isDark) bg else surface,
+        surface = if (isDark) Color(0xFF1C1C1F) else Color(0xFFF4F5F7),
+        fill = fill, ink = ink, ink2 = ink2, ink3 = ink3, inkSoft = inkSoft, hair = hair,
+        edge = Color.Transparent,
+        accent = accent, accentSoft = accentSoft, onAccent = onAccent,
+        ok = ok, okSoft = okSoft, warn = warn, warnSolid = warnSolid, warnSoft = warnSoft, bad = bad, badSoft = badSoft,
+        neutralSoft = if (isDark) Color(0xFF2C2C30) else Color(0xFFFFFFFF),
+        answer = answer, greySoft = greySoft, glass = glass, glassEdge = glassEdge,
+        cardShadow = Color.Transparent, floatShadow = floatShadow, thumb = thumb, series = series, seriesOther = seriesOther,
+        grid = grid, isDark = isDark,
+    )
+
     /** 用户气泡的底:淡强调色压成实色。 */
     val userBubble: Color
         get() = accent.copy(alpha = if (isDark) 0.24f else 0.09f).compositeOver(if (isDark) bg else surface)

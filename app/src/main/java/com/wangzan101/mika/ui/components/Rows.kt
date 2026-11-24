@@ -150,6 +150,8 @@ fun ListRow(
     detailColor: Color = Color.Unspecified,
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    /** 标题最多几行,超出省略(列表里的长标题用 1)。 */
+    titleMaxLines: Int = Int.MAX_VALUE,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     val c = MikaTheme.colors
@@ -164,7 +166,8 @@ fun ListRow(
     ) {
         if (icon != null) IconTile(icon, tone, brandTile)
         Column(Modifier.weight(1f).padding(vertical = 11.dp)) {
-            Text(title, style = MikaType.Body, color = titleColor.takeOrElse { c.ink })
+            Text(title, style = MikaType.Body, color = titleColor.takeOrElse { c.ink },
+                maxLines = titleMaxLines, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             if (!subtitle.isNullOrEmpty()) Text(subtitle, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink3)
             if (!detail.isNullOrEmpty()) Text(detail, Modifier.padding(top = 2.dp), style = MikaType.Hint, color = detailColor.takeOrElse { c.ink3 })
         }

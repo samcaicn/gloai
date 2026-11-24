@@ -18,6 +18,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.wangzan101.mika.ui.theme.MikaSize
+import com.wangzan101.mika.ui.theme.MikaType
 import com.wangzan101.mika.R
 import com.wangzan101.mika.calls.CallActionResult
 import com.wangzan101.mika.calls.CallConfig
@@ -92,9 +103,6 @@ internal fun CallTaskScreen(
     onVoiceProfiles: () -> Unit,
     voiceBriefing: VoiceBriefingLauncher? = null,
 ) {
-    var questionsOpen by rememberSaveable { mutableStateOf(false) }
-    var contextOpen by rememberSaveable { mutableStateOf(false) }
-    var constraintsOpen by rememberSaveable { mutableStateOf(false) }
     var showSims by rememberSaveable { mutableStateOf(false) }
     var review by remember { mutableStateOf<CallTaskSubmission?>(null) }
     val number = CallPolicy.outgoingNumber(draft.number)
@@ -113,105 +121,91 @@ internal fun CallTaskScreen(
     }
 
     feedback?.let { CallFeedback(it) }
-    Column(Modifier.fillMaxWidth().testTag("call-task-fields"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        OutlinedTextField(
-            draft.number, { draft.number = it }, enabled = editable,
-            label = { Text(stringResource(R.string.calls_number)) },
-            modifier = Modifier.fillMaxWidth().testTag("call-number"), singleLine = true,
-            textStyle = TextStyle(textDirection = TextDirection.Ltr),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            isError = draft.number.isNotBlank() && number == null,
-            supportingText = if (draft.number.isNotBlank() && number == null) ({
-                Text(stringResource(R.string.calls_task_number_hint))
-            }) else null,
-        )
-        OutlinedTextField(
-            draft.goal, { draft.goal = it }, enabled = editable,
-            label = { Text(stringResource(R.string.calls_task_goal)) },
-            placeholder = { Text(stringResource(R.string.calls_task_goal_example)) },
-            modifier = Modifier.fillMaxWidth().testTag("call-task-goal"), minLines = 2, maxLines = 3,
-            isError = goalLength > maxGoal,
-            supportingText = if (goalLength > maxGoal) ({
-                Text(stringResource(R.string.calls_task_limit, goalLength, maxGoal))
-            }) else null,
-        )
+    val numberError = draft.number.isNotBlank() && number == null
+    GroupCard(Modifier.testTag("call-task-fields")) {
+        CallFieldRow(MikaIcons.Phone, draft.number, { draft.number = it }, stringResource(R.string.calls_number),
+            editable, "call-number", keyboard = KeyboardType.Phone, ltr = true,
+            error = if (numberError) stringResource(R.string.calls_task_number_hint) else null)
+        Hairline()
+        CallFieldRow(MikaIcons.Doc, draft.goal, { draft.goal = it }, stringResource(R.string.calls_task_goal_example),
+            editable, "call-task-goal", minLines = 3, maxLines = 6,
+            error = if (goalLength > maxGoal) stringResource(R.string.calls_task_limit, goalLength, maxGoal) else null)
     }
-    Spacer(Modifier.height(8.dp))
+
+    // 三个可选项收在一行里;填过的草稿(例如从记录里复用)直接展开
+    val anyExtra = draft.questions.isNotBlank() || draft.context.isNotBlank() || draft.constraints.isNotBlank()
+    var extrasOpen by rememberSaveable { mutableStateOf(false) }
+    val showExtras = extrasOpen || anyExtra
     GroupCard {
-        ListRow(MikaIcons.Mic, stringResource(R.string.calls_voice_title), voiceSummary, first = true,
-            onClick = onVoiceProfiles.takeIf { editable }) { RowChevron() }
-        HorizontalDivider()
-        val simSummary = when {
-            sim != null && draft.simOverride == null && sim.id == config.defaultOutgoingSimId ->
-                stringResource(R.string.calls_sim_preferred, sim.label)
-            sim != null && preferred != null && sim.id != preferred.id ->
-                stringResource(R.string.calls_task_sim_override_summary, sim.label, preferred.label)
+        ListRow(if (showExtras) MikaIcons.ListChecks else MikaIcons.Plus,
+            stringResource(R.string.calls_task_more), first = true, titleColor = MikaTheme.colors.accent,
+            onClick = { if (!anyExtra) extrasOpen = !extrasOpen }.takeIf { !anyExtra },
+            modifier = Modifier.testTag("call-task-more"))
+        if (showExtras) {
+            Hairline()
+            CallFieldRow(MikaIcons.Doc, draft.questions, { draft.questions = it },
+                stringResource(R.string.calls_task_questions) + " · " + stringResource(R.string.calls_task_questions_hint),
+                editable, "call-task-questions", minLines = 2, maxLines = 5,
+                error = if (badQuestions) stringResource(R.string.calls_task_questions_limit,
+                    CallTaskBrief.MAX_QUESTIONS, CallTaskBrief.MAX_QUESTION_CHARS) else null)
+            Hairline()
+            CallFieldRow(MikaIcons.Message, draft.context, { draft.context = it }, stringResource(R.string.calls_task_context),
+                editable, "call-task-context", minLines = 1, maxLines = 5,
+                error = if (contextLength > CallTaskBrief.MAX_CONTEXT_CHARS)
+                    stringResource(R.string.calls_task_limit, contextLength, CallTaskBrief.MAX_CONTEXT_CHARS) else null)
+            Hairline()
+            CallFieldRow(MikaIcons.Key, draft.constraints, { draft.constraints = it }, stringResource(R.string.calls_task_constraints),
+                editable, "call-task-constraints", minLines = 1, maxLines = 5,
+                error = if (constraintsLength > CallTaskBrief.MAX_CONSTRAINT_CHARS)
+                    stringResource(R.string.calls_task_limit, constraintsLength, CallTaskBrief.MAX_CONSTRAINT_CHARS) else null)
+        }
+    }
+
+    GroupLabel(stringResource(R.string.calls_this_call))
+    GroupCard {
+        ListRow(MikaIcons.Mic, stringResource(R.string.calls_voice_title), first = true,
+            onClick = onVoiceProfiles.takeIf { editable }) { RowValue(callVoiceShort(voiceSummary)); RowChevron() }
+        val simValue = when {
             sim != null -> sim.label
             config.defaultOutgoingSimId != null && draft.simOverride == null -> stringResource(R.string.calls_sim_unavailable)
-            else -> missingSim
+            else -> stringResource(R.string.calls_not_set)
         }
-        ListRow(MikaIcons.Phone, stringResource(R.string.calls_sim), simSummary,
-            onClick = if (editable) ({ showSims = true }) else null) { RowChevron() }
+        ListRow(MikaIcons.Phone, stringResource(R.string.calls_sim),
+            onClick = if (editable) ({ showSims = true }) else null) {
+            RowValue(simValue, if (sim == null) ValueTone.Warn else ValueTone.Plain); RowChevron()
+        }
     }
 
-    GroupCard {
-        CallFoldRow(MikaIcons.Doc, stringResource(R.string.calls_task_questions), questionsOpen, "call-task-questions-fold",
-            subtitle = stringResource(if (draft.questions.isBlank()) R.string.calls_task_optional else R.string.calls_task_filled)) {
-            questionsOpen = !questionsOpen
-        }
-        if (questionsOpen) OutlinedTextField(
-            draft.questions, { draft.questions = it }, enabled = editable,
-            label = { Text(stringResource(R.string.calls_task_questions)) },
-            placeholder = { Text(stringResource(R.string.calls_task_questions_hint)) },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 8.dp).testTag("call-task-questions"),
-            minLines = 2, maxLines = 4,
-            isError = badQuestions,
-            supportingText = if (badQuestions) ({
-                Text(stringResource(R.string.calls_task_questions_limit, CallTaskBrief.MAX_QUESTIONS, CallTaskBrief.MAX_QUESTION_CHARS))
-            }) else null,
+    if (!ready) MikaButton(stringResource(R.string.calls_device_and_permissions), onSetup,
+        Modifier.fillMaxWidth().padding(bottom = 10.dp), kind = ButtonKind.Tonal)
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        MikaButton(
+            stringResource(R.string.calls_task_review),
+            {
+                if (number != null && brief != null) {
+                    review = CallTaskSubmission(number, sim?.id, sim?.label ?: missingSim, voiceSummary, brief)
+                }
+            },
+            Modifier.weight(1f).testTag("call-task-review"),
+            enabled = editable && number != null && brief != null,
         )
-        HorizontalDivider()
-        CallFoldRow(MikaIcons.Doc, stringResource(R.string.calls_task_context), contextOpen, "call-task-context-fold",
-            subtitle = stringResource(if (draft.context.isBlank()) R.string.calls_task_optional else R.string.calls_task_filled)) {
-            contextOpen = !contextOpen
-        }
-        if (contextOpen) CallTaskLongField(
-            draft.context, { draft.context = it }, stringResource(R.string.calls_task_context),
-            editable, contextLength, CallTaskBrief.MAX_CONTEXT_CHARS, "call-task-context",
-        )
-        HorizontalDivider()
-        CallFoldRow(MikaIcons.Key, stringResource(R.string.calls_task_constraints), constraintsOpen, "call-task-constraints-fold",
-            subtitle = stringResource(if (draft.constraints.isBlank()) R.string.calls_task_optional else R.string.calls_task_filled)) {
-            constraintsOpen = !constraintsOpen
-        }
-        if (constraintsOpen) CallTaskLongField(
-            draft.constraints, { draft.constraints = it }, stringResource(R.string.calls_task_constraints),
-            editable, constraintsLength, CallTaskBrief.MAX_CONSTRAINT_CHARS, "call-task-constraints",
-        )
-    }
-
-    if (!ready) {
-        OutlinedButton(onClick = onSetup, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.calls_device_and_permissions))
+        voiceBriefing?.let { voice ->
+            val voiceLabel = stringResource(R.string.calls_voice_briefing_start)
+            val canVoice = ready && canDial && editable && !voice.busy && number != null && sim != null
+            Box(
+                Modifier.size(MikaSize.Button).background(MikaTheme.colors.fill, CircleShape).clip(CircleShape)
+                    .clickable(enabled = canVoice, onClickLabel = voiceLabel, role = Role.Button) {
+                        if (number != null && sim != null) voice.start(number, sim.id, sim.label)
+                    }
+                    .alpha(if (canVoice) 1f else 0.4f)
+                    .semantics { contentDescription = voiceLabel }
+                    .testTag("call-task-voice"),
+                contentAlignment = Alignment.Center,
+            ) { Icon(MikaIcons.Mic, null, Modifier.size(22.dp), tint = MikaTheme.colors.ink) }
         }
     }
-    CallPrimaryButton(
-        stringResource(R.string.calls_task_review), editable && number != null && brief != null,
-        {
-            if (number != null && brief != null) {
-                review = CallTaskSubmission(number, sim?.id, sim?.label ?: missingSim, voiceSummary, brief)
-            }
-        },
-        Modifier.testTag("call-task-review"),
-    )
-    voiceBriefing?.let { voice ->
-        OutlinedButton(
-            onClick = { if (number != null && sim != null) voice.start(number, sim.id, sim.label) },
-            enabled = ready && canDial && editable && !voice.busy && number != null && sim != null,
-            modifier = Modifier.fillMaxWidth().testTag("call-task-voice"),
-        ) { Text(stringResource(R.string.calls_voice_briefing_start)) }
-    }
-    Spacer(Modifier.height(8.dp))
+    Spacer(Modifier.height(4.dp))
     FooterNote(stringResource(R.string.calls_task_one_off))
 
     if (showSims) CallTaskSimDialog(
@@ -233,18 +227,39 @@ internal fun CallTaskScreen(
     }
 }
 
+/**
+ * 分组里的输入行:左边图标块,右边无边框的输入框(空时显示 [placeholder]),出错时下面一行红字。
+ * 和同组的 [ListRow] 共用一条左边线。
+ */
 @Composable
-private fun CallTaskLongField(
-    value: String, onValue: (String) -> Unit, label: String, editable: Boolean, length: Int, max: Int, tag: String,
+private fun CallFieldRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector, value: String, onValue: (String) -> Unit, placeholder: String,
+    enabled: Boolean, tag: String, keyboard: KeyboardType = KeyboardType.Text, ltr: Boolean = false,
+    minLines: Int = 1, maxLines: Int = 1, error: String? = null,
 ) {
-    OutlinedTextField(
-        value, onValue, enabled = editable, label = { Text(label) },
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 8.dp).testTag(tag),
-        minLines = 2, maxLines = 5, isError = length > max,
-        supportingText = if (length > max) ({
-            Text(stringResource(R.string.calls_task_limit, length, max))
-        }) else null,
-    )
+    val c = MikaTheme.colors
+    val single = maxLines == 1
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = MikaSize.RowMin).padding(horizontal = 16.dp, vertical = if (single) 0.dp else 12.dp),
+        verticalAlignment = if (single) Alignment.CenterVertically else Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        IconTile(icon)
+        Column(Modifier.weight(1f).padding(top = if (single) 0.dp else 5.dp)) {
+            Box {
+                if (value.isEmpty()) Text(placeholder, style = MikaType.Body, color = c.ink3)
+                BasicTextField(
+                    value, onValue, Modifier.fillMaxWidth().testTag(tag), enabled = enabled,
+                    singleLine = single, minLines = minLines, maxLines = maxLines,
+                    textStyle = MikaType.Body.copy(color = c.ink,
+                        textDirection = if (ltr) TextDirection.Ltr else TextDirection.Content),
+                    cursorBrush = SolidColor(c.accent),
+                    keyboardOptions = KeyboardOptions(keyboardType = keyboard),
+                )
+            }
+            error?.let { Text(it, Modifier.padding(top = 4.dp), style = MikaType.Caption, color = c.bad) }
+        }
+    }
 }
 
 @Composable

@@ -5,6 +5,8 @@ import android.content.ClipboardManager
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -123,7 +125,6 @@ internal fun CallHistorySection(
         }
     }
 
-    GroupLabel(stringResource(R.string.calls_tab_history))
     if (historyWriteFailed) FooterNote(
         stringResource(R.string.calls_history_write_failed),
         color = MaterialTheme.colorScheme.error,
@@ -132,30 +133,16 @@ internal fun CallHistorySection(
         FooterNote(result.message, Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             color = if (result.ok) MikaTheme.colors.ink3 else MaterialTheme.colorScheme.error)
     }
-    if (history.isNotEmpty() || historyWriteFailed) {
-        TextButton(
-            onClick = { pendingClear = true },
-            enabled = !busy,
-            modifier = Modifier.fillMaxWidth().testTag("call-history-clear"),
-        ) {
-            Text(stringResource(R.string.calls_history_clear), color = MaterialTheme.colorScheme.error)
-        }
-    }
     if (history.isEmpty()) {
         GroupCard { ListRow(MikaIcons.Clock, stringResource(R.string.calls_history_empty), first = true) }
     } else {
-        OutlinedTextField(
-            query, { query = it; showAll = false }, singleLine = true,
-            label = { Text(stringResource(R.string.calls_history_search)) },
-            leadingIcon = { Icon(MikaIcons.Search, contentDescription = null) },
-            modifier = Modifier.fillMaxWidth().testTag("call-history-search"),
-        )
-        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        SearchField(query, { query = it; showAll = false }, stringResource(R.string.calls_history_search),
+            Modifier.testTag("call-history-search"))
+        FlowRow(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             HistoryFilter.entries.forEach { choice ->
-                FilterChip(
-                    selected = filter == choice, onClick = { filter = choice; showAll = false },
-                    label = { Text(stringResource(choice.label)) },
-                    modifier = Modifier.testTag("call-history-filter-${choice.name.lowercase()}"),
+                SelectChip(
+                    stringResource(choice.label), filter == choice, { filter = choice; showAll = false },
+                    Modifier.testTag("call-history-filter-${choice.name.lowercase()}"), small = true,
                 )
             }
         }
@@ -190,6 +177,16 @@ internal fun CallHistorySection(
                         else stringResource(R.string.calls_history_more, results.size))
                 }
             }
+        }
+    }
+    // 清空是危险操作,放在列表最下面,不放在最显眼的顶上
+    if (history.isNotEmpty() || historyWriteFailed) {
+        TextButton(
+            onClick = { pendingClear = true },
+            enabled = !busy,
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp).testTag("call-history-clear"),
+        ) {
+            Text(stringResource(R.string.calls_history_clear), color = MikaTheme.colors.bad)
         }
     }
 
@@ -254,16 +251,21 @@ private fun CallHistoryItem(
     val status = stringResource(if (record.handled) R.string.calls_history_done else R.string.calls_history_open)
     val name = record.number?.let { "\u2066$it\u2069" } ?: stringResource(R.string.calls_unknown_number)
     val expansion = stringResource(if (expanded) R.string.calls_collapse else R.string.calls_transcript)
-    Column(Modifier.fillMaxWidth().semantics { stateDescription = expansion }) {
-        ListRow(MikaIcons.Clock, record.task?.goal ?: name,
-            if (record.task != null) "$name · $direction · $start" else "$direction · $start",
-            first = first, detail = "$status · ${record.result}",
-            onClick = onExpand) { CallExpandIcon(expanded) }
+    val shortTime = remember(record.startedAtMs, locale) { callShortTime(record.startedAtMs, locale) }
+    Column(Modifier.fillMaxWidth().semantics { stateDescription = "$status · $expansion" }) {
+        ListRow(if (record.direction == CallDirection.INCOMING) MikaIcons.Handset else MikaIcons.Phone,
+            record.task?.goal ?: name,
+            if (record.task != null) "$name · $direction" else direction,
+            first = first, onClick = onExpand, titleMaxLines = 1) {
+            if (!record.handled) Box(Modifier.size(7.dp).background(MikaTheme.colors.accent, CircleShape))
+            RowValue(shortTime)
+            CallExpandIcon(expanded)
+        }
         if (expanded) {
             Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 HorizontalDivider()
-                Text(stringResource(R.string.calls_history_period, start, end),
+                Text(stringResource(R.string.calls_history_period, start, end) + " · " + record.result,
                     style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3)
                 record.summary?.let { summary ->
                     summary.purpose?.let { Text("${stringResource(R.string.calls_summary_purpose)}：$it") }
@@ -386,4 +388,14 @@ internal fun callTranscriptSpeakerLabel(role: String): Int = when (role) {
     "system" -> R.string.calls_dtmf_status_label
     CallTranscriptLine.OWNER_UNRELAYED -> R.string.calls_transcript_owner_unrelayed
     else -> R.string.calls_caller
+}
+
+/** 记录行尾的时间:当天只写时刻,其他日子只写日期。 */
+internal fun callShortTime(at: Long, locale: java.util.Locale): String {
+    val now = java.util.Calendar.getInstance()
+    val then = java.util.Calendar.getInstance().apply { timeInMillis = at }
+    val sameDay = now.get(java.util.Calendar.YEAR) == then.get(java.util.Calendar.YEAR) &&
+        now.get(java.util.Calendar.DAY_OF_YEAR) == then.get(java.util.Calendar.DAY_OF_YEAR)
+    val format = if (sameDay) DateFormat.getTimeInstance(DateFormat.SHORT, locale) else DateFormat.getDateInstance(DateFormat.SHORT, locale)
+    return format.format(Date(at))
 }

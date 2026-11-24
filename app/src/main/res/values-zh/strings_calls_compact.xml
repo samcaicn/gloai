@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="calls_auto_off_short">已关闭</string>
+    <string name="calls_auto_standby_short">待命中</string>
+    <string name="calls_rule_delay">接听等待</string>
+    <string name="calls_seconds_value">%1$d 秒</string>
+    <string name="calls_none_added">未添加</string>
+    <string name="calls_not_set">未设置</string>
+    <string name="calls_is_set">已设置</string>
+    <string name="calls_numbers_count">%1$d 个号码</string>
+    <string name="calls_scope_all_short">全部来电</string>
+    <string name="calls_scope_strangers_short">陌生号码</string>
+    <string name="calls_allowlist_empty_short">名单为空</string>
+    <string name="calls_list_count_short">名单内 %1$d 个</string>
+    <string name="calls_not_confirmed">未确认</string>
+    <string name="calls_task_more">问题、补充情况、不能承诺</string>
+    <string name="calls_this_call">本次通话</string>
+</resources>
