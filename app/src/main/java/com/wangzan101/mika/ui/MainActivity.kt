@@ -80,6 +80,7 @@ import com.wangzan101.mika.ui.theme.animationsOff
 import com.wangzan101.mika.ui.theme.appearanceDark
 import com.wangzan101.mika.ui.theme.systemBarsFor
 import com.wangzan101.mika.voicecall.ui.VoiceCallDeps
+import com.wangzan101.mika.task.screenConversations
 import com.wangzan101.mika.voicecall.ui.VoiceCallHost
 import com.wangzan101.mika.voicecall.VoiceCallService
 import kotlinx.coroutines.Dispatchers
@@ -519,9 +520,15 @@ private fun MikaRoot(
             conversationId = { app.chat.ui.value.conversationId },
             newConversation = { ConversationStore.shared(context).newConversation() },
             turns = { ConversationStore.shared(context).turns(it) },
-            appendTurn = { id, turn -> ConversationStore.shared(context).append(id, turn) },
+            // 通话里边说边存,从应用级作用域调过来:文件读写放到 IO 上
+            appendTurn = { id, turn -> withContext(Dispatchers.IO) { ConversationStore.shared(context).append(id, turn) } },
             attachService = { VoiceCallService.attach(context, it) },
             persona = { com.wangzan101.mika.frontdesk.deskPersona(app) },
+            openConversation = { id ->
+                app.chat.openConversation(id)
+                nav.reset()
+            },
+            screens = app.taskState.screenConversations(app.appScope),
         )
     }
     // 查到的新版本:侧栏、设置首页、关于页的红点都看它

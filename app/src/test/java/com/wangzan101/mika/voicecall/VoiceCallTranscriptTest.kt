@@ -182,4 +182,30 @@ class VoiceCallTranscriptTest {
         assertEquals(listOf(listOf("t1"), listOf("t2")), h.appended.map { it.second.deskTasks })
         assertEquals(listOf("帮我订明晚的日料", "再查一下天气"), h.appended.map { it.second.userText })
     }
+
+    @Test
+    fun `每轮说完就写,不等挂断,挂断只补最后一轮`() = runTest {
+        val appended = mutableListOf<String>()
+        val transcript = VoiceCallTranscript(
+            conversationId = { "conv-9" },
+            appendTurn = { _, turn -> appended += turn.userText + "=" + turn.outcome },
+            nowMillis = { 7L },
+            writeScope = this,
+        )
+        transcript.onUser("第一句")
+        transcript.onAssistant("甲")
+        advanceUntilIdle()
+        assertTrue("还在答的这一轮先不写", appended.isEmpty())
+        transcript.onUser("第二句") // 用户开口说下一句:上一轮说完了,马上写
+        advanceUntilIdle()
+        assertEquals(listOf("第一句=甲"), appended)
+        transcript.onUser("第三句") // 第二句没等来回答也没派任务:不写
+        transcript.onAssistant("丙")
+        advanceUntilIdle()
+        assertEquals(listOf("第一句=甲"), appended)
+        transcript.close()
+        assertEquals("挂断补上最后一轮,已写过的不重写", listOf("第一句=甲", "第三句=丙"), appended)
+        transcript.close()
+        assertEquals(2, appended.size)
+    }
 }

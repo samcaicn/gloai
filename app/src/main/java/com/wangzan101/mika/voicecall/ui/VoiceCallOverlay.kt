@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -101,7 +102,7 @@ import kotlin.math.sin
  * 页面只认 [VoiceCallHolder] 里各路状态流,不依赖前台服务在位(见 [VoiceCallController])。
  */
 @Composable
-fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit) {
+fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit, onOpenTask: (String) -> Unit = {}) {
     CallDialog {
         val session = call.session
         val state by session.state.collectAsState()
@@ -111,6 +112,7 @@ fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit) {
         val speakerLevel by session.speakerLevel.collectAsState()
         val busy by call.busy.collectAsState()
         val items by call.feed.items.collectAsState()
+        val screens by call.screens.collectAsState()
         val device by call.audioRoute.route.collectAsState()
         val clock = rememberCallClock(state)
         val startedAt = rememberStartedAt(state)
@@ -148,6 +150,8 @@ fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit) {
                     failedText = (state as? VoiceCallState.Failed)?.let { voiceCallStatusText(it) },
                     endedText = (state as? VoiceCallState.Ended)?.let { stringResource(R.string.voicecall_ended_after, voiceCallStatusText(it), clock) },
                     onRetry = session::retry,
+                    screens = screens,
+                    onOpenTask = onOpenTask,
                 )
                 // 还没人开口:中间放一颗大球,别让页面空着
                 if (items.isEmpty() && state !is VoiceCallState.Failed && state !is VoiceCallState.Ended) {
@@ -314,6 +318,8 @@ private fun CallFeed(
     failedText: String?,
     endedText: String?,
     onRetry: () -> Unit,
+    screens: Set<String> = emptySet(),
+    onOpenTask: (String) -> Unit = {},
 ) {
     val list = rememberLazyListState()
     val lastText = (items.lastOrNull() as? VoiceCallFeedItem.Said)?.text
@@ -336,7 +342,8 @@ private fun CallFeed(
             items(items, key = { it.id }) { item ->
                 when (item) {
                     is VoiceCallFeedItem.Said -> SaidBubble(item, bubbleMax)
-                    is VoiceCallFeedItem.Task -> TaskCard(item)
+                    is VoiceCallFeedItem.Task -> TaskCard(item, hasScreen = item.running && item.taskId in screens) { onOpenTask(item.taskId) }
+                    is VoiceCallFeedItem.Earlier -> SystemPill(stringResource(R.string.voicecall_earlier))
                 }
             }
             if (failedText != null) item("failed") { FailedCard(failedText, onRetry) }
@@ -363,7 +370,7 @@ private fun SaidBubble(item: VoiceCallFeedItem.Said, max: androidx.compose.ui.un
     val mine = item.speaker == VoiceCallFeedItem.Speaker.User
     Box(Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
         val shape = if (mine) MikaShapes.UserBubble else MikaShapes.AnswerBubble
-        val base = Modifier.widthIn(max = max).alpha(if (item.partial) 0.6f else 1f).animateContentSize()
+        val base = Modifier.widthIn(max = max).alpha(if (item.partial || item.earlier) EARLIER_ALPHA else 1f).animateContentSize()
         Text(
             if (item.partial && mine) item.text + "…" else item.text,
             (if (mine) base.background(c.accent.copy(alpha = 0.14f), shape) else base.background(c.surface, shape).border(1.dp, c.hair, shape))
@@ -374,23 +381,41 @@ private fun SaidBubble(item: VoiceCallFeedItem.Said, max: androidx.compose.ui.un
     }
 }
 
-/** 前台派出的一件任务:标题和此刻的阶段,前面的步骤都打勾,最后一步在办时转圈、办完时打勾。 */
+/**
+ * 前台派出的一件任务:标题和此刻的阶段,前面的步骤都打勾,最后一步在办时转圈、办完时打勾。
+ * 点一下进这件任务的会话(每一步和虚拟屏都在那里,通话收成小球接着通);在办而且有画面时多一个「看画面」。
+ */
 @Composable
-private fun TaskCard(item: VoiceCallFeedItem.Task) {
+private fun TaskCard(item: VoiceCallFeedItem.Task, hasScreen: Boolean, onOpen: () -> Unit) {
     val c = MikaTheme.colors
     Column(
-        Modifier.fillMaxWidth().background(c.surface, MikaShapes.Card).border(1.dp, c.hair, MikaShapes.Card)
+        Modifier.fillMaxWidth().alpha(if (item.earlier) EARLIER_ALPHA else 1f).clip(MikaShapes.Card)
+            .background(c.surface, MikaShapes.Card).border(1.dp, c.hair, MikaShapes.Card)
+            .clickable(role = Role.Button, onClickLabel = stringResource(R.string.voicecall_task_open), onClick = onOpen)
             .padding(horizontal = 14.dp, vertical = 12.dp).animateContentSize().testTag("voicecall-task"),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                item.title, style = MikaType.Label, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            Text(
-                stringResource(phaseText(item.phase)), style = MikaType.Label, color = c.ink2,
-                modifier = Modifier.padding(start = 8.dp),
-            )
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    item.title, style = MikaType.Label, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Text(
+                    stringResource(phaseText(item.phase)), style = MikaType.Label, color = c.ink2,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+            if (hasScreen) {
+                Row(
+                    Modifier.padding(start = 8.dp).background(c.accent.copy(alpha = 0.12f), MikaShapes.Chip)
+                        .padding(horizontal = 8.dp, vertical = 3.dp).testTag("voicecall-task-screen"),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(MikaIcons.Screens, null, Modifier.size(13.dp), tint = c.accent)
+                    Text(stringResource(R.string.voicecall_task_screen), Modifier.padding(start = 4.dp), style = MikaType.Hint, color = c.accent)
+                }
+            }
+            Icon(MikaIcons.Chevron, null, Modifier.padding(start = 6.dp).size(14.dp), tint = c.ink3)
         }
         item.steps.forEachIndexed { index, step ->
             val running = item.running && index == item.steps.lastIndex
@@ -670,3 +695,6 @@ private fun phaseText(phase: DeskTaskPhase): Int = when (phase) {
     DeskTaskPhase.Failed -> R.string.voicecall_task_failed
     DeskTaskPhase.Cancelled -> R.string.voicecall_task_cancelled
 }
+
+/** 打开通话前就有的内容(和说到一半的话)画淡一点,和这通电话里说的分开。 */
+private const val EARLIER_ALPHA = 0.6f

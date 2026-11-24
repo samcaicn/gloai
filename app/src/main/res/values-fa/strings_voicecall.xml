@@ -4,6 +4,9 @@
     <string name="voicecall_task_paused">کار موقتاً متوقف شده</string>
     <string name="voicecall_task_running">در حال انجام</string>
     <string name="voicecall_task_done">انجام شد</string>
+    <string name="voicecall_task_open">باز کردن این کار</string>
+    <string name="voicecall_task_screen">دیدن صفحه</string>
+    <string name="voicecall_earlier">گفتگوی قبلی</string>
     <string name="voicecall_task_failed">انجام نشد</string>
     <string name="voicecall_task_cancelled">لغو شد</string>
     <string name="voicecall_notification_channel">تماس صوتی</string>

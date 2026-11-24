@@ -4,6 +4,9 @@
     <string name="voicecall_task_paused">Tarefa pausada</string>
     <string name="voicecall_task_running">Processando</string>
     <string name="voicecall_task_done">Concluída</string>
+    <string name="voicecall_task_open">Abrir esta tarefa</string>
+    <string name="voicecall_task_screen">Ver tela</string>
+    <string name="voicecall_earlier">Conversa anterior</string>
     <string name="voicecall_task_failed">Não foi possível concluir</string>
     <string name="voicecall_task_cancelled">Cancelada</string>
     <string name="voicecall_notification_channel">Chamada de voz</string>

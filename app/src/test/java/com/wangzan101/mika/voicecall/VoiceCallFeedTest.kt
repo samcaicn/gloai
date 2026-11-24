@@ -5,6 +5,8 @@ import com.wangzan101.mika.voicecall.VoiceCallFeedItem.Speaker
 import com.wangzan101.mika.voicecall.VoiceCallFeedItem.Task
 import com.wangzan101.mika.core.frontdesk.DeskTaskPhase
 import com.wangzan101.mika.core.frontdesk.DeskTaskView
+import com.wangzan101.mika.core.agent.Turn as ChatTurn
+import com.wangzan101.mika.voicecall.VoiceCallFeedItem.Earlier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -70,6 +72,58 @@ class VoiceCallFeedTest {
         assertEquals("标题t0", cards[0].title)
         assertEquals(listOf("打开天气"), cards[1].steps)
         assertEquals("同一件任务不重复开卡", 2, cards.size)
+    }
+
+    @Test fun `opening a call shows the conversation so far above a divider`() {
+        val feed = VoiceCallFeed()
+        feed.seed(
+            listOf(
+                ChatTurn("帮我订日料", "好，我让后面去订", "desk", deskTasks = listOf("t1")),
+                ChatTurn("", "订好了，七点。", "desk_report"),
+                ChatTurn("今天天气", "**晴**，25 度", "succeeded"),
+                ChatTurn("打开相册", "没打开", "failed"),
+            ),
+            tasks = listOf(view("t1", DeskTaskPhase.Done, "订好了"), view("other", DeskTaskPhase.Done, "别的")),
+            plain = { it.replace("**", "") },
+        )
+        val items = feed.items.value
+        assertEquals(
+            listOf(
+                Triple(Speaker.User, "帮我订日料", false), Triple(Speaker.Mika, "好，我让后面去订", false),
+                Triple(Speaker.Mika, "订好了，七点。", false), Triple(Speaker.User, "今天天气", false),
+                Triple(Speaker.Mika, "晴，25 度", false), Triple(Speaker.User, "打开相册", false),
+            ),
+            feed.said(),
+        )
+        // 派过的任务在它那一轮的回话后面一张卡;没出现在这条会话里的任务不上卡
+        assertEquals(listOf("t1"), items.filterIsInstance<Task>().map { it.taskId })
+        assertTrue(items.indexOfFirst { it is Task } == 2)
+        assertTrue(items.last() is Earlier)
+        assertTrue(items.filterIsInstance<Said>().all { it.earlier })
+        assertTrue(items.filterIsInstance<Task>().all { it.earlier })
+        // 接着说的话在分隔线下面,不算之前的
+        feed.onUser("几点到", isFinal = true)
+        assertFalse((feed.items.value.last() as Said).earlier)
+    }
+
+    @Test fun `a seeded task that is still running keeps updating instead of getting a second card`() {
+        val feed = VoiceCallFeed()
+        feed.seed(listOf(ChatTurn("查天气", "好", "desk", deskTasks = listOf("t1"))), listOf(view("t1", DeskTaskPhase.Running, "打开天气")))
+        feed.onTasks(listOf(view("t1", DeskTaskPhase.Done, "晴", listOf("打开天气"))))
+        val cards = feed.items.value.filterIsInstance<Task>()
+        assertEquals(1, cards.size)
+        assertEquals(DeskTaskPhase.Done, cards.single().phase)
+        assertEquals(listOf("打开天气", "晴"), cards.single().steps)
+    }
+
+    @Test fun `long earlier replies are cut and an empty conversation adds nothing`() {
+        val feed = VoiceCallFeed()
+        feed.seed(emptyList(), emptyList())
+        assertTrue(feed.items.value.isEmpty())
+        feed.seed(listOf(ChatTurn("写首诗", "字".repeat(1_000), "succeeded")), emptyList())
+        val reply = feed.said().last().second
+        assertTrue(reply.length <= VoiceCallFeed.EARLIER_TEXT_CHARS + 1)
+        assertTrue(reply.endsWith("…"))
     }
 
     @Test fun `the feed keeps only the latest items`() {

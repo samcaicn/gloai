@@ -57,10 +57,12 @@ import com.wangzan101.mika.voicecall.VoiceDeskBridge
 import com.wangzan101.mika.voicecall.deskReportSpeech
 import com.wangzan101.mika.voicecall.typedDeskResult
 import kotlinx.coroutines.CoroutineScope
+import com.wangzan101.mika.ui.MarkdownModel
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -68,7 +70,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 
-/** 一通通话的页面侧持有物:会话、前台有没有任务在办([busy])、免提、转写、上屏的对话流,以及页面此刻显不显。 */
+/**
+ * 一通通话的页面侧持有物:会话、前台有没有任务在办([busy])、免提、转写、上屏的对话流,以及页面此刻显不显;
+ * [screens] 是此刻有虚拟屏(或网页)的任务会话,任务卡上据此显示「看画面」。
+ */
 @Stable
 class VoiceCallHolder(
     val session: VoiceCallSession,
@@ -76,6 +81,7 @@ class VoiceCallHolder(
     val audioRoute: VoiceCallAudioRoute,
     val transcript: VoiceCallTranscript,
     val feed: VoiceCallFeed,
+    val screens: StateFlow<Set<String>> = MutableStateFlow(emptySet()),
 ) {
     var visible by mutableStateOf(true)
 }
@@ -210,6 +216,12 @@ class VoiceCallController(
         }
     }
 
+    /** 点了通话页上的任务卡:通话收成小球接着通,打开那件任务的会话(每一步和虚拟屏都在那里)。 */
+    fun openTask(taskId: String) {
+        collapse()
+        deps.openConversation(taskId)
+    }
+
     /** 宿主要离开了:没终的通话挂断,转写在 close 里 NonCancellable 写完。 */
     fun teardown() {
         val current = stage as? VoiceCallStage.InCall ?: return
@@ -238,12 +250,15 @@ class VoiceCallController(
         }
         // 通话接着发起它的会话;从胶囊直开没有会话时新开一条,任务和转写都挂在它下面。
         val conversation = deps.conversationId() ?: deps.newConversation()
+        // 边说边存:说完一轮就写进会话(挂在应用级作用域上,通话页没了也写完)
         val transcript = VoiceCallTranscript(
             conversationId = { conversation },
             appendTurn = deps.appendTurn,
+            writeScope = deps.appScope,
         )
-        val feed = VoiceCallFeed()
         val desk = deps.desks.desk(conversation)
+        // 再打开通话时先摆上这条会话已有的内容(打字聊的、之前通话说的、派过的任务),新的接在分隔线下面
+        val feed = VoiceCallFeed().apply { seed(deps.turns(conversation), desk.active.value, MarkdownModel::toPlainText) }
         val echoWindow = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
         val gate = VoiceCallRequest(echoWindow)
         val executor = deps.desks.executor(conversation, gate)
@@ -340,7 +355,7 @@ class VoiceCallController(
         val busy = desk.active
             .map { views -> views.any { it.state == DeskTaskPhase.Running || it.state == DeskTaskPhase.Queued } }
             .stateIn(callScope, SharingStarted.Eagerly, false)
-        stage = VoiceCallStage.InCall(VoiceCallHolder(session, busy, VoiceCallAudioRoute(deps.context), transcript, feed))
+        stage = VoiceCallStage.InCall(VoiceCallHolder(session, busy, VoiceCallAudioRoute(deps.context), transcript, feed, deps.screens))
     }
 
     /** 派单结果里开始或排上队的任务编号;别的结果为 null。 */
@@ -376,6 +391,10 @@ class VoiceCallDeps(
     val attachService: (VoiceCallSession) -> Boolean,
     /** 前台此刻用的人格(称呼和人格层),每次接通时取一次。 */
     val persona: () -> DeskPersona = { DeskPersona() },
+    /** 打开一条会话(点任务卡进那件任务)。 */
+    val openConversation: (String) -> Unit = {},
+    /** 此刻有虚拟屏或网页的任务会话。 */
+    val screens: StateFlow<Set<String>> = MutableStateFlow(emptySet()),
 )
 
 /**
@@ -444,7 +463,7 @@ fun VoiceCallHost(deps: VoiceCallDeps, openSignal: Int, onGoConfigure: (VoiceCal
             onCollapse = controller::collapse,
         )
         is VoiceCallStage.InCall -> if (stage.call.visible) {
-            VoiceCallOverlay(stage.call, controller::collapse)
+            VoiceCallOverlay(stage.call, controller::collapse, controller::openTask)
         }
         null -> Unit
     }

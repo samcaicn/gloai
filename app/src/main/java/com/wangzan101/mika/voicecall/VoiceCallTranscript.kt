@@ -2,13 +2,18 @@ package com.wangzan101.mika.voicecall
 
 import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.Turn as ChatTurn
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
  * 一通语音通话的文字聚合:用户每段完整话语开一轮([onUser]),助手在两段用户话语之间
- * 说的都并进当轮的答([onAssistant]);会话结束把整通问答批量写回发起会话([close]),
- * 与聊天走同一个存储入口。
+ * 说的都并进当轮的答([onAssistant]);与聊天走同一个存储入口写回发起会话。
+ * 给了 [writeScope] 时边说边存:用户开口说下一句,上一轮就说完了,当场写进会话,通话中途 App 被杀也只丢正在说的那一轮;
+ * 会话结束([close])补写还没写的。没给时到结束才一次写完。
  *
  * 装配:会话编排的用户/助手转写回调(只要 final)喂进来;[conversationId] 是发起这次通话
  * 的会话(从胶囊直开、没有发起会话时为 null,不写回);[appendTurn] 接对话存储的逐轮写入。
@@ -17,6 +22,8 @@ class VoiceCallTranscript(
     private val conversationId: () -> String?,
     private val appendTurn: suspend (conversationId: String, turn: ChatTurn) -> Unit,
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    /** 边说边存用的作用域(要比通话长寿,装配方给应用级的);null 时只在 [close] 写。 */
+    private val writeScope: CoroutineScope? = null,
 ) {
     /** 一轮问答:用户问的、助手答的(多段按行拼)、问的时刻(毫秒)、这轮前台派出的任务编号。 */
     data class Turn(val question: String, val answer: String, val at: Long, val tasks: List<String> = emptyList())
@@ -26,12 +33,22 @@ class VoiceCallTranscript(
     private var open: Turn? = null
     private var closed = false
 
+    /** 交给写入协程的已说完的轮次(在 [done] 里的下标);写入协程按顺序一条条写。 */
+    private val queue = Channel<Pair<String, Int>>(Channel.UNLIMITED)
+    private var writer: Job? = null
+
+    /** [done] 里前这么多条已经写过(或不值得写、已跳过);写入协程和 [close] 都只往后推。 */
+    @Volatile private var written = 0
+
     /** 用户说了一段完整的话:闭合上一轮,开新一轮。空白忽略。 */
     fun onUser(text: String) {
         if (text.isBlank()) return
         synchronized(lock) {
             if (closed) return
-            open?.let { done += it }
+            open?.let {
+                done += it
+                handOver(done.lastIndex)
+            }
             open = Turn(text.trim(), "", nowMillis())
         }
     }
@@ -56,6 +73,22 @@ class VoiceCallTranscript(
         }
     }
 
+    /** 说完的一轮交给写入协程(在锁里调);没有写入作用域或没有发起会话时留到 [close]。 */
+    private fun handOver(index: Int) {
+        val scope = writeScope ?: return
+        val id = conversationId() ?: return
+        if (writer == null) {
+            writer = scope.launch {
+                for ((conversation, i) in queue) {
+                    val turn = synchronized(lock) { done[i] }
+                    if (worthWriting(turn)) withContext(NonCancellable) { appendTurn(conversation, chatTurn(turn)) }
+                    written = i + 1
+                }
+            }
+        }
+        queue.trySend(id to index)
+    }
+
     /** 截至此刻的全部轮次,含还没等来回答的那一轮。 */
     fun turns(): List<Turn> = synchronized(lock) { done + listOfNotNull(open) }
 
@@ -67,19 +100,22 @@ class VoiceCallTranscript(
      * 派了任务的轮次照写,带上任务编号。
      */
     suspend fun close() {
-        val (snapshot, id) = synchronized(lock) {
+        val (writing, id) = synchronized(lock) {
             if (closed) return
             closed = true
-            turns() to conversationId()
+            queue.close()
+            writer to conversationId()
         }
-        if (id == null) return
         withContext(NonCancellable) {
-            snapshot.filter { it.question.isNotBlank() && (it.answer.isNotBlank() || it.tasks.isNotEmpty()) }.forEach { turn ->
-                appendTurn(
-                    id,
-                    ChatTurn(userText = turn.question, outcome = turn.answer, status = DeskTurn.STATUS, atMs = turn.at, deskTasks = turn.tasks),
-                )
-            }
+            // 先等写入协程把交给它的写完(它被撤了也不要紧:没写的下面接着写),再补其余的
+            writing?.join()
+            if (id == null) return@withContext
+            turns().drop(written).filter(::worthWriting).forEach { appendTurn(id, chatTurn(it)) }
         }
     }
+
+    private fun worthWriting(turn: Turn) = turn.question.isNotBlank() && (turn.answer.isNotBlank() || turn.tasks.isNotEmpty())
+
+    private fun chatTurn(turn: Turn) =
+        ChatTurn(userText = turn.question, outcome = turn.answer, status = DeskTurn.STATUS, atMs = turn.at, deskTasks = turn.tasks)
 }

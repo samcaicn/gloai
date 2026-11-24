@@ -4,6 +4,9 @@
     <string name="voicecall_task_paused">Paused for now</string>
     <string name="voicecall_task_running">Working on it</string>
     <string name="voicecall_task_done">Done</string>
+    <string name="voicecall_task_open">Open this task</string>
+    <string name="voicecall_task_screen">View screen</string>
+    <string name="voicecall_earlier">Earlier in this conversation</string>
     <string name="voicecall_task_failed">Could not finish it</string>
     <string name="voicecall_task_cancelled">Cancelled</string>
     <string name="voicecall_notification_channel">Voice call</string>

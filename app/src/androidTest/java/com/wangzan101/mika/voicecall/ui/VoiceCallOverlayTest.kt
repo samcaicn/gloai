@@ -1,5 +1,6 @@
 package com.wangzan101.mika.voicecall.ui
 
+import androidx.compose.ui.test.assertCountEquals
 import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
@@ -218,11 +219,16 @@ class VoiceCallOverlayTest {
     @androidx.compose.runtime.Composable
     private fun StillTheme(content: @androidx.compose.runtime.Composable () -> Unit) = MikaTheme(reduceMotion = true, content = content)
 
-    private fun show(call: Call, onCollapse: () -> Unit = {}) {
+    private fun show(
+        call: Call,
+        onCollapse: () -> Unit = {},
+        screens: StateFlow<Set<String>> = MutableStateFlow(emptySet()),
+        onOpenTask: (String) -> Unit = {},
+    ) {
         val audioRoute = VoiceCallAudioRoute(InstrumentationRegistry.getInstrumentation().targetContext)
-        val holder = VoiceCallHolder(call.session, call.busy, audioRoute, call.transcript, call.feed)
+        val holder = VoiceCallHolder(call.session, call.busy, audioRoute, call.transcript, call.feed, screens)
         compose.setContent {
-            StillTheme { VoiceCallOverlay(holder, onCollapse) }
+            StillTheme { VoiceCallOverlay(holder, onCollapse, onOpenTask) }
         }
     }
 
@@ -328,6 +334,32 @@ class VoiceCallOverlayTest {
         flow.value = TaskState.Succeeded("开好了")
         awaitText("已完成")
         compose.onNodeWithTag("voicecall-input").assertTextEquals("")
+        call.session.end(EndReason.Hangup)
+    }
+
+    @Test fun tappingATaskCardOpensItAndAScreenShowsViewScreen() {
+        val flow = MutableStateFlow<TaskState>(TaskState.Running(1, "open_app", narration = "正在打开设置"))
+        val call = Call(mapOf("t1" to flow), connect = { rt })
+        val screens = MutableStateFlow<Set<String>>(emptySet())
+        val opened = mutableListOf<String>()
+        show(call, screens = screens, onOpenTask = { opened += it })
+        reachActive(call)
+        compose.onNodeWithTag("voicecall-keyboard").performClick()
+        compose.onNodeWithTag("voicecall-input").performTextInput("帮我开深色模式")
+        compose.onNodeWithTag("voicecall-send").performClick()
+        awaitText("正在打开设置")
+        // 还没建屏:没有「看画面」;建了屏就出来
+        compose.onAllNodesWithTag("voicecall-task-screen").assertCountEquals(0)
+        val taskId = call.feed.items.value.filterIsInstance<com.wangzan101.mika.voicecall.VoiceCallFeedItem.Task>().single().taskId
+        screens.value = setOf(taskId)
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("voicecall-task-screen").fetchSemanticsNodes().isNotEmpty() }
+        // 点卡片:交给宿主打开那件任务
+        compose.onNodeWithTag("voicecall-task").performClick()
+        assertEquals(listOf(taskId), opened)
+        // 办完了就不再显示「看画面」
+        flow.value = TaskState.Succeeded("开好了")
+        awaitText("已完成")
+        compose.onAllNodesWithTag("voicecall-task-screen").assertCountEquals(0)
         call.session.end(EndReason.Hangup)
     }
 

@@ -4,6 +4,9 @@
     <string name="voicecall_task_paused">Tugas dijeda</string>
     <string name="voicecall_task_running">Sedang diproses</string>
     <string name="voicecall_task_done">Selesai</string>
+    <string name="voicecall_task_open">Buka tugas ini</string>
+    <string name="voicecall_task_screen">Lihat layar</string>
+    <string name="voicecall_earlier">Percakapan sebelumnya</string>
     <string name="voicecall_task_failed">Tidak berhasil</string>
     <string name="voicecall_task_cancelled">Dibatalkan</string>
     <string name="voicecall_notification_channel">Panggilan suara</string>

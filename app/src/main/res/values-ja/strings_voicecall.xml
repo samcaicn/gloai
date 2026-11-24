@@ -4,6 +4,9 @@
     <string name="voicecall_task_paused">一時停止中</string>
     <string name="voicecall_task_running">処理中</string>
     <string name="voicecall_task_done">完了</string>
+    <string name="voicecall_task_open">このタスクを開く</string>
+    <string name="voicecall_task_screen">画面を見る</string>
+    <string name="voicecall_earlier">ここまでは以前の会話</string>
     <string name="voicecall_task_failed">完了できませんでした</string>
     <string name="voicecall_task_cancelled">キャンセルしました</string>
     <string name="voicecall_notification_channel">音声通話</string>
