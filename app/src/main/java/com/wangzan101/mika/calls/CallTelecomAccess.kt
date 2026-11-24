@@ -31,6 +31,10 @@ internal class CallTelecomAccess(private val context: Context) {
         return preparedHere && managePermission()
     }
 
+    /** Set up on an earlier boot and never undone: Android dropped it at restart, the user still wants it. */
+    fun preparedOnEarlierBoot(): Boolean =
+        preparedOnEarlierBoot(journal.getString(PREPARED, null), boot, currentBootPrepared)
+
     private fun managePermission(): Boolean = Build.VERSION.SDK_INT >= 31 &&
         runCatching { telecom?.hasManageOngoingCallsPermission() == true }.getOrDefault(false)
 
@@ -185,3 +189,7 @@ internal enum class CallTelecomCommandOutcome {
         }
     }
 }
+
+/** A setup record from another boot, and none made in this one. */
+internal fun preparedOnEarlierBoot(saved: String?, boot: String?, preparedThisBoot: Boolean): Boolean =
+    !preparedThisBoot && saved != null && saved != boot

@@ -194,6 +194,7 @@ class CallRuntime(internal val app: MikaApp) {
                 publish()
                 if (settings.state.value.enabled && current != null) probeAudio()
                 maybeStartAutoAnswer()
+                restorePrepareAfterRestart()
             }
         }
         scope.launch {
@@ -275,6 +276,7 @@ class CallRuntime(internal val app: MikaApp) {
             readSims()
             publish()
             maybeStartAutoAnswer()
+            restorePrepareAfterRestart()
         }
         scope.launch {
             val resume = CallStandbyResumeGate()
@@ -307,6 +309,20 @@ class CallRuntime(internal val app: MikaApp) {
         maybeStartAutoAnswer()
         if (state.value.prepared) ok("系统通话管理权限可用；连接状态以实际电话回调为准")
         else fail("AI 电话尚未准备好")
+    }
+
+    /**
+     * Android forgets the call-companion setup on every restart. When AI calls were set up before and
+     * not turned off since, redo it quietly once the on-device helper is back, instead of waiting for
+     * the user to find the checklist. A failed attempt rolls the record back, so it is not retried in a loop.
+     */
+    private fun restorePrepareAfterRestart() {
+        if (!settings.state.value.enabled || shell == null || armed || configuring || work != null) return
+        scope.launch {
+            if (!withContext(Dispatchers.IO) { access.preparedOnEarlierBoot() }) return@launch
+            if (liveCalls().isNotEmpty()) return@launch
+            prepare()
+        }
     }
 
     suspend fun prepare(): CallActionResult = onMain {

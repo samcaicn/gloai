@@ -69,4 +69,12 @@ class CallTelecomAccessTest {
         }
         assertEquals(CallTelecomCommandOutcome.OK, CallTelecomCommandOutcome.classify(0, ""))
     }
+
+    @Test fun setupFromAnEarlierBootIsRedoneOnlyOnce() {
+        assertEquals(true, preparedOnEarlierBoot("144", "145", preparedThisBoot = false))
+        assertFalse(preparedOnEarlierBoot("145", "145", preparedThisBoot = false))
+        assertFalse(preparedOnEarlierBoot("144", "145", preparedThisBoot = true))
+        // Turned off (record removed) or never set up: nothing to redo.
+        assertFalse(preparedOnEarlierBoot(null, "145", preparedThisBoot = false))
+    }
 }
