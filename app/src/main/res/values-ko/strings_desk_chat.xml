@@ -22,7 +22,6 @@
     <string name="desk_need_choose_foot">다 아니라면 아래에 입력하거나 길게 눌러 말해 주세요.</string>
     <string name="desk_need_answer_foot">아래에 입력하거나 길게 눌러 말해 주세요.</string>
     <string name="desk_need_takeover_foot">화면에서 마치면 제가 이어서 할게요.</string>
-    <string name="desk_need_go">처리하기</string>
     <string name="desk_need_stop">이 작업 멈추기</string>
     <string name="desk_tray_stop">중지</string>
     <string name="desk_tray_detail">자세한 과정 보기 ›</string>

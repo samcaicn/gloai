@@ -22,7 +22,6 @@
     <string name="desk_need_choose_foot">どれでもない？下に入力するか、長押しで話してください。</string>
     <string name="desk_need_answer_foot">下に入力するか、長押しで話してください。</string>
     <string name="desk_need_takeover_foot">画面で操作が終わったら、続きをやります。</string>
-    <string name="desk_need_go">対応する</string>
     <string name="desk_need_stop">このタスクを止める</string>
     <string name="desk_tray_stop">停止</string>
     <string name="desk_tray_detail">詳しい経過を見る ›</string>

@@ -545,6 +545,7 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             activeConversations = taskState.activeConversations,
             runGoal = { taskState.run(it)?.goal },
             runState = { taskState.run(it)?.state },
+            runStage = { taskState.run(it)?.takeoverStage },
             runNotes = memory.notes,
             learning = AppLearningActions(app, memory),
             memoryItems = memory.items(),

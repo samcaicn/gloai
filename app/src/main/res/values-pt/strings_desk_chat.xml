@@ -22,7 +22,6 @@
     <string name="desk_need_choose_foot">Nenhuma? Digite abaixo ou segure para falar.</string>
     <string name="desk_need_answer_foot">Digite abaixo ou segure para falar.</string>
     <string name="desk_need_takeover_foot">Quando terminar na tela, eu continuo.</string>
-    <string name="desk_need_go">Resolver</string>
     <string name="desk_need_stop">Parar esta tarefa</string>
     <string name="desk_tray_stop">Parar</string>
     <string name="desk_tray_detail">Ver o processo completo ›</string>

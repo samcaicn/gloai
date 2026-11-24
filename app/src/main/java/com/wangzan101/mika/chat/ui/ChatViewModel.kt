@@ -107,6 +107,8 @@ class ChatViewModel(
     internal val runGoal: (String) -> String? = { null },
     /** 该对话正在跑的任务自己的状态(不论服务此刻显示的是谁);切走后靠它接着记那一问一答的步骤。 */
     internal val runState: (String) -> StateFlow<TaskState>? = { null },
+    /** 该对话正在跑的任务自己的接管进度;主聊天的问题卡替正在办的一件事画接管按钮时用。 */
+    internal val runStage: (String) -> StateFlow<Takeover.Stage>? = { null },
     /** 任务结束后补上的记忆与技能提示,按运行编号。 */
     internal val runNotes: StateFlow<Map<String, RunNotes>> = MutableStateFlow(emptyMap()),
     internal val learning: LearningActions? = null,
@@ -437,6 +439,13 @@ class ChatViewModel(
 
     /** 停下前台派出的一件。 */
     fun cancelDeskTask(taskId: String) { desking?.cancel(taskId) }
+
+    /** 正在办的一件事([taskId] 即它跑的那个对话)要你动手时,问题卡上的按钮:只作用于这一件;停止照样经由 Mika。 */
+    internal fun deskNeedOps(taskId: String) = NeedOps(
+        cancel = { cancelDeskTask(taskId) }, resume = { actions.resumeIn(taskId) }, takeOver = { actions.takeOverIn(taskId) },
+        handBack = { actions.handBackIn(taskId) }, finishedMyself = { actions.finishedMyselfIn(taskId) }, skip = { actions.skipIn(taskId) },
+        approve = { actions.approveIn(taskId, it) }, decline = { actions.declineIn(taskId, it) },
+    )
 
     // ChatNoteOps
     fun noteText(note: MemoryNote): String = noting.noteText(note)

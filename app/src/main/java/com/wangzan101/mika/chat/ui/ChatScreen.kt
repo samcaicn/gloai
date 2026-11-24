@@ -446,7 +446,7 @@ fun ChatScreen(
                     if (setupRow == i) item("ps$i") { PhoneSetupLine(openPhoneSetup) }
                 }
                 callMarkRows(calls.tail, highlightKey, reduceMotion)
-                deskNeedRows(ui.deskTasks, highlightKey, reduceMotion, vm::answerDeskTask, vm::openConversation, vm::cancelDeskTask)
+                deskNeedRows(ui.deskTasks, highlightKey, reduceMotion, vm::answerDeskTask, vm::cancelDeskTask, vm)
                 if (setupRow == -1) item("phone-setup") { PhoneSetupLine(openPhoneSetup) }
                 ui.blocked?.let { problems ->
                     item("blocked") {
@@ -682,12 +682,12 @@ fun ChatScreen(
             },
             onReopen = { if (deskPip != null) deskPipClosed = deskPipClosed - deskPip.taskId else vm.reopenPip() },
             onToggleSound = { if (deskPip != null) vm.togglePipSoundIn(deskPip.taskId) else vm.togglePipSound() },
-            // 要你处理时点小窗:收起,滚到要你处理的那张卡片。前台的事滚到它的问题卡;
+            // 要你处理时点小窗:收起,滚到要你处理的那张卡片。Mika 在办的事滚到它的问题卡(没有就打开它的过程记录);
             // 自己的任务的卡片在最后一问一答里,它后面只可能还有文件卡片和去设置那一行
             onAttention = {
                 if (deskPip != null) {
                     deskPipExpanded = null
-                    if (!jumpToNeed(deskPip.taskId)) vm.openConversation(deskPip.taskId)
+                    if (!jumpToNeed(deskPip.taskId)) openDeskTask(deskPip.taskId)
                 } else {
                     vm.attendPip()
                     val count = listState.layoutInfo.totalItemsCount

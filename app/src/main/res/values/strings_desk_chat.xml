@@ -23,7 +23,6 @@
     <string name="desk_need_choose_foot">None of these? Type below or hold to talk.</string>
     <string name="desk_need_answer_foot">Type below or hold to talk.</string>
     <string name="desk_need_takeover_foot">Once you’ve tapped through on the screen, I’ll carry on.</string>
-    <string name="desk_need_go">Handle it</string>
     <string name="desk_need_stop">Stop this task</string>
     <string name="desk_tray_stop">Stop</string>
     <string name="desk_tray_detail">See the full process ›</string>

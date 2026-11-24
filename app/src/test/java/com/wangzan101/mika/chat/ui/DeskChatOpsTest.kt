@@ -659,4 +659,13 @@ class DeskChatOpsTest {
         assertEquals(listOf("ok", "rejected"), results.map { it!!["status"].toString().trim('"') })
         assertEquals(listOf("child-1"), h.port.cancelled)
     }
+
+    // 用户只看得到 Mika:通知、小画面、旧链接要打开 Mika 办事用的子对话时,打开的是它所属的那条聊天
+    @Test fun openingAChildConversationOpensItsParent() = runTest {
+        val h = harness(ScriptBrain({ _, _ -> }))
+        h.store.setDeskParent("child-9", "c")
+        h.vm.openConversation("child-9")
+        runCurrent()
+        assertEquals("c", h.vm.ui.value.conversationId)
+    }
 }

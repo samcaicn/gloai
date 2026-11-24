@@ -49,6 +49,20 @@ internal object ChatReduce {
             }
         }
 
+    /**
+     * 正在办的一件事此刻要你动手的那张卡片(接管、同意一次、要你先办好一件事),和聊天页一问一答里的同一种;
+     * 不是这几种(包括排队、锁屏自动继续)为 null。主聊天的问题卡用它,按钮直接作用于那一件。
+     */
+    internal fun needStatus(s: TaskState, appLabel: (String) -> String): ExchangeStatus? = when (s) {
+        is TaskState.WaitingTakeover -> ExchangeStatus.NeedsTakeover(s.reason, s.message, s.item, s.amount, s.address)
+        is TaskState.WaitingConfirmation -> ExchangeStatus.NeedsConfirmation(
+            ConfirmationCopy.title(s.request), ConfirmationCopy.detail(s.request, appLabel(s.request.app)),
+            ConfirmationNotifier.requestKey(s),
+        )
+        is TaskState.Held -> if (s.reason == TaskGate.LOCKED || s.reason.queued) null else ExchangeStatus.Paused(s.reason.why, s.reason.resumable)
+        else -> null
+    }
+
     internal fun state(ex: Exchange, s: TaskState, appLabel: (String) -> String): Exchange = when (s) {
         TaskState.Idle -> ex
         is TaskState.Running -> {

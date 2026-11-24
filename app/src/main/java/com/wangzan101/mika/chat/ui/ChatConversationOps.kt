@@ -135,7 +135,9 @@ internal class ChatConversationOps(private val vm: ChatViewModel, private val se
     }
 
     /** 切到某个对话;任务在跑时不切。 */
-    fun openConversation(id: String) {
+    fun openConversation(requested: String) {
+        // Mika 办一件事用的子对话不给用户看(通知、小画面、旧链接都可能指向它):打开它所属的那条聊天
+        val id = store.deskParent(requested) ?: requested
         if (_ui.value.conversationId == id) return
         session.refreshParallel()
         if (session.parallel()) return switchTo(id)
