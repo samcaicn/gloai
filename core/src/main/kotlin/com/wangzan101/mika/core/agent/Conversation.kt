@@ -98,9 +98,9 @@ object Conversation {
         }
         // 前台的一轮:前台自己回的话(派出去的任务在各自的子会话里跑),不是任务的结局;汇报那一轮没有用户的话
         if (DeskTurn.isDesk(t)) {
-            val said = t.outcome.takeIf { it.isNotBlank() }?.let { "Mika's front desk replied: ${it.clip(clip)}" }
-                ?: "Mika's front desk handed it to a background task"
-            if (t.userText.isBlank()) return "$n. Mika's front desk told the user: ${t.outcome.clip(clip)}"
+            val said = t.outcome.takeIf { it.isNotBlank() }?.let { "Mika replied: ${it.clip(clip)}" }
+                ?: "Mika started working on it"
+            if (t.userText.isBlank()) return "$n. Mika told the user: ${t.outcome.clip(clip)}"
             return "$n. The user said: ${t.userText.clip(clip)}; $said"
         }
         // 回答如实说没办成或只办了一部分:按交出后判的结局说,下一轮别当它办成了

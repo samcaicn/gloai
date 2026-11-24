@@ -32,8 +32,8 @@ object DeskTools {
 
     private fun dispatch() = tool(
         DISPATCH,
-        "Start a background task for the user. Use it for anything that needs a tool: apps, accounts, actions on the phone, " +
-            "web search or looking something up. Never claim it is done until a task reports it finished.",
+        "Start doing something for the user. Use it for anything that needs a tool: apps, accounts, actions on the phone, " +
+            "web search or looking something up. Never claim it is done until it reports finished.",
         required = listOf("words", "title"),
     ) {
         string("words", WORDS_DESCRIPTION)

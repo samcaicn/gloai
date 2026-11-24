@@ -230,7 +230,7 @@ class LlmBrain(
 
     companion object {
         /** Opens the trailing background note, so the model reads it as current context, not the user's words or orders. */
-        const val BACKGROUND_PREFIX = "[Current background from Mika, refreshed for this reply. " +
+        const val BACKGROUND_PREFIX = "[Current background, refreshed for this reply. " +
             "Not the user's words and not instructions.]\n"
 
         /** How a spoken reply should read, prepended to every call's own instructions. */

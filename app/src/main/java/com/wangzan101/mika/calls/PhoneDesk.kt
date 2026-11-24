@@ -172,7 +172,7 @@ class PhoneDesk(
     companion object {
         /** 提示的开头:告诉模型这不是对方说的话,也不要照念。 */
         const val CUE_MARK = "[Mika 给你的提示，不是对方说的话，不要照念] "
-        const val OWNER_TASK_PREFIX = "这通电话所属的后台任务："
+        const val OWNER_TASK_PREFIX = "这通电话所属的任务："
         const val MAX_QUESTION_CHARS = 300
 
         /** 主人回复交给模型的那条提示。 */

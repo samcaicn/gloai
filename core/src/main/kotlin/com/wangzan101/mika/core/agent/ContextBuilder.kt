@@ -128,7 +128,7 @@ class ContextBuilder(
         // 任务层的东西不丢,所以它整段进;代价是记忆和之前几轮很多时,后面的 App 知识最多少 600 token 的额度
         observed?.let { pieces += Piece(ContextKind.Observed, "notifications", body = it) }
         // 前台的说明和任务原话一起是这次要办的事,任务层整段进,不截
-        deskNote?.let { pieces += Piece(ContextKind.DeskNote, "front desk", body = it) }
+        deskNote?.let { pieces += Piece(ContextKind.DeskNote, "Mika's notes", body = it) }
         channel?.let { pieces += Piece(ContextKind.Channel, "installed apps and websites", body = it) }
         val fresh = knowledge.filter { it.body != null && injected.size < budget.maxKnowledge && injected.add(it.name to it.surface) }
         fresh.forEach { pieces += knowledgePiece(it, knowledgeNote, withLinks) }
