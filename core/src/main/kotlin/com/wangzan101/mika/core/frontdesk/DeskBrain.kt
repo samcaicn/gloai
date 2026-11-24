@@ -93,10 +93,12 @@ class LlmBrain(
         synchronized(lock) {
             if (history.isNotEmpty()) return
             val seeded = mutableListOf<Message>()
-            for (turn in prior) {
+            val latest = prior.indexOfLast { it.outcome.isNotBlank() }
+            for ((i, turn) in prior.withIndex()) {
                 if (turn.userText.isNotBlank()) seeded.addText(Role.User, turn.userText, Author.User)
-                // 写回会话的结果是完整原文,垫给前台时截短:前台只要知道办成了什么,不必背全文
-                if (turn.outcome.isNotBlank() && seeded.isNotEmpty()) seeded.addText(Role.Assistant, turn.outcome.take(DESK_RESULT_MAX_CHARS), Author.Mika)
+                // 写回会话的结果是完整原文:最近一条带全文(用户正看着它追问),更早的截短,只要知道办成了什么
+                val cap = if (i == latest) DESK_SEED_LATEST_MAX_CHARS else DESK_RESULT_MAX_CHARS
+                if (turn.outcome.isNotBlank() && seeded.isNotEmpty()) seeded.addText(Role.Assistant, turn.outcome.take(cap), Author.Mika)
             }
             seeded.forEach(::add)
         }

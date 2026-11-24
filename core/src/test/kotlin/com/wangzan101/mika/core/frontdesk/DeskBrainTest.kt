@@ -121,6 +121,35 @@ class DeskBrainTest {
         assertEquals(listOf("在吗", "你好", "几点？"), model.seen.last().map { it.text() })
     }
 
+    // 刚写进对话的长结果,用户正看着它追问:最近一条带全文,更早的照旧截短
+    @Test
+    fun seedKeepsTheLatestResultWholeAndClipsOlderOnes() = runBlocking {
+        val model = FakeModel()
+        val brain = LlmBrain(model, "rules", emptyList())
+        val older = "旧".repeat(DESK_RESULT_MAX_CHARS + 500)
+        val latest = "新".repeat(DESK_RESULT_MAX_CHARS * 3) + "第八条"
+        brain.seed(listOf(
+            Turn("查一下上周的", "", "desk"),
+            Turn("", older, "desk_report"),
+            Turn("再列一份清单", "好，我去列", "desk"),
+            Turn("", latest, "desk_report"),
+        ))
+        brain.reply("第八条是什么？", Recorder())
+        val texts = model.seen.single().map { it.text() }
+        assertTrue(texts.any { it.endsWith(latest) })
+        assertTrue(texts.none { older in it })
+        assertTrue(texts.any { it.endsWith(older.take(DESK_RESULT_MAX_CHARS)) })
+    }
+
+    @Test
+    fun seedClipsEvenTheLatestResultAtItsOwnCap() = runBlocking {
+        val model = FakeModel()
+        val brain = LlmBrain(model, "rules", emptyList())
+        brain.seed(listOf(Turn("列一份很长的", "长".repeat(DESK_SEED_LATEST_MAX_CHARS + 100), "desk")))
+        brain.reply("还有吗？", Recorder())
+        assertEquals("长".repeat(DESK_SEED_LATEST_MAX_CHARS), model.seen.single()[1].text())
+    }
+
     @Test
     fun backgroundIsTrailingNoteNotSystemNorHistory() = runBlocking {
         val model = FakeModel()

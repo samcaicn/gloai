@@ -6,6 +6,12 @@ const val DESK_LINE_MAX_CHARS = 40
 /** 交给前台的任务结果文本上限:回给实时模型时协议帧对工具结果有总长度限制,给外层包装留余量。 */
 const val DESK_RESULT_MAX_CHARS = 1_800
 
+/**
+ * 垫历史时最近一条 Mika 的话(多半是刚写进对话的完整结果)最多带这么多字:用户看着全文追问「第 8 条是什么」时,
+ * 回话的模型也得看得到,不然就像 Mika 忘了自己刚说的话。更早的照 [DESK_RESULT_MAX_CHARS] 截。
+ */
+const val DESK_SEED_LATEST_MAX_CHARS = 12_000
+
 /** 坐标形态:界面树/点击位置常见的 [x,y]、(x,y) 及其全角变体;bounds 是相邻两对,逐对剥。 */
 private val COORDINATE_PATTERN = Regex("""[\[\(（【]\s*\d+\s*[,，、]\s*\d+\s*[\]\)）】]""")
 
