@@ -144,6 +144,20 @@ class ChatScreenDeviceTest {
         return line.contains("$short ") || line.contains("${context.packageName}/${cls.name} ")
     }
 
+    /**
+     * 开一条前台派活开出的子对话并切过去:聊天走前台后,顶层对话里打的字先交给前台(真模型)再派活;
+     * 这里测的是任务本身在对话页里怎么画(步骤、小窗、结果、用量、并行),要在子对话里打字,字直接交给任务、由脚本模型回。
+     * 子对话标记用另一个 store 写:它的前台对话从没存下来过,子对话照常进对话列表(和重启后前台对话没存下的情形一样)。
+     */
+    private fun openTaskConversation(): String {
+        val id = ConversationStore.shared(context).newConversation()
+        ConversationStore(context).setDeskParent(id, "desk-test-parent-$id")
+        compose.runOnUiThread { vm.openConversation(id) }
+        compose.waitUntil(5_000) { vm.ui.value.conversationId == id }
+        compose.waitForIdle()
+        return id
+    }
+
     private fun awaitState(predicate: (TaskState) -> Boolean): TaskState =
         pollUntil(15_000) { DeviceTaskState.state.value.takeIf(predicate) } ?: error("state never matched: ${DeviceTaskState.state.value}")
 
@@ -164,7 +178,9 @@ class ChatScreenDeviceTest {
         }
         fun close() = compose.onNodeWithTag("close-conversation-usage").performClick()
         // The user's configured start page can be Personal or onboarding. Open this chat via its normal entry point.
+        // 测的是任务的用量:在前台派出的子对话里发,字直接交给任务(见 openTaskConversation)
         val id = ConversationStore.shared(context).newConversation()
+        ConversationStore(context).setDeskParent(id, "desk-test-parent-$id")
         compose.runOnUiThread {
             val intent = android.content.Intent(compose.activity.intent).putExtra(MainActivity.EXTRA_OPEN_CONVERSATION, id)
             InstrumentationRegistry.getInstrumentation().callActivityOnNewIntent(compose.activity, intent)
@@ -199,6 +215,7 @@ class ChatScreenDeviceTest {
     fun runsTaskWithStepsPipAndResult() {
         shot("01-idle")
 
+        openTaskConversation()
         compose.typeAndSend("打开设置看看电池")
         if (vm.ui.value.blocked != null) {
             // 这台手机没配模型等:被拦下的提示也截一张,再绕过检查用脚本模型跑
@@ -354,16 +371,13 @@ class ChatScreenDeviceTest {
         val firstStarted = AtomicBoolean(false)
         testTasks.modelFactory = { _, _ -> if (firstStarted.get()) models[1] else models[0] }
         try {
+            val first = openTaskConversation()
             compose.runOnUiThread { assertTrue(vm.send("第一个任务", anyway)) }
             assertEquals(1, models[0].awaitCall().number)
             firstStarted.set(true)
-            val first = vm.ui.value.conversationId
-            compose.runOnUiThread {
-                vm.newConversation()
-                assertTrue(vm.send("第二个任务", anyway))
-            }
+            val second = openTaskConversation()
+            compose.runOnUiThread { assertTrue(vm.send("第二个任务", anyway)) }
             assertEquals(1, models[1].awaitCall().number)
-            val second = vm.ui.value.conversationId
             assertTrue(first != second)
 
             compose.onNodeWithContentDescription("菜单").performClick()

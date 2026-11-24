@@ -109,7 +109,8 @@ class FrontDesk(
 
     private fun updateView(taskId: String, title: String, state: TaskState) {
         views.update { list ->
-            val phase = deskPhaseOf(state)
+            // 刚派出、任务服务还没接手的(Idle):不在开始队列里就是正在开始,不当成排队(否则卡片先闪「排队中」,前台也照着说还在排队)
+            val phase = if (state == TaskState.Idle && tasks.queuePosition(taskId) == null) DeskTaskPhase.Running else deskPhaseOf(state)
             val line = lineOf(state)
             val before = list.firstOrNull { it.taskId == taskId }?.recent.orEmpty()
             val recent = if (line != null && (phase == DeskTaskPhase.Running || phase == DeskTaskPhase.NeedsYou)) {

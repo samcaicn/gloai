@@ -227,6 +227,34 @@ class FrontDeskTest {
         assertEquals(DeskTaskView("t2", "查快递", DeskTaskPhase.Running, null, null), desk.active.value.single())
     }
 
+    /**
+     * 刚派出、任务服务还没接手(状态还是 Idle)、也不在开始队列里的一件:是正在开始,不是排队。
+     * 记成排队时卡片会先闪一下「排队中」,前台看着任务板也会跟用户说「还在排队」。
+     */
+    @Test
+    fun startingTaskIsNotShownAsQueued() = runTest {
+        val state = port.add("t1")
+        val desk = desk()
+        desk.track("t1", "看设置首页")
+        runCurrent()
+        assertEquals(DeskTaskView("t1", "看设置首页", DeskTaskPhase.Running, null, null), desk.active.value.single())
+
+        state.value = running()
+        runCurrent()
+        assertEquals(DeskTaskPhase.Running, desk.active.value.single().state)
+    }
+
+    /** 刚派出就预判要排队的(端口给了排第几):Idle 时照样是排队,带位置。 */
+    @Test
+    fun idleTaskWithAQueuePositionIsQueued() = runTest {
+        port.add("t2")
+        port.positions["t2"] = 2
+        val desk = desk()
+        desk.track("t2", "查快递")
+        runCurrent()
+        assertEquals(DeskTaskView("t2", "查快递", DeskTaskPhase.Queued, null, 2), desk.active.value.single())
+    }
+
     @Test
     fun restoreResubscribesRunningTasks() = runTest {
         val live = port.add("t1", running("打开日历"))

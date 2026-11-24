@@ -147,10 +147,11 @@ class VoiceCallOverlayTest {
     /**
      * 一通假通话:真 session 接假设备;[connect] 决定连接成败(可多次,配合重试)。
      * 前台、桥、对话流按生产装配同样接(后台换成 [FakePort])。
+     * 会话一造好就开始连,这时测试里的变量还没赋上:[connect] 以这通电话为接收者,连自己的 [rt] 不经外面的变量。
      */
     private inner class Call(
         flows: Map<String, MutableStateFlow<TaskState>> = emptyMap(),
-        connect: suspend (Int) -> CallRealtimeSession,
+        connect: suspend Call.(Int) -> CallRealtimeSession,
         timeLimitMs: Long = 600_000L,
     ) {
         val audio = FakeAudio()
@@ -180,7 +181,7 @@ class VoiceCallOverlayTest {
                 scope = scope,
                 audio = audio,
                 foregroundResumed = MutableStateFlow(true),
-                connect = connect,
+                connect = { attempt -> connect(attempt) },
                 greeting = "你好",
                 echoWindow = echoWindow,
                 requestGate = gate,
@@ -210,11 +211,18 @@ class VoiceCallOverlayTest {
         }
     }
 
+    /**
+     * 关掉动效再画:点阵球开着动效时每一帧都要下一帧,界面测试永远等不到空闲(ComposeNotIdle);
+     * 关掉后球按形态和电平静止地画,形态的 testTag 不变。
+     */
+    @androidx.compose.runtime.Composable
+    private fun StillTheme(content: @androidx.compose.runtime.Composable () -> Unit) = MikaTheme(reduceMotion = true, content = content)
+
     private fun show(call: Call, onCollapse: () -> Unit = {}) {
         val audioRoute = VoiceCallAudioRoute(InstrumentationRegistry.getInstrumentation().targetContext)
         val holder = VoiceCallHolder(call.session, call.busy, audioRoute, call.transcript, call.feed)
         compose.setContent {
-            MikaTheme { VoiceCallOverlay(holder, onCollapse) }
+            StillTheme { VoiceCallOverlay(holder, onCollapse) }
         }
     }
 
@@ -277,14 +285,14 @@ class VoiceCallOverlayTest {
         gate.complete(call.rt)
         reachActive(call)
         compose.onNodeWithText("在听你说").assertIsDisplayed()
-        compose.onNodeWithTag("voicecall-clock").assertTextEquals("0:00")
+        // 计时在挂断钮里,并进了按钮的语义,按未合并的树找
+        compose.onNodeWithTag("voicecall-clock", useUnmergedTree = true).assertTextEquals("0:00")
         awaitBall("Globe")
         call.session.end(EndReason.Hangup)
     }
 
     @Test fun micLevelSwitchesBallToWave() {
-        lateinit var call: Call
-        call = Call(connect = { call.rt })
+        val call = Call(connect = { rt })
         show(call)
         reachActive(call)
         awaitBall("Globe")
@@ -295,8 +303,7 @@ class VoiceCallOverlayTest {
     }
 
     @Test fun cloudAudioDrivesSpeakerLevelAndWave() {
-        lateinit var call: Call
-        call = Call(connect = { call.rt })
+        val call = Call(connect = { rt })
         show(call)
         reachActive(call)
         awaitBall("Globe")
@@ -307,9 +314,9 @@ class VoiceCallOverlayTest {
     }
 
     @Test fun workingTaskShowsTaskCardAndStatusLines() {
-        val flow = MutableStateFlow<TaskState>(TaskState.Running(1, "正在打开设置"))
-        lateinit var call: Call
-        call = Call(mapOf("t1" to flow), connect = { call.rt })
+        // 任务卡上的进度取任务给人看的那句(narration),不取步骤备注
+        val flow = MutableStateFlow<TaskState>(TaskState.Running(1, "open_app", narration = "正在打开设置"))
+        val call = Call(mapOf("t1" to flow), connect = { rt })
         show(call)
         reachActive(call)
         // 打字办事:先点键盘展开输入行,发出去后直接派单,任务卡上来
@@ -325,9 +332,9 @@ class VoiceCallOverlayTest {
     }
 
     @Test fun bargeInInterruptsPlaybackButNeverCancelsTheRunningTask() {
-        val flow = MutableStateFlow<TaskState>(TaskState.Running(1, "正在打开设置"))
-        lateinit var call: Call
-        call = Call(mapOf("t1" to flow), connect = { call.rt })
+        // 任务卡上的进度取任务给人看的那句(narration),不取步骤备注
+        val flow = MutableStateFlow<TaskState>(TaskState.Running(1, "open_app", narration = "正在打开设置"))
+        val call = Call(mapOf("t1" to flow), connect = { rt })
         show(call)
         reachActive(call)
         compose.onNodeWithTag("voicecall-keyboard").performClick()
@@ -344,8 +351,7 @@ class VoiceCallOverlayTest {
     }
 
     @Test fun hangupShowsEndedCopy() {
-        lateinit var call: Call
-        call = Call(connect = { call.rt })
+        val call = Call(connect = { rt })
         show(call)
         reachActive(call)
         compose.onNodeWithTag("voicecall-hangup").performClick()
@@ -356,9 +362,8 @@ class VoiceCallOverlayTest {
 
     @Test fun failureShowsErrorCopyAndRetryRerunsTheFlow() {
         val attempts = AtomicInteger(0)
-        lateinit var call: Call
-        call = Call(connect = {
-            if (attempts.incrementAndGet() == 1) throw VolcRealtimeException(VolcRealtimeException.Kind.TIMEOUT) else call.rt
+        val call = Call(connect = {
+            if (attempts.incrementAndGet() == 1) throw VolcRealtimeException(VolcRealtimeException.Kind.TIMEOUT) else rt
         })
         show(call)
         // 第一次失败:错误文案(顶栏状态 + 错误卡各一条) + 就地重试
@@ -371,8 +376,7 @@ class VoiceCallOverlayTest {
     }
 
     @Test fun timeLimitEndsTheCallWithItsOwnCopy() {
-        lateinit var call: Call
-        call = Call(connect = { call.rt }, timeLimitMs = 300L)
+        val call = Call(connect = { rt }, timeLimitMs = 300L)
         show(call)
         reachActive(call)
         awaitState(call.session) { it == VoiceCallState.Ended(EndReason.TimeLimit) }
@@ -381,8 +385,7 @@ class VoiceCallOverlayTest {
 
     @Test fun collapseInvokesCallback() {
         val collapses = AtomicInteger(0)
-        lateinit var call: Call
-        call = Call(connect = { call.rt })
+        val call = Call(connect = { rt })
         show(call, onCollapse = { collapses.incrementAndGet() })
         reachActive(call)
         compose.onNodeWithTag("voicecall-collapse").performClick()
@@ -397,7 +400,7 @@ class VoiceCallOverlayTest {
         val settings = AtomicInteger(0)
         var stage by mutableStateOf(VoiceCallGateStage.NeedPermission)
         compose.setContent {
-            MikaTheme {
+            StillTheme {
                 VoiceCallGate(
                     stage,
                     onRequestPermission = { requests.incrementAndGet() },
@@ -419,7 +422,7 @@ class VoiceCallOverlayTest {
     @Test fun credentialsGatePointsToSetup() {
         val setups = AtomicInteger(0)
         compose.setContent {
-            MikaTheme {
+            StillTheme {
                 VoiceCallGate(
                     VoiceCallGateStage.NeedCredentials,
                     onRequestPermission = {},
@@ -437,7 +440,7 @@ class VoiceCallOverlayTest {
     @Test fun unsupportedProtocolGateExplainsAndPointsToSetup() {
         val setups = AtomicInteger(0)
         compose.setContent {
-            MikaTheme {
+            StillTheme {
                 VoiceCallGate(
                     VoiceCallGateStage.UnsupportedProtocol,
                     onRequestPermission = {},

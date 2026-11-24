@@ -28,6 +28,7 @@ import com.wangzan101.mika.cap.phone.a11y.DeviceSupport.sh
 import com.wangzan101.mika.core.agent.AttachedPage
 import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.cap.phone.OperatingPace
+import com.wangzan101.mika.core.frontdesk.DeskTaskPhase
 import com.wangzan101.mika.core.model.ChatModel
 import com.wangzan101.mika.core.model.Message
 import com.wangzan101.mika.core.model.ModelReply
@@ -35,6 +36,7 @@ import com.wangzan101.mika.core.model.ModelRole
 import com.wangzan101.mika.core.model.Part
 import com.wangzan101.mika.core.model.ToolSpec
 import com.wangzan101.mika.memory.MemoryRuntime
+import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.ProviderConfig
 import com.wangzan101.mika.settings.ProviderPresets
 import com.wangzan101.mika.settings.ProviderStore
@@ -44,6 +46,7 @@ import com.wangzan101.mika.settings.choose
 import com.wangzan101.mika.settings.configFor
 import com.wangzan101.mika.settings.save
 import com.wangzan101.mika.task.TaskEnvironment
+import com.wangzan101.mika.task.TaskRun
 import com.wangzan101.mika.task.TaskService
 import com.wangzan101.mika.task.testTasks
 import com.wangzan101.mika.ui.MainActivity
@@ -86,6 +89,12 @@ import org.junit.runner.RunWith
  *   result.txt 在 runGoal 那些之外还有:borrowed(页面借给了任务)、firstToolCalls、urlsOpened(web_navigate 打开过的网址)、
  *   reopenedSameUrl(又打开了这一页,不该有)、userTabUrlAtEnd、pausedByTouch、resumed、pauses(各种暂停的次数)、userPauses、
  *   conversationId、pageOrigin、listedAsWeb(侧栏里这条对话带「网页」小标签)。每一步、暂停、恢复、结束、侧栏各截一张主屏(step-NN.png 等)。
+ *
+ * - 聊天走前台的多轮:`-e deskScript "<步>||<步>…" -e deskRun <记录目录名> [-e deskWaitSec 300] [-e deskParallelMax N] [-e deskNew false]`,
+ *   运行 [runDesk]。步有:`say:<一句>`(经输入框发出,等前台这一轮回完)、`wait:running|queued|needsyou|idle|report|tasks=N`
+ *   (等任务板/汇报到那一步)、`sleep:<秒>`、`home`(退到桌面,之后的汇报走兜底)、`notifications`(记下此刻 Mika 的通知)。
+ *   deskParallelMax 只在这次运行里临时改并行上限,结束时改回。result.txt 里每一句一行 turnN(第一个字/第一件任务/说完的毫秒、派出的任务、工具小标签、回话),
+ *   前台说的汇报一行 reportN,最后的任务板、后台调过的工具和通知。
  *
  * 记录写到 App 外部文件目录 acceptance/<liveRun>/:log.txt(每步模型说的话、工具调用与结果摘要)、
  * result.txt(模型、目标、结果、步数、用时、最终回答)、虚拟屏每步画面与主屏截图;
@@ -169,6 +178,7 @@ class LiveRunTest {
         val learningJob = memory.scope.coroutineContext[Job]!!
         val resident = learningJob.children.count { it.isActive }
 
+        val before = DeviceTaskState.runs.value.toSet()
         compose.typeAndSend(goal!!)
         // 发出去就收起键盘:对话页下面的后台屏小画面才露得出来,和真人发完就收键盘一样
         compose.runOnUiThread {
@@ -183,6 +193,18 @@ class LiveRunTest {
             "send did not go out: composer=${chat.ui.value.composer} exchanges=${chat.ui.value.exchanges.size} task=${DeviceTaskState.state.value}"
         }
         val t0 = System.currentTimeMillis()
+        // 聊天走前台:这句先到前台,由它派成一件后台任务(跑在自己的子会话里),跟着派出来的那件;
+        // 前台只回话、没派单时,前台的回话就是这一轮的回答
+        val dispatched: Any? = DeviceSupport.pollUntil(timeoutMs) {
+            compose.mainClock.advanceTimeBy(250)
+            DeviceTaskState.runs.value.firstOrNull { it !in before }
+                ?: chat.ui.value.exchanges.lastOrNull { it.goal == goal.trim() }
+                    ?.takeIf { it.status != com.wangzan101.mika.chat.ui.ExchangeStatus.Working && it.deskTasks.isEmpty() }
+                    ?.let { it.deskReply.orEmpty() }
+        }
+        val task = dispatched as? TaskRun
+        val deskOnly = dispatched as? String
+        note("desk dispatched=${task?.key} child=${task?.conversationId} deskOnlyReply=${deskOnly?.take(300)}")
 
         var lastStep = -1
         var takeovers = 0
@@ -190,8 +212,8 @@ class LiveRunTest {
         var pausesHandled = 0
         var end: TaskState? = null
         var last: TaskState? = null
-        while (System.currentTimeMillis() - t0 < timeoutMs) {
-            val s = DeviceTaskState.state.value
+        while (task != null && System.currentTimeMillis() - t0 < timeoutMs) {
+            val s = task.state.value
             if (s != last) {
                 note("state $s")
                 last = s
@@ -209,16 +231,16 @@ class LiveRunTest {
             if (cancelAt > 0 && !cancelled && s is TaskState.Running && s.step >= cancelAt) {
                 cancelled = true
                 note("stopping at step ${s.step}")
-                compose.runOnUiThread { (context.applicationContext as MikaApp).chat.cancel() }
+                TaskService.cancel(context, task.key)
             }
             if (s is TaskState.Held && s.reason.resumable && pausesHandled == 0) {
                 pausesHandled++
                 Thread.sleep(3000)
                 val shell = DeviceSupport.shell()
-                note("paused; still paused after 3s: ${DeviceTaskState.state.value}; main top task=${shell.topTaskId(0)} pkg=${shell.packageOfTask(shell.topTaskId(0))}")
+                note("paused; still paused after 3s: ${task.state.value}; main top task=${shell.topTaskId(0)} pkg=${shell.packageOfTask(shell.topTaskId(0))}")
                 note("notifications: " + mikaNotifications())
                 mainShot(dir, "paused-main")
-                TaskService.resume(context)
+                TaskService.resume(context, task.key)
                 note("resume requested")
             }
             if (s is TaskState.WaitingTakeover && takeovers == 0) {
@@ -227,11 +249,11 @@ class LiveRunTest {
                 frame(dir, "takeover-agent")
                 mainShot(dir, "takeover-main")
                 note("takeover requested; action=$onTakeover")
-                if (onTakeover == "handback") TaskService.handBack(context) else TaskService.cancel(context)
+                if (onTakeover == "handback") TaskService.handBack(context, runKey = task.key) else TaskService.cancel(context, task.key)
             }
             if (s is TaskState.Succeeded || s is TaskState.Failed || s == TaskState.Cancelled) {
                 end = s
-                note("chat status at end: ${chat.ui.value.exchanges.lastOrNull()?.status}")
+                note("desk board at end: ${chat.ui.value.deskTasks.joinToString { "${it.taskId} ${it.state}" }}")
                 break
             }
             // 界面测试的时钟只在测试推它时才走:等的时候一起往前推,对话页的步骤、计时、小画面才会照常刷新(录演示要用)
@@ -239,16 +261,17 @@ class LiveRunTest {
             Thread.sleep(250)
         }
         val wall = (System.currentTimeMillis() - t0) / 1000.0
-        if (end == null) {
+        if (end == null && task != null) {
             note("timeout, cancelling")
-            TaskService.cancel(context)
+            TaskService.cancel(context, task.key)
         }
         Thread.sleep(1500)
         compose.waitForIdle()
         mainShot(dir, "end-main")
-        // 停止后的交代:等它当作这一轮的回答出现在对话页
+        // 停止后的交代:任务跑在前台派出的子会话里,等它当作那一轮的回答记进子会话
+        val app = context.applicationContext as MikaApp
         val summary = if (end == TaskState.Cancelled) DeviceSupport.pollUntil(30_000) {
-            chat.ui.value.exchanges.lastOrNull()?.status?.let { it as? com.wangzan101.mika.chat.ui.ExchangeStatus.Cancelled }?.summary
+            app.conversations.turns(task!!.conversationId).lastOrNull()?.let(com.wangzan101.mika.core.agent.Conversation::stopSummary)
         }.also {
             note("stop summary: $it")
             compose.waitForIdle()
@@ -258,12 +281,12 @@ class LiveRunTest {
             is TaskState.Succeeded -> "succeeded"
             is TaskState.Failed -> "failed"
             TaskState.Cancelled -> if (takeovers > 0) "takeover(cancelled)" else "cancelled"
-            else -> "timeout"
+            else -> if (deskOnly != null) "desk_reply" else "timeout"
         }
         val answer = when (end) {
             is TaskState.Succeeded -> end.answer
             is TaskState.Failed -> end.reason
-            else -> ""
+            else -> deskOnly.orEmpty()
         }
         // liveSettleSec:等交出之后的结局判定和学习做完,把学到的写进 learned.txt
         val settleMs = (args.getString("liveSettleSec")?.toLong() ?: 0) * 1000
@@ -279,6 +302,115 @@ class LiveRunTest {
                 "takeovers=$takeovers\npauses=$pausesHandled\nwallSec=$wall\ninputTokens=${recorder.inTokens}\noutputTokens=${recorder.outTokens}\n" +
                 "answer=$answer\n" + (summary?.let { "summary=$it\n" } ?: "") + kept,
         )
+    }
+
+    /**
+     * 聊天页走前台的多轮验收:按 [deskScript] 一步一步来,经真实界面在输入框里写字、点发送,旁边只读地看前台每一轮
+     * ([DeskWatch]):第一个字、第一件任务、说完各用了多久,派了什么、顶上的工具小标签,任务板每次的变化。
+     * 每一步截一张主屏,结束时把各轮和任务板写进 result.txt。
+     */
+    @Test
+    fun runDesk() {
+        val script = args.getString("deskScript")
+        assumeTrue(script != null)
+        val run = args.getString("deskRun") ?: "desk"
+        val waitMs = (args.getString("deskWaitSec")?.toLong() ?: 300) * 1000
+        testTasks.evalHooks.operatingPace = OperatingPace.parse(args.getString("livePace")) ?: OperatingPace.FAST
+        val dir = File(context.getExternalFilesDir(null), "acceptance/$run").apply { deleteRecursively(); mkdirs() }
+        val log = File(dir, "log.txt")
+        fun note(s: String) = log.appendText("[${System.currentTimeMillis()}] $s\n")
+        DeviceSupport.shell()
+        DeviceSupport.service()
+        val app = context.applicationContext as MikaApp
+        val chat = app.chat
+        val flags = FeatureFlags.get(context)
+        val parallelBefore = flags.parallelMax()
+        // 并行上限只在这次验收里临时改(Mika 自己的设置),结束时改回去
+        args.getString("deskParallelMax")?.toInt()?.let { flags.setParallelMax(it) }
+        val recorder = Recorder(::note)
+        testTasks.modelFactory = { ctx, s -> TaskEnvironment.defaultModelFactory(ctx, s)?.let { recorder.wrap(it) } }
+        if (args.getString("deskNew") != "false") compose.runOnUiThread { chat.newConversation() }
+        compose.waitForIdle()
+        note("parallelMax=${flags.parallelMax()} (was $parallelBefore) limit=${app.taskState.parallelLimit.value} script=$script")
+        val watch = DeskWatch(chat.ui, ::note, System::currentTimeMillis).apply { start() }
+        val sent = mutableListOf<Pair<String, Long>>()
+        val results = StringBuilder()
+        fun board() = chat.ui.value.deskTasks
+        fun waitUntil(what: String, cond: () -> Boolean): Boolean {
+            val ok = DeviceSupport.pollUntil(waitMs) {
+                compose.mainClock.advanceTimeBy(250)
+                true.takeIf { cond() }
+            } != null
+            note("wait $what: ${if (ok) "ok" else "TIMEOUT"} board=${board().joinToString { "${it.taskId} ${it.state}${it.position?.let { p -> "#$p" } ?: ""}" }}")
+            return ok
+        }
+        val ended = setOf(DeskTaskPhase.Done, DeskTaskPhase.Failed, DeskTaskPhase.Cancelled)
+        try {
+            script!!.split("||").map { it.trim() }.filter { it.isNotEmpty() }.forEachIndexed { i, step ->
+                val (kind, value) = step.substringBefore(':') to step.substringAfter(':', "")
+                note("step $i: $step")
+                val ok = when (kind) {
+                    "say" -> {
+                        val seen = watch.turns().map { it.runId }.toSet()
+                        val at = System.currentTimeMillis()
+                        compose.typeAndSend(value)
+                        compose.runOnUiThread {
+                            val w = compose.activity.window
+                            compose.activity.currentFocus?.clearFocus()
+                            WindowCompat.getInsetsController(w, w.decorView).hide(WindowInsetsCompat.Type.ime())
+                        }
+                        chat.ui.value.blocked?.let { error("blocked by prerequisites: $it") }
+                        sent += value.trim() to at
+                        // 这一轮前台回完(说完或只派了单)才往下走
+                        waitUntil("reply to \"$value\"") { watch.turnFor(value.trim(), seen)?.doneAt != null }
+                    }
+                    "wait" -> when {
+                        value == "running" -> waitUntil(value) { board().any { it.state == DeskTaskPhase.Running } }
+                        value == "needsyou" -> waitUntil(value) { board().any { it.state == DeskTaskPhase.NeedsYou } }
+                        value == "queued" -> waitUntil(value) { board().any { it.state == DeskTaskPhase.Queued } }
+                        value == "idle" -> waitUntil(value) {
+                            board().isNotEmpty() && board().all { it.state in ended } && watch.turns().none { it.doneAt == null }
+                        }
+                        value.startsWith("tasks=") -> value.removePrefix("tasks=").toInt().let { n -> waitUntil(value) { board().size >= n } }
+                        value == "report" -> watch.turns().count { it.isReport }.let { n -> waitUntil(value) { watch.turns().count { it.isReport && it.doneAt != null } > n } }
+                        else -> error("unknown wait $value")
+                    }
+                    "sleep" -> { Thread.sleep(value.toLong() * 1000); true }
+                    // 页面退到后台:之后的汇报该走兜底(写回会话、发通知);回来时从桌面上的入口重新打开
+                    "home" -> { sh("input keyevent KEYCODE_HOME"); Thread.sleep(1500); true }
+                    "notifications" -> { note("notifications: " + mikaNotifications()); true }
+                    else -> error("unknown step $step")
+                }
+                compose.mainClock.advanceTimeBy(500)
+                runCatching { compose.waitForIdle() }
+                mainShot(dir, "step-%02d".format(i))
+                results.append("step$i=$step ok=$ok\n")
+            }
+        } finally {
+            watch.stop()
+            flags.setParallelMax(parallelBefore)
+            val turns = watch.turns()
+            sent.forEachIndexed { i, (text, at) ->
+                val turn = turns.firstOrNull { it.goal == text && it.seenAt >= at }
+                results.append("turn$i.text=$text\nturn$i.${turn?.describe(at) ?: "missing"}\n")
+            }
+            turns.filter { it.isReport }.forEachIndexed { i, t -> results.append("report$i.${t.describe()}\n") }
+            results.append("board=" + board().joinToString(" ; ") { "${it.taskId} ${it.state}${it.position?.let { p -> "#$p" } ?: ""} ${it.title}" } + "\n")
+            results.append("conversationId=${chat.ui.value.conversationId}\n")
+            // 存下来的轮次:页面不在时的汇报由兜底写回会话(status = desk_report),这里看得到
+            chat.ui.value.conversationId?.let { id ->
+                app.conversations.turns(id).forEachIndexed { i, t ->
+                    results.append("saved$i=${t.status} user=${t.userText.take(40)} said=${t.outcome.replace('\n', ' ').take(160)}\n")
+                }
+            }
+            results.append("backendSteps=${recorder.calls} backendTools=${recorder.toolCalls.map { it.first }.distinct().joinToString(",")}\n")
+            results.append("notifications=${mikaNotifications()}\n")
+            File(dir, "result.txt").writeText(results.toString())
+            // 还在跑的停掉,不留在手机上
+            board().filter { it.state !in ended }.forEach { v ->
+                DeviceTaskState.runs.value.firstOrNull { it.conversationId == v.taskId }?.let { TaskService.cancel(context, it.key) }
+            }
+        }
     }
 
     /**
