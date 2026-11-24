@@ -341,4 +341,5 @@
     <string name="plus_reuse">Guardados</string>
     <string name="plus_reuse_hint">Frases · listas · flujos</string>
     <string name="plus_reuse_phrases">Frases guardadas</string>
+    <string name="drawer_calls">Llamadas IA</string>
 </resources>

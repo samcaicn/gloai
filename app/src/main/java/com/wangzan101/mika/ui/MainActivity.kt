@@ -947,7 +947,7 @@ private fun MikaRoot(
             app.chat.openConversation(it)
             nav.reset()
         })
-        Route.Calls -> CallSettingsScreen(app.calls, onBack = back, standalone = true, initialHistoryCallId = focusedCallHistoryId, onOpenVoiceCatalog = { nav.push(Route.VoiceServices) })
+        Route.Calls -> CallSettingsScreen(app.calls, onBack = back, initialHistoryCallId = focusedCallHistoryId, onOpenVoiceCatalog = { nav.push(Route.VoiceServices) })
     }
     }
         }
@@ -977,6 +977,8 @@ private fun MikaRoot(
                 onPlans = { openFromSidebar(Route.Plans) },
                 onMemory = { openFromSidebar(Route.Memory) },
                 onBrowser = { openFromSidebar(Route.Browser) },
+                onTeach = { app.teach.prefill(""); openFromSidebar(Route.Teach) },
+                onCalls = { openFromSidebar(Route.Calls) },
                 frames = if (nav.current == Route.Chat) app.taskState.frames else null,
                 operationRun = app.taskState::run,
                 chatActive = nav.current == Route.Chat || nav.current == Route.Personal,

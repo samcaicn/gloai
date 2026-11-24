@@ -69,8 +69,8 @@ internal fun DrawerSearchField(query: String, onQueryChange: (String) -> Unit, m
             .height(38.dp)
             .keepsKeyboard()
             .clip(NavShape)
-            .background(c.fill)
-            .then(if (focused) Modifier.border(1.dp, c.accent, NavShape) else Modifier)
+            // 只描边不填色,和上面的浅灰入口卡区分开
+            .border(1.dp, if (focused) c.accent else c.hair, NavShape)
             .padding(start = 12.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),

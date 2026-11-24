@@ -313,4 +313,5 @@
     <string name="plus_reuse">常用</string>
     <string name="plus_reuse_hint">说法 · 清单 · 流程</string>
     <string name="plus_reuse_phrases">常用说法</string>
+    <string name="drawer_calls">AI 电话</string>
 </resources>

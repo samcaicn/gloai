@@ -313,4 +313,5 @@
     <string name="plus_reuse">Tersimpan</string>
     <string name="plus_reuse_hint">Frasa · daftar · alur</string>
     <string name="plus_reuse_phrases">Frasa tersimpan</string>
+    <string name="drawer_calls">Panggilan AI</string>
 </resources>

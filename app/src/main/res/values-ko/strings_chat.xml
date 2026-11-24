@@ -313,4 +313,5 @@
     <string name="plus_reuse">자주 쓰는 항목</string>
     <string name="plus_reuse_hint">문구 · 목록 · 흐름</string>
     <string name="plus_reuse_phrases">자주 쓰는 문구</string>
+    <string name="drawer_calls">AI 전화</string>
 </resources>

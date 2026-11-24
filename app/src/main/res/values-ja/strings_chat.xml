@@ -313,4 +313,5 @@
     <string name="plus_reuse">よく使う</string>
     <string name="plus_reuse_hint">フレーズ · リスト · フロー</string>
     <string name="plus_reuse_phrases">よく使うフレーズ</string>
+    <string name="drawer_calls">AI 電話</string>
 </resources>

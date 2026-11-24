@@ -355,4 +355,5 @@
     <string name="plus_reuse">Сохранённое</string>
     <string name="plus_reuse_hint">Фразы · списки · сценарии</string>
     <string name="plus_reuse_phrases">Сохранённые фразы</string>
+    <string name="drawer_calls">ИИ-звонки</string>
 </resources>

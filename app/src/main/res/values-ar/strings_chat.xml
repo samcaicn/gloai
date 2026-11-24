@@ -383,4 +383,5 @@
     <string name="plus_reuse">المحفوظات</string>
     <string name="plus_reuse_hint">عبارات · قوائم · مسارات</string>
     <string name="plus_reuse_phrases">العبارات المحفوظة</string>
+    <string name="drawer_calls">مكالمات الذكاء الاصطناعي</string>
 </resources>

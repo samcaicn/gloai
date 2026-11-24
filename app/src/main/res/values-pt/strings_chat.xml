@@ -341,4 +341,5 @@
     <string name="plus_reuse">Salvos</string>
     <string name="plus_reuse_hint">Frases · listas · fluxos</string>
     <string name="plus_reuse_phrases">Frases salvas</string>
+    <string name="drawer_calls">Chamadas IA</string>
 </resources>

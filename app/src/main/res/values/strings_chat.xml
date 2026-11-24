@@ -327,4 +327,5 @@
     <string name="plus_reuse">Saved</string>
     <string name="plus_reuse_hint">Phrases · lists · flows</string>
     <string name="plus_reuse_phrases">Saved phrases</string>
+    <string name="drawer_calls">AI calls</string>
 </resources>

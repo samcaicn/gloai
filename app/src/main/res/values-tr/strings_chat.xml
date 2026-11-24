@@ -313,4 +313,5 @@
     <string name="plus_reuse">Kayıtlılar</string>
     <string name="plus_reuse_hint">İfadeler · listeler · akışlar</string>
     <string name="plus_reuse_phrases">Kayıtlı ifadeler</string>
+    <string name="drawer_calls">AI aramaları</string>
 </resources>
