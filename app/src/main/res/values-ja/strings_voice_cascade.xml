@@ -15,7 +15,7 @@
     <string name="call_mode_speak">話す</string>
     <string name="call_mode_think_light">軽量モデル</string>
     <string name="call_mode_think_main">メインモデル</string>
-    <string name="call_mode_think_note">フロントデスクが使うモデル（チャットと通話）</string>
+    <string name="call_mode_think_note">Mika が返事に使うモデル（チャットと通話）</string>
     <string name="call_mode_think_light_note">返答が速い。軽量モデル未設定ならメインモデル</string>
     <string name="call_mode_listen_device">端末の音声認識は通話音声を聞けません。「聞く」にサービスのモデルを選んでください。</string>
     <string name="call_mode_rhythm">会話のテンポ</string>

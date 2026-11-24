@@ -37,7 +37,7 @@ class VoiceCallCopyTest {
         assertEquals("有电话进来，通话结束", voiceCallEndText(EndReason.IncomingCall))
         assertEquals("5 分钟没有动静，通话已结束", voiceCallEndText(EndReason.Idle, idleMinutes = 5))
         assertEquals("5 分钟没有动静，通话已结束", voiceCallStatusText(VoiceCallState.Ended(EndReason.Idle, idleMinutes = 5)))
-        assertEquals("请回到前台再继续", voiceCallEndText(EndReason.Background))
+        assertEquals("请回到 Mika 再继续", voiceCallEndText(EndReason.Background))
         assertEquals(EndReason.entries.size, EndReason.entries.map { voiceCallEndText(it, 5) }.distinct().size)
     }
 

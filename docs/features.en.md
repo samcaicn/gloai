@@ -71,17 +71,20 @@ Any app installed on your phone works, with no per-app integration: Mika looks a
 - Choose **Copy as new plan** from a plan's menu to reuse its content, condition, and recurrence. The copy starts paused by default and sends results to the same conversation.
 - Under **Settings › Notifications**, turn on scheduled task quiet hours and choose start and end times. The window repeats daily in the device's local time and can span midnight. Tasks still run, results go back to the conversation, and scheduled results and reminders appear silently in the notification shade.
 
-## The front desk: talk while it works, interrupt or stop anytime
+## Talk while it works: interrupt or stop anytime
 
-- In the chat and in voice calls, Mika's front desk answers first: it replies in a sentence or two and hands anything that needs doing (opening an app, looking something up online, operating the phone, sending a message) to the backend, shown as task cards under that turn. You can keep talking about something else while the tasks run.
-- While a task runs, just say it: add to or correct your request and the desk passes it to that task; ask how it is going and the desk answers from the task card, never guessing; answer a question the task asked; or say to stop and that task stops. The backend gets your whole sentence as you said it, never reworded, and the desk never starts, answers or stops a task on its own without you asking.
-- One message can start several tasks; tasks beyond the parallel limit wait in line and start when the earlier ones finish.
-- When you leave the chat, a task starting, needing you and finishing are written back to the conversation, with progress kept to its latest line; finished and failed tasks also send a notification.
-- Choose the desk's model under "Settings › Models › Voice › Call mode", in "Think": the light model or the main model, for both chat and calls. Without a light model it uses the main model.
-- Typing in a task's own conversation talks to that task directly: Mika reads it before its next step.
-- Every step in the chat can be opened to see exactly what it tapped or typed and how that turned out.
-- “View process” works while the task is still running; new steps keep arriving as it goes.
-- Long-press a message sent during a task to withdraw or edit it before the model picks it up. Editing restores its quote too and is available when the composer has no draft; a message that carries a screen or text selected on a web page cannot be edited.
+- In the chat and in voice calls, just talk to Mika. What it can answer right away, it answers right away; anything that needs doing (opening an app, looking something up online, operating the phone, sending a message), Mika says so and gets on with it, and you can keep talking about something else meanwhile.
+- What Mika is working on shows in the progress bar above the composer: one line when collapsed; expand it to see each step and how long it took, stop it, or open the full details.
+- While Mika works, just say it: add to or correct your request, ask how it is going, answer a question Mika asked, or say to stop, and Mika does that. Progress answers come from what is really happening, never guessed. Mika works from your whole sentence as you said it, never reworded, and never starts, answers or stops anything on its own without you asking.
+- When Mika needs you, a card shows in the conversation: tap an option when it asks you to choose, or "Handle it" when it needs you to take over or confirm.
+- When something is done, the result is written in full in the conversation; when it did not work out, Mika says why and what you can do next.
+- One message can start several things; anything beyond the parallel limit waits in line and starts when the earlier ones finish.
+- When you leave the chat, results and the reasons things did not work out are still written back to the conversation; finishing, failing and needing you also send a notification.
+- Choose the model Mika replies with under "Settings › Models › Voice › Call mode", in "Think": the light model or the main model, for both chat and calls. Without a light model it uses the main model.
+- Typing in the full details of one thing adds to that thing directly: Mika reads it before its next step.
+- Every step in the details can be opened to see exactly what it tapped or typed and how that turned out.
+- "View process" works while Mika is still at it; new steps keep arriving as it goes.
+- Long-press a message sent while Mika is working to withdraw or edit it before the model picks it up. Editing restores its quote too and is available when the composer has no draft; a message that carries a screen or text selected on a web page cannot be edited.
 - When you press stop, Mika adds a short wrap-up: what it did, what it saw, how many times it sent something, and what is left. Say "continue" next time and it knows where to pick up.
 
 ## Hold to talk

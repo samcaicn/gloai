@@ -15,7 +15,7 @@
     <string name="call_mode_speak">Bicara</string>
     <string name="call_mode_think_light">Model ringan</string>
     <string name="call_mode_think_main">Model utama</string>
-    <string name="call_mode_think_note">Model yang dipakai front desk (obrolan dan panggilan)</string>
+    <string name="call_mode_think_note">Model yang dipakai Mika untuk membalas (obrolan dan panggilan)</string>
     <string name="call_mode_think_light_note">Lebih cepat; pakai model utama bila model ringan belum diatur</string>
     <string name="call_mode_listen_device">Pengenalan bawaan ponsel tidak bisa mendengar audio panggilan. Pilih model layanan untuk mendengar.</string>
     <string name="call_mode_rhythm">Giliran bicara</string>

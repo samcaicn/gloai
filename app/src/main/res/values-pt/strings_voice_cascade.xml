@@ -15,7 +15,7 @@
     <string name="call_mode_speak">Falar</string>
     <string name="call_mode_think_light">Modelo leve</string>
     <string name="call_mode_think_main">Modelo principal</string>
-    <string name="call_mode_think_note">O modelo usado pela recepção (conversas e chamadas)</string>
+    <string name="call_mode_think_note">O modelo com que o Mika responde (conversas e chamadas)</string>
     <string name="call_mode_think_light_note">Responde mais rápido; usa o principal se não houver modelo leve</string>
     <string name="call_mode_listen_device">O reconhecimento do aparelho não ouve o áudio da chamada. Escolha um modelo de serviço para ouvir.</string>
     <string name="call_mode_rhythm">Turnos de fala</string>

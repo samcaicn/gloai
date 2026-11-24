@@ -23,7 +23,7 @@
     <string name="voicecall_ended_incoming">有電話進來，通話結束</string>
     <string name="voicecall_ended_idle">%1$d 分鐘沒有動靜，通話已結束</string>
     <string name="voicecall_idle_line">還在嗎？沒動靜的話我就先掛了。</string>
-    <string name="voicecall_ended_background">請回到前景再繼續</string>
+    <string name="voicecall_ended_background">請回到 Mika 再繼續</string>
     <string name="voicecall_error_auth">即時語音憑據未通過，去設定裡檢查</string>
     <string name="voicecall_error_timeout">連線逾時，再試一次</string>
     <string name="voicecall_error_disconnected">連線中斷了</string>

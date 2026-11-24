@@ -15,7 +15,7 @@
     <string name="call_mode_speak">說</string>
     <string name="call_mode_think_light">輕模型</string>
     <string name="call_mode_think_main">主模型</string>
-    <string name="call_mode_think_note">前台用的模型（聊天和通話）</string>
+    <string name="call_mode_think_note">Mika 回話用的模型（聊天和通話）</string>
     <string name="call_mode_think_light_note">回得快；沒配輕模型時用主模型</string>
     <string name="call_mode_listen_device">手機內建辨識聽不到通話聲音，請給「聽」選一個服務商的辨識模型。</string>
     <string name="call_mode_rhythm">對話節奏</string>
