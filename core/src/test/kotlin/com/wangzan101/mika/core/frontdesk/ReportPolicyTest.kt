@@ -77,4 +77,21 @@ class ReportPolicyTest {
         now = 1_000
         assertTrue(short.shouldReport(DeskEvent.Progress("t1", "在找")))
     }
+
+    /** 没人在看时:开始、排队、进度只写回会话,不发通知;要你处理和收尾才发。 */
+    @Test
+    fun onlyNeedsYouAndEndingsNotify() {
+        val quiet = listOf(DeskEvent.Started("t1"), DeskEvent.Queued("t1", 2), DeskEvent.Progress("t1", "打开设置"))
+        val loud = listOf(
+            DeskEvent.NeedsAnswer("t1", "选哪家?", null),
+            DeskEvent.NeedsAction("t1", ActionKind.Confirm),
+            DeskEvent.NeedsAction("t1", ActionKind.Takeover),
+            DeskEvent.NeedsAction("t1", ActionKind.Prerequisite),
+            DeskEvent.Succeeded("t1", "好了"),
+            DeskEvent.Failed("t1", "没成"),
+            DeskEvent.Cancelled("t1"),
+        )
+        quiet.forEach { assertFalse(it.toString(), ReportPolicy.notifies(it)) }
+        loud.forEach { assertTrue(it.toString(), ReportPolicy.notifies(it)) }
+    }
 }

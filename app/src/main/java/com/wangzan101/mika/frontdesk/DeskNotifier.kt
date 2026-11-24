@@ -12,9 +12,11 @@ import com.wangzan101.mika.core.frontdesk.ActionKind
 import com.wangzan101.mika.core.frontdesk.DeskEvent
 import com.wangzan101.mika.core.frontdesk.DeskReport
 import com.wangzan101.mika.core.frontdesk.DeskSink
+import com.wangzan101.mika.core.frontdesk.ReportPolicy
 import com.wangzan101.mika.i18n.tr
 import com.wangzan101.mika.i18n.trPlural
 import com.wangzan101.mika.task.TaskService
+import com.wangzan101.mika.ui.MarkdownModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -22,7 +24,9 @@ import kotlinx.coroutines.withContext
 data class DeskNotice(val conversationId: String, val title: String, val text: String, val needsYou: Boolean)
 
 /**
- * 没有入口在线时前台的兜底:把这条汇报作为一行前台回话(`status = desk_report`)写回会话,再发一条通知。
+ * 没有入口在线时前台的兜底:把这条汇报作为一行前台回话(`status = desk_report`)写回会话;要用户处理或收尾了的
+ * 再发一条通知([ReportPolicy.notifies]),开始、排队、进度不发。前台派出去的任务不再自己发「任务完成」
+ * ([taskNotifiesItsOwnResult]),所以一件任务办完只有这一条。
  * 只有这条会话没有入口接着时才会走到这里(用户没在看它),所以不管 Mika 在不在前台都发。
  */
 class DeskNotifier(
@@ -34,11 +38,22 @@ class DeskNotifier(
         val turn = Turn(userText = "", outcome = tr(R.string.desk_report_line, report.title, line), status = STATUS,
             deskTasks = listOf(report.event.taskId))
         withContext(Dispatchers.IO) { conversations.append(conversationId, turn) }
+        // 开始、排队、进度只写回会话;哪些发通知由 ReportPolicy 定
+        if (!ReportPolicy.notifies(report.event)) return
         val needsYou = report.event is DeskEvent.NeedsAnswer || report.event is DeskEvent.NeedsAction
-        notify(DeskNotice(conversationId, report.title, line, needsYou))
+        // 通知不渲染 Markdown:正文去掉记号;写回会话的那一行保留原文,聊天页照常渲染
+        val text = MarkdownModel.toPlainText(line).ifBlank { line }
+        notify(DeskNotice(conversationId, report.title, text, needsYou))
     }
 
     companion object {
+        /**
+         * 任务办完时要不要自己发「任务完成」那条通知:前台派出去的(子会话挂在某个前台会话下)不发,
+         * 由前台汇报(页面开着时在聊天里说,不在时兜底发一条)当唯一的声音;其余任务照旧自己发。
+         */
+        fun taskNotifiesItsOwnResult(conversations: ConversationStore, threadId: String): Boolean =
+            conversations.deskParent(threadId) == null
+
         /** 前台兜底写回会话的那一行的状态。 */
         const val STATUS = DeskTurn.REPORT_STATUS
         private const val TAG = "MikaDesk"

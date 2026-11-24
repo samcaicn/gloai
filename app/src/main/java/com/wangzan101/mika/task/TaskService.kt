@@ -322,8 +322,10 @@ class TaskService : Service() {
         internal fun notifyDelivery(context: Context, delivery: Delivery, resultId: Int, scheduled: Boolean = false): SendOutcome {
             val nm = context.getSystemService(NotificationManager::class.java)
             when (delivery) {
-                // Mika 在前台(用户正看着聊天页)时不弹任务完成通知,结果只在应用内展示;切到别的 App 才保留通知(#731)
-                is Delivery.Result -> if (!MainActivity.foreground) nm.notify(resultId, Notification.Builder(context, CHANNEL_RESULT)
+                // Mika 在前台(用户正看着聊天页)时不弹任务完成通知,结果只在应用内展示;切到别的 App 才保留通知(#731)。
+                // 前台派出去的任务由前台汇报,不再自己发(见 DeskNotifier.taskNotifiesItsOwnResult)
+                is Delivery.Result -> if (!MainActivity.foreground &&
+                    com.wangzan101.mika.frontdesk.DeskNotifier.taskNotifiesItsOwnResult(ConversationStore.shared(context), delivery.threadId)) nm.notify(resultId, Notification.Builder(context, CHANNEL_RESULT)
                     .setSmallIcon(R.drawable.ic_notification)
                     .setContentTitle(delivery.title)
                     .setContentText(delivery.text)

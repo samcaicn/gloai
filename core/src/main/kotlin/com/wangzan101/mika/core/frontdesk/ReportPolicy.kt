@@ -39,4 +39,16 @@ class ReportPolicy(private val clock: () -> Long, private val progressQuietMs: L
         lastReportAt -= taskId
         askedTasks -= taskId
     }
+
+    companion object {
+        /**
+         * 没有入口接着(没人在看这条会话)、汇报只能走兜底时,这一条要不要发成通知:要用户回答或动手、收尾了的发;
+         * 开始、排队、进度只写回会话,不打扰用户——前台是它派出去的任务的唯一声音,不该一直念叨。
+         */
+        fun notifies(event: DeskEvent): Boolean = when (event) {
+            is DeskEvent.Started, is DeskEvent.Queued, is DeskEvent.Progress -> false
+            is DeskEvent.NeedsAnswer, is DeskEvent.NeedsAction -> true
+            is DeskEvent.Succeeded, is DeskEvent.Failed, is DeskEvent.Cancelled -> true
+        }
+    }
 }
