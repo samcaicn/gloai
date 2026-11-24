@@ -30,7 +30,9 @@ import com.wangzan101.mika.chat.ProjectDeleter
 import com.wangzan101.mika.chat.ProjectStore
 import com.wangzan101.mika.chat.SharedDraftStore
 import com.wangzan101.mika.chat.WorkspaceResolver
+import com.wangzan101.mika.frontdesk.DeskRegistry
 import com.wangzan101.mika.task.ConfirmationNotifier
+import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.cap.sandbox.SandboxStatus
 import com.wangzan101.mika.core.run.Outbox
 import com.wangzan101.mika.core.run.RunStore
@@ -329,8 +331,17 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
         )
     }
 
+    private val deskRegistry = lazy { DeskRegistry(this) }
+
     /** 每条会话一个常驻前台:聊天页、语音通话等入口从这里拿同一个前台、它的工具执行器和背景。 */
-    val desks: com.wangzan101.mika.frontdesk.DeskRegistry by lazy { com.wangzan101.mika.frontdesk.DeskRegistry(this) }
+    val desks: DeskRegistry by deskRegistry
+
+    /**
+     * 给任务服务问的:运行 runKey 以 end 收尾时,是不是有前台正跟着这次运行、会把结局说出来(见 [DeskRegistry.reportsEnding]);
+     * 是的话任务不再自己发「任务完成」。一个前台都还没建过时不为这一问去建。
+     */
+    val deskReportsEnding: (runKey: String, end: TaskState) -> Boolean =
+        { runKey, end -> deskRegistry.isInitialized() && desks.reportsEnding(runKey, end) }
 
     /** 删对话(侧栏长按):停掉它的当前任务并删工作区(同项目对话保留共享工作区),保留定时任务。 */
     val conversationDeleter: ConversationDeleter by lazy {

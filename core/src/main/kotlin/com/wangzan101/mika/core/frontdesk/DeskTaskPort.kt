@@ -19,6 +19,12 @@ interface DeskTaskPort {
     /** 这件任务的状态;不认识这个编号时为 null。 */
     fun state(taskId: String): StateFlow<TaskState>?
 
+    /**
+     * 运行 [runKey] 是不是这个端口正跟着的那件任务的运行,是的话给出任务编号。一件任务的子会话里之后再开的运行
+     * 不算;端口不分运行时为 null。
+     */
+    fun followedTaskOf(runKey: String): String? = null
+
     /** 还在开始队列里时排第几(从 1 起);已经开始或不认识时为 null。 */
     fun queuePosition(taskId: String): Int?
 

@@ -25,7 +25,7 @@ import org.junit.rules.TemporaryFolder
 class AppDeskTaskPortTest {
     @get:Rule val tmp = TemporaryFolder()
 
-    private class FakeRun(override val conversationId: String, initial: TaskState) : DeskRun {
+    private class FakeRun(override val conversationId: String, initial: TaskState, override val key: String = "run-$conversationId") : DeskRun {
         val flow = MutableStateFlow(initial)
         override val state: StateFlow<TaskState> get() = flow
         val steered = mutableListOf<String>()
@@ -173,6 +173,38 @@ class AppDeskTaskPortTest {
     }
 
     // 接回时任务还在服务里:只按服务里那份计数,不再当成没登记的多算一次。
+    // 端口只认它跟着的那次运行:子会话里收尾后再开的另一件(另一个运行)不算它在跟。
+    @Test fun followedTaskOfIsBoundToTheRunItMirrors() = runTest {
+        val rig = Rig(this)
+        val child = (rig.port.dispatch("查天气", "", "p") as DispatchOutcome.Started).taskId
+        assertNull(rig.port.followedTaskOf("k1"))
+        val first = FakeRun(child, TaskState.Running(1, "打开天气"), key = "k1")
+        rig.runs.value = listOf(first)
+        runCurrent()
+        assertEquals(child, rig.port.followedTaskOf("k1"))
+
+        first.flow.value = TaskState.Succeeded("晴")
+        runCurrent()
+        rig.runs.value = listOf(FakeRun(child, TaskState.Running(1, "再查一次"), key = "k2"))
+        runCurrent()
+        assertNull(rig.port.followedTaskOf("k2"))
+        assertNull(rig.port.followedTaskOf("nope"))
+    }
+
+    // 接回的:任务还在跑的跟着那次运行;已经收尾的不跟任何运行。
+    @Test fun adoptedChildIsBoundOnlyWhileItsRunIsLive() = runTest {
+        val rig = Rig(this)
+        rig.runs.value = listOf(FakeRun("c5", TaskState.Running(1, "在做"), key = "k5"))
+        rig.store.setDeskParent("c5", "p")
+        rig.store.setDeskParent("c6", "p")
+        rig.store.append("c6", Turn("查天气", "晴", "succeeded"))
+        rig.port.state("c5")
+        rig.port.state("c6")
+        runCurrent()
+        assertEquals("c5", rig.port.followedTaskOf("k5"))
+        assertNull(rig.port.followedTaskOf("run-c6"))
+    }
+
     @Test fun adoptedLiveChildIsCountedOnce() = runTest {
         val rig = Rig(this, limit = 2)
         rig.runs.value = listOf(FakeRun("c4", TaskState.Running(1, "在做")))

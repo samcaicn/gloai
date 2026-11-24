@@ -1,5 +1,8 @@
 package com.wangzan101.mika.core.frontdesk
 
+import com.wangzan101.mika.core.agent.FailKind
+import com.wangzan101.mika.core.agent.TaskState
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -80,12 +83,16 @@ class ReportPolicyTest {
 
     /** 没人在看时:开始、排队、进度只写回会话,不发通知;要你处理和收尾才发。 */
     @Test
-    fun onlyNeedsYouAndEndingsNotify() {
-        val quiet = listOf(DeskEvent.Started("t1"), DeskEvent.Queued("t1", 2), DeskEvent.Progress("t1", "打开设置"))
-        val loud = listOf(
+    fun onlyEndingsAndPrerequisitesNotify() {
+        // 回答、确认、接管任务自己会发带按钮的「需要你处理」通知,前台兜底只写回会话,不再发第二条;
+        // 前置条件任务不另发提醒,由前台发这一条。
+        val quiet = listOf(
+            DeskEvent.Started("t1"), DeskEvent.Queued("t1", 2), DeskEvent.Progress("t1", "打开设置"),
             DeskEvent.NeedsAnswer("t1", "选哪家?", null),
             DeskEvent.NeedsAction("t1", ActionKind.Confirm),
             DeskEvent.NeedsAction("t1", ActionKind.Takeover),
+        )
+        val loud = listOf(
             DeskEvent.NeedsAction("t1", ActionKind.Prerequisite),
             DeskEvent.Succeeded("t1", "好了"),
             DeskEvent.Failed("t1", "没成"),
@@ -94,4 +101,17 @@ class ReportPolicyTest {
         quiet.forEach { assertFalse(it.toString(), ReportPolicy.notifies(it)) }
         loud.forEach { assertTrue(it.toString(), ReportPolicy.notifies(it)) }
     }
+
+    /** [ReportPolicy.saysEnding] 和 [ReportPolicy.shouldReport] 对每种结局的判断一致。 */
+    @Test
+    fun saysEndingMatchesWhatTheDeskReports() {
+        val ends = listOf(TaskState.Succeeded("好了"), TaskState.Failed("没成", FailKind.Environment), TaskState.Cancelled)
+        for (end in ends) {
+            val event = DeskEvents.classify("t1", running(), end)!!
+            assertEquals(end.toString(), ReportPolicy(clock = { now }).shouldReport(event), ReportPolicy.saysEnding(end))
+        }
+        assertFalse(ReportPolicy.saysEnding(TaskState.Cancelled))
+    }
+
+    private fun running() = TaskState.Running(1, "打开设置")
 }

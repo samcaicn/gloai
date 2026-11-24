@@ -1,5 +1,6 @@
 package com.wangzan101.mika.task
 
+import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.i18n.tr
 import android.app.ActivityManager
 import android.os.Build
@@ -25,11 +26,25 @@ internal fun TaskService.localDeliveryChannel(scheduled: Boolean) = LocalChannel
         center.byConversation(delivery.threadId)?.let(::refreshNotifications)
         SendOutcome.Delivered
     } else {
-        val resultId = if (delivery is Delivery.Result && center.byConversation(delivery.threadId)?.parallel == false) ID_RESULT
-            else nextResultId()
-        notifyDelivery(this, delivery, resultId, scheduled)
+        val run = center.byConversation(delivery.threadId)
+        val resultId = if (delivery is Delivery.Result && run?.parallel == false) ID_RESULT else nextResultId()
+        val own = delivery !is Delivery.Result ||
+            ownResultNotice(delivery, run?.key, run?.state?.value ?: TaskState.Idle, (application as MikaApp).deskReportsEnding)
+        notifyDelivery(this, delivery, resultId, scheduled, ownResult = own)
     }
 }
+
+/**
+ * 任务办完时自己发不发「任务完成」通知:运行 [runKey] 以 [end] 收尾、有前台此刻正跟着它并会把这个结局说出来
+ * ([deskReportsEnding])时不发,前台那一条就是唯一的声音;进程没了以后补送的([Delivery.Result.restored])、
+ * 找不到是哪次运行的,和其余情况一样照旧自己发。
+ */
+internal fun ownResultNotice(
+    delivery: Delivery.Result,
+    runKey: String?,
+    end: TaskState,
+    deskReportsEnding: (runKey: String, end: TaskState) -> Boolean,
+): Boolean = delivery.restored || runKey == null || !deskReportsEnding(runKey, end)
 
 internal fun TaskService.limit(): ParallelLimit {
     if (!parallel) return ParallelLimit(1, null)

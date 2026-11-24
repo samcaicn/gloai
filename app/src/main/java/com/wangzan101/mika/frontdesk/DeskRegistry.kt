@@ -91,6 +91,18 @@ class DeskRegistry(
     fun background(conversationId: String): DeskBackground =
         deskBackground({ desk(conversationId).active.value }, memory)
 
+    /**
+     * 运行 [runKey] 以 [end] 收尾时,是不是有一个前台此刻正跟着这次运行、会把这个结局说出来(页面开着在聊天里说,
+     * 不在时兜底发一条通知)。是的话前台就是唯一的声音,任务不再自己发「任务完成」。
+     * 不算的:子会话里直接开的另一次运行(端口跟的不是它)、前台会话已删(前台收掉了)、进程重启后没接回、
+     * 用户自己取消的(前台不说)、还没收尾的。
+     */
+    fun reportsEnding(runKey: String, end: TaskState): Boolean {
+        if (end !is TaskState.Terminal || !ReportPolicy.saysEnding(end)) return false
+        val taskId = tasks.followedTaskOf(runKey) ?: return false
+        return synchronized(desks) { desks.values.any { it.desk.tracks(taskId) } }
+    }
+
     /** 会话删掉了:收掉它的前台(不碰后台任务)。 */
     fun forget(conversationId: String) {
         val removed = synchronized(desks) { desks.remove(conversationId) } ?: return
@@ -146,6 +158,7 @@ internal fun steerLocally(words: String, steer: (text: String, messageId: String
 /** 任务服务里的一件任务,给前台端口用。 */
 private class TaskRunDesk(private val app: MikaApp, private val run: TaskRun) : DeskRun {
     override val conversationId: String get() = run.conversationId
+    override val key: String get() = run.key
     override val state: StateFlow<TaskState> get() = run.state
     override fun steer(words: String): Boolean = steerLocally(words, run::steer) { run.steers.value }
     override fun answer(words: String) = TaskService.answer(app, words, run.key)

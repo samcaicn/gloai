@@ -2,6 +2,7 @@ package com.wangzan101.mika.frontdesk
 
 import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.core.agent.Turn
+import com.wangzan101.mika.core.frontdesk.ActionKind
 import com.wangzan101.mika.core.frontdesk.DeskEvent
 import com.wangzan101.mika.core.frontdesk.DeskReport
 import com.wangzan101.mika.i18n.ChineseTexts
@@ -37,11 +38,25 @@ class DeskNotifierTest {
         assertFalse(notice.needsYou)
     }
 
-    @Test fun questionGoesIntoTheNotification() = runBlocking {
+    // 要用户回答、确认、接管的:任务自己发带按钮的「需要你处理」通知,前台兜底只把这句写回会话,不再发第二条。
+    @Test fun needsYouIsWrittenBackWithoutASecondNotification() = runBlocking {
         val store = ConversationStore(tmp.newFolder())
         val notices = mutableListOf<DeskNotice>()
-        DeskNotifier(store) { notices += it }.record("p", DeskReport(DeskEvent.NeedsAnswer("c1", "要几点的车?", null), "订票"))
-        assertTrue(notices.single().text.contains("要几点的车?"))
+        val notifier = DeskNotifier(store) { notices += it }
+        notifier.record("p", DeskReport(DeskEvent.NeedsAnswer("c1", "要几点的车?", null), "订票"))
+        notifier.record("p", DeskReport(DeskEvent.NeedsAction("c1", ActionKind.Confirm), "订票"))
+        notifier.record("p", DeskReport(DeskEvent.NeedsAction("c1", ActionKind.Takeover), "订票"))
+        val lines = store.turns("p").filter { it.status == DeskNotifier.STATUS }
+        assertEquals(3, lines.size)
+        assertTrue(lines.first().outcome.contains("要几点的车?"))
+        assertTrue(notices.isEmpty())
+    }
+
+    // 前置条件不满足:任务不另发提醒,前台这一条就是「需要你处理」。
+    @Test fun prerequisiteStillNotifiesAsNeedsYou() = runBlocking {
+        val store = ConversationStore(tmp.newFolder())
+        val notices = mutableListOf<DeskNotice>()
+        DeskNotifier(store) { notices += it }.record("p", DeskReport(DeskEvent.NeedsAction("c1", ActionKind.Prerequisite), "订票"))
         assertTrue(notices.single().needsYou)
     }
 
@@ -50,9 +65,9 @@ class DeskNotifierTest {
         val events = listOf(
             DeskEvent.Started("c"), DeskEvent.Queued("c", 2), DeskEvent.Progress("c", "打开日历"),
             DeskEvent.NeedsAnswer("c", "哪天?", listOf("今天", "明天")),
-            DeskEvent.NeedsAction("c", com.wangzan101.mika.core.frontdesk.ActionKind.Confirm),
-            DeskEvent.NeedsAction("c", com.wangzan101.mika.core.frontdesk.ActionKind.Takeover),
-            DeskEvent.NeedsAction("c", com.wangzan101.mika.core.frontdesk.ActionKind.Prerequisite),
+            DeskEvent.NeedsAction("c", ActionKind.Confirm),
+            DeskEvent.NeedsAction("c", ActionKind.Takeover),
+            DeskEvent.NeedsAction("c", ActionKind.Prerequisite),
             DeskEvent.Succeeded("c", "好了"), DeskEvent.Failed("c", "没网"), DeskEvent.Cancelled("c"),
         )
         val lines = events.map(DeskNotifier::line)
@@ -83,17 +98,5 @@ class DeskNotifierTest {
         assertTrue(text, text.contains("安卓版本号是 14,见 关于手机"))
         assertFalse(text, text.contains("*") || text.contains("`"))
         assertTrue(store.turns("p").last().outcome.contains("**14**"))
-    }
-
-    // 前台派出去的那件(子会话挂在前台会话下)办完:前台兜底那一条就是唯一的通知,任务自己的「任务完成」不再发;
-    // 不是前台派的任务照旧自己发。
-    @Test fun aDeskChildFinishingNotifiesExactlyOnce() = runBlocking {
-        val store = ConversationStore(tmp.newFolder())
-        store.setDeskParent("child", "p")
-        val notices = mutableListOf<DeskNotice>()
-        DeskNotifier(store) { notices += it }.record("p", DeskReport(DeskEvent.Succeeded("child", "好了"), "订票"))
-        val own = listOf("child").count { DeskNotifier.taskNotifiesItsOwnResult(store, it) }
-        assertEquals(1, notices.size + own)
-        assertTrue(DeskNotifier.taskNotifiesItsOwnResult(store, "plain"))
     }
 }

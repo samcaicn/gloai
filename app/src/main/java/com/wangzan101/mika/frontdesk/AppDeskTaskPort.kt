@@ -34,6 +34,8 @@ internal fun String.takeWhole(max: Int): String {
 /** 端口眼里一件在跑或排队的后台任务;产品里包着 [com.wangzan101.mika.task.TaskRun]。 */
 interface DeskRun {
     val conversationId: String
+    /** 这次运行在任务服务里的编号;同一个子会话里先后开的几次运行各不相同。 */
+    val key: String
     val state: StateFlow<TaskState>
 
     /** 补一句用户的话;任务收下了返回 true。 */
@@ -67,6 +69,8 @@ class AppDeskTaskPort(
     private class Followed(val state: MutableStateFlow<TaskState>, val queuedAt: Int?, val adopted: Boolean = false) {
         /** 任务服务里已经看到过它。 */
         @Volatile var seen = false
+        /** 跟着的是哪次运行(任务服务里登记后才有);子会话里之后再开的运行不是它。 */
+        @Volatile var runKey: String? = null
     }
 
     private val followed = HashMap<String, Followed>()
@@ -139,6 +143,9 @@ class AppDeskTaskPort(
         return entry.state.asStateFlow()
     }
 
+    @Synchronized
+    override fun followedTaskOf(runKey: String): String? = followed.entries.firstOrNull { it.value.runKey == runKey }?.key
+
     override fun queuePosition(taskId: String): Int? {
         val live = current()
         val run = live.firstOrNull { it.conversationId == taskId }
@@ -182,6 +189,7 @@ class AppDeskTaskPort(
                 entry.state.value = ended(child) ?: TaskState.Failed(notStarted(), FailKind.Environment)
                 return@launch
             }
+            entry.runKey = run.key
             entry.seen = true
             run.state.transformWhile { emit(it); it !is TaskState.Terminal }.collect { entry.state.value = it }
         }

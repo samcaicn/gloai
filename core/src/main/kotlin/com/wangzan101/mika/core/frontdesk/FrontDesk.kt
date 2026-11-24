@@ -76,6 +76,9 @@ class FrontDesk(
         follow(taskId, title, report = true)
     }
 
+    /** 这件任务在不在这个前台的跟进里(派出后交给它跟,或重开会话时接回过)。 */
+    fun tracks(taskId: String): Boolean = synchronized(tracked) { taskId in tracked }
+
     /**
      * 会话重新打开时接回之前派过的任务:补回账本,还在跑的重新订阅、只汇报之后的变化;
      * 已经收尾的只标出终态,不再汇报。

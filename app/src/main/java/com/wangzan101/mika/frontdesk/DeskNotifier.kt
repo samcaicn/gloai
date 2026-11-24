@@ -24,9 +24,10 @@ import kotlinx.coroutines.withContext
 data class DeskNotice(val conversationId: String, val title: String, val text: String, val needsYou: Boolean)
 
 /**
- * 没有入口在线时前台的兜底:把这条汇报作为一行前台回话(`status = desk_report`)写回会话;要用户处理或收尾了的
- * 再发一条通知([ReportPolicy.notifies]),开始、排队、进度不发。前台派出去的任务不再自己发「任务完成」
- * ([taskNotifiesItsOwnResult]),所以一件任务办完只有这一条。
+ * 没有入口在线时前台的兜底:把这条汇报作为一行前台回话(`status = desk_report`)写回会话;哪些再发一条通知由
+ * [ReportPolicy.notifies] 定(收尾了的、前置条件不满足的发;开始、排队、进度不发;要回答、确认、接管的由任务自己那条
+ * 带按钮的通知提醒,这里不再发)。前台正跟着的那次运行收尾时任务不再自己发「任务完成」([DeskRegistry.reportsEnding]),
+ * 所以一件任务办完只有这一条。
  * 只有这条会话没有入口接着时才会走到这里(用户没在看它),所以不管 Mika 在不在前台都发。
  */
 class DeskNotifier(
@@ -47,13 +48,6 @@ class DeskNotifier(
     }
 
     companion object {
-        /**
-         * 任务办完时要不要自己发「任务完成」那条通知:前台派出去的(子会话挂在某个前台会话下)不发,
-         * 由前台汇报(页面开着时在聊天里说,不在时兜底发一条)当唯一的声音;其余任务照旧自己发。
-         */
-        fun taskNotifiesItsOwnResult(conversations: ConversationStore, threadId: String): Boolean =
-            conversations.deskParent(threadId) == null
-
         /** 前台兜底写回会话的那一行的状态。 */
         const val STATUS = DeskTurn.REPORT_STATUS
         private const val TAG = "MikaDesk"

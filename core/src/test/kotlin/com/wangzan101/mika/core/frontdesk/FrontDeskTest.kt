@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -242,6 +243,18 @@ class FrontDeskTest {
         state.value = running()
         runCurrent()
         assertEquals(DeskTaskPhase.Running, desk.active.value.single().state)
+    }
+
+    /** 跟进里的任务(派出或接回过)[FrontDesk.tracks] 为 true;端口不认识、从没交给它的为 false。 */
+    @Test
+    fun tracksOnlyTasksItFollows() = runTest {
+        port.add("t1")
+        val desk = desk()
+        assertFalse(desk.tracks("t1"))
+        desk.track("t1", "看设置首页")
+        desk.track("nope", "不认识")
+        assertTrue(desk.tracks("t1"))
+        assertFalse(desk.tracks("nope"))
     }
 
     /** 刚派出就预判要排队的(端口给了排第几):Idle 时照样是排队,带位置。 */

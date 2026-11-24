@@ -318,14 +318,15 @@ class TaskService : Service() {
         /** 并行时结果通知的下一个编号(循环使用)。 */
         internal fun nextResultId() = ID_RESULT_FIRST + resultCount.getAndIncrement() % RESULT_IDS
 
-        /** 结果与提示发成通知(服务里的与 App 启动时恢复用的共用);[resultId] 是结果通知的编号。 */
-        internal fun notifyDelivery(context: Context, delivery: Delivery, resultId: Int, scheduled: Boolean = false): SendOutcome {
+        /**
+         * 结果与提示发成通知(服务里的与 App 启动时恢复用的共用);[resultId] 是结果通知的编号。
+         * [ownResult] 为 false 时结果不发通知:前台正跟着这次运行,由它汇报(见 [ownResultNotice])。
+         */
+        internal fun notifyDelivery(context: Context, delivery: Delivery, resultId: Int, scheduled: Boolean = false, ownResult: Boolean = true): SendOutcome {
             val nm = context.getSystemService(NotificationManager::class.java)
             when (delivery) {
                 // Mika 在前台(用户正看着聊天页)时不弹任务完成通知,结果只在应用内展示;切到别的 App 才保留通知(#731)。
-                // 前台派出去的任务由前台汇报,不再自己发(见 DeskNotifier.taskNotifiesItsOwnResult)
-                is Delivery.Result -> if (!MainActivity.foreground &&
-                    com.wangzan101.mika.frontdesk.DeskNotifier.taskNotifiesItsOwnResult(ConversationStore.shared(context), delivery.threadId)) nm.notify(resultId, Notification.Builder(context, CHANNEL_RESULT)
+                is Delivery.Result -> if (!MainActivity.foreground && ownResult) nm.notify(resultId, Notification.Builder(context, CHANNEL_RESULT)
                     .setSmallIcon(R.drawable.ic_notification)
                     .setContentTitle(delivery.title)
                     .setContentText(delivery.text)
