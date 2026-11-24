@@ -3,7 +3,7 @@ package com.wangzan101.mika.settings.ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -51,7 +51,7 @@ internal fun TokenBudgetDialog(
                 presets.forEachIndexed { i, n ->
                     RadioRow(tokenBudgetNumber(n), selected = current == n, onClick = { onPick(n) }, first = !unlimited && i == 0)
                 }
-                OutlinedTextField(
+                MikaTextField(
                     value = custom, onValueChange = onCustom, singleLine = true,
                     label = { Text(stringResource(R.string.settings_token_budget_custom)) },
                     isError = custom.isNotEmpty() && customValue == null,

@@ -11,7 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -251,14 +251,14 @@ private fun MirrorDialog(store: UpdateMirrorStore, initial: UpdateMirror?, onDis
         title = { Text(stringResource(if (initial == null) R.string.about_mirrors_add else R.string.about_mirrors_edit)) },
         text = {
             Column {
-                OutlinedTextField(
+                MikaTextField(
                     name, { name = it; error = null },
                     label = { Text(stringResource(R.string.about_mirrors_name)) },
                     singleLine = true,
                     enabled = !saving,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedTextField(
+                MikaTextField(
                     prefix, { prefix = it; error = null; testResult = null },
                     label = { Text(stringResource(R.string.about_mirrors_prefix)) },
                     placeholder = { Text("https://") },

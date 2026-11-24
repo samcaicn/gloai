@@ -38,7 +38,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -315,11 +315,11 @@ private fun CustomEngineDialog(onSave: (CustomSearchEngine) -> Unit, onDismiss: 
         title = { Text(tr(R.string.browser_engine_custom_add)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                TextField(
+                MikaTextField(
                     name, { name = it; invalid = false }, Modifier.fillMaxWidth().testTag("browser-engine-name"),
                     singleLine = true, placeholder = { Text(tr(R.string.browser_engine_custom_name)) },
                 )
-                TextField(
+                MikaTextField(
                     url, { url = it; invalid = false }, Modifier.fillMaxWidth().testTag("browser-engine-url"),
                     singleLine = true, placeholder = { Text(tr(R.string.browser_engine_custom_url)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false),

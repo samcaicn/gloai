@@ -31,7 +31,11 @@ import com.wangzan101.mika.settings.RoleChoice
 import com.wangzan101.mika.ui.components.FooterNote
 import com.wangzan101.mika.ui.components.MikaDialog
 import com.wangzan101.mika.ui.components.RowChevron
-import com.wangzan101.mika.ui.components.SelectChip
+import com.wangzan101.mika.ui.components.RadioRow
+import com.wangzan101.mika.ui.theme.MikaShapes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.draw.clip
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 
@@ -57,18 +61,23 @@ internal fun ReasoningControl(ui: ModelSetupUi, role: ModelRole, modifier: Modif
         onDismissRequest = { open = false },
         title = { Text(stringResource(R.string.model_reasoning_title, ModelsCopy.roleName(role))) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.model_reasoning_note))
-                if (!options.fromProvider) Text(stringResource(R.string.model_reasoning_unknown))
-                if (selected != null && selected !in options.levels) Text(stringResource(R.string.model_reasoning_unavailable))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    (listOf<String?>(null) + options.levels).forEach { effort ->
-                        SelectChip(reasoningLabel(effort), selected == effort, {
+            val c = MikaTheme.colors
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // 档位是一组单选,放在浅底块里;说明收成下面的小字
+                Column(Modifier.fillMaxWidth().clip(MikaShapes.Button).background(c.fill)) {
+                    (listOf<String?>(null) + options.levels).forEachIndexed { i, effort ->
+                        RadioRow(reasoningLabel(effort), selected == effort, {
                             onSelect(effort)
                             open = false
-                        }, Modifier.testTag("reasoning-option-${effort ?: "default"}"))
+                        }, first = i == 0, modifier = Modifier.testTag("reasoning-option-${effort ?: "default"}"))
                     }
                 }
+                val notes = listOfNotNull(
+                    stringResource(R.string.model_reasoning_note),
+                    if (!options.fromProvider) stringResource(R.string.model_reasoning_unknown) else null,
+                )
+                if (selected != null && selected !in options.levels) Text(stringResource(R.string.model_reasoning_unavailable), style = MikaType.Hint, color = c.warn)
+                Text(notes.joinToString("\n"), style = MikaType.Hint, color = c.ink3)
             }
         },
         confirmButton = { TextButton(onClick = { open = false }) { Text(stringResource(R.string.cancel)) } },

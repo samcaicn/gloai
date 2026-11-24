@@ -1,5 +1,6 @@
 package com.wangzan101.mika.calls.ui
 
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -116,7 +117,7 @@ internal fun CallDtmfKeypadDialog(
                         style = MikaType.Caption, color = colors.ink2,
                     )
                     if (batch) {
-                        OutlinedTextField(
+                        MikaTextField(
                             value = input,
                             onValueChange = { value ->
                                 if (value.length <= 32 && value.all { it in "0123456789*#" }) {

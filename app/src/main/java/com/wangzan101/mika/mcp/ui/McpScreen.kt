@@ -45,7 +45,7 @@ import com.wangzan101.mika.ui.components.SegmentedControl
 import com.wangzan101.mika.ui.components.TileTone
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.ui.text.input.KeyboardType
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
@@ -211,7 +211,7 @@ private fun PortDialog(current: Int, onPick: (Int) -> Unit, onDismiss: () -> Uni
                 Text(stringResource(R.string.mcp_port_dialog_sub), Modifier.padding(bottom = 8.dp))
                 RadioRow(stringResource(R.string.mcp_port_default, McpSettings.DEFAULT_PORT), selected = current == McpSettings.DEFAULT_PORT,
                     onClick = { onPick(McpSettings.DEFAULT_PORT) }, first = true)
-                OutlinedTextField(
+                MikaTextField(
                     value = custom,
                     onValueChange = { custom = it.filter(Char::isDigit).take(5) },
                     singleLine = true,

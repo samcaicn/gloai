@@ -36,7 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -448,7 +448,7 @@ private fun RenameBookmarkDialog(bookmark: PageBookmark, onSave: (String) -> Uni
         onDismissRequest = onDismiss,
         title = { Text(tr(R.string.browser_bookmark_rename)) },
         text = {
-            TextField(title, { title = it }, singleLine = true, placeholder = { Text(tr(R.string.browser_bookmark_name)) })
+            MikaTextField(title, { title = it }, singleLine = true, placeholder = { Text(tr(R.string.browser_bookmark_name)) })
         },
         confirmButton = {
             TextButton(onClick = { title.trim().takeIf { it.isNotEmpty() }?.let(onSave) }) { Text(tr(R.string.save)) }

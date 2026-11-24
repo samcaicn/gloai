@@ -12,7 +12,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import com.wangzan101.mika.ui.components.MikaDialog
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
+import androidx.compose.foundation.layout.padding
+import com.wangzan101.mika.ui.theme.MikaShapes
+import com.wangzan101.mika.ui.components.InputRow
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -81,36 +87,35 @@ internal fun ModelContextDialog(
         modifier = Modifier.imePadding(),
         title = { Text(stringResource(R.string.model_context_title)) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(cfg.model)
-                Text(stringResource(R.string.model_context_note))
-                OutlinedTextField(window, { window = it; saveFailed = false },
-                    modifier = Modifier.fillMaxWidth().testTag("$tagPrefix-window"), singleLine = true, keyboardOptions = keyboard,
-                    label = { Text(stringResource(R.string.model_context_window)) },
-                    placeholder = { Text(stringResource(R.string.model_context_auto, modelWindow)) },
-                    supportingText = if (badWindow) ({ Text(stringResource(R.string.model_context_integer)) }) else null,
-                    isError = badWindow)
-                OutlinedTextField(trigger, { trigger = it; saveFailed = false },
-                    modifier = Modifier.fillMaxWidth().testTag("$tagPrefix-trigger"), singleLine = true, keyboardOptions = keyboard,
-                    label = { Text(stringResource(R.string.model_context_trigger)) },
-                    placeholder = { Text(stringResource(R.string.model_context_auto, limits.trigger)) },
-                    supportingText = {
-                        if (!badWindow && limits.usable > 0) Text(stringResource(R.string.model_context_range,
-                            limits.minTrigger.coerceAtLeast(1), limits.usable))
-                        else if (badTrigger) Text(stringResource(R.string.model_context_integer))
-                    }, isError = badTrigger)
-                OutlinedTextField(readTimeout, { readTimeout = it; saveFailed = false },
-                    modifier = Modifier.fillMaxWidth().testTag("context-read-timeout"), singleLine = true, keyboardOptions = keyboard,
-                    label = { Text(stringResource(R.string.model_context_read_timeout)) },
-                    placeholder = { Text(stringResource(R.string.model_context_auto, 120)) },
-                    supportingText = if (badReadTimeout) ({
-                        Text("${stringResource(R.string.model_context_integer)} (1–${MODEL_READ_TIMEOUT_SECONDS.last})")
-                    }) else null,
-                    isError = badReadTimeout)
-                if (!badWindow && (trigger.isBlank() || settings.triggerTokens != null)) Text(stringResource(R.string.model_context_effective, limits.window, limits.trigger),
-                    modifier = Modifier.testTag("$tagPrefix-effective"))
-                TextButton(onClick = { window = ""; trigger = ""; readTimeout = ""; saveFailed = false }) { Text(stringResource(R.string.reset)) }
-                if (saveFailed) Text(stringResource(R.string.model_context_save_failed), color = MikaTheme.colors.bad)
+            val c = MikaTheme.colors
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("${cfg.model} · ${stringResource(R.string.model_context_note)}", style = MikaType.Hint, color = c.ink3)
+                // 三个数一组放在浅底块里,和设置页的输入行同一套;留空用自动值,占位里写着自动值是多少
+                Column(Modifier.fillMaxWidth().clip(MikaShapes.Button).background(c.fill)) {
+                    InputRow(stringResource(R.string.model_context_window), window, { window = it; saveFailed = false },
+                        modelWindow.toString(), first = true, keyboard = KeyboardType.Number,
+                        labelWidth = 150.dp, modifier = Modifier.testTag("$tagPrefix-window"))
+                    InputRow(stringResource(R.string.model_context_trigger), trigger, { trigger = it; saveFailed = false },
+                        limits.trigger.toString(), keyboard = KeyboardType.Number,
+                        labelWidth = 150.dp, modifier = Modifier.testTag("$tagPrefix-trigger"))
+                    InputRow(stringResource(R.string.model_context_read_timeout), readTimeout, { readTimeout = it; saveFailed = false },
+                        "120", keyboard = KeyboardType.Number,
+                        labelWidth = 150.dp, modifier = Modifier.testTag("context-read-timeout"))
+                }
+                val problem = when {
+                    badWindow || badTrigger -> stringResource(R.string.model_context_integer)
+                    badReadTimeout -> "${stringResource(R.string.model_context_integer)} (1–${MODEL_READ_TIMEOUT_SECONDS.last})"
+                    saveFailed -> stringResource(R.string.model_context_save_failed)
+                    else -> null
+                }
+                if (problem != null) Text(problem, style = MikaType.Hint, color = c.bad)
+                if (!badWindow && (trigger.isBlank() || settings.triggerTokens != null)) Text(
+                    stringResource(R.string.model_context_effective, limits.window, limits.trigger) +
+                        if (limits.usable > 0) " · " + stringResource(R.string.model_context_range, limits.minTrigger.coerceAtLeast(1), limits.usable) else "",
+                    Modifier.testTag("$tagPrefix-effective"), style = MikaType.Hint, color = c.ink3)
+                Text(stringResource(R.string.reset), Modifier.clip(MikaShapes.Chip)
+                    .clickable { window = ""; trigger = ""; readTimeout = ""; saveFailed = false }
+                    .padding(vertical = 6.dp), style = MikaType.Label, color = c.ink2)
             }
         },
         confirmButton = { TextButton(onClick = {

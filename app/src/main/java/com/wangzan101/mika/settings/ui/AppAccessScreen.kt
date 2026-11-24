@@ -138,7 +138,7 @@ fun AppAccessScreen(onBack: () -> Unit, classifyApps: Boolean = true) {
             Text(stringResource(R.string.appaccess_unavailable))
             TextButton({ save { store.reset() } }) { Text(stringResource(R.string.appaccess_reset)) }
         } else {
-            OutlinedTextField(
+            MikaTextField(
                 search, { search = it },
                 label = { Text(stringResource(R.string.appaccess_search)) }, singleLine = true,
             )

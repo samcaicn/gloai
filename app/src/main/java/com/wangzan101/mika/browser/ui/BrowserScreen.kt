@@ -32,7 +32,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import com.wangzan101.mika.ui.components.MikaDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -469,7 +469,7 @@ private fun PageDialogBox(d: PageDialog, answer: (Boolean, String?) -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (d.message.isNotBlank()) Text(d.message)
                 if (leave && d.message.isBlank()) Text(tr(R.string.browser_leave_body))
-                if (d.kind == PageDialog.PROMPT) TextField(input, { input = it }, singleLine = true)
+                if (d.kind == PageDialog.PROMPT) MikaTextField(input, { input = it }, singleLine = true)
             }
         },
         confirmButton = {

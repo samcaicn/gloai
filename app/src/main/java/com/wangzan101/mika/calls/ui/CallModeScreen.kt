@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Slider
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -231,7 +231,7 @@ private fun CustomIdleDialog(initial: Int, onDismiss: () -> Unit, onSave: (Int) 
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.call_mode_idle_dialog_title)) },
         text = {
-            OutlinedTextField(
+            MikaTextField(
                 text, { text = it.filter(Char::isDigit).take(3) },
                 modifier = Modifier.fillMaxWidth().testTag("call-idle-custom-input"),
                 singleLine = true,

@@ -157,7 +157,7 @@ internal fun CallNumberRuleEditor(config: CallConfig, personal: Boolean, onDismi
                                 color = MaterialTheme.colorScheme.error)
                         }
                         if (manual) item {
-                            OutlinedTextField(text, { text = it; saveFailed = false },
+                            MikaTextField(text, { text = it; saveFailed = false },
                                 Modifier.fillMaxWidth().testTag(if (personal) "call-bypass-numbers" else "call-allowlist"),
                                 label = { Text(stringResource(R.string.calls_number)) },
                                 supportingText = { Text(stringResource(R.string.calls_allowlist_hint)) },

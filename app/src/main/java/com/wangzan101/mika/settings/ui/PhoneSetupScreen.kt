@@ -33,7 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import com.wangzan101.mika.ui.components.MikaDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -580,13 +580,13 @@ private fun ManualCode(askPort: Boolean, onSubmit: (String, Int?) -> Unit) {
     )
     if (!open) return
     Text(PhoneSetupCopy.MANUAL_HINT, style = MikaType.Hint, color = MikaTheme.colors.ink3)
-    OutlinedTextField(
+    MikaTextField(
         code, { code = it; error = null }, Modifier.fillMaxWidth().padding(top = 6.dp).keepsKeyboard().testTag("setup-code"),
         label = { Text(PhoneSetupCopy.CODE_LABEL) }, singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
     )
     if (askPort) {
-        OutlinedTextField(
+        MikaTextField(
             port, { port = it; error = null }, Modifier.fillMaxWidth().padding(top = 6.dp).keepsKeyboard().testTag("setup-port"),
             label = { Text(PhoneSetupCopy.PORT_LABEL) }, supportingText = { Text(PhoneSetupCopy.PORT_HINT) }, singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -619,7 +619,7 @@ internal object ConnectPortInput {
 private fun ConnectPort(onConnect: (Int) -> Unit) {
     var port by rememberSaveable { mutableStateOf("") }
     var invalid by remember { mutableStateOf(false) }
-    OutlinedTextField(
+    MikaTextField(
         port, { port = it; invalid = false }, Modifier.fillMaxWidth().padding(top = 10.dp).keepsKeyboard().testTag("setup-connect-port"),
         label = { Text(PhoneSetupCopy.CONNECT_PORT_LABEL) },
         supportingText = { Text(if (invalid) PhoneSetupCopy.PORT_INVALID else PhoneSetupCopy.CONNECT_PORT_HINT, color = if (invalid) MikaTheme.colors.bad else MikaTheme.colors.ink3) },

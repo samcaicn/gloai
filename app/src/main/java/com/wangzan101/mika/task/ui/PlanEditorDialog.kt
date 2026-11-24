@@ -25,7 +25,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -364,7 +364,7 @@ private fun PlanField(
     placeholder: String? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
-    OutlinedTextField(
+    MikaTextField(
         value,
         onValueChange,
         Modifier.fillMaxWidth().testTag(tag).keepsKeyboard(),

@@ -207,15 +207,15 @@ internal fun WorkflowsScreen(runtime: WorkflowRuntime, onBack: () -> Unit, onOpe
     fun change(next: List<WorkflowStep>) { encoded = Json.encodeToString(next); error = null }
     BackHandler { if (!busy) onBack() }
     PageScaffold(stringResource(R.string.workflow_edit), { if (!busy) onBack() }) {
-        OutlinedTextField(title, { title = it; error = null }, label = { Text(stringResource(R.string.recommendations_title_label)) }, singleLine = true,
+        MikaTextField(title, { title = it; error = null }, label = { Text(stringResource(R.string.recommendations_title_label)) }, singleLine = true,
             enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("workflow-title"))
         steps.forEachIndexed { index, step ->
             key(step.id) {
                 GroupLabel(stringResource(R.string.workflow_step_number, index + 1))
-                OutlinedTextField(step.title, { value -> change(steps.map { if (it.id == step.id) it.copy(title = value) else it }) },
+                MikaTextField(step.title, { value -> change(steps.map { if (it.id == step.id) it.copy(title = value) else it }) },
                     label = { Text(stringResource(R.string.workflow_step_name)) }, singleLine = true, enabled = !busy,
                     modifier = Modifier.fillMaxWidth().testTag("workflow-step-title-$index"))
-                OutlinedTextField(step.instruction, { value -> change(steps.map { if (it.id == step.id) it.copy(instruction = value) else it }) },
+                MikaTextField(step.instruction, { value -> change(steps.map { if (it.id == step.id) it.copy(instruction = value) else it }) },
                     label = { Text(stringResource(R.string.workflow_instruction)) }, minLines = 2, maxLines = 5, enabled = !busy,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("workflow-step-instruction-$index"))
                 Row {
@@ -247,7 +247,7 @@ internal fun WorkflowsScreen(runtime: WorkflowRuntime, onBack: () -> Unit, onOpe
     val scope = rememberCoroutineScope()
     MikaDialog(onDismissRequest = { if (!busy) onDismiss() }, title = { Text(title) }, text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
-            OutlinedTextField(value, { value = it; error = null }, label = { Text(label) }, minLines = 3, maxLines = 8,
+            MikaTextField(value, { value = it; error = null }, label = { Text(label) }, minLines = 3, maxLines = 8,
                 enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("workflow-dialog-input"))
             error?.let { FooterNote(workflowError(it), color = MikaTheme.colors.bad) }
         }

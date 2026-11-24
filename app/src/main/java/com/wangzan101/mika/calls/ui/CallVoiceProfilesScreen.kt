@@ -180,13 +180,13 @@ private fun CallVoiceProfileDialog(
                     }
                 }
                 Text(stringResource(R.string.calls_voice_protocol), style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3)
-                OutlinedTextField(name, { name = it.take(CallVoiceProfile.MAX_NAME) }, Modifier.fillMaxWidth().testTag("call-voice-name"),
+                MikaTextField(name, { name = it.take(CallVoiceProfile.MAX_NAME) }, Modifier.fillMaxWidth().testTag("call-voice-name"),
                     label = { Text(stringResource(R.string.calls_voice_name)) }, singleLine = true, enabled = !externalBusy)
-                OutlinedTextField(endpoint, { endpoint = it.take(CallVoiceProfile.MAX_ENDPOINT) }, Modifier.fillMaxWidth().testTag("call-voice-endpoint"),
+                MikaTextField(endpoint, { endpoint = it.take(CallVoiceProfile.MAX_ENDPOINT) }, Modifier.fillMaxWidth().testTag("call-voice-endpoint"),
                     label = { Text(stringResource(R.string.calls_voice_endpoint)) }, singleLine = true, enabled = !externalBusy && !openAi)
-                OutlinedTextField(model, { model = it.take(CallVoiceProfile.MAX_MODEL) }, Modifier.fillMaxWidth().testTag("call-voice-model"),
+                MikaTextField(model, { model = it.take(CallVoiceProfile.MAX_MODEL) }, Modifier.fillMaxWidth().testTag("call-voice-model"),
                     label = { Text(stringResource(R.string.calls_voice_model)) }, singleLine = true, enabled = !externalBusy)
-                OutlinedTextField(speaker, { speaker = it.take(CallPolicy.MAX_SPEAKER_CHARS) }, Modifier.fillMaxWidth(),
+                MikaTextField(speaker, { speaker = it.take(CallPolicy.MAX_SPEAKER_CHARS) }, Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.calls_speaker)) }, singleLine = true, enabled = !externalBusy,
                     supportingText = { if (!openAi) Text(stringResource(R.string.calls_speaker_edit_note)) })
                 HorizontalDivider()
@@ -194,9 +194,9 @@ private fun CallVoiceProfileDialog(
                     Checkbox(legacy, { legacy = it }, enabled = !externalBusy)
                     Text(stringResource(R.string.calls_legacy_credentials), style = MaterialTheme.typography.bodySmall)
                 }
-                if (legacy) OutlinedTextField(appId, { appId = it }, Modifier.fillMaxWidth(), label = { Text("App ID") },
+                if (legacy) MikaTextField(appId, { appId = it }, Modifier.fillMaxWidth(), label = { Text("App ID") },
                     singleLine = true, enabled = !externalBusy)
-                OutlinedTextField(
+                MikaTextField(
                     if (legacy) accessKey else apiKey,
                     { if (legacy) accessKey = it else apiKey = it },
                     Modifier.fillMaxWidth().testTag("call-voice-credential"),

@@ -257,8 +257,10 @@ fun RadioRow(
 private fun RadioMark(selected: Boolean, enabled: Boolean = true) {
     val c = MikaTheme.colors
     if (selected && enabled) {
-        Box(Modifier.size(22.dp).background(c.accent, CircleShape), contentAlignment = Alignment.Center) {
-            Box(Modifier.size(10.dp).background(c.onAccent, CircleShape))
+        // 简约列表里选中用正文色(和黑色开关一致),别处用强调色
+        val fill = if (LocalPlainList.current) c.ink else c.accent
+        Box(Modifier.size(22.dp).background(fill, CircleShape), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(10.dp).background(if (LocalPlainList.current) c.surface else c.onAccent, CircleShape))
         }
     } else {
         Box(Modifier.size(22.dp).border(1.6.dp, c.hair, CircleShape))

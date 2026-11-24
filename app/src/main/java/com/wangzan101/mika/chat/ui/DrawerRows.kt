@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.toSize
 import com.wangzan101.mika.ui.components.keepsKeyboard
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
@@ -208,7 +208,7 @@ internal fun RenameConversationDialog(title: String, onSave: (String) -> Unit, o
         title = { Text(stringResource(R.string.drawer_rename_title)) },
         text = {
             KeyboardDismissArea {
-                OutlinedTextField(
+                MikaTextField(
                     value, { value = it }, Modifier.fillMaxWidth().focusRequester(focus).keepsKeyboard().testTag("rename-conversation-field"),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

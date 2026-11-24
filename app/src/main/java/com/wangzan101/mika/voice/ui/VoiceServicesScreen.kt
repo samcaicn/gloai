@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -379,7 +379,7 @@ internal fun TextEntryDialog(title: String, label: String, onDismiss: () -> Unit
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            OutlinedTextField(
+            MikaTextField(
                 text, { text = it }, Modifier.fillMaxWidth().testTag(tag),
                 singleLine = true, label = { Text(label) },
             )

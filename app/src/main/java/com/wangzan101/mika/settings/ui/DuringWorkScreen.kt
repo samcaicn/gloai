@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import com.wangzan101.mika.ui.components.MikaDialog
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -254,7 +254,7 @@ private fun StepLimitDialog(
                 STEP_LIMIT_PRESETS.forEach { n ->
                     RadioRow(trPlural(R.plurals.chat_steps_n, n), selected = current == n, onClick = { onPick(n) })
                 }
-                OutlinedTextField(
+                MikaTextField(
                     value = custom, onValueChange = onCustom, singleLine = true,
                     label = { Text(stringResource(R.string.settings_step_limit_custom)) },
                     isError = custom.isNotEmpty() && customValue == null,

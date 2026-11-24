@@ -4,7 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -62,12 +62,12 @@ fun EnvVarSettingsScreen(store: EnvVarStore, onBack: () -> Unit) {
             title = { Text(stringResource(R.string.env_vars_add)) },
             text = {
                 Column {
-                    OutlinedTextField(
+                    MikaTextField(
                         value = name, onValueChange = { name = it }, singleLine = true,
                         label = { Text(stringResource(R.string.env_vars_name)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    OutlinedTextField(
+                    MikaTextField(
                         value = value, onValueChange = { value = it }, singleLine = true,
                         label = { Text(stringResource(R.string.env_vars_value)) },
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),

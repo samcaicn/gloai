@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.toSize
 import com.wangzan101.mika.ui.components.keepsKeyboard
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
@@ -142,7 +142,7 @@ internal fun ProjectNameDialog(
         title = { Text(title) },
         text = {
             KeyboardDismissArea {
-                OutlinedTextField(
+                MikaTextField(
                     value, { value = it },
                     Modifier.fillMaxWidth().focusRequester(focus).keepsKeyboard().testTag("project-name-field"),
                     placeholder = { Text(stringResource(R.string.drawer_project_name_hint)) },

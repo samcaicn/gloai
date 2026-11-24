@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -351,7 +351,7 @@ private fun NameDialog(initial: String, note: String?, title: String, onSave: (S
         text = {
             Column {
                 note?.let { Text(it, style = MikaType.Hint, color = MikaTheme.colors.ink3) }
-                OutlinedTextField(
+                MikaTextField(
                     name, { name = it; touched = true }, singleLine = true,
                     label = { Text(stringResource(R.string.persona_name)) },
                     isError = touched && problem != null,

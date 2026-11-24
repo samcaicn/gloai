@@ -126,7 +126,7 @@ private fun SmsProfileEditor(initial: SmsLoginProfile?, onCancel: () -> Unit, on
     AlertDialog(onDismissRequest = onCancel, title = { Text(stringResource(R.string.sms_profile_title)) }, text = {
         Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.sms_profile_help))
-            labels.forEach { (key, label) -> OutlinedTextField(values.getValue(key), { values[key] = it.trim().take(250) },
+            labels.forEach { (key, label) -> MikaTextField(values.getValue(key), { values[key] = it.trim().take(250) },
                 label = { Text(stringResource(label)) }, singleLine = true,
                 visualTransformation = if (key == "account") PasswordVisualTransformation() else VisualTransformation.None) }
             if (failed) Text(stringResource(R.string.sms_login_error))

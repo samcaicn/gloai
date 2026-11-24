@@ -5,7 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -101,7 +101,7 @@ internal fun SkillMarketScreen(onBack: () -> Unit, onImport: (String) -> String?
     if (editing) {
         var value by rememberSaveable { mutableStateOf(repo) }
         MikaDialog(onDismissRequest = { editing = false }, title = { Text(stringResource(R.string.market_source)) },
-            text = { OutlinedTextField(value, { value = it }, Modifier.fillMaxWidth(), singleLine = true,
+            text = { MikaTextField(value, { value = it }, Modifier.fillMaxWidth(), singleLine = true,
                 label = { Text("GitHub") }, placeholder = { Text("owner/repository") }) },
             confirmButton = { TextButton({
                 repo = value.trim()

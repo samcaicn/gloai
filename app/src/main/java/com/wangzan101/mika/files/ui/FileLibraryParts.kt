@@ -131,8 +131,8 @@ internal fun LibraryFilterPill(
     Box(modifier) {
         Row(
             Modifier.heightIn(min = 40.dp).clip(shape)
-                .border(1.dp, if (active || expanded) c.ink else c.edge, shape)
-                .background(if (expanded) c.fill else c.surface)
+                // 不描边:选中(或展开)时底色加深一级,其余是白底
+                .background(if (active || expanded) (if (c.isDark) c.ink.copy(alpha = 0.2f) else c.greySoft) else c.surface)
                 .clickable(role = Role.Button, onClick = onToggle)
                 .padding(start = 14.dp, end = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -140,7 +140,7 @@ internal fun LibraryFilterPill(
         ) {
             Text(
                 label, Modifier.weight(1f, fill = false),
-                style = MikaType.Caption, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = if (active) MikaType.Caption.copy(fontWeight = FontWeight.Medium) else MikaType.Caption, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             Icon(MikaIcons.Chevron, null, Modifier.size(13.dp).rotate(90f), tint = if (active) c.ink else c.ink3)
         }

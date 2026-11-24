@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -34,7 +34,7 @@ internal fun TaskFillDialog(title: String, prompt: String, onDismiss: () -> Unit
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 visibleFields.forEachIndexed { index, field ->
-                    OutlinedTextField(
+                    MikaTextField(
                         values[index], { text -> values = values.toMutableList().also { it[index] = text } },
                         label = { Text(field) }, maxLines = 4,
                         modifier = Modifier.fillMaxWidth().padding(top = if (index == 0) 0.dp else 8.dp)

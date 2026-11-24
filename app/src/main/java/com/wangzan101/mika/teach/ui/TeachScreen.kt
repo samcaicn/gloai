@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -130,7 +130,7 @@ internal fun TeachIntroPage(initial: String, onStart: (String) -> Unit) {
     ) {
         Text(stringResource(R.string.teach_intro_title), style = MikaType.Title, color = MikaTheme.colors.ink)
         Text(stringResource(R.string.teach_intro_body), style = MikaType.Body, color = MikaTheme.colors.ink2)
-        OutlinedTextField(
+        MikaTextField(
             goal, { goal = it },
             Modifier.fillMaxWidth().testTag("teach-goal"),
             label = { Text(stringResource(R.string.teach_goal_label)) },

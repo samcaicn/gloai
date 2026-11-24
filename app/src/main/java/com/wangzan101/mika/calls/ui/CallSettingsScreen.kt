@@ -838,12 +838,12 @@ private fun CallProfileDialog(config: CallConfig, onDismiss: () -> Unit, onSave:
         text = {
             Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(greeting, { greeting = it }, modifier = Modifier.fillMaxWidth(),
+                MikaTextField(greeting, { greeting = it }, modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.calls_greeting)) }, maxLines = 3, enabled = !busy,
                     supportingText = { Text(stringResource(R.string.calls_greeting_hint)) })
-                OutlinedTextField(prompt, { prompt = it }, modifier = Modifier.fillMaxWidth(),
+                MikaTextField(prompt, { prompt = it }, modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.calls_instructions)) }, maxLines = 5, enabled = !busy)
-                OutlinedTextField(seconds, { seconds = it.filter(Char::isDigit).take(3) }, modifier = Modifier.fillMaxWidth(),
+                MikaTextField(seconds, { seconds = it.filter(Char::isDigit).take(3) }, modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.calls_duration)) }, singleLine = true, enabled = !busy,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                 if (error) Text(stringResource(R.string.calls_action_failed), color = MaterialTheme.colorScheme.error)

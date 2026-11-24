@@ -2,7 +2,7 @@ package com.wangzan101.mika.files.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -105,9 +105,9 @@ fun DeviceDirectoriesScreen(store: DeviceDirectoryStore, hub: HelperHub, onBack:
         fun close() { adding = false; editing = null }
         MikaDialog(onDismissRequest = ::close, title = { Text(stringResource(R.string.device_dirs_edit)) }, text = {
             Column {
-                OutlinedTextField(name, { name = it.take(100) }, label = { Text(stringResource(R.string.device_dirs_name)) }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(path, { path = it.take(1024) }, label = { Text(stringResource(R.string.device_dirs_path)) }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(description, { description = it.take(1000) }, label = { Text(stringResource(R.string.device_dirs_description)) }, modifier = Modifier.fillMaxWidth())
+                MikaTextField(name, { name = it.take(100) }, label = { Text(stringResource(R.string.device_dirs_name)) }, modifier = Modifier.fillMaxWidth())
+                MikaTextField(path, { path = it.take(1024) }, label = { Text(stringResource(R.string.device_dirs_path)) }, modifier = Modifier.fillMaxWidth())
+                MikaTextField(description, { description = it.take(1000) }, label = { Text(stringResource(R.string.device_dirs_description)) }, modifier = Modifier.fillMaxWidth())
                 if (error) Text(stringResource(R.string.device_dirs_invalid))
                 if (writeError) Text(stringResource(R.string.device_dirs_write_failed))
                 if (original != null) TextButton(onClick = {

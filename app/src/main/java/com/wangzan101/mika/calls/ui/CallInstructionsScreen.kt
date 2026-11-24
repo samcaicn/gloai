@@ -127,10 +127,10 @@ private fun InstructionEditor(row: CallInstruction, saveError: String?, onDismis
                 keyboard?.show()
             }
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(title, { title = it.take(64) }, label = { Text(stringResource(R.string.call_instructions_heading)) },
+                MikaTextField(title, { title = it.take(64) }, label = { Text(stringResource(R.string.call_instructions_heading)) },
                     modifier = Modifier.focusRequester(titleFocus).testTag("call-instruction-title-input"), singleLine = true)
-                OutlinedTextField(situation, { situation = it.take(200) }, label = { Text(stringResource(R.string.call_instructions_situation)) }, maxLines = 3)
-                OutlinedTextField(response, { response = it }, label = { Text(stringResource(R.string.call_instructions_response)) },
+                MikaTextField(situation, { situation = it.take(200) }, label = { Text(stringResource(R.string.call_instructions_situation)) }, maxLines = 3)
+                MikaTextField(response, { response = it }, label = { Text(stringResource(R.string.call_instructions_response)) },
                     supportingText = { Text(response.length.toString() + " / 800") }, isError = response.length > 800, minLines = 3, maxLines = 7)
                 Text(stringResource(R.string.call_instructions_expiry), style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

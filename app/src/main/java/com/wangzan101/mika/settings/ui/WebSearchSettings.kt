@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -223,7 +223,7 @@ fun WebSearchDialog(initial: WebSearchConfig, onDismiss: () -> Unit, onSave: (We
                 }
                 if (provider.needsEndpoint) {
                     val error = shows(WebSearchProvider.Problem.Endpoint)
-                    OutlinedTextField(
+                    MikaTextField(
                         entry.endpoint, { entries[provider] = entry.copy(endpoint = it); touched[provider to WebSearchProvider.Problem.Endpoint] = true },
                         Modifier.fillMaxWidth().padding(top = 8.dp).focusRequester(endpointFocus).testTag("web-search-endpoint"),
                         singleLine = true, isError = error,
@@ -233,7 +233,7 @@ fun WebSearchDialog(initial: WebSearchConfig, onDismiss: () -> Unit, onSave: (We
                 }
                 if (provider.takesKey) {
                     val error = shows(WebSearchProvider.Problem.Key)
-                    OutlinedTextField(
+                    MikaTextField(
                         entry.apiKey, { entries[provider] = entry.copy(apiKey = it); touched[provider to WebSearchProvider.Problem.Key] = true },
                         Modifier.fillMaxWidth().padding(top = 8.dp).focusRequester(keyFocus).testTag("web-search-key"),
                         singleLine = true, visualTransformation = PasswordVisualTransformation(),

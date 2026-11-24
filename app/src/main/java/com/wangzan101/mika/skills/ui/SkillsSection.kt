@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import com.wangzan101.mika.ui.components.MikaDialog
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -146,7 +146,7 @@ internal fun SkillsSection(vm: MemoryViewModel, ui: SkillsUi, pending: Boolean, 
                 KeyboardDismissArea {
                     Column {
                         Text(stringResource(R.string.skills_import_hint), style = MikaType.Hint, color = MikaTheme.colors.ink3)
-                        OutlinedTextField(text, { text = it; problem = null }, Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 240.dp).keepsKeyboard().testTag("skill-import"))
+                        MikaTextField(text, { text = it; problem = null }, Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 240.dp).keepsKeyboard().testTag("skill-import"))
                         problem?.let { Text(it, Modifier.padding(top = 6.dp), style = MikaType.Hint, color = MikaTheme.colors.bad) }
                     }
                 }
@@ -165,7 +165,7 @@ internal fun SkillsSection(vm: MemoryViewModel, ui: SkillsUi, pending: Boolean, 
         MikaDialog(
             onDismissRequest = { editing = null },
             title = { Text(stringResource(R.string.skills_edit_title)) },
-            text = { KeyboardDismissArea { OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth().heightIn(min = 240.dp).keepsKeyboard().testTag("skill-markdown")) } },
+            text = { KeyboardDismissArea { MikaTextField(text, { text = it }, Modifier.fillMaxWidth().heightIn(min = 240.dp).keepsKeyboard().testTag("skill-markdown")) } },
             confirmButton = { TextButton({ vm.approveSkill(d.id, text); editing = null }) { Text(stringResource(R.string.skills_accept_try)) } },
             dismissButton = { TextButton({ editing = null }) { Text(stringResource(R.string.cancel)) } },
         )

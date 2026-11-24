@@ -1,5 +1,6 @@
 package com.wangzan101.mika.task.ui
 
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -79,12 +80,12 @@ internal fun TraceSendRow(archive: TraceArchive) {
         MikaDialog(onDismissRequest = { dialog = false }, title = { Text(stringResource(R.string.trace_send)) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
-                    OutlinedTextField(address, { address = it }, Modifier.testTag("trace-endpoint"), singleLine = true, isError = address.isNotBlank() && !validAddress,
+                    MikaTextField(address, { address = it }, Modifier.testTag("trace-endpoint"), singleLine = true, isError = address.isNotBlank() && !validAddress,
                         label = { Text(stringResource(R.string.trace_endpoint)) },
                         supportingText = { Text(stringResource(R.string.trace_endpoint_hint)) })
-                    OutlinedTextField(name, { name = it }, Modifier.testTag("trace-auth-name"), singleLine = true, isError = !validHeader,
+                    MikaTextField(name, { name = it }, Modifier.testTag("trace-auth-name"), singleLine = true, isError = !validHeader,
                         label = { Text(stringResource(R.string.trace_header_name)) })
-                    OutlinedTextField(value, { value = it }, Modifier.testTag("trace-auth-value"), singleLine = true, isError = !validHeader,
+                    MikaTextField(value, { value = it }, Modifier.testTag("trace-auth-value"), singleLine = true, isError = !validHeader,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
                         label = { Text(stringResource(R.string.trace_header_value)) })

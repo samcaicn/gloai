@@ -64,11 +64,12 @@ fun MikaDialog(
             }
         },
         confirmButton = {
+            // 操作区不用强调色:两个按钮同一浅灰底,确认用正文色加粗,取消用次要色;调用方自己给的颜色(如删除的红)照旧
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (dismissButton != null) {
-                    DialogAction(Modifier.weight(1f), c.fill) { dismissButton() }
+                    DialogAction(Modifier.weight(1f), c.fill, c.ink2, androidx.compose.ui.text.font.FontWeight.Normal) { dismissButton() }
                 }
-                DialogAction(Modifier.weight(1f), c.accentSoft) { confirmButton() }
+                DialogAction(Modifier.weight(1f), c.fill, c.ink, androidx.compose.ui.text.font.FontWeight.SemiBold) { confirmButton() }
             }
         },
         shape = MikaShapes.Sheet,
@@ -81,12 +82,23 @@ fun MikaDialog(
 }
 
 @Composable
-private fun DialogAction(modifier: Modifier, background: Color, content: @Composable () -> Unit) {
+private fun DialogAction(
+    modifier: Modifier, background: Color, ink: Color,
+    weight: androidx.compose.ui.text.font.FontWeight, content: @Composable () -> Unit,
+) {
     val shape = MikaShapes.Button
+    val scheme = androidx.compose.material3.MaterialTheme.colorScheme
+    // 整块都是按钮:把块的大小当最小尺寸交给里面的按钮,让它撑满,点块上任何地方都算
     Box(
         modifier.heightIn(min = 44.dp).background(background, shape).clip(shape),
         contentAlignment = Alignment.Center,
-    ) { content() }
+        propagateMinConstraints = true,
+    ) {
+        // TextButton 取 primary 做文字色;这里换成中性色
+        androidx.compose.material3.MaterialTheme(colorScheme = scheme.copy(primary = ink)) {
+            CompositionLocalProvider(LocalTextStyle provides MikaType.Body.copy(fontWeight = weight)) { content() }
+        }
+    }
 }
 
 /** 通知型弹窗的正文和回答使用同一套 Markdown 排版，不把原始标记直接交给用户。 */

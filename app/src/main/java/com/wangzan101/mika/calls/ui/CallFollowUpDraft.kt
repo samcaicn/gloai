@@ -1,5 +1,6 @@
 package com.wangzan101.mika.calls.ui
 
+import com.wangzan101.mika.ui.components.MikaTextField
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.widget.Toast
@@ -60,7 +61,7 @@ internal fun CallFollowUpDraft(
         onDismissRequest = { if (!saving) editing = false },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(text, { if (it.length <= CallHistory.MAX_DRAFT_LENGTH) { text = it; error = false } },
+                MikaTextField(text, { if (it.length <= CallHistory.MAX_DRAFT_LENGTH) { text = it; error = false } },
                     enabled = !saving, minLines = 3, maxLines = 8,
                     label = { Text(title) },
                     modifier = Modifier.fillMaxWidth().testTag("call-draft-input"))

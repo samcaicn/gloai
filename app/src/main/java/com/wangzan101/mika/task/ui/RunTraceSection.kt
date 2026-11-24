@@ -1,5 +1,6 @@
 package com.wangzan101.mika.task.ui
 
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -181,7 +182,7 @@ internal fun TraceSettingsRows() {
             onDismissRequest = { editingLimit = false },
             title = { Text(stringResource(R.string.trace_storage_limit)) },
             text = {
-                OutlinedTextField(text, { text = it }, singleLine = true, label = { Text("MiB") },
+                MikaTextField(text, { text = it }, singleLine = true, label = { Text("MiB") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
             },
             confirmButton = {

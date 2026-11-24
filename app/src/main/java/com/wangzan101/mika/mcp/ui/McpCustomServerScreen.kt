@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.OutlinedTextField
+import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -136,7 +136,7 @@ fun McpCustomServerScreen(
             TopBar(if (initial == null) stringResource(R.string.mcp_catalog_custom_server) else name.ifBlank { initial.name }, MikaIcons.Back, onBack, stringResource(R.string.back))
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
                 GroupCard(Modifier.padding(top = 8.dp)) {
-                    OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.mcp_servers_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp))
+                    MikaTextField(name, { name = it }, label = { Text(stringResource(R.string.mcp_servers_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp))
                     SegmentedControl(
                         options = transportLabels,
                         selected = transportIds.indexOf(transport).coerceAtLeast(0),
@@ -144,16 +144,16 @@ fun McpCustomServerScreen(
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
                     if (transport == "stdio") {
-                        OutlinedTextField(
+                        MikaTextField(
                             command, { command = it }, label = { Text(stringResource(R.string.mcp_servers_command)) },
                             singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         )
                         FooterNote(stringResource(R.string.mcp_servers_stdio_help), Modifier.padding(top = 0.dp))
                     } else {
-                        OutlinedTextField(url, { url = it }, label = { Text(stringResource(R.string.mcp_servers_url)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
+                        MikaTextField(url, { url = it }, label = { Text(stringResource(R.string.mcp_servers_url)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
                         ToggleRow(stringResource(R.string.mcp_servers_use_oauth), oauth) { oauth = it }
                         if (!oauth) {
-                            OutlinedTextField(
+                            MikaTextField(
                                 token, { token = it }, label = { Text(stringResource(R.string.mcp_servers_token)) },
                                 singleLine = true, visualTransformation = PasswordVisualTransformation(),
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -168,14 +168,14 @@ fun McpCustomServerScreen(
                     headers.forEachIndexed { i, (hname, hvalue) ->
                         Column(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                OutlinedTextField(
+                                MikaTextField(
                                     hname, { v -> headers = headers.toMutableList().also { it[i] = it[i].copy(first = v) } },
                                     label = { Text(stringResource(R.string.mcp_custom_header_name)) },
                                     singleLine = true, modifier = Modifier.weight(1f),
                                 )
                                 TextButton(onClick = { headers = headers.filterIndexed { idx, _ -> idx != i } }) { Text(stringResource(R.string.mcp_servers_delete)) }
                             }
-                            OutlinedTextField(
+                            MikaTextField(
                                 hvalue, { v -> headers = headers.toMutableList().also { it[i] = it[i].copy(second = v) } },
                                 label = { Text(stringResource(R.string.mcp_custom_header_value)) },
                                 singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
@@ -189,7 +189,7 @@ fun McpCustomServerScreen(
                 }
 
                 GroupCard {
-                    OutlinedTextField(
+                    MikaTextField(
                         allowlist, { allowlist = it },
                         label = { Text(stringResource(R.string.mcp_servers_allowlist)) },
                         singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -255,7 +255,7 @@ fun McpCustomServerScreen(
 
 @Composable
 private fun NumberField(label: String, value: String, onChange: (String) -> Unit) {
-    OutlinedTextField(
+    MikaTextField(
         value, onChange, label = { Text(label) }, singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),

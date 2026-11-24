@@ -147,9 +147,9 @@ private fun ChecklistEditor(store: SavedChecklistStore, initial: ChecklistEdit, 
         title = { Text(stringResource(if (initial.version == 0) R.string.checklist_new else R.string.checklist_edit)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                OutlinedTextField(title, { title = it; error = null }, label = { Text(stringResource(R.string.recommendations_title_label)) },
+                MikaTextField(title, { title = it; error = null }, label = { Text(stringResource(R.string.recommendations_title_label)) },
                     singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth().testTag("checklist-title"))
-                OutlinedTextField(body, { body = it; error = null }, label = { Text(stringResource(R.string.checklist_content)) },
+                MikaTextField(body, { body = it; error = null }, label = { Text(stringResource(R.string.checklist_content)) },
                     minLines = 5, maxLines = 10, enabled = !busy, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("checklist-input"))
                 error?.let { Text(checklistError(it), color = MikaTheme.colors.bad, modifier = Modifier.padding(top = 8.dp)) }
             }
@@ -173,7 +173,7 @@ private fun ChecklistActionDialog(current: ChecklistRevision, update: Boolean, o
     MikaDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(if (update) R.string.checklist_update else R.string.checklist_reuse)) },
-        text = { OutlinedTextField(text, { text = it }, label = { Text(stringResource(if (update) R.string.checklist_supplement else R.string.checklist_next)) },
+        text = { MikaTextField(text, { text = it }, label = { Text(stringResource(if (update) R.string.checklist_supplement else R.string.checklist_next)) },
             minLines = 3, maxLines = 6, modifier = Modifier.fillMaxWidth().testTag("checklist-action-input")) },
         confirmButton = {
             if (onUse != null) {
