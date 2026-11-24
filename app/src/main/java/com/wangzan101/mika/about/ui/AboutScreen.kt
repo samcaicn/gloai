@@ -167,12 +167,12 @@ fun AboutScreen(
         }
         GroupCard {
             ListRow(MikaIcons.Chats, AboutCopy.GROUP, first = true, onClick = { sheet = AboutSheet.Group }) { RowChevron() }
-            ListRow(MikaIcons.XMark, AboutCopy.FOLLOW, onClick = { onOpenUrl(MikaLinks.X) }) { ExternalMark() }
+            ListRow(MikaIcons.XMark, AboutCopy.FOLLOW, onClick = { onOpenUrl(MikaLinks.X) }) { RowChevron() }
             ListRow(MikaIcons.Bug, AboutCopy.FEEDBACK, onClick = { sheet = AboutSheet.Feedback }) { RowChevron() }
         }
         GroupCard {
-            ListRow(MikaIcons.Code, AboutCopy.REPO, first = true, onClick = { onOpenUrl(MikaLinks.REPO) }) { ExternalMark() }
-            ListRow(MikaIcons.Book, AboutCopy.GUIDE, onClick = { onOpenUrl(MikaLinks.README) }) { ExternalMark() }
+            ListRow(MikaIcons.Code, AboutCopy.REPO, first = true, onClick = { onOpenUrl(MikaLinks.REPO) }) { RowChevron() }
+            ListRow(MikaIcons.Book, AboutCopy.GUIDE, onClick = { onOpenUrl(MikaLinks.README) }) { RowChevron() }
         }
 
         Row(
@@ -259,10 +259,6 @@ internal fun UpdateDot(modifier: Modifier = Modifier) {
     Box(modifier.size(8.dp).background(MikaTheme.colors.bad, CircleShape).testTag("update-dot"))
 }
 
-@Composable
-private fun ExternalMark() {
-    Icon(MikaIcons.External, null, Modifier.size(15.dp), tint = MikaTheme.colors.ink3)
-}
 
 // ---------- 底部面板 ----------
 

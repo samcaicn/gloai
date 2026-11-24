@@ -152,6 +152,8 @@ internal fun MarkdownDocument(markdown: String, streaming: Boolean = false, repo
     val uriHandler = remember(context) {
         object : UriHandler {
             override fun openUri(uri: String) {
+                // 网页链接进内置浏览器
+                if ((uri.startsWith("https://", true) || uri.startsWith("http://", true)) && InAppLinks.open?.invoke(uri) == true) return
                 try {
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 } catch (e: ActivityNotFoundException) {

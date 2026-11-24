@@ -226,5 +226,5 @@ private fun Note(text: String, bg: Color, fg: Color, modifier: Modifier = Modifi
 private fun copyAndReopen(context: Context, code: String, url: String) {
     context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("code", code))
     Toast.makeText(context, tr(R.string.account_signin_copied), Toast.LENGTH_SHORT).show()
-    if (url.isNotBlank()) openInBrowser(context, url)
+    if (url.isNotBlank()) com.wangzan101.mika.ui.openInSystemBrowser(context, url)
 }

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -434,8 +435,23 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** 用系统浏览器打开外部链接(GitHub、X 等);没有浏览器时提示一句。 */
+/**
+ * 打开网页链接(GitHub、X、说明文档等):Mika 自带浏览器,网页一律在内置浏览器的新标签页里打开;
+ * 不是网页的链接(或内置浏览器还没准备好)才交给系统。
+ */
 internal fun openInBrowser(context: Context, url: String) {
+    val web = url.startsWith("https://", ignoreCase = true) || url.startsWith("http://", ignoreCase = true)
+    if (web && InAppLinks.open?.invoke(url) == true) return
+    openInSystemBrowser(context, url)
+}
+
+/** 内置浏览器打开网页的入口,由主界面在显示时挂上。 */
+internal object InAppLinks {
+    @Volatile var open: ((String) -> Boolean)? = null
+}
+
+/** 一定用系统浏览器打开:登录授权页要回跳 Mika,得走系统浏览器。 */
+internal fun openInSystemBrowser(context: Context, url: String) {
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE))
     } catch (e: ActivityNotFoundException) {
@@ -609,6 +625,13 @@ private fun MikaRoot(
         nav.push(Route.Browser)
         UserBrowser.of(context).openFavorite(com.wangzan101.mika.browser.FavoriteSite(host, loggedIn = false))
             ?.let { Toast.makeText(context, R.string.self_browser_failed, Toast.LENGTH_SHORT).show() }
+    }
+    // 设置、关于、说明里的网页链接都进内置浏览器;这样打开的,退到头就回原来的页面
+    var browserReturn by remember { mutableStateOf(false) }
+    DisposableEffect(Unit) {
+        val open: (String) -> Boolean = { url -> browserReturn = true; openSelfUrl(url, newTab = true); true }
+        InAppLinks.open = open
+        onDispose { if (InAppLinks.open === open) InAppLinks.open = null }
     }
     val selfRequest by app.selfUi.request.collectAsState()
     LaunchedEffect(selfRequest?.id) {
@@ -833,7 +856,7 @@ private fun MikaRoot(
         ) }
         Route.UpdateMirrors -> com.wangzan101.mika.ui.components.PlainListTheme { UpdateMirrorsScreen(app.updateMirrors, onBack = back) }
         Route.License -> com.wangzan101.mika.ui.components.PlainListTheme { LicensesScreen(onBack = back) }
-        Route.Browser -> com.wangzan101.mika.ui.components.PlainListTheme { BrowserScreen(remember { UserBrowser.of(context) }, onBack = back) }
+        Route.Browser -> com.wangzan101.mika.ui.components.PlainListTheme { BrowserScreen(remember { UserBrowser.of(context) }, onBack = { browserReturn = false; back() }, returnOnClose = browserReturn) }
         Route.Files -> com.wangzan101.mika.ui.components.PlainListTheme { FileLibraryScreen(app.chat, filesConversation, filesFromDrawer, onBack = back, onAdded = { id ->
             app.chat.openConversation(id)
             val opened = app.chat.ui.value.conversationId == id

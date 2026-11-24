@@ -14,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -180,10 +179,10 @@ private fun LocalFunAsr(savedUrl: String?, savedLanguage: AsrLanguage, probe: Li
     val url = FunAsrProtocol.normalize(address)
     Text(tr(R.string.speech_funasr_setup_hint), Modifier.padding(top = 4.dp, bottom = 4.dp), style = MikaType.Body, color = c.ink2)
     // 两种模型各怎么部署写在仓库文档里;没有能打开网页的应用时 openUri 会抛错,这时什么都不做
-    val uri = LocalUriHandler.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     Text(
         tr(R.string.speech_funasr_deploy_guide),
-        Modifier.clip(MikaShapes.Pill).clickable { runCatching { uri.openUri(FunAsrProtocol.DEPLOY_GUIDE) } }
+        Modifier.clip(MikaShapes.Pill).clickable { runCatching { com.wangzan101.mika.ui.openInBrowser(context, FunAsrProtocol.DEPLOY_GUIDE) } }
             .padding(vertical = 6.dp).testTag("speech-funasr-guide"),
         style = MikaType.Body, color = c.accent,
     )

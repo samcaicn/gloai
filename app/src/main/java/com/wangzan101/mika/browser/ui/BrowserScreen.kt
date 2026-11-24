@@ -81,7 +81,12 @@ import com.wangzan101.mika.ui.theme.MikaType
  * 网页视图放在进程里([UserBrowser]),转屏时接着用;离开这一页(不是转屏、也没有别处的浏览器页)时关掉。
  */
 @Composable
-fun BrowserScreen(browser: UserBrowser, onBack: () -> Unit) {
+fun BrowserScreen(
+    browser: UserBrowser,
+    onBack: () -> Unit,
+    /** 从别处的链接打开时为真:这页退到头就关掉标签回原来的页面,不停在浏览器首页。 */
+    returnOnClose: Boolean = false,
+) {
     val context = LocalContext.current
     var filePickerId by rememberSaveable { mutableStateOf<String?>(null) }
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -164,7 +169,11 @@ fun BrowserScreen(browser: UserBrowser, onBack: () -> Unit) {
             browser.closeHost(place, keepPage = activity?.isChangingConfigurations == true)
         }
     }
-    BackHandler(enabled = page != null || tabs.isNotEmpty()) { browser.systemBack() }
+    BackHandler(enabled = page != null || tabs.isNotEmpty()) {
+        val leave = returnOnClose && !browser.canGoBackInTab()
+        browser.systemBack()
+        if (leave) onBack()
+    }
     BackHandler(enabled = find.active) { browser.stopFind() }
     LaunchedEffect(notice) {
         notice?.let {
