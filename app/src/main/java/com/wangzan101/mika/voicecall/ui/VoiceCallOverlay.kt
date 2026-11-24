@@ -352,16 +352,20 @@ private fun CallFeed(
             contentPadding = PaddingValues(horizontal = MikaSpace.Page, vertical = MikaSpace.S12),
             verticalArrangement = Arrangement.spacedBy(MikaSpace.S8),
         ) {
-            if (startedAt != null) item("connected") {
-                SystemPill(stringResource(R.string.voicecall_connected_at, DateFormat.getTimeFormat(context).format(startedAt)))
-            }
-            items(items, key = { it.id }) { item ->
+            // 之前的对话(到分隔线为止)在上,这通电话从「已接通」那行往下
+            val split = items.indexOfFirst { it is VoiceCallFeedItem.Earlier } + 1
+            val row: @Composable (VoiceCallFeedItem) -> Unit = { item ->
                 when (item) {
                     is VoiceCallFeedItem.Said -> SaidBubble(item, bubbleMax)
                     is VoiceCallFeedItem.Task -> TaskCard(item, hasScreen = item.running && item.taskId in screens, onOpen = { onOpenTask(item) }, onWatch = { onWatch(item.taskId) })
                     is VoiceCallFeedItem.Earlier -> SystemPill(stringResource(R.string.voicecall_earlier))
                 }
             }
+            items(items.subList(0, split), key = { it.id }) { row(it) }
+            if (startedAt != null) item("connected") {
+                SystemPill(stringResource(R.string.voicecall_connected_at, DateFormat.getTimeFormat(context).format(startedAt)))
+            }
+            items(items.subList(split, items.size), key = { it.id }) { row(it) }
             if (failedText != null) item("failed") { FailedCard(failedText, onRetry) }
             if (endedText != null) item("ended") { SystemPill(endedText) }
         }
