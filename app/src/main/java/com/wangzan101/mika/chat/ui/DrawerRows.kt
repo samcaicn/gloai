@@ -56,7 +56,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
-import com.wangzan101.mika.ui.components.cardSurface
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaRadius
@@ -96,7 +95,8 @@ internal fun ConversationEntry(
                 .onGloballyPositioned { bounds.value = Rect(it.positionInWindow(), it.size.toSize()) }
                 // 侧滑时前景必须遮住归档底层，不能让按钮透过标题和时间。
                 .background(c.bg, NavShape)
-                .then(if (item.current) Modifier.cardSurface(c, NavShape) else Modifier)
+                // 当前对话铺一层浅灰,不用阴影卡片
+                .then(if (item.current) Modifier.background(c.fill, NavShape) else Modifier)
                 .clip(NavShape)
                 .then(
                     when {
@@ -115,7 +115,7 @@ internal fun ConversationEntry(
                 )
                 .testTag("conversation-row")
                 .alpha(if (item.enabled || selectable) 1f else 0.45f)
-                .padding(horizontal = 12.dp, vertical = 9.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (selectable) SelectMark(selected)
@@ -159,7 +159,7 @@ internal fun ConversationRowContent(
             if (showProjectMark && item.projectId != null && !showProjectName) Icon(MikaIcons.Folder, stringResource(R.string.chat_project_shared), Modifier.size(14.dp).testTag("conversation-project"), tint = c.ink3)
             if (item.branch) Icon(MikaIcons.Route, stringResource(R.string.chat_branch_origin), Modifier.size(14.dp).testTag("conversation-branch"), tint = c.ink3)
             if (item.archived && showArchivedMark) Icon(MikaIcons.Archive, stringResource(R.string.drawer_archived), Modifier.size(14.dp).testTag("conversation-archived"), tint = c.ink3)
-            Text(title, Modifier.weight(1f, fill = item.site == null), style = ConversationTitle, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, Modifier.weight(1f, fill = item.site == null), style = if (item.current) ConversationTitleCurrent else ConversationTitle, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (item.site != null) {
                 Text(
                     PageAskCopy.WEB, Modifier.background(c.accentSoft, RoundedCornerShape(MikaRadius.BubbleTail)).padding(horizontal = 6.dp).testTag("conversation-web"),

@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
@@ -34,6 +35,8 @@ internal class DrawerCardShape(private val progress: Float) : Shape {
 }
 internal val NavShape = MikaShapes.Chip
 internal val SectionText = MikaType.Hint.copy(fontWeight = FontWeight.Medium)
-internal val ConversationTitle = MikaType.Body.copy(fontWeight = FontWeight.Medium)
-internal val ConversationTime = MikaType.Hint
+// 标题用常规字重,一列看下来不发黑;只有当前对话加粗
+internal val ConversationTitle = MikaType.Body.copy(fontSize = 15.sp, letterSpacing = 0.1.sp)
+internal val ConversationTitleCurrent = ConversationTitle.copy(fontWeight = FontWeight.Medium)
+internal val ConversationTime = MikaType.Hint.copy(fontSize = 11.5.sp)
 internal val ConversationTag = MikaType.Micro.copy(fontWeight = FontWeight.Medium)
