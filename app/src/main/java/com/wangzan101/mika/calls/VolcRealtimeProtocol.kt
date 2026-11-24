@@ -29,7 +29,7 @@ data class VolcRealtimeConfig(
         require(systemPrompt.length <= MAX_PROMPT_CHARS) { "Realtime system prompt is too long" }
         require(speaker.isNotBlank() && speaker.length <= 128) { "Invalid realtime speaker" }
         require(model.isNotBlank() && model.length <= 128 && model.all { it.code in 33..126 }) { "Invalid realtime model" }
-        // The OpenAI realtime path registers no front desk tools; fail fast instead of silently dropping every request.
+        // 能加 system 文字项的那套实时协议不注册前台工具:直接报错,免得每句请求都被悄悄丢掉
         require(!(agentTools && protocol == CallVoiceProtocol.OPENAI_REALTIME)) {
             "agentTools requires the VOLC_DUPLEX realtime protocol"
         }

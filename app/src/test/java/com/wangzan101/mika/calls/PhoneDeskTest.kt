@@ -224,7 +224,7 @@ class PhoneDeskTest {
         assertFalse(cue.contains(PhoneDesk.RELAY_BY_ASKING))
         assertTrue(noCue.contains(PhoneDesk.RELAY_BY_ASKING))
         assertFalse(noCue.contains(PhoneDesk.RELAY_BY_CUE))
-        // 哪些协议能收提示:标准通话、OpenAI 实时能;火山双工只有照念的文字输入,不能
+        // 哪些协议能收提示:标准通话、能加 system 文字项的实时协议能;双工对话协议只有照念的文字输入,不能
         assertTrue(PhoneDesk.canCue(standard = true, protocol = CallVoiceProtocol.VOLC_DUPLEX))
         assertTrue(PhoneDesk.canCue(standard = false, protocol = CallVoiceProtocol.OPENAI_REALTIME))
         assertFalse(PhoneDesk.canCue(standard = false, protocol = CallVoiceProtocol.VOLC_DUPLEX))

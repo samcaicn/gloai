@@ -71,9 +71,14 @@ Any app installed on your phone works, with no per-app integration: Mika looks a
 - Choose **Copy as new plan** from a plan's menu to reuse its content, condition, and recurrence. The copy starts paused by default and sends results to the same conversation.
 - Under **Settings › Notifications**, turn on scheduled task quiet hours and choose start and end times. The window repeats daily in the device's local time and can span midnight. Tasks still run, results go back to the conversation, and scheduled results and reminders appear silently in the notification shade.
 
-## Interrupt or stop anytime
+## The front desk: talk while it works, interrupt or stop anytime
 
-- Keep talking while a task runs to add to or correct your request; Mika reads it before its next step.
+- In the chat and in voice calls, Mika's front desk answers first: it replies in a sentence or two and hands anything that needs doing (opening an app, looking something up online, operating the phone, sending a message) to the backend, shown as task cards under that turn. You can keep talking about something else while the tasks run.
+- While a task runs, just say it: add to or correct your request and the desk passes it to that task; ask how it is going and the desk answers from the task card, never guessing; answer a question the task asked; or say to stop and that task stops. The backend gets your whole sentence as you said it, never reworded, and the desk never starts, answers or stops a task on its own without you asking.
+- One message can start several tasks; tasks beyond the parallel limit wait in line and start when the earlier ones finish.
+- When you leave the chat, a task starting, needing you and finishing are written back to the conversation, with progress kept to its latest line; finished and failed tasks also send a notification.
+- Choose the desk's model under "Settings › Models › Voice › Call mode", in "Think": the light model or the main model, for both chat and calls. Without a light model it uses the main model.
+- Typing in a task's own conversation talks to that task directly: Mika reads it before its next step.
 - Every step in the chat can be opened to see exactly what it tapped or typed and how that turned out.
 - “View process” works while the task is still running; new steps keep arriving as it goes.
 - Long-press a message sent during a task to withdraw or edit it before the model picks it up. Editing restores its quote too and is available when the composer has no draft; a message that carries a screen or text selected on a web page cannot be edited.

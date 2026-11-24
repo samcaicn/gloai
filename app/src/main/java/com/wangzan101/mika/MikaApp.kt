@@ -50,6 +50,7 @@ import com.wangzan101.mika.settings.ApprovalControl
 import com.wangzan101.mika.settings.ApprovalStore
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.ProviderStore
+import com.wangzan101.mika.settings.modelFor
 import com.wangzan101.mika.settings.proactiveTarget
 import com.wangzan101.mika.settings.proactiveTargeted
 import com.wangzan101.mika.settings.ttsModel
@@ -617,6 +618,18 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                             background = desks.background(id),
                             log = { Log.w("MikaDesk", it) },
                         )
+                    }
+                },
+                // 前台接的新对话不经任务那边起标题,这里按第一句话起一次;轻量模型在前,主模型兜底,用量记在这条对话上
+                title = { id, first ->
+                    kotlinx.coroutines.withContext(conversations.meter(id)) {
+                        com.wangzan101.mika.chat.ConversationTitler.ensure(conversations, id, first) {
+                            val session = com.wangzan101.mika.core.model.ModelSession.of(id)
+                            listOfNotNull(
+                                providers.modelFor(com.wangzan101.mika.core.model.ModelRole.Light, session),
+                                providers.modelFor(com.wangzan101.mika.core.model.ModelRole.Main, session),
+                            )
+                        }
                     }
                 },
             ),

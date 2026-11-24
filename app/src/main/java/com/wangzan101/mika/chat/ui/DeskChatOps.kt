@@ -48,6 +48,8 @@ class DeskChatDeps(
      * 每一轮(回话、汇报)都新造一个,所以设置里换了模型,下一句就用新的。
      */
     val brain: (conversationId: String) -> DeskBrain?,
+    /** 给还没有标题、也还没存过一轮的会话按第一句话起标题(见 [com.wangzan101.mika.chat.ConversationTitler.ensure])。 */
+    val title: suspend (conversationId: String, first: String) -> Unit = { _, _ -> },
 )
 
 /**
@@ -143,6 +145,9 @@ internal class DeskChatOps(
     /** 前台正在回的这一句(用户自己说的部分);不在回话时为 null。取消只认它。 */
     @Volatile private var current: String? = null
 
+    /** 起标题这件事这条入口做过没有。 */
+    @Volatile private var named = false
+
     /** 聊天页给执行器的原话核对:落在用户说过的哪一句里(先看正在回的这一句,再从近往远),交出那一整句。 */
     private val words = object : DeskWords {
         override fun said(fragment: String): String? {
@@ -168,6 +173,7 @@ internal class DeskChatOps(
             return false
         }
         remember(text)
+        name(text)
         val runId = newRunId()
         val startedAt = vm.clock()
         val row = Exchange(text, emptyList(), ExchangeStatus.Working, live = true, runId = runId, startedAt = startedAt, deskReply = "")
@@ -186,6 +192,7 @@ internal class DeskChatOps(
      */
     fun sendFiles(text: String, goal: String, files: List<Pair<String, Long>>, title: String) {
         val typed = remember(text)
+        name(text)
         val runId = newRunId()
         val startedAt = vm.clock()
         val row = Exchange(goal, emptyList(), ExchangeStatus.Working, live = true, runId = runId, startedAt = startedAt, deskReply = "")
@@ -354,6 +361,24 @@ internal class DeskChatOps(
 
     private fun remove(runId: String) = _ui.update { ui ->
         if (ui.conversationId != conversationId) ui else ui.copy(exchanges = ui.exchanges.filterNot { it.runId == runId })
+    }
+
+    /**
+     * 这条入口发出的第一句:请模型给会话起标题(会话已有标题、已存过轮次的由 ensure 自己跳过)。
+     * 和回话并行,这一轮落库前就已经查过「还没存过轮次」;只试一次,后面的话不再起。
+     */
+    private fun name(first: String) {
+        if (named) return
+        named = true
+        vm.scope.launch(vm.io) {
+            try {
+                deps.title(conversationId, first)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // 起不出标题就不记,界面照旧用第一句话
+            }
+        }
     }
 
     private suspend fun persist(turn: Turn) {

@@ -209,8 +209,8 @@ class PhoneDesk(
         private const val POLICY = "以上文的通话规则和授权边界为准；与上文冲突时从严。"
 
         /**
-         * 这条通话能不能把提示交给模型、让它接着说:标准通话(记进模型历史的一轮)和 OpenAI 实时(system 文字项再请它回话)能;
-         * 火山双工能交给模型的文字只有照念的 speech_text_buffer,不能。和各会话的 sendCue 保持一致。
+         * 这条通话能不能把提示交给模型、让它接着说:标准通话(记进模型历史的一轮)和能加 system 文字项的实时协议(加一项再请它回话)能;
+         * 双工对话协议能交给模型的文字只有照念的 speech_text_buffer,不能。和各会话的 sendCue 保持一致。
          */
         fun canCue(standard: Boolean, protocol: CallVoiceProtocol): Boolean = standard || protocol == CallVoiceProtocol.OPENAI_REALTIME
 

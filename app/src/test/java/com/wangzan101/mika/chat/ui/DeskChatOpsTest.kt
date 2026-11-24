@@ -134,6 +134,7 @@ class DeskChatOpsTest {
         brains: () -> DeskBrain? = { brain },
         importAttachments: suspend (String, List<String>) -> ImportResult = { _, _ -> ImportResult(emptyList(), emptyList()) },
         branchWorkspace: BranchWorkspace? = null,
+        title: suspend (String, String) -> Unit = { _, _ -> },
     ): Harness {
         val port = FakePort()
         val sunk = mutableListOf<Pair<String, DeskReport>>()
@@ -152,6 +153,7 @@ class DeskChatOpsTest {
                 DeskToolExecutor(port, ledger, words, { 0L }, id) { desk.track(it.taskId, it.title) }
             },
             brain = { brains() },
+            title = title,
         )
         val vm = ChatViewModel(backgroundScope, MutableStateFlow(TaskState.Idle), MutableStateFlow(Takeover.Stage.None), actions, store,
             io = StandardTestDispatcher(testScheduler), desk = deps, sandboxReady = MutableStateFlow(true),
@@ -572,6 +574,21 @@ class DeskChatOpsTest {
         assertEquals(listOf("第二句"), b.replies)
         assertTrue(b.seeded.flatten().any { it.userText == "第一句" && it.outcome == "A 回" })
         assertTrue(made.filter { it.first == "A" }.none { "第二句" in it.second.replies })
+    }
+
+    // 新对话走前台的第一句:和直接开任务一样起一个标题(趁这一轮还没落库),之后的话不再起
+    @Test fun theFirstDeskTurnNamesTheConversation() = runTest {
+        val brain = ScriptBrain({ _, ctx -> ctx.say("好。") })
+        val titled = mutableListOf<Triple<String, String, Int>>()
+        lateinit var h: Harness
+        h = harness(brain, title = { id, first -> titled += Triple(id, first, h.store.turns(id).size) })
+        h.vm.openConversation("c")
+        runCurrent()
+        assertTrue(h.vm.send("帮我查明天的天气", ok))
+        runCurrent()
+        assertTrue(h.vm.send("后天呢", ok))
+        runCurrent()
+        assertEquals(listOf(Triple("c", "帮我查明天的天气", 0)), titled)
     }
 
     // 前台摘了一段(去掉了「不要」):交给后台的还是用户打的整句,不是那段
