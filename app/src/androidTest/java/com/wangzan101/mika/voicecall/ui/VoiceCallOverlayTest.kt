@@ -168,7 +168,7 @@ class VoiceCallOverlayTest {
         })
         private val echoWindow = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
         private val gate = VoiceCallRequest(echoWindow)
-        private val executor = DeskToolExecutor(port, ledger, gate::verified, System::currentTimeMillis, "conv-1") {
+        private val executor = DeskToolExecutor(port, ledger, gate, System::currentTimeMillis, "conv-1") {
             desk.track(it.taskId, it.title)
         }
         private val bridge = VoiceDeskBridge(desk, executor, { rt }, { it.title }, echoWindow::append)

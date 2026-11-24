@@ -84,6 +84,7 @@ class DeskChatOpsTest {
         val states = LinkedHashMap<String, MutableStateFlow<TaskState>>()
         val dispatched = mutableListOf<String>()
         val answered = mutableListOf<Pair<String, String>>()
+        val cancelled = mutableListOf<String>()
 
         override fun dispatch(words: String, note: String, parentConversation: String): DispatchOutcome {
             val id = "child-${states.size + 1}"
@@ -104,7 +105,7 @@ class DeskChatOpsTest {
         override fun queuePosition(taskId: String): Int? = null
         override fun steer(taskId: String, words: String) = true
         override fun answer(taskId: String, words: String): Boolean { answered += taskId to words; return true }
-        override fun cancel(taskId: String) = true
+        override fun cancel(taskId: String): Boolean { cancelled += taskId; return true }
     }
 
     /** 按脚本回话的前台大脑。 */
@@ -146,9 +147,9 @@ class DeskChatOpsTest {
         }
         val deps = DeskChatDeps(
             desk = { entry(it).first },
-            executor = { id, verify ->
+            executor = { id, words ->
                 val (desk, ledger) = entry(id)
-                DeskToolExecutor(port, ledger, verify, { 0L }, id) { desk.track(it.taskId, it.title) }
+                DeskToolExecutor(port, ledger, words, { 0L }, id) { desk.track(it.taskId, it.title) }
             },
             brain = { brains() },
         )
@@ -391,7 +392,7 @@ class DeskChatOpsTest {
             desk = { FrontDesk(it, backgroundScope, port, DeskLedger(), ReportPolicy({ 0L }), object : DeskSink {
                 override suspend fun record(conversationId: String, report: DeskReport) {}
             }) },
-            executor = { id, verify -> DeskToolExecutor(port, DeskLedger(), verify, { 0L }, id) },
+            executor = { id, words -> DeskToolExecutor(port, DeskLedger(), words, { 0L }, id) },
             brain = { brain },
         )
         val vm = ChatViewModel(backgroundScope, MutableStateFlow(TaskState.Idle), MutableStateFlow(Takeover.Stage.None), actions,
@@ -420,7 +421,7 @@ class DeskChatOpsTest {
             desk = { id -> made += id; FrontDesk(id, backgroundScope, port, DeskLedger(), ReportPolicy({ 0L }), object : DeskSink {
                 override suspend fun record(conversationId: String, report: DeskReport) {}
             }) },
-            executor = { id, verify -> made += "executor:$id"; DeskToolExecutor(port, DeskLedger(), verify, { 0L }, id) },
+            executor = { id, words -> made += "executor:$id"; DeskToolExecutor(port, DeskLedger(), words, { 0L }, id) },
             brain = { brain },
         )
         val store = ConversationStore(tmp.newFolder())
@@ -454,7 +455,7 @@ class DeskChatOpsTest {
             desk = { FrontDesk(it, backgroundScope, port, DeskLedger(), ReportPolicy({ 0L }), object : DeskSink {
                 override suspend fun record(conversationId: String, report: DeskReport) {}
             }) },
-            executor = { id, verify -> DeskToolExecutor(port, DeskLedger(), verify, { 0L }, id) },
+            executor = { id, words -> DeskToolExecutor(port, DeskLedger(), words, { 0L }, id) },
             brain = { brain },
         )
         val vm = ChatViewModel(backgroundScope, MutableStateFlow(TaskState.Idle), MutableStateFlow(Takeover.Stage.None), actions,
@@ -571,5 +572,72 @@ class DeskChatOpsTest {
         assertEquals(listOf("第二句"), b.replies)
         assertTrue(b.seeded.flatten().any { it.userText == "第一句" && it.outcome == "A 回" })
         assertTrue(made.filter { it.first == "A" }.none { "第二句" in it.second.replies })
+    }
+
+    // 前台摘了一段(去掉了「不要」):交给后台的还是用户打的整句,不是那段
+    @Test fun aFragmentReachesTheBackendAsTheWholeMessage() = runTest {
+        val brain = ScriptBrain({ _, ctx ->
+            ctx.callTool(DeskTools.DISPATCH, dispatch("删除那些照片", "看照片"))
+            ctx.say("好。")
+        })
+        val h = harness(brain)
+        h.vm.openConversation("c")
+        runCurrent()
+        assertTrue(h.vm.send("不要删除那些照片，先帮我看看有多少张", ok))
+        runCurrent()
+        assertEquals(listOf("不要删除那些照片，先帮我看看有多少张"), h.port.dispatched)
+        assertFalse(h.port.dispatched.contains("删除那些照片"))
+    }
+
+    // 汇报的一轮不是用户开的口:前台不能拿用户之前的话替他回答、补话、派单或取消,只能说给他听
+    @Test fun aReportTurnCannotActOnEarlierWords() = runTest {
+        val results = mutableListOf<JsonObject?>()
+        val brain = ScriptBrain(
+            { text, ctx ->
+                ctx.callTool(DeskTools.DISPATCH, dispatch(text, "打开应用"))
+                ctx.say("好。")
+            },
+            { _, ctx ->
+                results += ctx.callTool(DeskTools.ANSWER, buildJsonObject { put("task_id", "child-1"); put("words", "计算器") })
+                results += ctx.callTool(DeskTools.ADD, buildJsonObject { put("task_id", "child-1"); put("words", "时钟都行") })
+                results += ctx.callTool(DeskTools.DISPATCH, dispatch("打开计算器或者时钟都行", "再开一个"))
+                results += ctx.callTool(DeskTools.CANCEL, buildJsonObject { put("task_id", "child-1"); put("words", "打开计算器") })
+                ctx.say("它问你打开哪一个。")
+            },
+        )
+        val h = harness(brain)
+        h.vm.pageShown(true)
+        h.vm.openConversation("c")
+        runCurrent()
+        assertTrue(h.vm.send("打开计算器或者时钟都行", ok))
+        runCurrent()
+        h.port.states.getValue("child-1").value = TaskState.WaitingInput("打开哪一个?")
+        runCurrent()
+        assertEquals(1, brain.notices.size)
+        assertEquals(List(4) { "rejected" }, results.map { it!!["status"].toString().trim('"') })
+        assertTrue(h.port.answered.isEmpty())
+        assertTrue(h.port.cancelled.isEmpty())
+        assertEquals(listOf("打开计算器或者时钟都行"), h.port.dispatched)
+    }
+
+    // 取消只认用户这一轮的话:之前说过「别订了」,这一轮问的是别的,前台不能拿那句停任务
+    @Test fun cancelNeedsWhatTheUserJustSaid() = runTest {
+        val results = mutableListOf<JsonObject?>()
+        val brain = ScriptBrain({ text, ctx ->
+            when (text) {
+                "帮我订明天的日料" -> ctx.callTool(DeskTools.DISPATCH, dispatch(text, "订日料"))
+                else -> results += ctx.callTool(DeskTools.CANCEL, buildJsonObject { put("task_id", "child-1"); put("words", "别订了") })
+            }
+            ctx.say("好。")
+        })
+        val h = harness(brain)
+        h.vm.openConversation("c")
+        runCurrent()
+        assertTrue(h.vm.send("帮我订明天的日料", ok))
+        assertTrue(h.vm.send("别订了", ok))
+        assertTrue(h.vm.send("明天天气怎么样", ok))
+        runCurrent()
+        assertEquals(listOf("ok", "rejected"), results.map { it!!["status"].toString().trim('"') })
+        assertEquals(listOf("child-1"), h.port.cancelled)
     }
 }

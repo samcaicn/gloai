@@ -247,7 +247,7 @@ class VoiceCallController(
         val desk = deps.desks.desk(conversation)
         val echoWindow = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
         val gate = VoiceCallRequest(echoWindow)
-        val executor = deps.desks.executor(conversation, gate::verified)
+        val executor = deps.desks.executor(conversation, gate)
         val bridge = VoiceDeskBridge(desk, executor, { currentRealtime }, ::deskReportSpeech, onSpoken = echoWindow::append)
         // 会话的回调要回头告诉会话(打字结果已显示):先声明,下面建好
         lateinit var session: VoiceCallSession

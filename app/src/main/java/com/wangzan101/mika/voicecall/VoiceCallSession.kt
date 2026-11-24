@@ -379,7 +379,10 @@ class VoiceCallSession(
         throw VolcRealtimeException(VolcRealtimeException.Kind.NETWORK)
     }
 
-    /** 带原话(words)的前台工具先过安全闸,放行的原话核对过落在当轮转写里;不带原话的(取消)直接交出去。 */
+    /**
+     * 带原话(words)的前台工具先过安全闸,放行的原话核对过落在当轮转写里,换成整句交出去;
+     * 不带原话的照样交出去,由前台执行器拒掉(四个工具都要原话)。
+     */
     private fun handleFunctionCall(realtime: CallRealtimeSession, event: VolcRealtimeEvent.FunctionCall) {
         if (event.name !in VolcRealtimeProtocol.deskToolNames) return
         val words = event.arguments["words"] ?: return onDeskCall(event.callId, event.name, event.arguments)

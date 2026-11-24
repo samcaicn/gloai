@@ -59,8 +59,13 @@ object DeskTools {
         string("words", WORDS_DESCRIPTION)
     }
 
-    private fun cancel() = tool(CANCEL, "Stop a task, only when the user asks to stop it.", required = listOf("task_id")) {
+    private fun cancel() = tool(
+        CANCEL,
+        "Stop a task, only when the user asks to stop it in what they just said.",
+        required = listOf("task_id", "words"),
+    ) {
         string("task_id", "The task id of the task to stop.")
+        string("words", WORDS_DESCRIPTION)
     }
 
     private fun askOwner() = tool(

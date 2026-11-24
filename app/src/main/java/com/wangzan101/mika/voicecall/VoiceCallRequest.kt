@@ -1,5 +1,7 @@
 package com.wangzan101.mika.voicecall
 
+import com.wangzan101.mika.core.frontdesk.DeskWords
+
 /** 回声窗容量:只保留助手最近说过的这么多个字,更早的内容不再参与回声判定。 */
 const val ECHO_WINDOW_CAPACITY_CHARS = 500
 
@@ -16,11 +18,13 @@ const val ECHO_WINDOW_CAPACITY_CHARS = 500
  * 一句话可以办几件事:放行不消费转写,同一轮里各次调用都带整句,各件办哪部分由前台的标题、备注说明;
  * 用户下一轮开口([onUserTurnStart])或新转写登记时,上一轮转写作废。
  *
+ * 它也是这通电话给前台执行器的原话核对([DeskWords]):过闸时 words 已换成整句,执行时再核对一遍是放行过的。
+ *
  * @param echoWindow 助手已说内容的环形缓冲,容量 [ECHO_WINDOW_CAPACITY_CHARS] 字。
  */
 class VoiceCallRequest(
     private val echoWindow: RingBuffer<String> = RingBuffer(ECHO_WINDOW_CAPACITY_CHARS),
-) {
+) : DeskWords {
     /** offer 过的 callId 即刻作废:即使当时被拒,之后用同一 callId 重放也一律 Reject。 */
     private val seenCallIds = mutableSetOf<String>()
 
@@ -30,9 +34,13 @@ class VoiceCallRequest(
     /** 最近放行过的原话(过闸的转写、用户打的字),前台执行工具时据此核对;只留最近 [ACCEPTED_KEPT] 条。 */
     private val accepted = ArrayDeque<String>()
 
-    /** 这句话是不是最近放行过的用户原话。 */
+    /** 这句是最近放行过的用户原话时原样返回(过闸时已是整句)。 */
     @Synchronized
-    fun verified(text: String): Boolean = text in accepted
+    override fun said(fragment: String): String? = fragment.takeIf { it in accepted }
+
+    /** 取消只认最近放行的那一句:用户此刻说的,不是更早的。 */
+    @Synchronized
+    override fun saidNow(fragment: String): String? = fragment.takeIf { it == accepted.lastOrNull() }
 
     /** 用户打的字本就是亲述(闸防的是模型伪造),直接记成放行过的原话。 */
     @Synchronized

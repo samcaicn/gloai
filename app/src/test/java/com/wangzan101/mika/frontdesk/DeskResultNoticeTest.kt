@@ -55,7 +55,7 @@ class DeskResultNoticeTest {
 
         /** 页面不在时由前台派出一件,返回子会话编号。 */
         suspend fun dispatch(words: String): String =
-            registry.executor("p") { true }.execute(DeskTools.DISPATCH, buildJsonObject { put("words", words) })["task_id"]!!.jsonPrimitive.content
+            registry.executor("p", AnyWords).execute(DeskTools.DISPATCH, buildJsonObject { put("words", words) })["task_id"]!!.jsonPrimitive.content
 
         /** 运行 [run] 以 [end] 收尾,任务那边按 [ownResultNotice] 决定发不发,返回它发了几条(0 或 1)。 */
         fun taskNotices(run: FakeRun, end: TaskState, restored: Boolean = false): Int {

@@ -61,7 +61,7 @@ class DeskRegistryTest {
     @Test fun executorDispatchIsTrackedByTheDesk() = runBlocking {
         val store = ConversationStore(tmp.newFolder())
         val registry = DeskRegistry(store, FakePort(), NoSink, { null })
-        val result = registry.executor("p") { true }.execute(DeskTools.DISPATCH, buildJsonObject { put("words", "查天气") })
+        val result = registry.executor("p", AnyWords).execute(DeskTools.DISPATCH, buildJsonObject { put("words", "查天气") })
         assertEquals("started", result["status"].toString().trim('"'))
         assertEquals(listOf("new"), registry.desk("p").active.value.map { it.taskId })
     }
@@ -69,7 +69,7 @@ class DeskRegistryTest {
     @Test fun backgroundCarriesBoardAndMemory() = runBlocking {
         val store = ConversationStore(tmp.newFolder())
         val registry = DeskRegistry(store, FakePort(), NoSink, { "- 喜欢靠窗" })
-        registry.executor("p") { true }.execute(DeskTools.DISPATCH, buildJsonObject { put("words", "订票") })
+        registry.executor("p", AnyWords).execute(DeskTools.DISPATCH, buildJsonObject { put("words", "订票") })
         val text = registry.background("p").render("订票")!!
         assertTrue(text.contains("订票"))
         assertTrue(text.contains("喜欢靠窗"))

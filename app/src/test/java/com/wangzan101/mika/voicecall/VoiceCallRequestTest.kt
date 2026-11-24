@@ -1,6 +1,7 @@
 package com.wangzan101.mika.voicecall
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -48,8 +49,8 @@ class VoiceCallRequestTest {
         val gate = VoiceCallRequest(RingBuffer(10))
         gate.onUserTranscript("千万别帮我给他转账")
         assertEquals(VoiceCallDecision.Accept("千万别帮我给他转账"), gate.offer("c1", "帮我给他转账"))
-        assertTrue(gate.verified("千万别帮我给他转账"))
-        assertFalse(gate.verified("帮我给他转账"))
+        assertEquals("千万别帮我给他转账", gate.said("千万别帮我给他转账"))
+        assertNull(gate.said("帮我给他转账"))
     }
 
     // 规则③反例:utterance 比当轮转写还长——模型往里添了用户没说的话 → Reject 且不消费转写
@@ -100,7 +101,7 @@ class VoiceCallRequestTest {
         // 各件都带整句(用户原话),哪件办哪部分由前台的标题、备注说明
         assertEquals(VoiceCallDecision.Accept("帮我订晚饭,再叫个车"), gate.offer("c1", "帮我订晚饭"))
         assertEquals(VoiceCallDecision.Accept("帮我订晚饭,再叫个车"), gate.offer("c2", "再叫个车"))
-        assertTrue(gate.verified("帮我订晚饭,再叫个车"))
+        assertEquals("帮我订晚饭,再叫个车", gate.said("帮我订晚饭,再叫个车"))
         // 用户没说过的话,同轮里照样拒
         assertEquals(VoiceCallDecision.Reject, gate.offer("c3", "顺便转账"))
     }
@@ -221,5 +222,19 @@ class VoiceCallRequestTest {
         val gate = VoiceCallRequest(RingBuffer(10))
         gate.onUserTranscript("……")
         assertEquals(VoiceCallDecision.Reject, gate.offer("c1", "……"))
+    }
+
+    // 取消只认最近放行的那一句:用户又说了一句之后,前一句不能再拿来停任务
+    @Test
+    fun cancelOnlyTakesTheLatestAcceptedWords() {
+        val gate = VoiceCallRequest(RingBuffer(10))
+        gate.onUserTranscript("别订了")
+        assertEquals(VoiceCallDecision.Accept("别订了"), gate.offer("c1", "别订了"))
+        assertEquals("别订了", gate.saidNow("别订了"))
+        gate.onUserTurnStart()
+        gate.onUserTranscript("明天天气怎么样")
+        assertEquals(VoiceCallDecision.Accept("明天天气怎么样"), gate.offer("c2", "天气"))
+        assertEquals("别订了", gate.said("别订了"))
+        assertNull(gate.saidNow("别订了"))
     }
 }

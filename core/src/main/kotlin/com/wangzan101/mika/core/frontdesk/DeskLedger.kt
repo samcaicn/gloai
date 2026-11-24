@@ -5,23 +5,24 @@ data class DeskTaskEntry(val taskId: String, val title: String, val words: Strin
 
 /** 这次对话里前台派过的任务,按派单先后;防重复派单、核对任务编号都看它。线程安全。 */
 class DeskLedger {
-    private val entries = mutableListOf<DeskTaskEntry>()
+    /** 每件和它的查重键(前台要的是哪件;默认就是原话)。 */
+    private val entries = mutableListOf<Pair<DeskTaskEntry, String>>()
 
     @Synchronized
-    fun add(entry: DeskTaskEntry) {
-        entries += entry
+    fun add(entry: DeskTaskEntry, asked: String = entry.words) {
+        entries += entry to asked.trim()
     }
 
     @Synchronized
-    fun all(): List<DeskTaskEntry> = entries.toList()
+    fun all(): List<DeskTaskEntry> = entries.map { it.first }
 
     @Synchronized
-    fun get(taskId: String): DeskTaskEntry? = entries.firstOrNull { it.taskId == taskId }
+    fun get(taskId: String): DeskTaskEntry? = entries.firstOrNull { it.first.taskId == taskId }?.first
 
-    /** [since] 及之后派过的、原话相同(忽略首尾空白)的最近一件;没有时为 null。 */
+    /** [since] 及之后派过的、查重键相同(忽略首尾空白)的最近一件;没有时为 null。 */
     @Synchronized
-    fun find(words: String, since: Long): DeskTaskEntry? {
-        val key = words.trim()
-        return entries.lastOrNull { it.at >= since && it.words.trim() == key }
+    fun find(asked: String, since: Long): DeskTaskEntry? {
+        val key = asked.trim()
+        return entries.lastOrNull { (entry, k) -> entry.at >= since && k == key }?.first
     }
 }

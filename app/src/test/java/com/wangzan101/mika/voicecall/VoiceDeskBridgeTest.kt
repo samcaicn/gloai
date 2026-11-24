@@ -1,5 +1,6 @@
 package com.wangzan101.mika.voicecall
 
+import com.wangzan101.mika.frontdesk.AnyWords
 import com.wangzan101.mika.calls.VolcRealtimeProtocol
 import com.wangzan101.mika.core.agent.FailKind
 import com.wangzan101.mika.core.agent.TaskState
@@ -33,7 +34,7 @@ class VoiceDeskBridgeTest {
         var live: FakeDeskRealtime? = realtime
         val ledger = DeskLedger()
         val desk = FrontDesk("p", scope, port, ledger, ReportPolicy(clock), sink)
-        val executor = DeskToolExecutor(port, ledger, { true }, clock, "p") { desk.track(it.taskId, it.title) }
+        val executor = DeskToolExecutor(port, ledger, AnyWords, clock, "p") { desk.track(it.taskId, it.title) }
         val bridge = VoiceDeskBridge(desk, executor, { live }, { report -> "${report.title}:${report.event::class.simpleName}" })
         val attachment = bridge.attach()
     }

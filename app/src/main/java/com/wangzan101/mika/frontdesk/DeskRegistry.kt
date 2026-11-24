@@ -11,6 +11,7 @@ import com.wangzan101.mika.core.frontdesk.DeskSink
 import com.wangzan101.mika.core.frontdesk.DeskTaskEntry
 import com.wangzan101.mika.core.frontdesk.DeskTaskPort
 import com.wangzan101.mika.core.frontdesk.DeskToolExecutor
+import com.wangzan101.mika.core.frontdesk.DeskWords
 import com.wangzan101.mika.core.frontdesk.FrontDesk
 import com.wangzan101.mika.core.frontdesk.ReportPolicy
 import com.wangzan101.mika.core.frontdesk.deskBackground
@@ -80,11 +81,11 @@ class DeskRegistry(
 
     /**
      * 给一个入口用的前台工具执行器:和前台共用账本,派出的任务交给前台跟进。
-     * [verifyWords] 由入口给(核对这句话确实是用户在这个入口说过的)。
+     * [words] 由入口给(核对这段确实是用户在这个入口说过的,交出所在的整句)。
      */
-    fun executor(conversationId: String, verifyWords: (String) -> Boolean): DeskToolExecutor {
+    fun executor(conversationId: String, words: DeskWords): DeskToolExecutor {
         val entry = entry(conversationId)
-        return DeskToolExecutor(tasks, entry.ledger, verifyWords, clock, conversationId) { entry.desk.track(it.taskId, it.title) }
+        return DeskToolExecutor(tasks, entry.ledger, words, clock, conversationId) { entry.desk.track(it.taskId, it.title) }
     }
 
     /** 每次调模型前给前台备的背景:这条会话的任务板和这句话的相关记忆。 */

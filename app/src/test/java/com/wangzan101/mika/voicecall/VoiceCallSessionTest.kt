@@ -751,7 +751,7 @@ class VoiceCallSessionTest {
         val desk = FrontDesk("p", backgroundScope, port, ledger, ReportPolicy({ currentTime }), FakeDeskSink())
         val echo = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
         val gate = VoiceCallRequest(echo)
-        val executor = DeskToolExecutor(port, ledger, gate::verified, { currentTime }, "p") { desk.track(it.taskId, it.title) }
+        val executor = DeskToolExecutor(port, ledger, gate, { currentTime }, "p") { desk.track(it.taskId, it.title) }
         lateinit var h: Harness
         lateinit var bridge: VoiceDeskBridge
         h = Harness(
@@ -782,7 +782,7 @@ class VoiceCallSessionTest {
         val desk = FrontDesk("p", backgroundScope, port, ledger, ReportPolicy({ currentTime }), FakeDeskSink())
         val echo = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
         val gate = VoiceCallRequest(echo)
-        val executor = DeskToolExecutor(port, ledger, gate::verified, { currentTime }, "p") { desk.track(it.taskId, it.title) }
+        val executor = DeskToolExecutor(port, ledger, gate, { currentTime }, "p") { desk.track(it.taskId, it.title) }
         lateinit var h: Harness
         lateinit var bridge: VoiceDeskBridge
         h = Harness(

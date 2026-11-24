@@ -603,7 +603,7 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
             // 聊天走前台:和通话共用这条会话的前台与账本;没配思考模型时为 null,发出去会引导去设置
             desk = com.wangzan101.mika.chat.ui.DeskChatDeps(
                 desk = { id -> desks.desk(id) },
-                executor = { id, verify -> desks.executor(id, verify) },
+                executor = { id, words -> desks.executor(id, words) },
                 brain = { id ->
                     com.wangzan101.mika.frontdesk.deskModel(app)?.let { model ->
                         com.wangzan101.mika.core.frontdesk.LlmBrain(

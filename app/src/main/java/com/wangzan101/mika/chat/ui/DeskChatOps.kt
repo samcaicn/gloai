@@ -11,6 +11,7 @@ import com.wangzan101.mika.core.frontdesk.DeskReport
 import com.wangzan101.mika.core.frontdesk.DeskSurface
 import com.wangzan101.mika.core.frontdesk.DeskToolExecutor
 import com.wangzan101.mika.core.frontdesk.DeskTools
+import com.wangzan101.mika.core.frontdesk.DeskWords
 import com.wangzan101.mika.core.frontdesk.FrontDesk
 import com.wangzan101.mika.core.frontdesk.ReplyContext
 import com.wangzan101.mika.frontdesk.DeskNotifier
@@ -40,8 +41,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 class DeskChatDeps(
     /** 这条会话常驻的前台;第一次要时会读会话记录,在 io 上调。 */
     val desk: (conversationId: String) -> FrontDesk,
-    /** 聊天页用的前台工具执行器;[verifyWords] 由聊天页给(核对这句话确实是用户在这条会话里打过的)。 */
-    val executor: (conversationId: String, verifyWords: (String) -> Boolean) -> DeskToolExecutor,
+    /** 聊天页用的前台工具执行器;[DeskWords] 由聊天页给(核对这段确实是用户在这条会话里打过的,交出所在的整句)。 */
+    val executor: (conversationId: String, words: DeskWords) -> DeskToolExecutor,
     /**
      * 按此刻设置里的模型新造一个这条会话的文字前台;没配模型时为 null(发出去拦下,引导去模型设置)。
      * 每一轮(回话、汇报)都新造一个,所以设置里换了模型,下一句就用新的。
@@ -115,7 +116,8 @@ internal class ChatDesk(private val vm: ChatViewModel, private val session: Chat
  * 后台有该说的变化、页面正开着这条会话时,由前台说一句,存成一行 `desk_report`;页面不在时返回 false,交给兜底。
  *
  * 回话和汇报一条一条来(前一句回完才回下一句):前台还在回的时候输入框照样能发,发出去的排在后面,派单不会因为抢话丢掉。
- * 前台交给后台的原话要核对:是用户在这条会话里说过的话(这一句或之前的,整句或其中一段)才认。
+ * 前台交给后台的原话要核对:是用户在这条会话里说过的话(这一句或之前的,整句或其中一段)才认,交给后台的是那一整句;
+ * 取消只认用户正在回的这一句。汇报的一轮不是用户开的口,前台的工具一概不认原话(只能把事说给用户听)。
  *
  * 前台跟着会话走:每一轮都按此刻的模型新造前台,用这条会话存下的轮次垫上(和通话打开时同一条路),
  * 所以通话里写进来的轮次、页面不在时兜底写下的汇报、设置里换的模型,下一句都已经算上;通话里说过的话也认作用户的原话。
@@ -132,8 +134,28 @@ internal class DeskChatOps(
     private val turns = Mutex()
     private var executor: DeskToolExecutor? = null
 
+    /** 汇报一轮用的执行器:不认任何原话(见 [DeskWords.None])。 */
+    private var reportExecutor: DeskToolExecutor? = null
+
     /** 这条会话里用户说过的话:存下的(每一轮前重读,包括通话里说的)和这次打开后发的。 */
     private val said = CopyOnWriteArrayList<String>()
+
+    /** 前台正在回的这一句(用户自己说的部分);不在回话时为 null。取消只认它。 */
+    @Volatile private var current: String? = null
+
+    /** 聊天页给执行器的原话核对:落在用户说过的哪一句里(先看正在回的这一句,再从近往远),交出那一整句。 */
+    private val words = object : DeskWords {
+        override fun said(fragment: String): String? {
+            val w = fragment.trim().ifEmpty { return null }
+            current?.takeIf { w in it }?.let { return it }
+            return said.lastOrNull { w in it }
+        }
+
+        override fun saidNow(fragment: String): String? {
+            val w = fragment.trim().ifEmpty { return null }
+            return current?.takeIf { w in it }
+        }
+    }
 
     /**
      * 把 [text](已带上引用)交给前台:马上加一行用户气泡和「在想」,回话在后台流进来。
@@ -163,7 +185,7 @@ internal class DeskChatOps(
      * 有没有任务在跑都一样,输入框不因此变忙。[title] 是卡片上的标题。
      */
     fun sendFiles(text: String, goal: String, files: List<Pair<String, Long>>, title: String) {
-        val words = remember(text)
+        val typed = remember(text)
         val runId = newRunId()
         val startedAt = vm.clock()
         val row = Exchange(goal, emptyList(), ExchangeStatus.Working, live = true, runId = runId, startedAt = startedAt, deskReply = "")
@@ -173,7 +195,7 @@ internal class DeskChatOps(
         }
         vm.scope.launch {
             val result = try {
-                executor().dispatchWithFiles(words, title) { child -> copyFiles(child, files)?.let { ChatReduce.withAttachments(text, it) } }
+                executor(words).dispatchWithFiles(typed, title) { child -> copyFiles(child, files)?.let { ChatReduce.withAttachments(text, it) } }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -222,7 +244,8 @@ internal class DeskChatOps(
             val reply = StringBuilder()
             val tasks = mutableListOf(taskId)
             try {
-                brain.notice(noticeText(report), context(runId, reply, tasks, prepare(brain)))
+                prepare(brain)
+                brain.notice(noticeText(report), context(runId, reply, tasks, executor(DeskWords.None)))
             } catch (e: Throwable) {
                 remove(runId)
                 throw e
@@ -243,14 +266,18 @@ internal class DeskChatOps(
         val tasks = mutableListOf<String>()
         var failure: String? = null
         try {
-            brain.reply(text, context(runId, reply, tasks, prepare(brain)))
+            prepare(brain)
+            current = UserWords.saidToDesk(text).ifBlank { null }
+            brain.reply(text, context(runId, reply, tasks, executor(words)))
         } catch (e: CancellationException) {
+            current = null
             // 派出去的任务得记进这一轮,下次打开会话才接得回来
             withContext(NonCancellable) { persist(Turn(text, reply.toString(), DeskTurn.STATUS, runId = runId, atMs = startedAt, deskTasks = tasks)) }
             throw e
         } catch (e: Exception) {
             failure = e.message ?: e::class.simpleName ?: "error"
         }
+        current = null
         val spoken = reply.toString()
         update(runId) {
             it.copy(deskReply = spoken, status = failure?.let(ExchangeStatus::Failed) ?: ExchangeStatus.Done(spoken, null))
@@ -280,20 +307,23 @@ internal class DeskChatOps(
     }
 
     /**
-     * 每一轮回话、汇报前:重读这条会话存下的轮次(别的入口写进来的也在),垫给这一轮新造的前台,记下其中用户说过的话;
-     * 拿到和前台共用账本的工具执行器。
+     * 每一轮回话、汇报前:重读这条会话存下的轮次(别的入口写进来的也在),垫给这一轮新造的前台,记下其中用户说过的话。
      */
-    private suspend fun prepare(brain: DeskBrain): DeskToolExecutor {
+    private suspend fun prepare(brain: DeskBrain) {
         val prior = withContext(vm.io) { runCatching { vm.store.turns(conversationId) }.getOrDefault(emptyList()) }
         said.addAllAbsent(prior.map { UserWords.saidToDesk(it.userText) }.filter { it.isNotBlank() })
         brain.seed(prior)
-        return executor()
     }
 
-    private suspend fun executor(): DeskToolExecutor =
-        synchronized(this) { executor } ?: withContext(vm.io) { deps.executor(conversationId, ::verified) }.let { made ->
-            synchronized(this) { executor ?: made.also { executor = it } }
+    /** 和前台共用账本的工具执行器:[check] 是用户开口的一轮用的 [words],或汇报一轮用的 [DeskWords.None];各建一次。 */
+    private suspend fun executor(check: DeskWords): DeskToolExecutor {
+        val report = check === DeskWords.None
+        synchronized(this) { if (report) reportExecutor else executor }?.let { return it }
+        val made = withContext(vm.io) { deps.executor(conversationId, check) }
+        return synchronized(this) {
+            if (report) reportExecutor ?: made.also { reportExecutor = it } else executor ?: made.also { executor = it }
         }
+    }
 
     /**
      * 记下用户这句里他自己说的话([UserWords.saidToDesk]):引的 Mika 的回答、屏幕和页面的说明、附件行都不记,
@@ -301,12 +331,6 @@ internal class DeskChatOps(
      */
     private fun remember(text: String): String =
         UserWords.saidToDesk(text).also { if (it.isNotBlank()) said += it }
-
-    /** 前台交给后台的原话得是用户在这条会话里打过的字(整句或其中一段),前台自己编的不认。 */
-    private fun verified(words: String): Boolean {
-        val w = words.trim()
-        return w.isNotEmpty() && said.any { w in it }
-    }
 
     /** 给前台的一条汇报:带上任务编号(它要接着回话、补话时用),后面是这件任务这次的变化。 */
     private fun noticeText(report: DeskReport) =

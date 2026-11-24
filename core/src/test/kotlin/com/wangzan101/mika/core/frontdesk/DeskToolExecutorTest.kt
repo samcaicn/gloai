@@ -59,10 +59,16 @@ class DeskToolExecutorTest {
     private val port = FakePort()
     private val ledger = DeskLedger()
     private val notified = mutableListOf<DeskTaskEntry>()
-    private var verified: (String) -> Boolean = { true }
+    /** 核对用户原话:[said] 给派单、补话、回答,[saidNow] 给取消;默认认模型给的那段本身。 */
+    private var said: (String) -> String? = { it }
+    private var saidNow: (String) -> String? = { it }
+    private val words = object : DeskWords {
+        override fun said(fragment: String) = this@DeskToolExecutorTest.said(fragment)
+        override fun saidNow(fragment: String) = this@DeskToolExecutorTest.saidNow(fragment)
+    }
 
-    private fun executor() = DeskToolExecutor(
-        tasks = port, ledger = ledger, verifyWords = { verified(it) }, clock = { now },
+    private fun executor(words: DeskWords = this.words) = DeskToolExecutor(
+        tasks = port, ledger = ledger, words = words, clock = { now },
         conversationId = "c1", onDispatched = { notified += it },
     )
 
@@ -78,7 +84,7 @@ class DeskToolExecutorTest {
 
     @Test
     fun dispatchRejectsUnverifiedWords() {
-        verified = { false }
+        said = { null }
         val result = dispatch()
         assertEquals(buildJsonObject { put("status", "rejected"); put("reason", "words_not_verified") }, result)
         assertTrue(port.dispatched.isEmpty())
@@ -109,7 +115,7 @@ class DeskToolExecutorTest {
             override fun dispatch(words: String, note: String, parentConversation: String) = DispatchOutcome.Failed("no_model")
         }
         val result = runBlocking {
-            DeskToolExecutor(failing, ledger, { true }, { now }, "c1", { notified += it })
+            DeskToolExecutor(failing, ledger, words, { now }, "c1", { notified += it })
                 .execute(DeskTools.DISPATCH, args("words" to "查天气", "title" to "天气"))
         }
         assertEquals(buildJsonObject { put("status", "failed"); put("reason", "no_model") }, result)
@@ -135,14 +141,14 @@ class DeskToolExecutorTest {
     @Test
     fun answerAndAddRequireVerifiedWords() {
         dispatch()
-        verified = { false }
+        said = { null }
         val rejected = buildJsonObject { put("status", "rejected"); put("reason", "words_not_verified") }
         assertEquals(rejected, run(DeskTools.ANSWER, "task_id" to "t1", "words" to "选第二个"))
         assertEquals(rejected, run(DeskTools.ADD, "task_id" to "t1", "words" to "顺便订午饭"))
         assertTrue(port.answered.isEmpty())
         assertTrue(port.steered.isEmpty())
 
-        verified = { true }
+        said = { it }
         val ok = buildJsonObject { put("status", "ok") }
         assertEquals(ok, run(DeskTools.ANSWER, "task_id" to "t1", "words" to "选第二个"))
         assertEquals(ok, run(DeskTools.ADD, "task_id" to "t1", "words" to "顺便订午饭"))
@@ -156,13 +162,13 @@ class DeskToolExecutorTest {
         port.accept = false
         val refused = buildJsonObject { put("status", "not_accepted") }
         assertEquals(refused, run(DeskTools.ANSWER, "task_id" to "t1", "words" to "好"))
-        assertEquals(refused, run(DeskTools.CANCEL, "task_id" to "t1"))
+        assertEquals(refused, run(DeskTools.CANCEL, "task_id" to "t1", "words" to "别订了"))
     }
 
     @Test
     fun cancelGoesToPort() {
         dispatch()
-        assertEquals(buildJsonObject { put("status", "ok") }, run(DeskTools.CANCEL, "task_id" to "t1"))
+        assertEquals(buildJsonObject { put("status", "ok") }, run(DeskTools.CANCEL, "task_id" to "t1", "words" to "别订了"))
         assertEquals(listOf("t1"), port.cancelled)
     }
 
@@ -195,7 +201,7 @@ class DeskToolExecutorTest {
     @Test
     fun wordsDescriptionIsVerbatimRule() {
         val withWords = DeskTools.specs(DeskToolSet.User).filter { it.getValue("parameters").jsonObject.getValue("properties").jsonObject.containsKey("words") }
-        assertEquals(setOf(DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER), withWords.map { it.str("name") }.toSet())
+        assertEquals(setOf(DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER, DeskTools.CANCEL), withWords.map { it.str("name") }.toSet())
         withWords.forEach {
             val words = it.getValue("parameters").jsonObject.getValue("properties").jsonObject.getValue("words").jsonObject
             assertEquals("用户说过的原话，逐字照抄，不要改写", words.str("description"))
@@ -236,7 +242,7 @@ class DeskToolExecutorTest {
             override fun dispatch(words: String, note: String, parentConversation: String): DispatchOutcome = error("service gone")
         }
         val result = runBlocking {
-            DeskToolExecutor(throwing, ledger, { true }, { now }, "c1", { notified += it })
+            DeskToolExecutor(throwing, ledger, words, { now }, "c1", { notified += it })
                 .execute(DeskTools.DISPATCH, args("words" to "查天气", "title" to "天气"))
         }
         assertEquals(buildJsonObject { put("status", "failed"); put("reason", "service gone") }, result)
@@ -264,7 +270,7 @@ class DeskToolExecutorTest {
         assertEquals(listOf(entry), notified)
         assertTrue(port.dispatched.isEmpty())
 
-        verified = { false }
+        said = { null }
         val rejected = runBlocking { executor().dispatchWithFiles("不是用户说的", "x") { "不是用户说的" } }
         assertEquals("rejected", rejected.str("status"))
         assertEquals(1, port.withFiles.size)
@@ -273,12 +279,77 @@ class DeskToolExecutorTest {
     // 只发了文件、没写话:没有要核对的原话,照样派;文件没放进去时回 failed,不登记
     @Test
     fun dispatchWithFilesWithoutWordsAndFailedPrepare() {
-        verified = { false }
+        said = { null }
         val onlyFiles = runBlocking { executor().dispatchWithFiles("", "a.pdf") { "附件:a.pdf" } }
         assertEquals("started", onlyFiles.str("status"))
         assertEquals("a.pdf", ledger.all().single().title)
         val failed = runBlocking { executor().dispatchWithFiles("", "b.pdf") { null } }
         assertEquals(buildJsonObject { put("status", "failed"); put("reason", "files_not_ready") }, failed)
         assertEquals(1, ledger.all().size)
+    }
+
+    // 交给后台的是片段所在的整句:摘掉否定词改不了用户的意思
+    @Test
+    fun dispatchHandsOverTheWholeSentence() {
+        val sentence = "不要删除那些照片，先帮我看看有多少张"
+        said = { f -> sentence.takeIf { f in it } }
+        assertEquals("started", dispatch("删除那些照片").str("status"))
+        assertEquals(sentence, port.dispatched.single().words)
+        assertEquals(sentence, ledger.all().single().words)
+    }
+
+    @Test
+    fun addAndAnswerHandOverTheWholeSentence() {
+        dispatch()
+        val sentence = "不是这家，换成楼下那家"
+        said = { f -> sentence.takeIf { f in it } }
+        run(DeskTools.ADD, "task_id" to "t1", "words" to "换成楼下那家")
+        run(DeskTools.ANSWER, "task_id" to "t1", "words" to "楼下那家")
+        assertEquals(listOf("t1" to sentence), port.steered)
+        assertEquals(listOf("t1" to sentence), port.answered)
+    }
+
+    // 一句话办两件事:两件都带整句,不因为原话相同被当成重复;同一件再派一次才算重复
+    @Test
+    fun oneSentenceCanStartTwoTasks() {
+        val sentence = "帮我订日料,再查汇率"
+        said = { f -> sentence.takeIf { f in it } }
+        val first = run(DeskTools.DISPATCH, "words" to "帮我订日料", "title" to "订日料")
+        val second = run(DeskTools.DISPATCH, "words" to "再查汇率", "title" to "查汇率")
+        assertEquals(listOf("started", "started"), listOf(first.str("status"), second.str("status")))
+        assertEquals(listOf(sentence, sentence), port.dispatched.map { it.words })
+        val again = run(DeskTools.DISPATCH, "words" to "再查汇率", "title" to "查汇率")
+        assertEquals(buildJsonObject { put("status", "already_dispatched"); put("task_id", "t2") }, again)
+    }
+
+    // 取消也要用户这一轮的原话:没带、或只是之前说过的,都不停
+    @Test
+    fun cancelNeedsTheCurrentTurnsWords() {
+        dispatch()
+        val rejected = buildJsonObject { put("status", "rejected"); put("reason", "words_not_verified") }
+        assertEquals(rejected, run(DeskTools.CANCEL, "task_id" to "t1"))
+        saidNow = { null }
+        assertEquals(rejected, run(DeskTools.CANCEL, "task_id" to "t1", "words" to "别订了"))
+        assertTrue(port.cancelled.isEmpty())
+        saidNow = { it }
+        assertEquals(buildJsonObject { put("status", "ok") }, run(DeskTools.CANCEL, "task_id" to "t1", "words" to "别订了"))
+        assertEquals(listOf("t1"), port.cancelled)
+    }
+
+    // 不是用户开口的一轮(汇报):什么原话都不认,四个工具都不动后台
+    @Test
+    fun noWordsAreAcceptedOnAReportTurn() {
+        dispatch()
+        val none = executor(DeskWords.None)
+        val rejected = buildJsonObject { put("status", "rejected"); put("reason", "words_not_verified") }
+        runBlocking {
+            assertEquals(rejected, none.execute(DeskTools.DISPATCH, args("words" to "帮我订明天的会议室", "title" to "x")))
+            assertEquals(rejected, none.execute(DeskTools.ADD, args("task_id" to "t1", "words" to "顺便订午饭")))
+            assertEquals(rejected, none.execute(DeskTools.ANSWER, args("task_id" to "t1", "words" to "计算器")))
+            assertEquals(rejected, none.execute(DeskTools.CANCEL, args("task_id" to "t1", "words" to "别订了")))
+            assertEquals(rejected, none.dispatchWithFiles("看看这份合同", "x") { "看看这份合同" })
+        }
+        assertEquals(1, port.dispatched.size)
+        assertTrue(port.steered.isEmpty() && port.answered.isEmpty() && port.cancelled.isEmpty() && port.withFiles.isEmpty())
     }
 }
