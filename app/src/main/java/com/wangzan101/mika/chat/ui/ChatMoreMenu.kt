@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -50,12 +51,16 @@ internal fun ChatMoreMenu(
     onRecords: () -> Unit,
     onTasks: () -> Unit,
     onCallSettings: () -> Unit,
+    /** 放在顶栏共用的玻璃块里:只画图标,不自带底。 */
+    bare: Boolean = false,
 ) {
     val c = MikaTheme.colors
     var open by remember { mutableStateOf(false) }
     val label = stringResource(R.string.more)
     Box {
-        GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
+        if (bare) {
+            TopBarIcon(MikaIcons.More, label, "chat-more") { open = true }
+        } else GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
             Box(
                 Modifier.fillMaxSize().clip(CircleShape).clickable(onClickLabel = label) { open = true }.testTag("chat-more"),
                 contentAlignment = Alignment.Center,
@@ -68,6 +73,33 @@ internal fun ChatMoreMenu(
             MenuRow(R.string.voicecall_records, MikaIcons.Clock, "chat-menu-records") { open = false; onRecords() }
             MenuRow(R.string.chat_menu_tasks, MikaIcons.ListChecks, "chat-menu-tasks") { open = false; onTasks() }
             MenuRow(R.string.voicecall_settings, MikaIcons.Handset, "chat-menu-call-settings") { open = false; onCallSettings() }
+        }
+    }
+}
+
+/** 顶栏玻璃块里的一个图标:没有自己的底,按下只有水波。 */
+@Composable
+internal fun TopBarIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    tag: String,
+    enabled: Boolean = true,
+    badge: Boolean = false,
+    onClick: () -> Unit,
+) {
+    val c = MikaTheme.colors
+    Box(
+        Modifier.size(width = 44.dp, height = MikaSize.IconButton + 4.dp).clip(CircleShape)
+            .clickable(enabled = enabled, role = androidx.compose.ui.semantics.Role.Button, onClickLabel = label, onClick = onClick)
+            .testTag(tag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, label, Modifier.size(MikaSize.Icon), tint = if (enabled) c.ink else c.ink3)
+        if (badge) {
+            Box(
+                Modifier.align(Alignment.TopEnd).padding(top = 9.dp, end = 9.dp).size(8.dp)
+                    .background(c.bg, CircleShape).padding(1.dp).background(c.accent, CircleShape),
+            )
         }
     }
 }

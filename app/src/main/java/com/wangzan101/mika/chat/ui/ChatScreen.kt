@@ -468,43 +468,45 @@ fun ChatScreen(
         // 状态栏和顶栏后面从页面底色淡出到透明:往上滚的内容不和时间、电量叠在一起
         val topFade = MikaTheme.colors.bg.let { bg -> remember(bg) { Brush.verticalGradient(0f to bg, 0.4f to bg, 1f to bg.copy(alpha = 0f)) } }
         Column(Modifier.behindMenu(menuOpen) { lift.value }.background(topFade).onSizeChanged { topHeight = it.height }) {
-            // 悬浮玻璃三件套:菜单 / 标题 / 新建,各自一小块磨砂玻璃,不铺一整条
+            // 悬浮玻璃三块:左组(菜单、新对话) / 标题 / 右组(通话、更多),不铺一整条
             Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
-                Row(
+                // 标题按整行居中,不跟着两边挤
+                Box(
                     Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    if (!adaptive.hasNavigation || screenDocked) GlassSurface(modifier = Modifier.size(MikaSize.IconButton), backdrop = backdrop, shape = CircleShape) {
-                        Box(
-                            Modifier.fillMaxSize().clip(CircleShape)
-                                .clickable(onClickLabel = stringResource(R.string.chat_menu), onClick = onOpenDrawer),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            DirectionalIcon(MikaIcons.Menu, stringResource(R.string.chat_menu), Modifier.size(MikaSize.Icon), tint = c.ink)
-                            // 别的对话里还有任务在跑(并行时):右上角一个小圆点,侧栏「进行中」里能切过去
-                            if (others.isNotEmpty()) {
-                                Box(
-                                    Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 7.dp).size(8.dp)
-                                        .background(c.bg, CircleShape).padding(1.dp).background(c.accent, CircleShape),
-                                )
+                    // 左右各一块玻璃,组里几个图标共用这一块底:左边菜单 + 新对话,右边通话 + 更多
+                    GlassSurface(backdrop = backdrop, modifier = Modifier.align(Alignment.CenterStart)) {
+                        Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // 别的对话里还有任务在跑(并行时):菜单右上角一个小圆点,侧栏「进行中」里能切过去
+                            if (!adaptive.hasNavigation || screenDocked) {
+                                TopBarIcon(MikaIcons.Menu, stringResource(R.string.chat_menu), "chat-menu", badge = others.isNotEmpty(), onClick = onOpenDrawer)
                             }
+                            TopBarIcon(MikaIcons.New, stringResource(R.string.chat_new), "chat-new", enabled = vm.canSwitch()) { vm.newConversation() }
                         }
                     }
-                    GlassSurface(backdrop = backdrop) {
+                    GlassSurface(backdrop = backdrop, modifier = Modifier.align(Alignment.Center)) {
                         Row(Modifier.clickable(role = Role.Button, onClickLabel = stringResource(R.string.chat_usage_title)) { showUsage = true }
-                            .testTag("chat-usage-title").padding(horizontal = 14.dp, vertical = 8.dp),
+                            .testTag("chat-usage-title").height(MikaSize.IconButton + 4.dp).padding(horizontal = 16.dp),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(ChatCopy.APP_TITLE, style = MikaType.Title.copy(fontWeight = WordmarkWeight), color = c.ink, maxLines = 1)
                         }
                     }
-                    ChatMoreMenu(
-                        backdrop, canSwitch = vm.canSwitch(),
-                        onNew = { vm.newConversation() },
-                        onRecords = { showRecords = true },
-                        onTasks = { showTasks = true },
-                        onCallSettings = openCallSettings,
-                    )
+                    GlassSurface(backdrop = backdrop, modifier = Modifier.align(Alignment.CenterEnd)) {
+                        Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // 语音通话是整段对话的事,入口放顶栏,不挤在输入框里
+                            if (onVoiceCall != null) {
+                                TopBarIcon(MikaIcons.Handset, stringResource(R.string.voicecall_menu), "chat-call", onClick = onVoiceCall)
+                            }
+                            ChatMoreMenu(
+                                backdrop, canSwitch = vm.canSwitch(),
+                                onNew = { vm.newConversation() },
+                                onRecords = { showRecords = true },
+                                onTasks = { showTasks = true },
+                                onCallSettings = openCallSettings,
+                                bare = true,
+                            )
+                        }
+                    }
                 }
                 if (currentProject != null) {
                     Row(
@@ -569,7 +571,6 @@ fun ChatScreen(
                 vm.send(text, check)
             },
             onPickSpeech = openSpeechModel,
-            onVoiceCall = onVoiceCall,
             steerTarget = null,
             onVoiceHolding = { voiceHolding = it },
             editRequest = editRequest,
