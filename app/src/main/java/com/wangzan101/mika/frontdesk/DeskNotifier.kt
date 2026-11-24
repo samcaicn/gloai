@@ -19,6 +19,7 @@ import com.wangzan101.mika.task.TaskService
 import com.wangzan101.mika.ui.MarkdownModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 /** 一条要发出去的前台通知:点开进 [conversationId];[needsYou] 为 true 时走「需要你处理」频道。 */
 data class DeskNotice(val conversationId: String, val title: String, val text: String, val needsYou: Boolean)
@@ -26,7 +27,9 @@ data class DeskNotice(val conversationId: String, val title: String, val text: S
 /**
  * 没有入口在线时前台的兜底:把这条汇报作为一行前台回话(`status = desk_report`)写回会话;哪些再发一条通知由
  * [ReportPolicy.notifies] 定(收尾了的、前置条件不满足的发;开始、排队、进度不发;要回答、确认、接管的由任务自己那条
- * 带按钮的通知提醒,这里不再发)。前台正跟着的那次运行收尾时任务不再自己发「任务完成」([DeskRegistry.reportsEnding]),
+ * 带按钮的通知提醒,这里不再发)。
+ * 写哪些行:排队不写;开始、要你处理、收尾各写一行;进度不另起行,并进这件任务最近那行开始或进度,只留最新一句
+ * (中间隔了要你处理的行,就另起一行再往里并),会话里不会一条条堆进度。前台正跟着的那次运行收尾时任务不再自己发「任务完成」([DeskRegistry.reportsEnding]),
  * 所以一件任务办完只有这一条。
  * 只有这条会话没有入口接着时才会走到这里(用户没在看它),所以不管 Mika 在不在前台都发。
  */
@@ -34,14 +37,32 @@ class DeskNotifier(
     private val conversations: ConversationStore,
     private val notify: (DeskNotice) -> Unit,
 ) : DeskSink {
+    /** 每件任务(按会话)眼下能往里并进度的那一行的编号;别的事件一来就不再往那行并。 */
+    private val progressRows = HashMap<Pair<String, String>, String>()
+
     override suspend fun record(conversationId: String, report: DeskReport) {
-        val line = line(report.event)
-        val turn = Turn(userText = "", outcome = tr(R.string.desk_report_line, report.title, line), status = STATUS,
-            deskTasks = listOf(report.event.taskId))
-        withContext(Dispatchers.IO) { conversations.append(conversationId, turn) }
-        // 开始、排队、进度只写回会话;哪些发通知由 ReportPolicy 定
-        if (!ReportPolicy.notifies(report.event)) return
-        val needsYou = report.event is DeskEvent.NeedsAnswer || report.event is DeskEvent.NeedsAction
+        val event = report.event
+        if (event is DeskEvent.Queued) return
+        val line = line(event)
+        val outcome = tr(R.string.desk_report_line, report.title, line)
+        val key = conversationId to event.taskId
+        withContext(Dispatchers.IO) {
+            val row = synchronized(progressRows) {
+                if (event is DeskEvent.Progress) progressRows[key] else null.also { progressRows -= key }
+            }
+            if (row != null && conversations.turns(conversationId).any { it.runId == row }) {
+                conversations.updateTurn(conversationId, row) { it.copy(outcome = outcome) }
+            } else {
+                val runId = if (event is DeskEvent.Started || event is DeskEvent.Progress) {
+                    (DeskTurn.RUN_PREFIX + UUID.randomUUID()).also { synchronized(progressRows) { progressRows[key] = it } }
+                } else null
+                conversations.append(conversationId, Turn(userText = "", outcome = outcome, status = STATUS, runId = runId,
+                    deskTasks = listOf(event.taskId)))
+            }
+        }
+        // 开始、进度只写回会话;哪些发通知由 ReportPolicy 定
+        if (!ReportPolicy.notifies(event)) return
+        val needsYou = event is DeskEvent.NeedsAnswer || event is DeskEvent.NeedsAction
         // 通知不渲染 Markdown:正文去掉记号;写回会话的那一行保留原文,聊天页照常渲染
         val text = MarkdownModel.toPlainText(line).ifBlank { line }
         notify(DeskNotice(conversationId, report.title, text, needsYou))

@@ -68,6 +68,24 @@ class DeskBrainTest {
     }
 
     @Test
+    fun seedMergesSameRoleNeighboursAndDropsALeadingAssistantMessage() = runBlocking {
+        val model = FakeModel()
+        val brain = LlmBrain(model, "rules", emptyList())
+        // 对话开头是后台写回的进展(只有结果、没有用户原话),中间有一轮用户说了话但没有回答
+        brain.seed(listOf(
+            Turn("", "任务开始了", "desk"),
+            Turn("订日料", "", "desk"),
+            Turn("七点的", "好，我让后面去订", "desk"),
+            Turn("", "订好了", "desk"),
+        ))
+        brain.reply("几点？", Recorder())
+        val messages = model.seen.single()
+        assertEquals(listOf(Role.User, Role.Assistant, Role.User), messages.map { it.role })
+        assertEquals(listOf("订日料\n七点的", "好，我让后面去订\n订好了", "几点？"), messages.map { it.text() })
+        assertEquals(Author.User, messages[0].author)
+    }
+
+    @Test
     fun seedAfterHistoryIsIgnored() = runBlocking {
         val model = FakeModel("你好")
         val brain = LlmBrain(model, "rules", emptyList())

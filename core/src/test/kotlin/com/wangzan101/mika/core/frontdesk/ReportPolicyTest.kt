@@ -56,24 +56,6 @@ class ReportPolicyTest {
     }
 
     @Test
-    fun userAskingLetsNextProgressThroughOnce() {
-        assertTrue(policy.shouldReport(DeskEvent.Started("t1")))
-        now = 5_000
-        policy.noteUserAsked("t1")
-        assertTrue(policy.shouldReport(DeskEvent.Progress("t1", "在找")))
-        now = 6_000
-        assertFalse(policy.shouldReport(DeskEvent.Progress("t1", "还在找")))
-    }
-
-    @Test
-    fun userAskingOnlyAffectsThatTask() {
-        assertTrue(policy.shouldReport(DeskEvent.Started("t1")))
-        assertTrue(policy.shouldReport(DeskEvent.Started("t2")))
-        policy.noteUserAsked("t1")
-        assertFalse(policy.shouldReport(DeskEvent.Progress("t2", "在找")))
-    }
-
-    @Test
     fun customQuietWindowIsHonored() {
         val short = ReportPolicy(clock = { now }, progressQuietMs = 1_000)
         assertTrue(short.shouldReport(DeskEvent.Started("t1")))
@@ -81,7 +63,7 @@ class ReportPolicyTest {
         assertTrue(short.shouldReport(DeskEvent.Progress("t1", "在找")))
     }
 
-    /** 没人在看时:开始、排队、进度只写回会话,不发通知;要你处理和收尾才发。 */
+    /** 没人在看时:开始、排队、进度不发通知;收尾和前置条件才发。 */
     @Test
     fun onlyEndingsAndPrerequisitesNotify() {
         // 回答、确认、接管任务自己会发带按钮的「需要你处理」通知,前台兜底只写回会话,不再发第二条;

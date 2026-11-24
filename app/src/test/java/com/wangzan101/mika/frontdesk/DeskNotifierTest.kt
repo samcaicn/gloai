@@ -76,16 +76,37 @@ class DeskNotifierTest {
         assertEquals(events.size, lines.toSet().size)
     }
 
-    // 排队的那件轮到它开始(或刚派出就排队)时页面不在:写回会话,但不发通知,免得前台念叨。
-    @Test fun startAndQueueAreWrittenBackWithoutANotification() = runBlocking {
+    // 页面不在时:排队不写;开始写一行(不发通知);之后的进度都并进那一行,只留最新的一句,不在会话里一条条堆。
+    @Test fun queueWritesNothingAndProgressCollapsesIntoTheStartedRow() = runBlocking {
         val store = ConversationStore(tmp.newFolder())
         val notices = mutableListOf<DeskNotice>()
         val notifier = DeskNotifier(store) { notices += it }
         notifier.record("p", DeskReport(DeskEvent.Queued("c1", 1), "查天气"))
+        assertTrue(store.turns("p").isEmpty())
         notifier.record("p", DeskReport(DeskEvent.Started("c1"), "查天气"))
         notifier.record("p", DeskReport(DeskEvent.Progress("c1", "打开天气"), "查天气"))
-        assertEquals(3, store.turns("p").count { it.status == DeskNotifier.STATUS })
+        notifier.record("p", DeskReport(DeskEvent.Progress("c1", "看明天的预报"), "查天气"))
+        val rows = store.turns("p").filter { it.status == DeskNotifier.STATUS }
+        assertEquals(1, rows.size)
+        assertTrue(rows.single().outcome, rows.single().outcome.contains("看明天的预报"))
+        assertFalse(rows.single().outcome, rows.single().outcome.contains("打开天气"))
         assertTrue(notices.isEmpty())
+    }
+
+    // 要你回答之后又有进度:问题那行留着,进度另起一行再往里并;收尾照常另写一行。
+    @Test fun progressAfterAQuestionStartsAFreshRow() = runBlocking {
+        val store = ConversationStore(tmp.newFolder())
+        val notifier = DeskNotifier(store) { }
+        notifier.record("p", DeskReport(DeskEvent.Started("c1"), "订票"))
+        notifier.record("p", DeskReport(DeskEvent.NeedsAnswer("c1", "要几点的车?", null), "订票"))
+        notifier.record("p", DeskReport(DeskEvent.Progress("c1", "选八点的车"), "订票"))
+        notifier.record("p", DeskReport(DeskEvent.Progress("c1", "填乘车人"), "订票"))
+        notifier.record("p", DeskReport(DeskEvent.Succeeded("c1", "订好了"), "订票"))
+        val rows = store.turns("p").map { it.outcome }
+        assertEquals(4, rows.size)
+        assertTrue(rows[1], rows[1].contains("要几点的车?"))
+        assertTrue(rows[2], rows[2].contains("填乘车人"))
+        assertTrue(rows[3], rows[3].contains("订好了"))
     }
 
     // 通知正文是纯文字:任务回答里的 Markdown 记号不原样出现在通知里;写回会话的那行照旧保留(聊天页会渲染)。

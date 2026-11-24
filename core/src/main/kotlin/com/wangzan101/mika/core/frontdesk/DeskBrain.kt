@@ -84,14 +84,32 @@ class LlmBrain(
         run(ctx)
     }
 
+    /**
+     * 存下来的对话里有只有结果的行(后台写回的进展)、也有用户说了话没得到回答的行,直接摆进去会出现开头是助手、
+     * 或者两条同一方的话挨着,有的服务商会拒收。这里把挨着的同一方的话并成一条(有用户原话的算用户说的),
+     * 开头的助手话丢掉:模型看到的总是从用户开口、一来一回的历史。
+     */
     override fun seed(prior: List<Turn>) {
         synchronized(lock) {
             if (history.isNotEmpty()) return
+            val seeded = mutableListOf<Message>()
             for (turn in prior) {
-                if (turn.userText.isNotBlank()) add(Message(Role.User, listOf(Part.Text(turn.userText)), Author.User))
-                if (turn.outcome.isNotBlank()) add(Message(Role.Assistant, listOf(Part.Text(turn.outcome)), Author.Mika))
+                if (turn.userText.isNotBlank()) seeded.addText(Role.User, turn.userText, Author.User)
+                if (turn.outcome.isNotBlank() && seeded.isNotEmpty()) seeded.addText(Role.Assistant, turn.outcome, Author.Mika)
             }
+            seeded.forEach(::add)
         }
+    }
+
+    /** 和上一条是同一方的纯文字时并进去,否则另起一条。 */
+    private fun MutableList<Message>.addText(role: Role, text: String, author: Author) {
+        val last = lastOrNull()
+        if (last == null || last.role != role || last.parts.any { it !is Part.Text }) {
+            add(Message(role, listOf(Part.Text(text)), author))
+            return
+        }
+        val merged = last.parts.filterIsInstance<Part.Text>().joinToString("") { it.text } + "\n" + text
+        this[lastIndex] = Message(role, listOf(Part.Text(merged)), if (author == Author.User) Author.User else last.author)
     }
 
     override fun remember(assistantText: String) {
