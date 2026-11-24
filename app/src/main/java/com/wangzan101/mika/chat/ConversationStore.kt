@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.onStart
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -605,6 +608,35 @@ class ConversationStore(
     @Synchronized
     fun turns(conversationId: String): List<Turn> = records(conversationId).map { it.first }
 
+    private fun callsFile(id: String) = File(dir, "${file(id).name}.calls")
+    private val callsJson = Json { ignoreUnknownKeys = true }
+
+    /** 这个对话里的语音通话([ConversationCall]),按接通先后;没打过或读不懂时为空。 */
+    fun calls(conversationId: String): List<ConversationCall> = runCatching {
+        val f = callsFile(conversationId).takeIf { it.isFile } ?: return@runCatching emptyList()
+        callsJson.decodeFromString(ListSerializer(ConversationCall.serializer()), f.readText())
+    }.getOrDefault(emptyList())
+
+    /** 记下(或更新同一编号的)一通通话;和对话文件一起删。写完发一次 [changes]。 */
+    @Synchronized
+    fun recordCall(conversationId: String, call: ConversationCall) {
+        if (safe(conversationId) in deleted) return
+        val next = calls(conversationId).upsert(call)
+        dir.mkdirs()
+        val dest = callsFile(conversationId)
+        val tmp = File(dir, "${dest.name}.tmp")
+        val ok = runCatching {
+            tmp.writeText(callsJson.encodeToString(ListSerializer(ConversationCall.serializer()), next))
+            Files.move(tmp.toPath(), dest.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        }.isSuccess
+        if (ok) _changes.tryEmit(conversationId)
+    }
+
+    /** 这个对话的通话记录,写过就重读一次。 */
+    fun observeCalls(conversationId: String): Flow<List<ConversationCall>> =
+        changes.filter { it == conversationId }.map { calls(conversationId) }
+            .onStart { emit(calls(conversationId)) }.distinctUntilChanged().flowOn(Dispatchers.IO)
+
     /** 这个对话存过内容(有对话文件);空编号、读不到为 false。 */
     @Synchronized
     fun exists(conversationId: String): Boolean = file(conversationId).isFile
@@ -668,6 +700,7 @@ class ConversationStore(
                 remoteTaskId = field("remoteTaskId"),
                 outcomeSystemType = field("outcomeSystemType"),
                 deskTasks = (o["deskTasks"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull } ?: emptyList(),
+                callId = field("callId"),
             )
             turn to (o["files"] as? JsonArray).orEmpty().mapNotNull(::fileOf)
         }
@@ -758,6 +791,7 @@ class ConversationStore(
                 if (it.finishedReplies.any(String::isNotEmpty)) put("finishedReplies", JsonArray(it.finishedReplies.map(::JsonPrimitive)))
                 if (it.groups.isNotEmpty()) put("groups", JsonArray(it.groups.map(::JsonPrimitive)))
                 if (it.deskTasks.isNotEmpty()) put("deskTasks", JsonArray(it.deskTasks.map(::JsonPrimitive)))
+                it.callId?.let { c -> put("callId", c) }
                 it.keptPage?.let { h -> put("keptPage", h) }; it.keptPageClosed?.let { r -> put("keptPageClosed", r) }
                 it.atMs?.let { t -> put("atMs", t) }
                 if (it.audios.isNotEmpty()) put("audios", JsonArray(it.audios.map { a ->

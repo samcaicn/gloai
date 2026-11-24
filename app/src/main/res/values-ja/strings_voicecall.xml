@@ -6,7 +6,6 @@
     <string name="voicecall_task_done">完了</string>
     <string name="voicecall_task_open">実行の流れを見る</string>
     <string name="voicecall_task_screen">画面を見る</string>
-    <string name="voicecall_earlier">ここまでは以前の会話</string>
     <string name="voicecall_screen_close">画面を閉じる</string>
     <string name="voicecall_task_failed">完了できませんでした</string>
     <string name="voicecall_task_cancelled">キャンセルしました</string>
@@ -59,4 +58,17 @@
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">チャットに戻る</string>
     <string name="voicecall_desk_report">%1$sの件、%2$s</string>
+    <string name="voicecall_log_start">音声通話 · %1$s</string>
+    <string name="voicecall_log_end">通話終了 · %1$s</string>
+    <string name="voicecall_log_end_idle">通話終了 · %1$s · 無言が続いたため</string>
+    <string name="voicecall_log_silent">音声通話 · %1$s · 発言なし</string>
+    <string name="voicecall_log_live">通話中</string>
+    <string name="voicecall_more">その他</string>
+    <string name="voicecall_records">通話履歴</string>
+    <string name="voicecall_records_hint">タップするとチャットのその部分を表示します</string>
+    <string name="voicecall_records_empty">この会話の通話履歴はまだありません</string>
+    <string name="voicecall_records_silent">発言なし</string>
+    <string name="voicecall_settings">通話設定</string>
+    <string name="voicecall_bar">通話中 · 通話に戻る</string>
+    <string name="voicecall_last_call">前回の通話 · %1$s</string>
 </resources>

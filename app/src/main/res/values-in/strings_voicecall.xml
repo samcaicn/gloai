@@ -6,7 +6,6 @@
     <string name="voicecall_task_done">Selesai</string>
     <string name="voicecall_task_open">Lihat prosesnya</string>
     <string name="voicecall_task_screen">Lihat layar</string>
-    <string name="voicecall_earlier">Percakapan sebelumnya</string>
     <string name="voicecall_screen_close">Tutup layar</string>
     <string name="voicecall_task_failed">Tidak berhasil</string>
     <string name="voicecall_task_cancelled">Dibatalkan</string>
@@ -59,4 +58,17 @@
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">Kembali ke obrolan</string>
     <string name="voicecall_desk_report">Soal %1$s: %2$s</string>
+    <string name="voicecall_log_start">Panggilan suara · %1$s</string>
+    <string name="voicecall_log_end">Panggilan berakhir · %1$s</string>
+    <string name="voicecall_log_end_idle">Panggilan berakhir · %1$s · lama tidak ada suara</string>
+    <string name="voicecall_log_silent">Panggilan suara · %1$s · tidak bicara</string>
+    <string name="voicecall_log_live">Sedang menelepon</string>
+    <string name="voicecall_more">Lainnya</string>
+    <string name="voicecall_records">Riwayat panggilan</string>
+    <string name="voicecall_records_hint">Ketuk salah satu untuk melihatnya di chat</string>
+    <string name="voicecall_records_empty">Belum ada panggilan di percakapan ini</string>
+    <string name="voicecall_records_silent">Tidak bicara</string>
+    <string name="voicecall_settings">Setelan panggilan</string>
+    <string name="voicecall_bar">Sedang menelepon · kembali ke panggilan</string>
+    <string name="voicecall_last_call">Panggilan terakhir · %1$s</string>
 </resources>

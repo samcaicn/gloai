@@ -6,7 +6,6 @@
     <string name="voicecall_task_done">انجام شد</string>
     <string name="voicecall_task_open">دیدن روند کار</string>
     <string name="voicecall_task_screen">دیدن صفحه</string>
-    <string name="voicecall_earlier">گفتگوی قبلی</string>
     <string name="voicecall_screen_close">بستن صفحه</string>
     <string name="voicecall_task_failed">انجام نشد</string>
     <string name="voicecall_task_cancelled">لغو شد</string>
@@ -59,4 +58,17 @@
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">بازگشت به گفتگو</string>
     <string name="voicecall_desk_report">درباره‌ی %1$s: %2$s</string>
+    <string name="voicecall_log_start">تماس صوتی · %1$s</string>
+    <string name="voicecall_log_end">تماس پایان یافت · %1$s</string>
+    <string name="voicecall_log_end_idle">تماس پایان یافت · %1$s · سکوت طولانی</string>
+    <string name="voicecall_log_silent">تماس صوتی · %1$s · چیزی گفته نشد</string>
+    <string name="voicecall_log_live">در تماس</string>
+    <string name="voicecall_more">بیشتر</string>
+    <string name="voicecall_records">سابقه تماس‌ها</string>
+    <string name="voicecall_records_hint">روی یکی بزنید تا آن را در گفتگو ببینید</string>
+    <string name="voicecall_records_empty">هنوز تماسی در این گفتگو نیست</string>
+    <string name="voicecall_records_silent">چیزی گفته نشد</string>
+    <string name="voicecall_settings">تنظیمات تماس</string>
+    <string name="voicecall_bar">در تماس · بازگشت به تماس</string>
+    <string name="voicecall_last_call">آخرین تماس · %1$s</string>
 </resources>

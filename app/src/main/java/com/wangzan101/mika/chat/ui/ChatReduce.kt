@@ -145,7 +145,8 @@ internal object ChatReduce {
         // 前台写的一轮(聊天、通话里前台回的话,和它的汇报):画成前台的一行,派出的任务各画一张卡片
         if (DeskTurn.isDesk(t)) {
             val status = DeskTurn.failure(t)?.let { ExchangeStatus.Failed(it) } ?: ExchangeStatus.Done(t.outcome, null)
-            return Exchange(t.userText, emptyList(), status, live = false, runId = t.runId, deskReply = t.outcome, deskTasks = t.deskTasks)
+            return Exchange(t.userText, emptyList(), status, live = false, runId = t.runId, deskReply = t.outcome, deskTasks = t.deskTasks,
+                callId = t.callId, atMs = t.atMs)
         }
         val status = when (t.status) {
             "succeeded" -> answerParts(t.outcome).let { (a, e) -> ExchangeStatus.Done(a, e) }
@@ -166,7 +167,7 @@ internal object ChatReduce {
             memoryNotes = t.memoryNotes, usedMemory = t.usedMemory, skillNotes = t.skillNotes,
             audios = t.audios,
             photos = t.photos,
-            keptPage = t.keptPage, keptPageClosed = t.keptPageClosed,
+            keptPage = t.keptPage, keptPageClosed = t.keptPageClosed, atMs = t.atMs,
             steers = t.steers.mapIndexed { i, text ->
                 SteerNote("turn-$i", text, SteerState.Joined, t.interruptedReplies.getOrNull(i)?.takeIf(String::isNotEmpty),
                     t.finishedReplies.getOrNull(i)?.takeIf(String::isNotEmpty))

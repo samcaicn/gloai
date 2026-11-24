@@ -6,7 +6,6 @@
     <string name="voicecall_task_done">Tamamlandı</string>
     <string name="voicecall_task_open">İlerleyişi gör</string>
     <string name="voicecall_task_screen">Ekranı gör</string>
-    <string name="voicecall_earlier">Önceki konuşma</string>
     <string name="voicecall_screen_close">Ekranı kapat</string>
     <string name="voicecall_task_failed">Tamamlanamadı</string>
     <string name="voicecall_task_cancelled">İptal edildi</string>
@@ -59,4 +58,17 @@
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">Sohbete dön</string>
     <string name="voicecall_desk_report">%1$s hakkında: %2$s</string>
+    <string name="voicecall_log_start">Sesli arama · %1$s</string>
+    <string name="voicecall_log_end">Arama bitti · %1$s</string>
+    <string name="voicecall_log_end_idle">Arama bitti · %1$s · uzun süre sessiz</string>
+    <string name="voicecall_log_silent">Sesli arama · %1$s · konuşulmadı</string>
+    <string name="voicecall_log_live">Görüşmede</string>
+    <string name="voicecall_more">Diğer</string>
+    <string name="voicecall_records">Arama geçmişi</string>
+    <string name="voicecall_records_hint">Sohbette görmek için birine dokunun</string>
+    <string name="voicecall_records_empty">Bu sohbette henüz arama yok</string>
+    <string name="voicecall_records_silent">Konuşulmadı</string>
+    <string name="voicecall_settings">Arama ayarları</string>
+    <string name="voicecall_bar">Görüşmede · aramaya dön</string>
+    <string name="voicecall_last_call">Son arama · %1$s</string>
 </resources>

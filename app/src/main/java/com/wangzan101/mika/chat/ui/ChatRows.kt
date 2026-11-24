@@ -25,9 +25,11 @@ internal fun chatItemKeys(
     kept: KeptPage?,
     phoneSetupRow: Int?,
     hasBlocked: Boolean,
+    calls: CallMarks = CallMarks.None,
 ): List<String> = buildList {
-    if (exchanges.isEmpty() && !hasBlocked) add("empty")
+    if (exchanges.isEmpty() && !hasBlocked && calls.isEmpty()) add("empty")
     exchanges.forEachIndexed { index, ex ->
+        calls.before(index).forEach { add(it.key) }
         // 前台的一行:用户气泡、前台的话(没话时也占一行)、它派出的每件任务一张卡片
         if (ex.deskReply != null) {
             if (ex.goal.isNotEmpty()) add("u$index")
@@ -51,6 +53,7 @@ internal fun chatItemKeys(
         if (ex.runId != null && (ex.memoryNotes.isNotEmpty() || ex.skillNotes.isNotEmpty())) add("m$index")
         if (phoneSetupRow == index) add("ps$index")
     }
+    calls.tail.forEach { add(it.key) }
     if (phoneSetupRow == -1 && exchanges.isNotEmpty()) add("phone-setup")
     if (hasBlocked) add("blocked")
 }
@@ -64,7 +67,8 @@ internal fun chatItemCount(
     kept: KeptPage?,
     phoneSetupRow: Int?,
     hasBlocked: Boolean,
-): Int = chatItemKeys(exchanges, kept, phoneSetupRow, hasBlocked).size
+    calls: CallMarks = CallMarks.None,
+): Int = chatItemKeys(exchanges, kept, phoneSetupRow, hasBlocked, calls).size
 
 /** 第 [index] 轮下面任务 [taskId] 那张卡片的行 key。 */
 internal fun deskCardKey(index: Int, taskId: String) = "c$index-$taskId"
@@ -75,6 +79,7 @@ internal fun deskCardKey(exchanges: List<Exchange>, taskId: String): String? =
 
 /** 目标消息在 [chatItemKeys] 里的 key;轮次或消息已经不在了时返回 null。 */
 internal fun chatTargetKey(exchanges: List<Exchange>, target: ChatTarget): String? {
+    if (target is ChatTarget.Call) return callStartKey(target.callId)
     val turn = target.turnIndex
     val ex = exchanges.getOrNull(turn) ?: return null
     return when (target) {
@@ -87,6 +92,7 @@ internal fun chatTargetKey(exchanges: List<Exchange>, target: ChatTarget): Strin
         is ChatTarget.Reply -> turnStartKey(turn, ex)
         is ChatTarget.Files -> if (ex.files.isNotEmpty()) "f$turn" else turnStartKey(turn, ex)
         is ChatTarget.Status -> "r$turn"
+        is ChatTarget.Call -> callStartKey(target.callId)
     }
 }
 
@@ -104,4 +110,5 @@ private val ChatTarget.turnIndex: Int
         is ChatTarget.Reply -> this.turnIndex
         is ChatTarget.Files -> this.turnIndex
         is ChatTarget.Status -> this.turnIndex
+        is ChatTarget.Call -> -1
     }

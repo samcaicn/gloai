@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.IntOffset
 import com.wangzan101.mika.ui.theme.MikaTheme
 
 /** App 里的页面。对话是根页面,其余都从它(或从设置)进去,返回时回到进来的那一页。 */
-enum class Route { Chat, Personal, Settings, Memory, Plans, Browser, Files, Run, Source, PhoneSetup, Models, Usage, SpeechModel, VoiceModel, ImageModel, Welcome, ModelSetup, About, License, UpdateMirrors, Screens, Teach, Calls, Report, Playback, Persona, VoiceCatalog, RealtimeVoice, VoiceServices, CallMode }
+enum class Route { Chat, Personal, Settings, Memory, Plans, Browser, Files, Run, Source, PhoneSetup, Models, Usage, SpeechModel, VoiceModel, ImageModel, Welcome, ModelSetup, About, License, UpdateMirrors, Screens, Teach, Calls, Report, Playback, Persona, VoiceCatalog, RealtimeVoice, VoiceServices, CallMode, VoiceCall }
 
 /**
  * 页面栈:最底下永远是对话页。[push] 进一页,[back] 回上一页(已在对话页时返回 false,交给系统退出)。
@@ -67,6 +67,19 @@ class NavStack(initial: List<Route> = listOf(Route.Chat), fromDrawer: Boolean = 
             reopenDrawer = true
         }
         return true
+    }
+
+    /** 把 [route] 摆到最上面:它已在栈里就退回到它(上面的页面关掉),不在就压进去。 */
+    fun bringToTop(route: Route) {
+        if (route == Route.Chat) return reset()
+        val at = stack.indexOf(route)
+        stack = if (at < 0) stack + route else stack.take(at + 1)
+    }
+
+    /** [route] 离开页面栈:在最上面时就是退一页,压在下面时把它抽掉;不在栈里不动。 */
+    fun leave(route: Route) {
+        if (route == Route.Chat || route !in stack) return
+        if (current == route) back() else stack = stack - route
     }
 
     fun drawerReopened() {

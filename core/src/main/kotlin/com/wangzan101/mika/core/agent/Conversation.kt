@@ -49,6 +49,8 @@ data class Turn(
     val outcomeSystemType: String? = null,
     /** 前台这一轮派出去的后台任务(各自子对话的编号);没派或旧记录为空。只给前台和界面用,不进给模型的上文。 */
     val deskTasks: List<String> = emptyList(),
+    /** 这一轮是哪一通语音通话里说的(通话记录的编号);打字聊的为 null。只给界面画通话的起止线,不进给模型的上文。 */
+    val callId: String? = null,
 )
 
 object Conversation {

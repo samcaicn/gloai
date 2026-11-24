@@ -335,6 +335,10 @@ class ChatViewModel(
     fun openWorkflowConversation(conversationId: String) = chats.openWorkflowConversation(conversationId)
     fun openPersonalTask(conversationId: String) = chats.openPersonalTask(conversationId)
     fun openConversationAt(id: String, target: ChatTarget) = chats.openConversationAt(id, target)
+
+    /** 这个对话的语音通话记录(聊天页画通话起止线用);没有对话为空。 */
+    fun calls(conversationId: String?): kotlinx.coroutines.flow.Flow<List<com.wangzan101.mika.chat.ConversationCall>> =
+        conversationId?.let(store::observeCalls) ?: kotlinx.coroutines.flow.flowOf(emptyList())
     fun consumeJump(jump: ChatJump) = chats.consumeJump(jump)
     fun createProject(name: String): Result<Project>? = chats.createProject(name)
     fun renameProject(projectId: String, name: String): Result<Project>? = chats.renameProject(projectId, name)

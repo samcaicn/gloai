@@ -1,5 +1,6 @@
 package com.wangzan101.mika.voicecall
 
+import com.wangzan101.mika.chat.ConversationCall
 import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.Turn as ChatTurn
 import kotlinx.coroutines.CoroutineScope
@@ -17,6 +18,9 @@ import kotlinx.coroutines.withContext
  *
  * 装配:会话编排的用户/助手转写回调(只要 final)喂进来;[conversationId] 是发起这次通话
  * 的会话(从胶囊直开、没有发起会话时为 null,不写回);[appendTurn] 接对话存储的逐轮写入。
+ *
+ * 通话记录:接通时([onConnected])给会话记一条 [ConversationCall],结束时([close])补上挂断时刻、原因和有没有说上话;
+ * 写进会话的每一轮都带上 [callId],聊天页据此画通话的起止线。没接通的不记。
  */
 class VoiceCallTranscript(
     private val conversationId: () -> String?,
@@ -24,6 +28,10 @@ class VoiceCallTranscript(
     private val nowMillis: () -> Long = System::currentTimeMillis,
     /** 边说边存用的作用域(要比通话长寿,装配方给应用级的);null 时只在 [close] 写。 */
     private val writeScope: CoroutineScope? = null,
+    /** 这一通的编号,记在通话记录和每一轮上。 */
+    val callId: String = java.util.UUID.randomUUID().toString(),
+    /** 写一条通话记录(同编号的替换旧的)。 */
+    private val recordCall: suspend (conversationId: String, call: ConversationCall) -> Unit = { _, _ -> },
 ) {
     /** 一轮问答:用户问的、助手答的(多段按行拼)、问的时刻(毫秒)、这轮前台派出的任务编号。 */
     data class Turn(val question: String, val answer: String, val at: Long, val tasks: List<String> = emptyList())
@@ -39,6 +47,22 @@ class VoiceCallTranscript(
 
     /** [done] 里前这么多条已经写过(或不值得写、已跳过);写入协程和 [close] 都只往后推。 */
     @Volatile private var written = 0
+
+    /** 接通的时刻;没接通为 null。 */
+    private var connectedAt: Long? = null
+    private var startWrite: Job? = null
+
+    /** 接通了:记下接通的时刻(重连再接通不改),给会话记一条还没结束的通话。 */
+    fun onConnected(at: Long) {
+        val record = synchronized(lock) {
+            if (closed || connectedAt != null) return
+            connectedAt = at
+            ConversationCall(callId, at)
+        }
+        val id = conversationId() ?: return
+        val scope = writeScope ?: return
+        startWrite = scope.launch { withContext(NonCancellable) { recordCall(id, record) } }
+    }
 
     /** 用户说了一段完整的话:闭合上一轮,开新一轮。空白忽略。 */
     fun onUser(text: String) {
@@ -99,23 +123,28 @@ class VoiceCallTranscript(
      * 有问无答、也没派任务的轮次(没等来回答就挂了)也不写——空 outcome 的聊天气泡没有意义;
      * 派了任务的轮次照写,带上任务编号。
      */
-    suspend fun close() {
+    suspend fun close(endReason: String = ConversationCall.END_HANGUP) {
         val (writing, id) = synchronized(lock) {
             if (closed) return
             closed = true
             queue.close()
             writer to conversationId()
         }
+        val endedAt = nowMillis()
         withContext(NonCancellable) {
             // 先等写入协程把交给它的写完(它被撤了也不要紧:没写的下面接着写),再补其余的
             writing?.join()
             if (id == null) return@withContext
             turns().drop(written).filter(::worthWriting).forEach { appendTurn(id, chatTurn(it)) }
+            // 接通过的才记:先等接通那条写完,再补上结束
+            val start = connectedAt ?: return@withContext
+            startWrite?.join()
+            recordCall(id, ConversationCall(callId, start, endedAt, endReason, spoke = turns().any(::worthWriting)))
         }
     }
 
     private fun worthWriting(turn: Turn) = turn.question.isNotBlank() && (turn.answer.isNotBlank() || turn.tasks.isNotEmpty())
 
     private fun chatTurn(turn: Turn) =
-        ChatTurn(userText = turn.question, outcome = turn.answer, status = DeskTurn.STATUS, atMs = turn.at, deskTasks = turn.tasks)
+        ChatTurn(userText = turn.question, outcome = turn.answer, status = DeskTurn.STATUS, atMs = turn.at, deskTasks = turn.tasks, callId = callId)
 }

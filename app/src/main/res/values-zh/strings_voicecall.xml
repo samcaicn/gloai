@@ -6,7 +6,6 @@
     <string name="voicecall_task_done">已完成</string>
     <string name="voicecall_task_open">查看运行过程</string>
     <string name="voicecall_task_screen">看画面</string>
-    <string name="voicecall_earlier">以上是之前的对话</string>
     <string name="voicecall_screen_close">关掉画面</string>
     <string name="voicecall_task_failed">没办成</string>
     <string name="voicecall_task_cancelled">已取消</string>
@@ -59,4 +58,17 @@
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">回到聊天</string>
     <string name="voicecall_desk_report">%1$s那件，%2$s</string>
+    <string name="voicecall_log_start">语音通话 · %1$s</string>
+    <string name="voicecall_log_end">通话结束 · %1$s</string>
+    <string name="voicecall_log_end_idle">通话结束 · %1$s · 太久没说话</string>
+    <string name="voicecall_log_silent">语音通话 · %1$s · 没有说话</string>
+    <string name="voicecall_log_live">通话中</string>
+    <string name="voicecall_more">更多</string>
+    <string name="voicecall_records">通话记录</string>
+    <string name="voicecall_records_hint">点一条，到聊天里看那段</string>
+    <string name="voicecall_records_empty">这个对话还没有通话记录</string>
+    <string name="voicecall_records_silent">没有说话</string>
+    <string name="voicecall_settings">通话设置</string>
+    <string name="voicecall_bar">通话中 · 回到通话</string>
+    <string name="voicecall_last_call">上次通话 · %1$s</string>
 </resources>

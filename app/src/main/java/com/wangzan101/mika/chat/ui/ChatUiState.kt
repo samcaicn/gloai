@@ -146,6 +146,10 @@ data class Exchange(
     val deskTasks: List<String> = emptyList(),
     /** 前台这一轮给已有任务补话、回话或取消时的一枚小标签(只在这次打开时显示,不落盘)。 */
     val deskTool: String? = null,
+    /** 这一轮是哪一通语音通话里说的([com.wangzan101.mika.core.agent.Turn.callId]);打字聊的为 null。 */
+    val callId: String? = null,
+    /** 存下这一轮的时刻;还没存的(正在进行的)为 null。没说话的通话按它排进对话里。 */
+    val atMs: Long? = null,
 )
 
 /**

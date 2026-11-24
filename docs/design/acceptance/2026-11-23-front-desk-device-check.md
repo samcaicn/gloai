@@ -47,7 +47,7 @@ adb shell am instrument -w -r -e class com.wangzan101.mika.acceptance.LiveRunTes
 
 ## 二、语音通话 · 标准模式(听→想→说)
 
-**待真机(需要主人在场开口)。** 真机上没法替主人说话;下面的链路已由单测覆盖(`VoiceDeskBridgeTest`:派单立刻返回、两件同时跑、后台要回答时在通话里问并转达、终态只说一次、挂断后交给兜底;`CascadeVoiceSessionTest`、`VoiceCallSessionTest`:插话只打断播放;界面由 `VoiceCallOverlayTest` 12/12 在真机上验过)。
+**待真机(需要主人在场开口)。** 真机上没法替主人说话;下面的链路已由单测覆盖(`VoiceDeskBridgeTest`:派单立刻返回、两件同时跑、后台要回答时在通话里问并转达、终态只说一次、挂断后交给兜底;`CascadeVoiceSessionTest`、`VoiceCallSessionTest`:插话只打断播放;界面由 `VoiceCallPageTest` 12/12 在真机上验过)。
 
 步骤:
 1. 先在「设置 › 模型 › 语音 › 通话方式」里选「标准」(听、想、说各用选好的模型),再从聊天页输入栏旁的听筒按钮进通话页,等「已连接」。

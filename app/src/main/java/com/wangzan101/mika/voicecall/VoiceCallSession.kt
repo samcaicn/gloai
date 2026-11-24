@@ -42,7 +42,15 @@ sealed interface VoiceCallState {
 enum class VoiceCallTurn { Listening, Thinking, Speaking }
 
 /** [Idle]:通话里好一阵没有新内容(谁都没说话、没打字、任务也没进展),到了设置的时长自动挂断。 */
-enum class EndReason { Hangup, Notification, IncomingCall, Idle, Background }
+enum class EndReason { Hangup, Notification, IncomingCall, Idle, Background;
+
+    /** 记进通话记录([com.wangzan101.mika.chat.ConversationCall.endReason])的线上值。 */
+    val wire: String get() = when (this) {
+        Idle -> com.wangzan101.mika.chat.ConversationCall.END_IDLE
+        Hangup -> com.wangzan101.mika.chat.ConversationCall.END_HANGUP
+        else -> name.lowercase()
+    }
+}
 
 enum class VoiceCallError { Auth, ConnectTimeout, Disconnected, RateLimited, Provider, MicSilent, AudioFocus, Playback, Busy }
 

@@ -5,10 +5,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -58,7 +61,6 @@ import com.wangzan101.mika.voicecall.VoiceDeskBridge
 import com.wangzan101.mika.voicecall.deskReportSpeech
 import com.wangzan101.mika.voicecall.typedDeskResult
 import kotlinx.coroutines.CoroutineScope
-import com.wangzan101.mika.ui.MarkdownModel
 import kotlinx.coroutines.CoroutineStart
 import android.graphics.Bitmap
 import com.wangzan101.mika.voicecall.VoiceCallTaskLink
@@ -87,8 +89,12 @@ class VoiceCallHolder(
     val feed: VoiceCallFeed,
     val screens: StateFlow<Set<String>> = MutableStateFlow(emptySet()),
     val frames: (String) -> StateFlow<Bitmap?>? = { null },
+    /** 这一通接着的会话:通话记录、跳回聊天都按它。 */
+    val conversationId: String = "",
 ) {
-    var visible by mutableStateOf(true)
+    /** 这一通的编号(通话记录里的那条)。 */
+    val callId: String get() = transcript.callId
+
     /** 通话页上正在看哪件任务的画面(任务会话编号);收起再亮回来还接着看。 */
     var watching by mutableStateOf<String?>(null)
 }
@@ -106,13 +112,22 @@ sealed interface VoiceCallStage {
  */
 @Stable
 class VoiceCallController(
-    private val deps: VoiceCallDeps,
+    internal val deps: VoiceCallDeps,
     private val micGranted: () -> Boolean,
     private val micPermanentlyDenied: () -> Boolean,
     private val markMicDenied: () -> Unit,
 ) {
     var stage by mutableStateOf<VoiceCallStage?>(null)
         private set
+
+    /** 把通话页摆到最上面(它在页面栈里就退回到它,不在就压进去);宿主接导航。 */
+    var showPage: () -> Unit = {}
+    /** 通话页离开页面栈(它在最上面时退一页);宿主接导航。 */
+    var hidePage: () -> Unit = {}
+
+    /** 有一通没结束的通话(在通、在连、出错等重试都算):其他页面顶上据此显示「通话中 · 回到通话」。 */
+    val live: VoiceCallHolder?
+        get() = (stage as? VoiceCallStage.InCall)?.call?.takeIf { it.session.state.value !is VoiceCallState.Ended }
 
     @Volatile private var currentRealtime: CallRealtimeSession? = null
     private var callScope: CoroutineScope? = null
@@ -146,7 +161,7 @@ class VoiceCallController(
     fun start() {
         val current = stage
         if (current is VoiceCallStage.InCall && current.call.session.state.value !is VoiceCallState.Ended) {
-            current.call.visible = true
+            showPage()
             return
         }
         if (standard()) {
@@ -200,11 +215,12 @@ class VoiceCallController(
         if (current is VoiceCallStage.Gate && (current.stage == VoiceCallGateStage.NeedPermission || current.stage == VoiceCallGateStage.PermissionDenied) && micGranted()) openCall()
     }
 
-    /** 收起:通话还活着就只藏页面(前台服务保活);失败不重试的落 Ended 收场;已结束的直接拆掉。 */
+    /** 收起:通话页退出页面栈。通话还活着就接着通(前台服务保活);失败不重试的落 Ended 收场;已结束的直接拆掉。 */
     fun collapse() {
         when (val current = stage) {
             is VoiceCallStage.Gate -> stage = null
             is VoiceCallStage.InCall -> {
+                hidePage()
                 when (current.call.session.state.value) {
                     is VoiceCallState.Ended -> {
                         stage = null
@@ -216,7 +232,7 @@ class VoiceCallController(
                         stage = null
                         cancelCallScope()
                     }
-                    else -> current.call.visible = false
+                    else -> Unit
                 }
             }
             null -> Unit
@@ -224,20 +240,12 @@ class VoiceCallController(
     }
 
     /**
-     * 点了通话页上的任务卡:通话收成小球接着通,打开那件任务的「运行过程」,从那里返回再亮回通话页;
+     * 点了通话页上的任务卡:通话接着通,在通话页上面打开那件任务的「运行过程」,从那里返回就回到通话页;
      * 还没开跑(排队中)、找不到运行的,退回打开那件任务的会话。
      */
     fun openTask(taskId: String, phase: DeskTaskPhase) {
         val run = VoiceCallTaskLink.runFor(phase, deps.liveRun(taskId)) { deps.turns(taskId) }
-        collapse()
-        if (run == null) deps.openConversation(taskId) else deps.openRun(run, ::reshow)
-    }
-
-    /** 从通话页点出去的页面返回了:通话还在就把通话页亮回来;已经结束的不再打开。 */
-    fun reshow() {
-        val current = stage as? VoiceCallStage.InCall ?: return
-        val state = current.call.session.state.value
-        if (state !is VoiceCallState.Ended && state !is VoiceCallState.Failed) current.call.visible = true
+        if (run == null) deps.openConversation(taskId) else deps.openRun(run)
     }
 
     /** 宿主要离开了:没终的通话挂断,转写在 close 里 NonCancellable 写完。 */
@@ -273,10 +281,11 @@ class VoiceCallController(
             conversationId = { conversation },
             appendTurn = deps.appendTurn,
             writeScope = deps.appScope,
+            recordCall = deps.recordCall,
         )
         val desk = deps.desks.desk(conversation)
-        // 再打开通话时先摆上这条会话已有的内容(打字聊的、之前通话说的、派过的任务),新的接在分隔线下面
-        val feed = VoiceCallFeed().apply { seed(deps.turns(conversation), desk.active.value, MarkdownModel::toPlainText) }
+        // 通话页每次从空白开始,只放这一通的;整条对话在聊天页
+        val feed = VoiceCallFeed()
         val echoWindow = RingBuffer<String>(ECHO_WINDOW_CAPACITY_CHARS)
         val gate = VoiceCallRequest(echoWindow)
         val executor = deps.desks.executor(conversation, gate)
@@ -383,7 +392,10 @@ class VoiceCallController(
         val busy = desk.active
             .map { views -> views.any { it.state == DeskTaskPhase.Running || it.state == DeskTaskPhase.Queued } }
             .stateIn(callScope, SharingStarted.Eagerly, false)
-        stage = VoiceCallStage.InCall(VoiceCallHolder(session, busy, VoiceCallAudioRoute(deps.context), transcript, feed, deps.screens, deps.frames))
+        stage = VoiceCallStage.InCall(
+            VoiceCallHolder(session, busy, VoiceCallAudioRoute(deps.context), transcript, feed, deps.screens, deps.frames, conversation),
+        )
+        showPage()
     }
 
     /** 派单结果里开始或排上队的任务编号;别的结果为 null。 */
@@ -418,13 +430,21 @@ class VoiceCallDeps(
     /** 一条会话已有的轮次,标准模式开场时给思考模型接上前文。 */
     val turns: (String) -> List<ChatTurn>,
     val appendTurn: suspend (String, ChatTurn) -> Unit,
+    /** 给会话记一条通话记录(接通时一条,挂断时补上结束)。 */
+    val recordCall: suspend (String, com.wangzan101.mika.chat.ConversationCall) -> Unit = { _, _ -> },
     val attachService: (VoiceCallSession) -> Boolean,
     /** 前台此刻用的人格(称呼和人格层),每次接通时取一次。 */
     val persona: () -> DeskPersona = { DeskPersona() },
     /** 打开一条会话(点任务卡、那件任务还没有运行可看时进它的会话)。 */
     val openConversation: (String) -> Unit = {},
-    /** 打开一次运行的「运行过程」;从那页返回时调第二个参数(把通话页亮回来)。 */
-    val openRun: (runId: String, onBack: () -> Unit) -> Unit = { _, _ -> },
+    /** 在通话页上面打开一次运行的「运行过程」;从那页返回就回到通话页。 */
+    val openRun: (runId: String) -> Unit = {},
+    /** 一条会话的通话记录([com.wangzan101.mika.chat.ConversationCall]),写过就更新。 */
+    val calls: (String) -> kotlinx.coroutines.flow.Flow<List<com.wangzan101.mika.chat.ConversationCall>> = { kotlinx.coroutines.flow.flowOf(emptyList()) },
+    /** 到聊天页里那条会话、那一通开头的地方(通话记录里点一条)。 */
+    val openCallRecord: (conversationId: String, callId: String) -> Unit = { _, _ -> },
+    /** 打开「通话方式」(通话页右上角 ⋯ 里的通话设置)。 */
+    val openCallSettings: () -> Unit = {},
     /** 这件任务(会话编号)此刻在跑的那次运行;没在跑为 null。 */
     val liveRun: (String) -> String? = { null },
     /** 此刻有虚拟屏或网页的任务会话。 */
@@ -433,14 +453,11 @@ class VoiceCallDeps(
     val frames: (String) -> StateFlow<Bitmap?>? = { null },
 )
 
-/**
- * 通话页的宿主:跟着 [openSignal] 的变化开(或重新亮出)通话;门禁的三个按钮、权限回执、
- * 回前台重查都接好。通话页本身不感知前台服务在不在——保活是服务的事,页面只看会话状态。
- */
+/** 通话的控制器:宿主([VoiceCallHost])和通话页([VoiceCallScreen])共用这一个,放在导航外面。 */
 @Composable
-fun VoiceCallHost(deps: VoiceCallDeps, openSignal: Int, onGoConfigure: (VoiceCallGateStage) -> Unit) {
+fun rememberVoiceCallController(deps: VoiceCallDeps): VoiceCallController {
     val context = LocalContext.current
-    val controller = remember(deps) {
+    return remember(deps) {
         VoiceCallController(
             deps,
             micGranted = {
@@ -458,6 +475,26 @@ fun VoiceCallHost(deps: VoiceCallDeps, openSignal: Int, onGoConfigure: (VoiceCal
             },
         )
     }
+}
+
+/**
+ * 通话的宿主(放在导航外面,一直在):跟着 [openSignal] 的变化开(或回到)通话;门禁的三个按钮、权限回执、
+ * 回前台重查都接好。通话页本身是页面栈里的一页([VoiceCallScreen]),[showPage]/[hidePage] 接导航。
+ * 宿主不感知前台服务在不在——保活是服务的事,这里只看会话状态。
+ */
+@Composable
+fun VoiceCallHost(
+    controller: VoiceCallController,
+    openSignal: Int,
+    onGoConfigure: (VoiceCallGateStage) -> Unit,
+    showPage: () -> Unit,
+    hidePage: () -> Unit,
+) {
+    val context = LocalContext.current
+    SideEffect {
+        controller.showPage = showPage
+        controller.hidePage = hidePage
+    }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         controller.onPermissionResult(granted)
     }
@@ -465,42 +502,64 @@ fun VoiceCallHost(deps: VoiceCallDeps, openSignal: Int, onGoConfigure: (VoiceCal
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { controller.onResume() }
     DisposableEffect(controller) { onDispose { controller.teardown() } }
 
-    // 通话的状态推进:接通接管免提路由,终态恢复路由并批量写回转写(NonCancellable 在 close 内)
+    // 通话的状态推进:接通接管免提路由并记下这一通,终态恢复路由并写回转写和通话记录(NonCancellable 在 close 内)
     val call = (controller.stage as? VoiceCallStage.InCall)?.call
     LaunchedEffect(call) {
         if (call == null) return@LaunchedEffect
         call.session.state.collect { state ->
             when (state) {
-                is VoiceCallState.Active -> call.audioRoute.begin()
+                is VoiceCallState.Active -> {
+                    call.audioRoute.begin()
+                    call.transcript.onConnected(state.startedAt)
+                }
                 is VoiceCallState.Failed -> call.audioRoute.end()
                 is VoiceCallState.Ended -> {
                     call.audioRoute.end()
-                    call.transcript.close()
+                    call.transcript.close(state.reason.wire)
                 }
                 else -> Unit
             }
         }
     }
 
-    when (val stage = controller.stage) {
-        is VoiceCallStage.Gate -> VoiceCallGate(
-            stage.stage,
-            onRequestPermission = { permission.launch(Manifest.permission.RECORD_AUDIO) },
-            onOpenSettings = {
-                context.startActivity(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                )
-            },
-            onGoConfigure = {
-                controller.collapse()
-                onGoConfigure(stage.stage)
-            },
-            onCollapse = controller::collapse,
-        )
-        is VoiceCallStage.InCall -> if (stage.call.visible) {
-            VoiceCallOverlay(stage.call, controller::collapse) { controller.openTask(it.taskId, it.phase) }
-        }
-        null -> Unit
+    val gate = controller.stage as? VoiceCallStage.Gate ?: return
+    VoiceCallGate(
+        gate.stage,
+        onRequestPermission = { permission.launch(Manifest.permission.RECORD_AUDIO) },
+        onOpenSettings = {
+            context.startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        },
+        onGoConfigure = {
+            controller.collapse()
+            onGoConfigure(gate.stage)
+        },
+        onCollapse = controller::collapse,
+    )
+}
+
+/**
+ * 页面栈里的通话页:只放这一通。返回键、左上收起都是退一页(通话接着通,其他页顶上有「通话中」那条);
+ * 点任务卡在上面开「运行过程」,返回回到这里。没有通话可放(进程重建、通话已拆掉)时直接退出这一页,[onGone] 接导航。
+ */
+@Composable
+fun VoiceCallScreen(controller: VoiceCallController, onGone: () -> Unit) {
+    val call = (controller.stage as? VoiceCallStage.InCall)?.call
+    if (call == null) {
+        LaunchedEffect(Unit) { onGone() }
+        return
     }
+    BackHandler { controller.collapse() }
+    val deps = controller.deps
+    val calls by remember(call) { deps.calls(call.conversationId) }.collectAsState(emptyList())
+    VoiceCallPage(
+        call,
+        onCollapse = controller::collapse,
+        onOpenTask = { controller.openTask(it.taskId, it.phase) },
+        calls = calls,
+        onOpenRecord = { deps.openCallRecord(call.conversationId, it) },
+        onOpenSettings = deps.openCallSettings,
+    )
 }

@@ -553,7 +553,7 @@ Expected: all tasks `BUILD SUCCESSFUL`; translation check exits 0. Any failure i
 
 - [ ] **Step 5: Run the targeted Android regression set**
 
-Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.voice.ui.VoiceCatalogScreenTest,com.wangzan101.mika.voice.SystemTtsDeviceTest,com.wangzan101.mika.voice.ui.VoiceHoldTest,com.wangzan101.mika.voicecall.ui.VoiceCallOverlayTest,com.wangzan101.mika.settings.ui.models.ModelSetupScreenTest`  
+Run: `./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.wangzan101.mika.voice.ui.VoiceCatalogScreenTest,com.wangzan101.mika.voice.SystemTtsDeviceTest,com.wangzan101.mika.voice.ui.VoiceHoldTest,com.wangzan101.mika.voicecall.ui.VoiceCallPageTest,com.wangzan101.mika.settings.ui.models.ModelSetupScreenTest`  
 Expected: PASS on a real Android device. Record NOT RUN if no device is available; do not use emulator-only behavior to change implementation.
 
 - [ ] **Step 6: Perform the migration and protocol smoke matrix on the real test phone**

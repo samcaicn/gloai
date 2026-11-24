@@ -6,7 +6,6 @@
     <string name="voicecall_task_done">Готово</string>
     <string name="voicecall_task_open">Посмотреть ход выполнения</string>
     <string name="voicecall_task_screen">Смотреть экран</string>
-    <string name="voicecall_earlier">Ранее в этом разговоре</string>
     <string name="voicecall_screen_close">Закрыть экран</string>
     <string name="voicecall_task_failed">Не удалось выполнить</string>
     <string name="voicecall_task_cancelled">Отменено</string>
@@ -59,4 +58,17 @@
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">Вернуться в чат</string>
     <string name="voicecall_desk_report">По задаче «%1$s»: %2$s</string>
+    <string name="voicecall_log_start">Голосовой звонок · %1$s</string>
+    <string name="voicecall_log_end">Звонок завершён · %1$s</string>
+    <string name="voicecall_log_end_idle">Звонок завершён · %1$s · долгая тишина</string>
+    <string name="voicecall_log_silent">Голосовой звонок · %1$s · без слов</string>
+    <string name="voicecall_log_live">Идёт звонок</string>
+    <string name="voicecall_more">Ещё</string>
+    <string name="voicecall_records">История звонков</string>
+    <string name="voicecall_records_hint">Нажмите, чтобы увидеть его в чате</string>
+    <string name="voicecall_records_empty">В этом разговоре ещё не было звонков</string>
+    <string name="voicecall_records_silent">Без слов</string>
+    <string name="voicecall_settings">Настройки звонка</string>
+    <string name="voicecall_bar">Идёт звонок · вернуться к звонку</string>
+    <string name="voicecall_last_call">Прошлый звонок · %1$s</string>
 </resources>

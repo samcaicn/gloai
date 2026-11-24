@@ -167,6 +167,8 @@ fun ChatScreen(
         DeviceFileBrowser(vm, id) { deviceBrowserConversation = null }
     }
     val pendingJump by vm.jump.collectAsState()
+    val callLog by remember(ui.conversationId) { vm.calls(ui.conversationId) }.collectAsState(emptyList())
+    val calls = remember(ui.exchanges, callLog) { callMarks(ui.exchanges, callLog) }
     val others by vm.otherRunning.collectAsState()
     val keptAny by vm.keptPage.collectAsState()
     // 只管这个对话留下的那一页
@@ -258,10 +260,11 @@ fun ChatScreen(
     // 目标行直接由当前 UI 状态计算:layoutInfo 还是上一帧的测量结果,发送后立即读它会滚到旧的末尾。
     val last = ui.exchanges.lastOrNull()
     val setupRow = phoneSetupRow(phoneSetupNeed, ui.conversationId, ui.exchanges)
-    val rowCount = chatItemCount(ui.exchanges, kept, setupRow, hasBlocked = ui.blocked != null)
+    val rowCount = chatItemCount(ui.exchanges, kept, setupRow, hasBlocked = ui.blocked != null, calls)
     val canScrollForward by remember { derivedStateOf { listState.canScrollForward } }
     val showScrollToBottom = ui.exchanges.isNotEmpty() && !followingTail && canScrollForward
-    val scrollMarker = "${ui.conversationId}:${ui.exchanges.size}:${last?.steps?.size}:${last?.steers?.size}:${last?.status?.hashCode()}:${ui.blocked?.hashCode()}"
+    val scrollMarker = "${ui.conversationId}:${ui.exchanges.size}:${last?.steps?.size}:${last?.steers?.size}:${last?.status?.hashCode()}:${ui.blocked?.hashCode()}" +
+        ":${callLog.size}:${callLog.lastOrNull()?.endMs}"
     val jump = pendingJump?.takeIf { it.conversationId == ui.conversationId }
     // 目标行的高亮:只在目标还是当前对话时算。
     val highlightKey = cardFlash?.takeIf { it.conversationId == ui.conversationId }?.key ?: jumpHighlight
@@ -270,7 +273,7 @@ fun ChatScreen(
     // 点「在办」里的一件、汇报下的小标签:滚到这件任务的卡片并短暂高亮;卡片不在这页(比如卡片所在的一轮被删了)就直接打开这件任务
     val jumpToCard: (String) -> Unit = { taskId ->
         val key = deskCardKey(ui.exchanges, taskId)
-        val index = key?.let { chatItemKeys(ui.exchanges, kept, setupRow, hasBlocked = ui.blocked != null).indexOf(it) } ?: -1
+        val index = key?.let { chatItemKeys(ui.exchanges, kept, setupRow, hasBlocked = ui.blocked != null, calls).indexOf(it) } ?: -1
         if (key == null || index < 0) vm.openConversation(taskId)
         else {
             scrollToBottomJob?.cancel()
@@ -282,7 +285,7 @@ fun ChatScreen(
     LaunchedEffect(scrollMarker, jump) {
         // 从搜索或文件库过来:先滚到目标消息,期间不要跟末尾;目标不在了就退回原来的逻辑。
         if (jump != null) {
-            val keys = chatItemKeys(ui.exchanges, kept, setupRow, hasBlocked = ui.blocked != null)
+            val keys = chatItemKeys(ui.exchanges, kept, setupRow, hasBlocked = ui.blocked != null, calls)
             val index = chatTargetKey(ui.exchanges, jump.target)?.let(keys::indexOf) ?: -1
             if (index >= 0) {
                 previousScrollMarker = scrollMarker
@@ -382,7 +385,7 @@ fun ChatScreen(
     val menuHost = remember(selecting) { MessageMenuHost(selecting) { menu = it } }
     val menuOpen = menu != null
     /** 空对话:只有问候和推荐卡片,左右不套消息列表那圈留白,由卡片自己和输入栏对齐。 */
-    val emptyConversation = ui.exchanges.isEmpty() && ui.blocked == null
+    val emptyConversation = ui.exchanges.isEmpty() && ui.blocked == null && calls.isEmpty()
     PageBackground {
         CompositionLocalProvider(LocalMessageMenu provides menuHost) {
             LazyColumn(
@@ -401,6 +404,7 @@ fun ChatScreen(
                     }
                 }
                 ui.exchanges.forEachIndexed { i, ex ->
+                    callMarkRows(calls.before(i), highlightKey, reduceMotion)
                     val backgroundNote = i == ui.exchanges.lastIndex && ui.operatingPhone && !screenDocked
                     exchange(
                         i, ex, ui.conversationId, ui.takeoverStage, vm, reduceMotion, backgroundNote, runMetrics, openRun, loadSource, openSource, kept,
@@ -415,6 +419,7 @@ fun ChatScreen(
                     // 「去设置」挂在发现手机没就绪的那一轮后面;配不上具体轮次时(下面)照旧挂在最后
                     if (setupRow == i) item("ps$i") { PhoneSetupLine(openPhoneSetup) }
                 }
+                callMarkRows(calls.tail, highlightKey, reduceMotion)
                 if (setupRow == -1) item("phone-setup") { PhoneSetupLine(openPhoneSetup) }
                 ui.blocked?.let { problems ->
                     item("blocked") {

@@ -74,7 +74,7 @@ import org.junit.runner.RunWith
  * 链:连接 → 听(电波形) → 播音动画 → 打断 → 挂断 → 重试 → 上限;权限拒绝 → 去设置;缺凭据 → 去配置。
  */
 @RunWith(AndroidJUnit4::class)
-class VoiceCallOverlayTest {
+class VoiceCallPageTest {
 
     @get:Rule(order = Int.MIN_VALUE) val chinese = ChineseUi()
 
@@ -225,11 +225,16 @@ class VoiceCallOverlayTest {
         screens: StateFlow<Set<String>> = MutableStateFlow(emptySet()),
         frames: (String) -> StateFlow<android.graphics.Bitmap?>? = { null },
         onOpenTask: (String) -> Unit = {},
+        calls: List<com.wangzan101.mika.chat.ConversationCall> = emptyList(),
+        onOpenRecord: (String) -> Unit = {},
+        onOpenSettings: () -> Unit = {},
     ) {
         val audioRoute = VoiceCallAudioRoute(InstrumentationRegistry.getInstrumentation().targetContext)
         val holder = VoiceCallHolder(call.session, call.busy, audioRoute, call.transcript, call.feed, screens, frames)
         compose.setContent {
-            StillTheme { VoiceCallOverlay(holder, onCollapse) { onOpenTask(it.taskId) } }
+            StillTheme {
+                VoiceCallPage(holder, onCollapse, { onOpenTask(it.taskId) }, calls, onOpenRecord, onOpenSettings)
+            }
         }
     }
 
@@ -430,6 +435,26 @@ class VoiceCallOverlayTest {
         reachActive(call)
         compose.onNodeWithTag("voicecall-collapse").performClick()
         assertEquals(1, collapses.get())
+        call.session.end(EndReason.Hangup)
+    }
+
+    @Test fun menuOpensCallRecordsAndSettingsAndTheLastCallLinkJumpsToIt() {
+        val picked = mutableListOf<String>()
+        val settings = AtomicInteger(0)
+        val earlier = com.wangzan101.mika.chat.ConversationCall("old", 1_000L, 61_000L, spoke = true)
+        val call = Call(connect = { rt })
+        show(call, calls = listOf(earlier), onOpenRecord = { picked += it }, onOpenSettings = { settings.incrementAndGet() })
+        reachActive(call)
+        compose.onNodeWithTag("voicecall-last-call").performClick()
+        assertEquals(listOf("old"), picked)
+        compose.onNodeWithTag("voicecall-more").performClick()
+        compose.onNodeWithTag("voicecall-records").performClick()
+        compose.onNodeWithTag("voicecall-records-sheet").assertExists()
+        compose.onNodeWithTag("voicecall-record").performClick()
+        assertEquals(listOf("old", "old"), picked)
+        compose.onNodeWithTag("voicecall-more").performClick()
+        compose.onNodeWithTag("voicecall-settings").performClick()
+        assertEquals(1, settings.get())
         call.session.end(EndReason.Hangup)
     }
 

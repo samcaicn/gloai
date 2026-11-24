@@ -1,5 +1,6 @@
 package com.wangzan101.mika.voicecall
 
+import com.wangzan101.mika.chat.ConversationCall
 import com.wangzan101.mika.core.agent.Turn as ChatTurn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -12,6 +13,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -21,10 +23,13 @@ class VoiceCallTranscriptTest {
     private class Harness(conversationId: String? = "conv-9") {
         var now = 1_000L
         val appended = mutableListOf<Pair<String, ChatTurn>>()
+        val recorded = mutableListOf<Pair<String, ConversationCall>>()
         val transcript = VoiceCallTranscript(
             conversationId = { conversationId },
             appendTurn = { id, turn -> appended += id to turn },
             nowMillis = { now },
+            callId = "call-1",
+            recordCall = { id, call -> recorded += id to call },
         )
     }
 
@@ -207,5 +212,58 @@ class VoiceCallTranscriptTest {
         assertEquals("挂断补上最后一轮,已写过的不重写", listOf("第一句=甲", "第三句=丙"), appended)
         transcript.close()
         assertEquals(2, appended.size)
+    }
+
+    @Test
+    fun `写进会话的每一轮都带上这一通的编号`() = runTest {
+        val h = Harness()
+        h.transcript.onUser("几点了")
+        h.transcript.onAssistant("九点")
+        h.transcript.close()
+        assertEquals(listOf("call-1"), h.appended.map { it.second.callId })
+    }
+
+    @Test
+    fun `接通记一条没结束的通话,挂断补上结束、原因和说没说话`() = runTest {
+        val recorded = mutableListOf<ConversationCall>()
+        var now = 5_000L
+        val transcript = VoiceCallTranscript(
+            conversationId = { "conv-9" },
+            appendTurn = { _, _ -> },
+            nowMillis = { now },
+            writeScope = this,
+            callId = "call-1",
+            recordCall = { _, call -> recorded += call },
+        )
+        transcript.onConnected(4_000L)
+        transcript.onConnected(4_500L) // 重连再接通:不改接通时刻,不再记
+        advanceUntilIdle()
+        assertEquals(listOf(ConversationCall("call-1", 4_000L)), recorded)
+        transcript.onUser("明天天气")
+        transcript.onAssistant("晴")
+        now = 9_000L
+        transcript.close(ConversationCall.END_IDLE)
+        assertEquals(ConversationCall("call-1", 4_000L, 9_000L, ConversationCall.END_IDLE, spoke = true), recorded.last())
+        assertEquals(2, recorded.size)
+    }
+
+    @Test
+    fun `一句话没说的通话也记,标成没说话`() = runTest {
+        val h = Harness()
+        h.transcript.onConnected(500L)
+        h.transcript.onUser("喂") // 没等来回答:不算说上话
+        h.transcript.close()
+        val call = h.recorded.single().second
+        assertFalse(call.spoke)
+        assertEquals(500L, call.startMs)
+        assertEquals(ConversationCall.END_HANGUP, call.endReason)
+        assertTrue(h.appended.isEmpty())
+    }
+
+    @Test
+    fun `没接通的不记通话`() = runTest {
+        val h = Harness()
+        h.transcript.close()
+        assertTrue(h.recorded.isEmpty())
     }
 }

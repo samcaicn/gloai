@@ -75,4 +75,22 @@ class NavStackTest {
         nav.back()
         assertFalse(nav.reopenDrawer)
     }
+
+    // 通话页:正在通话时再点通话回到它(上面压着的页退掉);挂断时它从栈里抽走,压在下面也一样
+    @Test fun callPageComesBackAndLeaves() {
+        val nav = NavStack()
+        nav.bringToTop(Route.VoiceCall)
+        assertEquals(listOf(Route.Chat, Route.VoiceCall), nav.stack)
+        nav.push(Route.Run)
+        nav.bringToTop(Route.VoiceCall)
+        assertEquals(listOf(Route.Chat, Route.VoiceCall), nav.stack)
+        nav.leave(Route.VoiceCall)
+        assertEquals(listOf(Route.Chat), nav.stack)
+        nav.push(Route.VoiceCall)
+        nav.push(Route.CallMode)
+        nav.leave(Route.VoiceCall)
+        assertEquals(listOf(Route.Chat, Route.CallMode), nav.stack)
+        nav.leave(Route.VoiceCall)
+        assertEquals(listOf(Route.Chat, Route.CallMode), nav.stack)
+    }
 }

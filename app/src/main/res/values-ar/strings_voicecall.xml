@@ -6,7 +6,6 @@
     <string name="voicecall_task_done">اكتمل</string>
     <string name="voicecall_task_open">عرض سير المهمة</string>
     <string name="voicecall_task_screen">عرض الشاشة</string>
-    <string name="voicecall_earlier">المحادثة السابقة</string>
     <string name="voicecall_screen_close">إغلاق الشاشة</string>
     <string name="voicecall_task_failed">لم تنجح</string>
     <string name="voicecall_task_cancelled">أُلغي</string>
@@ -59,4 +58,17 @@
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">العودة إلى المحادثة</string>
     <string name="voicecall_desk_report">بخصوص %1$s: %2$s</string>
+    <string name="voicecall_log_start">مكالمة صوتية · %1$s</string>
+    <string name="voicecall_log_end">انتهت المكالمة · %1$s</string>
+    <string name="voicecall_log_end_idle">انتهت المكالمة · %1$s · صمت طويل</string>
+    <string name="voicecall_log_silent">مكالمة صوتية · %1$s · لم يُقل شيء</string>
+    <string name="voicecall_log_live">في مكالمة</string>
+    <string name="voicecall_more">المزيد</string>
+    <string name="voicecall_records">سجل المكالمات</string>
+    <string name="voicecall_records_hint">اضغط على مكالمة لرؤيتها في الدردشة</string>
+    <string name="voicecall_records_empty">لا توجد مكالمات في هذه المحادثة بعد</string>
+    <string name="voicecall_records_silent">لم يُقل شيء</string>
+    <string name="voicecall_settings">إعدادات المكالمة</string>
+    <string name="voicecall_bar">في مكالمة · العودة إلى المكالمة</string>
+    <string name="voicecall_last_call">آخر مكالمة · %1$s</string>
 </resources>

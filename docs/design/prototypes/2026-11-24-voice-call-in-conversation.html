@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>通话与对话层级</title>
+<style>
+  :root {
+    --bg: #F7F7F8; --surface: #FFFFFF; --fill: rgba(0,0,0,.045);
+    --ink: #1C1C1E; --ink2: #5F6068; --ink3: #9A9BA3; --hair: rgba(0,0,0,.07);
+    --accent: #0A7CFF; --accent-soft: rgba(10,124,255,.10); --on-accent: #fff;
+    --ok: #1F9D55; --ok-soft: rgba(31,157,85,.12);
+    --warn: #B86E00; --warn-soft: rgba(255,159,10,.14);
+    --bad: #E5483D; --bad-soft: rgba(229,72,61,.10);
+    --live: #1F9D55; --live-ink: #fff;
+    --page: #ECECEF; --frame: #1C1C1E; --note: #FFFFFF; --shade: rgba(0,0,0,.32);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E0E10; --surface: #1A1A1D; --fill: rgba(255,255,255,.07);
+      --ink: #F2F2F4; --ink2: #A4A5AD; --ink3: #6C6D75; --hair: rgba(255,255,255,.08);
+      --accent: #3D97FF; --accent-soft: rgba(61,151,255,.16);
+      --ok: #3CCF7A; --ok-soft: rgba(60,207,122,.14);
+      --warn: #FFB340; --warn-soft: rgba(255,159,10,.16);
+      --bad: #FF6961; --bad-soft: rgba(255,105,97,.14);
+      --live: #23A35E; --live-ink: #fff;
+      --page: #050506; --frame: #2A2A2E; --note: #1A1A1D; --shade: rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E0E10; --surface: #1A1A1D; --fill: rgba(255,255,255,.07);
+    --ink: #F2F2F4; --ink2: #A4A5AD; --ink3: #6C6D75; --hair: rgba(255,255,255,.08);
+    --accent: #3D97FF; --accent-soft: rgba(61,151,255,.16);
+    --ok: #3CCF7A; --ok-soft: rgba(60,207,122,.14);
+    --warn: #FFB340; --warn-soft: rgba(255,159,10,.16);
+    --bad: #FF6961; --bad-soft: rgba(255,105,97,.14);
+    --live: #23A35E; --live-ink: #fff;
+    --page: #050506; --frame: #2A2A2E; --note: #1A1A1D; --shade: rgba(0,0,0,.55);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; }
+  svg { display: block; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 24px 16px 64px; }
+  .top h1 { font-size: 22px; margin: 0 0 4px; }
+  .top p { margin: 0 0 18px; color: var(--ink2); font-size: 14px; max-width: 760px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .tab { border: 0; background: var(--note); color: var(--ink2); border-radius: 20px; padding: 7px 14px; font-size: 13.5px; cursor: pointer; }
+  .tab.on { background: var(--ink); color: var(--bg); }
+  .tab small { opacity: .7; margin-left: 4px; }
+  .stage { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+
+  /* phone */
+  .phone { flex: 0 0 auto; width: 372px; max-width: 100%; height: 780px; background: var(--frame); border-radius: 44px; padding: 10px; box-shadow: 0 20px 50px rgba(0,0,0,.18); }
+  .screen { width: 100%; height: 100%; background: var(--bg); border-radius: 35px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+  .status { height: 30px; flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font-size: 12px; font-weight: 600; }
+  .status .r { display: flex; gap: 5px; align-items: center; }
+  .status .r i { display: inline-block; width: 15px; height: 8px; border: 1.5px solid currentColor; border-radius: 2px; opacity: .8; }
+  .bar { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 2px 10px 8px; font-weight: 600; font-size: 16px; min-height: 44px; }
+  .bar .sp { flex: 1; }
+  .bar .ttl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ico { width: 36px; height: 36px; border-radius: 18px; display: grid; place-items: center; color: var(--ink2); background: none; border: 0; cursor: pointer; flex: 0 0 auto; }
+  .ico:hover { background: var(--fill); }
+  .feed { flex: 1; overflow-y: auto; padding: 6px 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .feed::-webkit-scrollbar { width: 0; }
+
+  .me { align-self: flex-end; max-width: 80%; background: var(--accent); color: var(--on-accent); padding: 8px 12px; border-radius: 18px 18px 6px 18px; font-size: 14.5px; }
+  .desk { align-self: flex-start; max-width: 88%; font-size: 14.5px; color: var(--ink); }
+  .vtag { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; opacity: .72; margin-right: 5px; vertical-align: 1px; }
+  .desk .vtag { color: var(--ink3); opacity: 1; }
+  .sys { align-self: center; display: flex; align-items: center; gap: 8px; width: 100%; font-size: 12px; color: var(--ink3); }
+  .sys::before, .sys::after { content: ""; flex: 1; height: 1px; background: var(--hair); }
+  .sys.pill::before, .sys.pill::after { display: none; }
+  .sys.pill { justify-content: center; }
+  .sys.pill span { background: var(--ok-soft); color: var(--ok); border-radius: 10px; padding: 1px 10px; }
+
+  .card { align-self: stretch; background: var(--surface); border-radius: 14px; padding: 10px 12px; border: 1px solid var(--hair); font-size: 13px; cursor: pointer; text-align: left; }
+  .card .h { display: flex; align-items: center; gap: 8px; }
+  .card .t { font-weight: 600; font-size: 13.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill { font-size: 11.5px; border-radius: 10px; padding: 1px 8px; white-space: nowrap; }
+  .p-run { background: var(--accent-soft); color: var(--accent); }
+  .p-ok { background: var(--ok-soft); color: var(--ok); }
+  .card .recent { margin: 5px 0 0; padding: 0; list-style: none; color: var(--ink3); font-size: 12px; }
+  .card .recent li::before { content: "· "; }
+  .card .recent li:last-child { color: var(--ink2); }
+  .card .line { color: var(--ink2); margin-top: 4px; }
+  .card .foot { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .card .foot .sp { flex: 1; }
+  .mini { border: 0; background: var(--fill); border-radius: 10px; padding: 3px 10px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: var(--ink); }
+  .more { font-size: 12px; color: var(--accent); }
+  .spin { width: 12px; height: 12px; border-radius: 6px; border: 2px solid var(--accent-soft); border-top-color: var(--accent); animation: rot .9s linear infinite; flex: 0 0 auto; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+  .okdot { width: 12px; height: 12px; border-radius: 6px; background: var(--ok); flex: 0 0 auto; position: relative; }
+  .okdot::after { content: ""; position: absolute; left: 3.5px; top: 2px; width: 3px; height: 6px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+
+  .composer { flex: 0 0 auto; margin: 0 10px 14px; background: var(--surface); border-radius: 24px; border: 1px solid var(--hair); display: flex; align-items: center; padding: 6px; gap: 4px; }
+  .composer .in { flex: 1; color: var(--ink3); font-size: 14.5px; padding-left: 4px; }
+  .round { width: 36px; height: 36px; border-radius: 18px; display: grid; place-items: center; background: var(--fill); color: var(--ink2); border: 0; cursor: pointer; flex: 0 0 auto; }
+  .round.go { background: var(--accent); color: var(--on-accent); }
+  .round.hot { outline: 2px solid var(--accent); outline-offset: 2px; animation: hot 1.6s ease-in-out infinite; }
+  @keyframes hot { 50% { outline-color: transparent; } }
+
+  /* green "in call" bar */
+  .livebar { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; background: var(--live); color: var(--live-ink); font-size: 13px; padding: 7px 16px; cursor: pointer; border: 0; width: 100%; text-align: left; }
+  .livebar .sp { flex: 1; }
+  .dot { width: 8px; height: 8px; border-radius: 4px; background: currentColor; flex: 0 0 auto; }
+  .pulse { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .livepill { display: inline-flex; align-items: center; gap: 6px; background: var(--ok-soft); color: var(--ok); border-radius: 14px; padding: 3px 11px; font-size: 13.5px; font-weight: 600; }
+
+  /* A: call dock in place of the composer */
+  .dock { flex: 0 0 auto; margin: 0 10px 14px; background: var(--surface); border-radius: 22px; border: 1px solid var(--hair); padding: 10px 10px 8px; box-shadow: 0 -4px 18px rgba(0,0,0,.04); }
+  .dock-st { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); padding: 0 4px 8px; }
+  .dock-st .sp { flex: 1; }
+  .dock-st .tm { font-variant-numeric: tabular-nums; color: var(--ink3); }
+  .waves { display: inline-flex; align-items: center; gap: 2px; height: 16px; color: var(--ok); }
+  .waves i { width: 3px; height: 6px; border-radius: 2px; background: currentColor; animation: wv 1s ease-in-out infinite; }
+  .waves i:nth-child(2) { animation-delay: .12s; } .waves i:nth-child(3) { animation-delay: .24s; } .waves i:nth-child(4) { animation-delay: .36s; }
+  .waves.speak { color: var(--accent); }
+  .waves.still i { animation: none; height: 4px; opacity: .5; }
+  @keyframes wv { 50% { height: 15px; } }
+  .dock-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .db { border: 0; background: var(--fill); border-radius: 14px; padding: 7px 0 5px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11.5px; color: var(--ink2); cursor: pointer; }
+  .db.on { background: var(--ink); color: var(--bg); }
+  .db.end { background: var(--bad); color: #fff; }
+  .typerow { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; background: var(--fill); border-radius: 18px; padding: 4px 4px 4px 12px; }
+  .typerow .in { flex: 1; font-size: 14px; color: var(--ink3); }
+
+  /* dark call page (current + B) */
+  .call { background: #101014; color: #F2F2F4; }
+  .call .ico { color: #C9CAD1; }
+  .call .ico:hover { background: rgba(255,255,255,.08); }
+  .call .me { background: rgba(255,255,255,.14); color: #fff; }
+  .call .desk { color: #F2F2F4; }
+  .call .desk .vtag { color: #8a8b93; }
+  .call .sys { color: #7c7d85; }
+  .call .sys::before, .call .sys::after { background: rgba(255,255,255,.1); }
+  .call .sys.pill span { background: rgba(60,207,122,.16); color: #3CCF7A; }
+  .call .card { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.08); color: #ddd; }
+  .call .card .line, .call .card .recent li:last-child { color: #aaa; }
+  .call .card .recent { color: #7c7d85; }
+  .call .mini { background: rgba(255,255,255,.1); color: #eee; }
+  .call .more { color: #6AB4FF; }
+  .call .status { color: #F2F2F4; }
+  .callhead { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 2px 10px 4px; }
+  .callhead .c { flex: 1; text-align: center; font-size: 14px; color: #C9CAD1; font-variant-numeric: tabular-nums; }
+  .ballwrap { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 4px; }
+  .ball { width: 64px; height: 64px; border-radius: 32px; background: radial-gradient(circle at 35% 35%, #6AB4FF, #0A5CCF); box-shadow: 0 0 34px rgba(61,151,255,.45); animation: breathe 2.6s ease-in-out infinite; }
+  .ball.big { width: 132px; height: 132px; border-radius: 66px; box-shadow: 0 0 70px rgba(61,151,255,.45); }
+  @keyframes breathe { 50% { transform: scale(1.05); } }
+  .callst { font-size: 13px; color: #9a9ba3; }
+  .callbtns { flex: 0 0 auto; display: flex; justify-content: center; gap: 26px; padding: 10px 0 26px; }
+  .cb { width: 56px; height: 56px; border-radius: 28px; display: grid; place-items: center; background: rgba(255,255,255,.12); border: 0; color: #fff; cursor: pointer; }
+  .cb.on { background: #fff; color: #101014; }
+  .cb.end { background: #E5483D; }
+  .cbl { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11px; color: #9a9ba3; }
+  .calltype { margin: 0 14px 4px; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.08); border-radius: 18px; padding: 4px 4px 4px 12px; }
+  .calltype .in { flex: 1; font-size: 14px; color: #8a8b93; }
+
+  /* B slim page */
+  .slim { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 0 22px; }
+  .caps { width: 100%; display: flex; flex-direction: column; gap: 8px; min-height: 118px; justify-content: flex-end; }
+  .cap { font-size: 16px; line-height: 1.45; color: #F2F2F4; }
+  .cap.old { color: #7c7d85; font-size: 14px; }
+  .cap .who { font-size: 11px; color: #7c7d85; display: block; }
+  .slimtask { width: 100%; }
+
+  /* run timeline */
+  .runhead { padding: 4px 16px 10px; }
+  .runhead .t { font-size: 18px; font-weight: 650; display: flex; align-items: center; gap: 8px; }
+  .runhead .sub { font-size: 12.5px; color: var(--ink3); margin-top: 2px; }
+  .steps { list-style: none; margin: 0; padding: 0 16px; }
+  .steps li { display: grid; grid-template-columns: 16px 1fr auto; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--hair); font-size: 14px; align-items: center; }
+  .steps .tm2 { font-size: 11.5px; color: var(--ink3); font-variant-numeric: tabular-nums; }
+  .steps .sd { width: 8px; height: 8px; border-radius: 4px; background: var(--ink3); margin-left: 4px; }
+  .steps li.cur .sd { background: var(--accent); animation: pulse 1.2s infinite; }
+  .steps li.fin .sd { background: var(--ok); }
+
+  /* mock device screen ("看画面") */
+  .scr { background: #F2F2F7; color: #1c1c1e; border-radius: 12px; border: 1px solid rgba(0,0,0,.08); padding: 8px; font-size: 11px; width: 100%; }
+  .scr .sh { font-weight: 650; font-size: 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+  .scr .row { background: #fff; border-radius: 8px; padding: 6px 8px; display: flex; align-items: center; margin-bottom: 4px; }
+  .scr .row span { flex: 1; }
+  .tog { width: 26px; height: 15px; border-radius: 8px; background: #34C759; position: relative; }
+  .tog::after { content: ""; position: absolute; right: 2px; top: 2px; width: 11px; height: 11px; border-radius: 6px; background: #fff; }
+  .scr .cur2 { outline: 2px solid #0A7CFF; outline-offset: -2px; }
+  .scrwrap { margin: 8px 0 2px; }
+  .panel { position: absolute; left: 12px; right: 12px; top: 84px; background: #1E1E23; border-radius: 18px; padding: 12px; box-shadow: 0 16px 40px rgba(0,0,0,.5); z-index: 6; }
+  .panel .ph { display: flex; align-items: center; font-size: 13px; color: #C9CAD1; margin-bottom: 8px; }
+  .panel .ph .sp { flex: 1; }
+
+  /* drawer, toast */
+  .shade { position: absolute; inset: 0; background: var(--shade); z-index: 8; }
+  .drawer { position: absolute; left: 0; top: 0; bottom: 0; width: 78%; background: var(--surface); z-index: 9; padding: 40px 10px 16px; display: flex; flex-direction: column; gap: 2px; }
+  .drawer .dh { font-weight: 650; font-size: 18px; padding: 0 10px 10px; }
+  .drow { border: 0; background: none; text-align: left; padding: 10px; border-radius: 10px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .drow:hover { background: var(--fill); }
+  .drow.on { background: var(--accent-soft); color: var(--accent); }
+  .drawer .sp { flex: 1; }
+  .drow .lv { margin-left: auto; color: var(--ok); }
+  .toast { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); background: rgba(28,28,30,.92); color: #fff; font-size: 12.5px; padding: 7px 14px; border-radius: 14px; white-space: nowrap; z-index: 20; animation: tin .2s ease-out; pointer-events: none; }
+  @keyframes tin { from { opacity: 0; transform: translate(-50%, 6px); } }
+  .setlist { margin: 4px 12px; background: var(--surface); border-radius: 14px; border: 1px solid var(--hair); }
+  .setlist div { padding: 13px 14px; border-bottom: 1px solid var(--hair); font-size: 14.5px; display: flex; }
+  .setlist div:last-child { border-bottom: 0; }
+  .setlist div span:last-child { margin-left: auto; color: var(--ink3); }
+
+  /* C: call marks, highlight, ⋯ menu, records sheet */
+  .feed { position: relative; }
+  .sys.callmark { gap: 6px; }
+  .sys.callmark svg { flex: 0 0 auto; }
+  .hl { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 12px; }
+  .menu { position: absolute; right: 12px; top: 74px; background: #26262B; border-radius: 12px; padding: 4px; z-index: 9; box-shadow: 0 12px 30px rgba(0,0,0,.45); min-width: 150px; }
+  .menu button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 0; background: none; color: #eee; padding: 10px 12px; font-size: 14px; border-radius: 8px; cursor: pointer; }
+  .menu button:hover { background: rgba(255,255,255,.08); }
+  .shade.clear { background: transparent; }
+  .bsheet { position: absolute; left: 0; right: 0; bottom: 0; background: #1E1E23; border-radius: 20px 20px 0 0; z-index: 9; padding: 8px 12px 22px; color: #F2F2F4; }
+  .grab { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.2); margin: 0 auto 10px; }
+  .bh { font-weight: 650; font-size: 15px; padding: 0 6px 8px; }
+  .rec { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: rgba(255,255,255,.05); border-radius: 12px; padding: 10px 12px; margin-bottom: 6px; text-align: left; color: #F2F2F4; cursor: pointer; font-size: 14px; }
+  .rec div { flex: 1; min-width: 0; }
+  .rec span.s { display: block; font-size: 12px; color: #9a9ba3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rec.now2 { cursor: default; color: #3CCF7A; }
+  .rec .chev { color: #7c7d85; }
+  .bnote { font-size: 12px; color: #7c7d85; padding: 4px 6px 0; }
+  .lastcall { align-self: center; border: 0; background: rgba(255,255,255,.07); color: #9a9ba3; font-size: 12px; border-radius: 12px; padding: 4px 12px; cursor: pointer; }
+  .setcap { font-size: 12px; color: var(--ink3); padding: 12px 26px 4px; }
+  .setlist div span.sel { color: var(--accent); }
+
+  /* side */
+  .side { flex: 1; min-width: 280px; max-width: 600px; }
+  .note { background: var(--note); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; font-size: 14px; color: var(--ink2); }
+  .note b { color: var(--ink); }
+  .note h3 { margin: 0 0 6px; font-size: 13px; color: var(--ink3); font-weight: 600; letter-spacing: .02em; }
+  .note ol, .note ul { margin: 4px 0 0; padding-left: 20px; }
+  .note li { margin: 3px 0; }
+  .now { border: 2px solid var(--accent); }
+  .stack { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 2px 0 10px; }
+  .layer { font-size: 12.5px; padding: 3px 10px; border-radius: 9px; background: var(--fill); color: var(--ink2); }
+  .layer.top { background: var(--accent); color: #fff; }
+  .layer.hid { border: 1px dashed var(--ink3); background: none; color: var(--ink3); }
+  .layer.bad { background: var(--bad-soft); color: var(--bad); }
+  .arrow { color: var(--ink3); font-size: 12px; }
+  .ctrl { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .ctrl button { border: 0; border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; background: var(--ink); color: var(--bg); }
+  .ctrl button.ghost { background: var(--note); color: var(--ink2); }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 13.5px; background: var(--note); border-radius: 14px; overflow: hidden; }
+  .cmp th, .cmp td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  .cmp th { font-size: 12.5px; color: var(--ink3); font-weight: 600; }
+  .cmp td:first-child { color: var(--ink3); white-space: nowrap; }
+  .cmp .y { color: var(--ok); } .cmp .n { color: var(--bad); }
+  .cmpwrap { margin-top: 28px; overflow-x: auto; }
+  .cmpwrap h2 { font-size: 17px; margin: 0 0 10px; }
+  @media (max-width: 420px) { .phone { width: 100%; height: 720px; border-radius: 30px; padding: 8px; } .screen { border-radius: 24px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>通话和对话：页面层级演示</h1>
+    <p>同一段流程放在三种做法里：打电话 → 让 Mika 去查蓝牙 → 点任务卡看过程 → 返回 → 收起 / 去别的页面 → 挂断。手机里的东西都能点，右边「此刻」会说明你在哪一层、通话在干什么。</p>
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="tab" data-v="cur">现状</button>
+    <button class="tab" data-v="A">方案 A<small>通话是聊天页的一种状态</small></button>
+    <button class="tab" data-v="B">方案 B<small>精简通话页 + 返回条</small></button>
+    <button class="tab on" data-v="C">方案 C<small>聊天页完整 · 通话页只放这一通 · ⋯ 通话记录</small></button>
+  </div>
+  <div class="stage">
+    <div class="phone"><div class="screen" id="scr"></div></div>
+    <div class="side">
+      <div class="ctrl">
+        <button id="restart">从头再来</button>
+        <button class="ghost" id="skip">快进：让任务做完</button>
+      </div>
+      <div class="note now" id="now"></div>
+      <div class="note" id="about"></div>
+      <div class="note" id="try"></div>
+    </div>
+  </div>
+
+  <div class="cmpwrap">
+    <h2>三种做法对照</h2>
+    <table class="cmp">
+      <tr><th></th><th>现状</th><th>方案 A</th><th>方案 B</th><th>方案 C</th></tr>
+      <tr><td>打电话时在哪</td><td>盖在聊天页上的全屏通话页</td><td>就在聊天页，没有新页面</td><td>精简通话页，可收起回聊天页</td><td>通话页（正常的一页），可收起回聊天页</td></tr>
+      <tr><td>完整对话在哪看</td><td class="n">两处都有，同一段对话显示两遍</td><td class="y">只在聊天页</td><td class="y">只在聊天页；通话页只放最近两句</td><td class="y">只在聊天页；通话页放这一通的全部</td></tr>
+      <tr><td>以前的通话怎么找</td><td class="n">混在聊天里，看不出哪段是通话</td><td>混在聊天里，只有结束线</td><td>混在聊天里，只有结束线</td><td class="y">聊天页里有头有尾；⋯ → 通话记录，点一条直接跳过去</td></tr>
+      <tr><td>点任务卡 → 返回</td><td class="n">通话页重新盖上来</td><td class="y">回到聊天页，通话不断</td><td>回到通话页</td><td class="y">回到通话页（正常一层层退）</td></tr>
+      <tr><td>离开后知不知道在通话</td><td class="n">只有通知栏能看出来</td><td class="y">顶部一直有绿色「通话中」</td><td class="y">顶部绿条，点一下回通话页</td><td class="y">顶部绿条，点一下回通话页</td></tr>
+      <tr><td>边通话边打字、翻记录</td><td>在通话页里可以，但记录是复制的那份</td><td class="y">同一页里直接做</td><td>收起到聊天页再做</td><td>通话页能打字；翻记录用 ⋯ 或收起</td></tr>
+      <tr><td>页面层数</td><td>聊天页 + 通话浮层 + 运行过程（返回顺序绕）</td><td>聊天页 + 运行过程</td><td>聊天页 + 通话页 + 运行过程</td><td>聊天页 + 通话页 + 运行过程，返回顺序正常</td></tr>
+      <tr><td>改动量</td><td>—</td><td>大：去掉通话浮层，输入区变通话操作条，加全局绿条</td><td>中：通话页瘦身，加绿条</td><td>中：每通电话存起止和时长，通话页只放这一通并改成正常页面，加 ⋯、通话记录、绿条</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+(() => {
+  const ic = {
+    menu: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+    more: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+    plus: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    mic: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+    micOff: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/></svg>',
+    phone: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
+    hang: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path transform="rotate(135 12 12)" d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
+    kb: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg>',
+    spk: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"/></svg>',
+    down: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+    back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+    send: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+    eye: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="3" width="10" height="18" rx="2"/></svg>',
+    wave: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg>',
+    phoneSm: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
+    list: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+    x: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    gear: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  };
+
+  const HISTORY = [
+    { k: 'me', t: '明天上海天气怎么样？' },
+    { k: 'desk', t: '明天多云转晴，18–25°C，下午风有点大，出门带件薄外套就行。' },
+    { k: 'me', t: '帮我看下手机还剩多少电' },
+    { k: 'task', id: 'bat', title: '查看电池电量', state: 'ok', steps: ['打开「设置」', '进入「电池」', '电量 64%，预计还能用 9 小时'] },
+    { k: 'desk', t: '电量还有 64%，正常用到晚上没问题。' },
+  ];
+  const BT_STEPS = ['打开「设置」', '进入「已连接的设备」', '读取蓝牙开关', '蓝牙已开启，连着 1 副耳机'];
+  /* C only: a call from yesterday, already in this conversation */
+  const PAST_CALL = [
+    { k: 'cs', call: 'c0', t: '语音通话 · 昨天 21:05' },
+    { k: 'me', t: '提醒我明早八点开会', voice: 1, call: 'c0' },
+    { k: 'desk', t: '好，明早 8 点提醒你。', voice: 1, call: 'c0' },
+    { k: 'ce', call: 'c0', t: '通话结束 · 0:36' },
+  ];
+
+  let S, timers = [], clock = null, lastKey = '', lastSk = '', toastTimer = null, hlTimer = null;
+  const scr = document.getElementById('scr');
+
+  function fresh(v) {
+    const base = v === 'C' ? PAST_CALL.concat(HISTORY) : HISTORY;
+    return { v, screen: 'chat', from: 'chat', items: base.map(x => ({ ...x, steps: x.steps && x.steps.slice() })),
+      calls: v === 'C' ? [{ id: 'c0', when: '昨天 21:05', dur: '0:36', first: '提醒我明早八点开会' }] : [],
+      call: null, ended: null, drawer: false, typing: false, muted: false, speaker: false, panel: false,
+      open: {}, toast: '', menu: false, sheet: false, hl: null, jump: null, callN: 0, lastEmpty: false };
+  }
+  function later(ms, fn) { timers.push(setTimeout(() => { fn(); render(); }, ms)); }
+  function stopAll() { timers.forEach(clearTimeout); timers = []; clearInterval(clock); clock = null; clearTimeout(hlTimer); }
+  function fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  function task() { return S.items.find(i => i.id === 'bt'); }
+  function status(t) { if (S.call) S.call.status = t; }
+  function push(it) { if (S.call && S.v === 'C') it.call = S.call.id; S.items.push(it); }
+  function toast(t) { S.toast = t; clearTimeout(toastTimer); toastTimer = setTimeout(() => { S.toast = ''; render(); }, 2400); }
+
+  function startCall() {
+    const id = 'c' + (++S.callN), again = !!task();
+    if (S.v === 'C') S.items.push({ k: 'cs', call: id, t: '语音通话 · 9:41' });
+    S.call = { id, sec: 0, status: '正在接通…', startIdx: S.items.length };
+    S.ended = null; S.typing = false; S.muted = false; S.panel = false; S.menu = false; S.sheet = false;
+    S.screen = (S.v === 'A') ? 'chat' : 'call';
+    clock = setInterval(() => {
+      if (!S.call) return;
+      S.call.sec++;
+      document.querySelectorAll('.tm').forEach(e => e.textContent = fmt(S.call.sec));
+    }, 1000);
+    later(900, () => { push({ k: 'pill', t: '已接通' }); status('在听…'); });
+    later(1700, () => { status('Mika 在说…'); push({ k: 'desk', t: '我在，你说。', voice: 1 }); });
+    later(3000, () => status('在听…'));
+    later(3900, () => status('你在说…'));
+    if (again) {
+      later(5200, () => { push({ k: 'me', t: '没事，就再试一下', voice: 1 }); status('Mika 在说…'); });
+      later(6200, () => push({ k: 'desk', t: '好，有事随时叫我。', voice: 1 }));
+      later(7600, () => status('在听…'));
+      return;
+    }
+    later(5400, () => { push({ k: 'me', t: '帮我看看蓝牙开着没', voice: 1 }); status('Mika 在说…'); });
+    later(6400, () => { push({ k: 'desk', t: '好，我去设置里看一下。', voice: 1 });
+      push({ k: 'task', id: 'bt', title: '查看蓝牙状态', state: 'run', steps: [BT_STEPS[0]], t0: S.call.sec }); status('在听…'); });
+    [1, 2, 3].forEach((n, i) => later(8600 + i * 2400, () => {
+      const t = task(); if (!t || t.state === 'ok') return;
+      t.steps.push(BT_STEPS[n]);
+      if (n === 3) finishTask();
+    }));
+  }
+  function finishTask() {
+    const t = task(); if (!t || t.state === 'ok') return;
+    t.steps = BT_STEPS.slice(); t.state = 'ok';
+    status('Mika 在说…');
+    push({ k: 'desk', t: '蓝牙开着呢，现在连着一副耳机。', voice: 1 });
+    later(1600, () => status('在听…'));
+  }
+  function hangup() {
+    const { sec, id, startIdx } = S.call;
+    timers.forEach(clearTimeout); timers = []; clearInterval(clock); clock = null;
+    S.lastEmpty = false;
+    if (S.v === 'C') {
+      const said = S.items.slice(startIdx).filter(i => i.k === 'me');
+      if (!said.length) {
+        S.items = S.items.filter(i => i.call !== id);
+        S.items.push({ k: 'cs', call: id, t: '语音通话 · ' + fmt(sec) + ' · 没有说话' });
+        S.lastEmpty = true;
+      } else S.items.push({ k: 'ce', call: id, t: '通话结束 · ' + fmt(sec) });
+      S.calls.unshift({ id, when: '刚刚', dur: fmt(sec), first: said.length ? said[0].t : '没有说话' });
+    } else if (S.v !== 'cur') push({ k: 'div', t: '通话结束 · ' + fmt(sec) });
+    S.call = null; S.ended = sec; S.screen = 'chat'; S.typing = false; S.panel = false; S.drawer = false; S.menu = false; S.sheet = false;
+  }
+
+  /* ---------- pieces ---------- */
+  const statusBar = () => `<div class="status"><span>9:41</span><span class="r">5G <i></i></span></div>`;
+  const timeTxt = () => S.call ? fmt(S.call.sec) : '0:00';
+  function liveBar(label) {
+    return `<button class="livebar" data-act="bar"><span class="dot pulse"></span><span>通话中 <span class="tm">${timeTxt()}</span></span><span class="sp"></span><span>${label} ›</span></button>`;
+  }
+  function wavesFor(st) {
+    const cls = st.startsWith('Mika') ? 'speak' : (st === '在听…' || st === '你在说…') ? '' : 'still';
+    return `<span class="waves ${S.muted ? 'still' : cls}"><i></i><i></i><i></i><i></i></span>`;
+  }
+  function screenMock(t) {
+    const n = t.steps.length, done = t.state === 'ok';
+    const head = n <= 1 ? '设置' : '已连接的设备';
+    const rows = n <= 1
+      ? `<div class="row cur2"><span>已连接的设备</span>›</div><div class="row"><span>应用</span>›</div><div class="row"><span>电池</span>›</div>`
+      : `<div class="row ${n >= 3 && !done ? 'cur2' : ''}"><span>蓝牙</span><i class="tog"></i></div><div class="row"><span>耳机 · 已连接</span></div><div class="row"><span>配对新设备</span>›</div>`;
+    return `<div class="scr"><div class="sh">${n > 1 ? '‹ ' : ''}${head}</div>${rows}</div>`;
+  }
+  function card(it, opt = {}) {
+    const run = it.state !== 'ok';
+    const recent = it.steps.slice(-2).map(s => `<li>${s}</li>`).join('');
+    const canScreen = it.id === 'bt';
+    const inline = opt.inline && S.open[it.id] && canScreen;
+    return `<div class="card${opt.hl || ''}" data-act="run" data-id="${it.id}">
+      <div class="h">${run ? '<span class="spin"></span>' : '<span class="okdot"></span>'}<span class="t">${it.title}</span><span class="pill ${run ? 'p-run' : 'p-ok'}">${run ? '进行中' : '完成'}</span></div>
+      <ul class="recent">${recent}</ul>
+      ${inline ? `<div class="scrwrap">${screenMock(it)}</div>` : ''}
+      <div class="foot">${canScreen ? `<button class="mini" data-act="screen" data-id="${it.id}">${ic.eye}${inline ? '收起画面' : '看画面'}</button>` : ''}<span class="sp"></span><span class="more">查看过程 ›</span></div>
+    </div>`;
+  }
+  function itemHtml(it, opt = {}) {
+    const hl = S.hl && it.call === S.hl ? ' hl' : '';
+    switch (it.k) {
+      case 'me': return `<div class="me${hl}">${it.voice ? `<span class="vtag">${ic.wave}</span>` : ''}${it.t}</div>`;
+      case 'desk': return `<div class="desk${hl}">${it.voice ? `<span class="vtag">${ic.wave}语音</span>` : ''}${it.t}</div>`;
+      case 'pill': return `<div class="sys pill"><span>${it.t}</span></div>`;
+      case 'div': return `<div class="sys">${it.t}</div>`;
+      case 'cs': return `<div class="sys callmark" data-cs="${it.call}">${ic.phoneSm}${it.t}</div>`;
+      case 'ce': return `<div class="sys callmark">${it.t}</div>`;
+      case 'task': return card(it, { ...opt, hl });
+    }
+    return '';
+  }
+  function feed(items, opt = {}) { return `<div class="feed">${items.map(i => itemHtml(i, opt)).join('')}</div>`; }
+
+  function chatBar(inCallA) {
+    const title = inCallA
+      ? `<span class="livepill"><span class="dot pulse"></span>通话中 <span class="tm">${timeTxt()}</span></span>`
+      : `<span class="ttl">蓝牙和天气</span>`;
+    return `<div class="bar"><button class="ico" data-act="menu">${ic.menu}</button>${title}<span class="sp"></span><button class="ico">${ic.more}</button></div>`;
+  }
+  function composer() {
+    const hot = !S.call && S.ended == null;
+    return `<div class="composer"><button class="round">${ic.plus}</button><span class="in">发消息给 Mika</span><button class="round">${ic.mic}</button><button class="round ${hot ? 'hot' : ''}" data-act="call" title="语音通话">${ic.phone}</button></div>`;
+  }
+  function dockA() {
+    const st = S.muted ? '已静音，Mika 听不到你' : S.call.status;
+    const typ = S.typing ? `<div class="typerow"><span class="in">打字给 Mika，通话不断</span><button class="round go">${ic.send}</button></div>` : '';
+    return `<div class="dock">${typ}
+      <div class="dock-st">${wavesFor(S.call.status)}<span>${st}</span><span class="sp"></span><span class="tm">${timeTxt()}</span></div>
+      <div class="dock-btns">
+        <button class="db ${S.muted ? 'on' : ''}" data-act="mute">${S.muted ? ic.micOff : ic.mic}${S.muted ? '已静音' : '静音'}</button>
+        <button class="db ${S.typing ? 'on' : ''}" data-act="type">${ic.kb}打字</button>
+        <button class="db ${S.speaker ? 'on' : ''}" data-act="spk">${ic.spk}免提</button>
+        <button class="db end" data-act="hang">${ic.hang}挂断</button>
+      </div></div>`;
+  }
+  function callButtons() {
+    return `<div class="callbtns">
+      <div class="cbl"><button class="cb ${S.muted ? 'on' : ''}" data-act="mute">${S.muted ? ic.micOff : ic.mic}</button>${S.muted ? '已静音' : '静音'}</div>
+      <div class="cbl"><button class="cb ${S.typing ? 'on' : ''}" data-act="type">${ic.kb}</button>打字</div>
+      <div class="cbl"><button class="cb end" data-act="hang">${ic.hang}</button>挂断</div>
+    </div>`;
+  }
+  function screenPanel() {
+    const t = task(); if (!S.panel || !t) return '';
+    return `<div class="panel"><div class="ph"><span>Mika 正在操作的画面</span><span class="sp"></span><button class="ico" data-act="panelx">${ic.x}</button></div>${screenMock(t)}</div>`;
+  }
+  function drawer() {
+    if (!S.drawer) return '';
+    const live = S.call ? `<span class="lv"><span class="dot pulse"></span></span>` : '';
+    return `<div class="shade" data-act="shade"></div><div class="drawer">
+      <div class="dh">Mika</div>
+      <button class="drow" data-act="shade">${ic.plus} 新对话</button>
+      <button class="drow on" data-act="shade">蓝牙和天气${live}</button>
+      <button class="drow" data-act="shade">周末出行计划</button>
+      <button class="drow" data-act="shade">整理相册</button>
+      <span class="sp"></span>
+      <button class="drow" data-act="settings">${ic.gear} 设置</button></div>`;
+  }
+
+  /* ---------- screens ---------- */
+  function viewChat() {
+    const v = S.v, inCall = !!S.call;
+    let top = '';
+    if (inCall && (v === 'B' || v === 'C')) top = liveBar('回到通话');
+    if (v === 'A' && inCall) {
+      return `${statusBar()}${chatBar(true)}${feed(S.items, { inline: true })}${dockA()}`;
+    }
+    const items = v === 'C' ? S.items.filter(i => i.k !== 'pill') : S.items;
+    return `${statusBar()}${top}${chatBar(false)}${feed(items, { inline: v === 'A' || v === 'C' })}${composer()}`;
+  }
+  function viewCallC() {
+    const items = S.items.slice(S.call.startIdx);
+    const prev = S.calls[0];
+    const lead = prev ? `<button class="lastcall" data-act="jump" data-id="${prev.id}">上次通话 · ${prev.when} · ${prev.dur} ›</button>` : '';
+    const typ = S.typing ? `<div class="calltype"><span class="in">打字给 Mika</span><button class="round go">${ic.send}</button></div>` : '';
+    const menu = S.menu ? `<div class="shade clear" data-act="menux"></div><div class="menu">
+        <button data-act="records">${ic.list}通话记录</button><button data-act="callset">${ic.gear}通话设置</button></div>` : '';
+    return `<div class="call" style="display:flex;flex-direction:column;height:100%">
+      ${statusBar()}
+      <div class="callhead"><button class="ico" data-act="collapse" title="回到聊天">${ic.down}</button><span class="c">蓝牙和天气 · <span class="tm">${timeTxt()}</span></span><button class="ico" data-act="cmenu" title="更多">${ic.more}</button></div>
+      <div class="feed">${lead}${items.map(i => itemHtml(i)).join('')}</div>
+      <div class="ballwrap"><div class="ball"></div><div class="callst">${S.muted ? '已静音' : S.call.status}</div></div>
+      ${typ}${callButtons()}${screenPanel()}${menu}${recordsSheet()}</div>`;
+  }
+  function recordsSheet() {
+    if (!S.sheet) return '';
+    const rows = [];
+    if (S.call) rows.push(`<div class="rec now2"><span class="dot pulse"></span><div>这一通 · 进行中<span class="s">从 9:41 开始 · <span class="tm">${timeTxt()}</span></span></div></div>`);
+    S.calls.forEach(c => rows.push(`<button class="rec" data-act="jump" data-id="${c.id}"><div>${c.when} · ${c.dur}<span class="s">${c.first}</span></div><span class="chev">›</span></button>`));
+    return `<div class="shade" data-act="sheetx"></div><div class="bsheet"><div class="grab"></div>
+      <div class="bh">「蓝牙和天气」的通话记录</div>${rows.join('')}
+      <div class="bnote">点一条，回到聊天页并跳到那一段</div></div>`;
+  }
+  function viewCallSet() {
+    const top = S.call ? liveBar('回到通话') : '';
+    const r = (t, on) => `<div><span>${t}</span><span class="${on ? 'sel' : ''}">${on ? '●' : ''}</span></div>`;
+    return `${statusBar()}${top}
+      <div class="bar"><button class="ico" data-act="back">${ic.back}</button><span class="ttl">通话设置</span></div>
+      <div class="setcap">通话方式</div>
+      <div class="setlist">${r('标准：识别 → 模型 → 朗读', true)}${r('实时语音', false)}</div>
+      <div class="setcap">多久没有动静就挂断</div>
+      <div class="setlist">${r('2 分钟')}${r('5 分钟', true)}${r('10 分钟')}<div><span>自定义</span><span>›</span></div>${r('不挂断')}</div>`;
+  }
+  function viewCallCur() {
+    const items = S.items.slice(), at = S.call.startIdx;
+    items.splice(at, 0, { k: 'div', t: '更早的对话' });
+    const typ = S.typing ? `<div class="calltype"><span class="in">打字给 Mika</span><button class="round go">${ic.send}</button></div>` : '';
+    return `<div class="call" style="display:flex;flex-direction:column;height:100%">
+      ${statusBar()}
+      <div class="callhead"><button class="ico" data-act="collapse" title="回到聊天">${ic.down}</button><span class="c">Mika · <span class="tm">${timeTxt()}</span></span><span style="width:36px"></span></div>
+      ${feed(items)}
+      <div class="ballwrap"><div class="ball"></div><div class="callst">${S.muted ? '已静音' : S.call.status}</div></div>
+      ${typ}${callButtons()}${screenPanel()}</div>`;
+  }
+  function viewCallB() {
+    const voice = S.items.slice(S.call.startIdx).filter(i => i.k === 'me' || i.k === 'desk');
+    const last = voice.slice(-2);
+    const caps = last.map((i, n) => `<div class="cap ${n === 0 && last.length === 2 ? 'old' : ''}"><span class="who">${i.k === 'me' ? '你' : 'Mika'}</span>${i.t}</div>`).join('');
+    const t = task();
+    const typ = S.typing ? `<div class="calltype"><span class="in">打字给 Mika</span><button class="round go">${ic.send}</button></div>` : '';
+    return `<div class="call" style="display:flex;flex-direction:column;height:100%">
+      ${statusBar()}
+      <div class="callhead"><button class="ico" data-act="collapse" title="回到聊天">${ic.down}</button><span class="c">Mika · <span class="tm">${timeTxt()}</span></span><span style="width:36px"></span></div>
+      <div class="slim">
+        <div class="ball big"></div>
+        <div class="callst">${S.muted ? '已静音' : S.call.status}</div>
+        <div class="caps">${caps || '<div class="cap old" style="text-align:center">说吧，Mika 在听</div>'}</div>
+        ${t ? `<div class="slimtask">${card(t)}</div>` : ''}
+      </div>
+      ${typ}${callButtons()}${screenPanel()}</div>`;
+  }
+  function viewRun() {
+    const t = S.items.find(i => i.id === S.runId);
+    const run = t.state !== 'ok';
+    const top = S.call && S.v !== 'cur' ? liveBar(S.v === 'A' ? '回到聊天' : '回到通话') : '';
+    const steps = t.steps.map((s, n) => {
+      const cls = (n === t.steps.length - 1 && run) ? 'cur' : 'fin';
+      return `<li class="${cls}"><span class="sd"></span><span>${s}</span><span class="tm2">${n === 0 ? '刚刚' : n + '0 秒后'}</span></li>`;
+    }).join('');
+    return `${statusBar()}${top}
+      <div class="bar"><button class="ico" data-act="back">${ic.back}</button><span class="ttl">运行过程</span><span class="sp"></span></div>
+      <div class="runhead"><div class="t">${run ? '<span class="spin"></span>' : '<span class="okdot"></span>'}${t.title}</div><div class="sub">${run ? '进行中' : '已完成'} · 来自「蓝牙和天气」</div></div>
+      ${t.id === 'bt' ? `<div style="padding:0 16px 10px">${screenMock(t)}</div>` : ''}
+      <ul class="steps">${steps}</ul>`;
+  }
+  function viewSettings() {
+    const top = S.call && S.v !== 'cur' ? liveBar(S.v === 'A' ? '回到聊天' : '回到通话') : '';
+    return `${statusBar()}${top}
+      <div class="bar"><button class="ico" data-act="back">${ic.back}</button><span class="ttl">设置</span></div>
+      <div class="setlist"><div><span>模型</span><span>›</span></div><div><span>通话方式</span><span>›</span></div><div><span>权限</span><span>›</span></div><div><span>关于</span><span>›</span></div></div>`;
+  }
+  function view() {
+    let h;
+    if (S.screen === 'call' && S.call) h = S.v === 'B' ? viewCallB() : S.v === 'C' ? viewCallC() : viewCallCur();
+    else if (S.screen === 'run') h = viewRun();
+    else if (S.screen === 'callset') h = viewCallSet();
+    else if (S.screen === 'settings') h = viewSettings();
+    else h = viewChat();
+    return h + drawer() + (S.toast ? `<div class="toast">${S.toast}</div>` : '');
+  }
+
+  /* ---------- side explanation ---------- */
+  function stack(layers) {
+    return `<div class="stack">${layers.map((l, i) => `${i ? '<span class="arrow">▸</span>' : ''}<span class="layer ${l[1] || ''}">${l[0]}</span>`).join('')}</div>`;
+  }
+  function now() {
+    const v = S.v, sc = S.screen, c = !!S.call;
+    if (v === 'cur') {
+      if (sc === 'call') return stack([['聊天页'], ['通话页 · 全屏盖在上面', 'top']]) +
+        `通话页是<b>盖在聊天页上面的一整层</b>。它把这条对话从头到尾又显示了一遍——「更早的对话」上面那些，就是聊天页里本来就有的内容。所以同一段对话有<b>两个全屏副本</b>。`;
+      if (sc === 'run') return stack(S.from === 'call' ? [['聊天页'], ['通话页 · 暂时藏起', 'hid'], ['运行过程', 'top']] : [['聊天页'], ['运行过程', 'top']]) +
+        (S.from === 'call' ? `点任务卡时，通话页先藏起来，再打开运行过程。<b>按返回，通话页会重新盖上来</b>，而不是回到聊天页——运行过程明明是聊天页底下的页面，返回却跳回了通话层，这就是“绕”的来源。` : `从聊天页进来的运行过程，返回就是聊天页。`);
+      if (sc === 'settings') return stack([['聊天页'], ['设置', 'top']]) + (c ? `<b>通话还开着</b>，Mika 还在听，但这一页<b>完全看不出来</b>。只有下拉通知栏才知道。` : `设置页。`);
+      if (c) return stack([['聊天页', 'top'], ['通话页 · 藏起来了', 'hid']]) +
+        `你收起了通话页。<b>通话还在继续</b>，Mika 还在听，通话里说的话也在一句句写进这条对话——但聊天页<b>没有任何“通话中”的提示</b>。想回去，只能再点一次 📞。`;
+      if (S.ended != null) return stack([['聊天页', 'top']]) + `挂断后回到聊天页。通话里说的话已经写进这条对话，但没有“通话从哪开始、到哪结束”的标记。`;
+      return stack([['聊天页', 'top']]) + `聊天页。点输入框右边闪动的 📞 开始通话。`;
+    }
+    if (v === 'A') {
+      if (sc === 'run') return stack([['聊天页 · 通话中'], ['运行过程', 'top']]) +
+        (c ? `运行过程就是聊天页下一级的普通页面，<b>通话在后台照常进行</b>。顶部绿条随时点回去；按返回也是回聊天页，不会有东西突然盖上来。` : `运行过程，返回回到聊天页。`);
+      if (sc === 'settings') return stack([['聊天页 · 通话中'], ['设置', 'top']]) +
+        (c ? `去了别的页面，顶部一直挂着<b>绿色「通话中」</b>，点一下回到聊天页。不用找、不会忘。` : `设置页。`);
+      if (c) return stack([['聊天页 · 通话中', 'top']]) +
+        `<b>没有单独的通话页。</b>聊天页自己进入通话状态：标题变成「通话中」，输入框变成通话操作条，你说的和 Mika 说的直接一条条进到<b>这条对话</b>里，任务卡也在这儿。往上滑就是之前的记录，只有这一份。` +
+        (S.typing ? `<br><br>打字也不挂断：发出去的字算在这通电话里，Mika 照样用语音回。` : '');
+      if (S.ended != null) return stack([['聊天页', 'top']]) + `挂断后，操作条变回输入框，对话里留一条「通话结束」。从头到尾一直是<b>同一个页面</b>。`;
+      return stack([['聊天页', 'top']]) + `聊天页，跟现在一样。点 📞 打电话——<b>不会跳到新页面</b>，看底部和顶部怎么变。`;
+    }
+    if (v === 'C') {
+      if (sc === 'call' && S.sheet) return stack([['聊天页'], ['通话页'], ['通话记录 · 底部弹出', 'top']]) +
+        `这条对话打过的每一通都在这里。点一条，<b>回到聊天页并跳到那一段</b>，高亮几秒。不另做回放页——聊天页里那一段就是记录，只有一份。`;
+      if (sc === 'call') return stack([['聊天页'], ['通话页 · 只有这一通', 'top']]) +
+        `通话页<b>只显示这一通</b>：从「已接通」开始往下记。之前的聊天、上一通电话都不在这里，但 Mika 都记得。要找以前的通话：右上 <b>⋯ → 通话记录</b>，或点顶部那行「上次通话」。<br><br>通话页现在是<b>正常的一页</b>，不是盖上来的浮层。`;
+      if (sc === 'run') return stack(S.from === 'call' ? [['聊天页'], ['通话页'], ['运行过程', 'top']] : [['聊天页'], ['运行过程', 'top']]) +
+        (S.from === 'call' ? `运行过程叠在通话页上面，<b>按返回就回到通话页</b>，一层层往回退，不会有东西突然盖上来。` : `从聊天页进来的，返回回到聊天页。${c ? '顶部绿条随时回通话页。' : ''}`);
+      if (sc === 'callset') return stack([['聊天页'], ['通话页'], ['通话设置', 'top']]) + `从 ⋯ 进来的通话设置：通话方式、多久没动静就挂断。返回回到通话页。`;
+      if (sc === 'settings') return stack([['聊天页'], ['设置', 'top']]) + (c ? `顶部绿条一直在，点一下回到通话页。` : `设置页。`);
+      const jumped = S.hl ? `<br><br>高亮的这段就是你在通话记录里点的那一通：有头有尾，一句句都在。` : '';
+      if (c) return stack([['聊天页', 'top'], ['通话页 · 收起', 'hid']]) +
+        `聊天页是<b>完整对话</b>：通话里你说的、Mika 回的，跟打字一样一句句排在这里，开头有「语音通话 · 9:41」那条线。顶部绿条点一下回到通话页。` + jumped;
+      if (S.ended != null) return stack([['聊天页', 'top']]) +
+        (S.lastEmpty ? `一句没说就挂了，聊天页只留一行「没有说话」，通话记录里也有这一条。` :
+          `这一通在聊天页里<b>有头有尾</b>：「语音通话」开头，「通话结束」收尾。再打一次，通话页又是空白的，刚才这通在 ⋯ → 通话记录 里。`) + jumped;
+      return stack([['聊天页', 'top']]) +
+        `聊天页。往上翻能看到<b>昨天的一通电话</b>：一句句展开，用两条线标出头尾——以后每通电话在聊天页里都是这样。点 📞 打电话。` + jumped;
+    }
+    // B
+    if (sc === 'call') return stack([['聊天页'], ['通话页 · 精简', 'top']]) +
+      `通话页只管<b>“这一通电话”</b>：大球、状态、最近两句话、当前任务。<b>不放完整记录</b>——完整对话只在聊天页。点左上 ⌄ 收起。`;
+    if (sc === 'run') return stack(S.from === 'call' ? [['聊天页'], ['通话页'], ['运行过程', 'top']] : [['聊天页'], ['运行过程', 'top']]) +
+      (S.from === 'call' ? `从通话页进运行过程，返回回到通话页。比现在好懂（通话页不再复制整段对话），但<b>还是两层</b>。` : `从聊天页进运行过程，返回回到聊天页，顶部绿条可以回通话页。`);
+    if (sc === 'settings') return stack([['聊天页'], ['设置', 'top']]) + (c ? `顶部绿条一直在，点一下回到通话页。` : `设置页。`);
+    if (c) return stack([['聊天页', 'top'], ['通话页 · 收起', 'hid']]) +
+      `收起后，聊天页顶部有<b>绿色返回条</b>；通话内容照常一句句写进这条对话，在这里能看全。点绿条回到精简通话页。`;
+    if (S.ended != null) return stack([['聊天页', 'top']]) + `挂断后回到聊天页，对话里留一条「通话结束」。`;
+    return stack([['聊天页', 'top']]) + `聊天页。点 📞 打电话。`;
+  }
+  const ABOUT = {
+    cur: `<h3>现状</h3>就是手机上现在的样子：通话页是一个<b>全屏盖层</b>，里面复制了整段对话；任务卡进运行过程、返回又回到通话层；收起后聊天页看不出还在通话。`,
+    A: `<h3>方案 A（推荐）</h3><b>对话是主线，通话只是对话的一种输入方式</b>——跟按住说话、打字是一回事，只是一直开着。所以不另开页面：聊天页底部换成通话操作条，顶部显示「通话中」，内容就写在这条对话里。离开聊天页时，顶部有绿条带你回来。`,
+    C: `<h3>方案 C（按你的思路）</h3><b>聊天页 = 完整对话</b>：通话里说的跟打字一样一句句展开，用「语音通话 / 通话结束」两条线标出头尾。<b>通话页 = 这一通</b>：每次从空白开始。<b>通话页右上 ⋯</b>：通话记录（这条对话打过的每一通，点一条跳到聊天页里那一段）和通话设置。通话页是正常的一页，返回一层层退；离开它时顶部有绿条。`,
+    B: `<h3>方案 B</h3>保留通话页，但它<b>只显示这一通电话</b>（球、状态、最近两句、当前任务），完整记录只在聊天页。收起后聊天页顶部有绿色返回条。改动比 A 小，但仍然是两个页面来回切。`,
+  };
+  const TRY = {
+    cur: ['点输入框右边闪动的 📞', '等 Mika 去查蓝牙，点出现的任务卡', '在运行过程里按 ‹ 返回，看通话页又盖上来', '点任务卡上的「看画面」', '点左上 ⌄ 收起，看聊天页有没有提示', '再点 📞 回去，挂断'],
+    A: ['点 📞，注意页面没有跳走', '往上滑：之前的聊天就在上面，只有一份', '点任务卡进运行过程，再按 ‹ 返回', '点「看画面」，画面直接展开在卡片里', '点左上 ☰ → 设置，看顶部绿条，点它回来', '试试「打字」，最后挂断'],
+    C: ['先往上翻聊天页，看昨天那通电话长什么样', '点 📞：通话页从空白开始，只有这一通', '点右上 ⋯ → 通话记录 → 「昨天 21:05」，看它跳到聊天页哪里', '点顶部绿条回通话页，等任务卡出现，点进去再按 ‹ 返回', '点左上 ⌄ 收起，看这一通在聊天页里一句句展开', '回通话页挂断，再打一次：又是空白的，顶部有「上次通话」', '再试一次刚接通就挂断，看「没有说话」那一行'],
+    B: ['点 📞，进入精简通话页', '等任务卡出现，点它进运行过程，再返回', '点左上 ⌄ 收起，看聊天页顶部的绿条', '在聊天页往下看，通话内容在这里', '点绿条回到通话页，挂断'],
+  };
+  function side() {
+    document.getElementById('now').innerHTML = `<h3>此刻</h3>${now()}`;
+    document.getElementById('about').innerHTML = ABOUT[S.v];
+    document.getElementById('try').innerHTML = `<h3>试试这样点</h3><ol>${TRY[S.v].map(x => `<li>${x}</li>`).join('')}</ol>`;
+  }
+
+  function render() {
+    const f = scr.querySelector('.feed');
+    const prev = f ? f.scrollTop : 0;
+    scr.className = 'screen';
+    scr.innerHTML = view();
+    const t = task();
+    const key = [S.v, S.screen, S.items.length, t ? t.steps.length : 0, JSON.stringify(S.open), S.typing].join('|');
+    const sk = S.v + '|' + S.screen;
+    const near = f ? f.scrollHeight - f.scrollTop - f.clientHeight < 80 : true;
+    const nf = scr.querySelector('.feed');
+    if (nf) {
+      const mark = S.jump && nf.querySelector(`[data-cs="${S.jump}"]`);
+      if (mark) nf.scrollTop = mark.offsetTop - 12;
+      else if (sk !== lastSk || (key !== lastKey && near)) nf.scrollTop = nf.scrollHeight;
+      else nf.scrollTop = prev;
+    }
+    S.jump = null; lastKey = key; lastSk = sk;
+    side();
+  }
+
+  /* ---------- actions ---------- */
+  scr.addEventListener('click', e => {
+    const el = e.target.closest('[data-act]'); if (!el) return;
+    const a = el.dataset.act, v = S.v;
+    switch (a) {
+      case 'call':
+        if (!S.call) startCall();
+        else if (v !== 'A') S.screen = 'call';
+        break;
+      case 'hang': hangup(); break;
+      case 'mute': S.muted = !S.muted; break;
+      case 'type': S.typing = !S.typing; break;
+      case 'spk': S.speaker = !S.speaker; toast(S.speaker ? '已切到免提' : '已切回听筒'); break;
+      case 'collapse': S.screen = 'chat'; S.panel = false; S.typing = false; S.menu = false; S.sheet = false;
+        if (v === 'cur') toast('通话还在继续，但这里看不出来'); break;
+      case 'cmenu': S.menu = true; break;
+      case 'menux': S.menu = false; break;
+      case 'records': S.menu = false; S.sheet = true; break;
+      case 'sheetx': S.sheet = false; break;
+      case 'callset': S.menu = false; S.screen = 'callset'; break;
+      case 'jump':
+        S.menu = false; S.sheet = false; S.panel = false; S.typing = false; S.screen = 'chat';
+        S.hl = el.dataset.id; S.jump = el.dataset.id; lastSk = 'C|chat';
+        clearTimeout(hlTimer); hlTimer = setTimeout(() => { S.hl = null; render(); }, 2800);
+        break;
+      case 'screen':
+        if (v === 'A' || (v === 'C' && S.screen === 'chat')) S.open[el.dataset.id] = !S.open[el.dataset.id];
+        else if (S.screen === 'chat') { S.from = 'chat'; S.runId = el.dataset.id; S.screen = 'run'; }
+        else S.panel = true;
+        break;
+      case 'panelx': S.panel = false; break;
+      case 'run':
+        S.from = S.screen === 'call' ? 'call' : 'chat'; S.runId = el.dataset.id; S.screen = 'run'; S.panel = false; break;
+      case 'back':
+        if (S.screen === 'run' && S.call && S.from === 'call' && v !== 'A') {
+          S.screen = 'call'; if (v === 'cur') toast('通话页又盖回来了');
+        } else if (S.screen === 'callset' && S.call) S.screen = 'call';
+        else S.screen = 'chat';
+        break;
+      case 'bar': S.screen = (v === 'A') ? 'chat' : 'call'; break;
+      case 'menu': S.drawer = true; break;
+      case 'shade': S.drawer = false; break;
+      case 'settings': S.drawer = false; S.screen = 'settings'; break;
+    }
+    render();
+  });
+
+  function reset(v) { stopAll(); S = fresh(v); lastKey = ''; render(); }
+  document.getElementById('tabs').addEventListener('click', e => {
+    const b = e.target.closest('.tab'); if (!b) return;
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+    reset(b.dataset.v);
+  });
+  document.getElementById('restart').onclick = () => reset(S.v);
+  document.getElementById('skip').onclick = () => {
+    if (!S.call) { toast('先点 📞 打电话'); render(); return; }
+    timers.forEach(clearTimeout); timers = [];
+    const since = () => S.items.slice(S.call.startIdx);
+    if (!since().some(i => i.k === 'pill')) push({ k: 'pill', t: '已接通' });
+    if (task() && !since().some(i => i.id === 'bt')) {
+      if (!since().some(i => i.k === 'me')) {
+        if (!since().some(i => i.k === 'desk')) push({ k: 'desk', t: '我在，你说。', voice: 1 });
+        push({ k: 'me', t: '没事，就再试一下', voice: 1 });
+        push({ k: 'desk', t: '好，有事随时叫我。', voice: 1 });
+      }
+      status('在听…'); render(); return;
+    }
+    if (!task()) {
+      push({ k: 'desk', t: '我在，你说。', voice: 1 });
+      push({ k: 'me', t: '帮我看看蓝牙开着没', voice: 1 });
+      push({ k: 'desk', t: '好，我去设置里看一下。', voice: 1 });
+      push({ k: 'task', id: 'bt', title: '查看蓝牙状态', state: 'run', steps: [BT_STEPS[0]] });
+    }
+    finishTask(); render();
+  };
+  reset('C');
+})();
+</script>
+</body>
+</html>

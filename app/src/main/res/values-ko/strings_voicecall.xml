@@ -6,7 +6,6 @@
     <string name="voicecall_task_done">완료</string>
     <string name="voicecall_task_open">진행 과정 보기</string>
     <string name="voicecall_task_screen">화면 보기</string>
-    <string name="voicecall_earlier">여기까지 이전 대화</string>
     <string name="voicecall_screen_close">화면 닫기</string>
     <string name="voicecall_task_failed">완료하지 못했습니다</string>
     <string name="voicecall_task_cancelled">취소됨</string>
@@ -59,4 +58,17 @@
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">채팅으로 돌아가기</string>
     <string name="voicecall_desk_report">%1$s 건은 %2$s</string>
+    <string name="voicecall_log_start">음성 통화 · %1$s</string>
+    <string name="voicecall_log_end">통화 종료 · %1$s</string>
+    <string name="voicecall_log_end_idle">통화 종료 · %1$s · 오래 말이 없음</string>
+    <string name="voicecall_log_silent">음성 통화 · %1$s · 말하지 않음</string>
+    <string name="voicecall_log_live">통화 중</string>
+    <string name="voicecall_more">더보기</string>
+    <string name="voicecall_records">통화 기록</string>
+    <string name="voicecall_records_hint">누르면 채팅에서 그 부분을 보여줍니다</string>
+    <string name="voicecall_records_empty">이 대화에는 아직 통화 기록이 없습니다</string>
+    <string name="voicecall_records_silent">말하지 않음</string>
+    <string name="voicecall_settings">통화 설정</string>
+    <string name="voicecall_bar">통화 중 · 통화로 돌아가기</string>
+    <string name="voicecall_last_call">지난 통화 · %1$s</string>
 </resources>

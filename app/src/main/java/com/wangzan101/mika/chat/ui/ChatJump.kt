@@ -13,6 +13,9 @@ sealed interface ChatTarget {
 
     /** 这一轮的结果卡片。 */
     data class Status(val turnIndex: Int) : ChatTarget
+
+    /** 一通语音通话开头那行(从通话页的「通话记录」跳过来)。 */
+    data class Call(val callId: String) : ChatTarget
 }
 
 /** 一次性的跳转请求。serial 让连续两次跳到同一处也算新请求。 */

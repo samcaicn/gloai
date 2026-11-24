@@ -832,4 +832,28 @@ class ConversationStoreTest {
         assertNull(store.projectId(branched))
         assertFalse(File(dir, "$branched.project").exists())
     }
+
+    // 通话里说的轮次记着是哪一通;通话记录同编号替换、按接通时刻排,重开读回来不变,删对话连同记录一起删
+    @Test fun callRecordsRoundTrip() {
+        val dir = tmp.newFolder()
+        val store = ConversationStore(dir)
+        val turn = Turn("几点了", "九点", "desk", atMs = 300, callId = "a")
+        store.append("p", turn)
+        assertEquals("a", ConversationStore(dir).turns("p").single().callId)
+        store.append("plain", Turn("问题", "结果", "succeeded"))
+        assertFalse("callId" in File(dir, "plain.json").readText())
+
+        store.recordCall("p", ConversationCall("b", 500))
+        store.recordCall("p", ConversationCall("a", 200))
+        store.recordCall("p", ConversationCall("a", 200, 400, ConversationCall.END_IDLE, spoke = true))
+        val calls = ConversationStore(dir).calls("p")
+        assertEquals(listOf("a", "b"), calls.map { it.id })
+        assertEquals(400L, calls.first().endMs)
+        assertEquals(ConversationCall.END_IDLE, calls.first().endReason)
+        assertEquals(emptyList<ConversationCall>(), store.calls("plain"))
+
+        store.delete("p")
+        assertEquals(emptyList<ConversationCall>(), ConversationStore(dir).calls("p"))
+        assertFalse(dir.listFiles().orEmpty().any { it.name.endsWith(".calls") })
+    }
 }

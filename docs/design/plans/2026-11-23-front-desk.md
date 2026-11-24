@@ -284,7 +284,7 @@
   - Cascade：`noticeWaitsForCurrentReply`：正在说话时来 sendNotice，等这句播完才开始说汇报。
 - [ ] **Step 2：** `./gradlew :app:testDebugUnitTest --tests '*VoiceDeskBridgeTest*' --tests '*CascadeVoiceSessionTest*'` → FAIL
 - [ ] **Step 3：** 实现以上改动；补齐新增的本地化文字。
-- [ ] **Step 4：** `./gradlew :app:testDebugUnitTest --tests '*voicecall*' --tests '*cascade*' --tests '*VoiceCallOverlayTest*'` → PASS（`VoiceCallOverlayTest` 如果在 androidTest 下，就跟着改断言，放到 Task 11 跑）
+- [ ] **Step 4：** `./gradlew :app:testDebugUnitTest --tests '*voicecall*' --tests '*cascade*' --tests '*VoiceCallPageTest*'` → PASS（`VoiceCallPageTest` 如果在 androidTest 下，就跟着改断言，放到 Task 11 跑）
 - [ ] **Step 5：** 提交 `feat(voicecall): talk through the front desk; non-blocking dispatch, no cancel on barge-in`
 
 ---
@@ -351,7 +351,7 @@
 ### Task 11：全量回归 + 真机验证
 
 **Files:**
-- Modify: 跟着改动修正 androidTest（`VoiceCallOverlayTest`、聊天页相关测试、`LiveRunTest` 场景）
+- Modify: 跟着改动修正 androidTest（`VoiceCallPageTest`、聊天页相关测试、`LiveRunTest` 场景）
 - Create: `docs/design/acceptance/2026-11-23-front-desk-device-check.md`（真机验收清单和结果）
 
 - [ ] **Step 1：** `./gradlew :core:test :app:testDebugUnitTest` → 全绿（`TerminalHubTest` 偶发 15 秒超时属于环境抖动，diff 不碰 terminal 时不用管）

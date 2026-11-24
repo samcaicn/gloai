@@ -6,7 +6,6 @@
     <string name="voicecall_task_done">Done</string>
     <string name="voicecall_task_open">View how it is going</string>
     <string name="voicecall_task_screen">View screen</string>
-    <string name="voicecall_earlier">Earlier in this conversation</string>
     <string name="voicecall_screen_close">Close screen</string>
     <string name="voicecall_task_failed">Could not finish it</string>
     <string name="voicecall_task_cancelled">Cancelled</string>
@@ -59,4 +58,17 @@
     <string name="voicecall_ended_after">%1$s · %2$s</string>
     <string name="voicecall_back_to_chat">Back to chat</string>
     <string name="voicecall_desk_report">About %1$s: %2$s</string>
+    <string name="voicecall_log_start">Voice call · %1$s</string>
+    <string name="voicecall_log_end">Call ended · %1$s</string>
+    <string name="voicecall_log_end_idle">Call ended · %1$s · went quiet</string>
+    <string name="voicecall_log_silent">Voice call · %1$s · nothing said</string>
+    <string name="voicecall_log_live">On a call</string>
+    <string name="voicecall_more">More</string>
+    <string name="voicecall_records">Call history</string>
+    <string name="voicecall_records_hint">Tap one to see it in the chat</string>
+    <string name="voicecall_records_empty">No calls in this conversation yet</string>
+    <string name="voicecall_records_silent">Nothing said</string>
+    <string name="voicecall_settings">Call settings</string>
+    <string name="voicecall_bar">On a call · back to the call</string>
+    <string name="voicecall_last_call">Last call · %1$s</string>
 </resources>

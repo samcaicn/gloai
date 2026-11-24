@@ -101,22 +101,36 @@ import com.wangzan101.mika.voicecall.VoiceCallFeedItem
 import com.wangzan101.mika.voicecall.VoiceCallState
 import com.wangzan101.mika.voicecall.VoiceCallTurn
 import com.wangzan101.mika.voicecall.voiceCallStatusText
+import com.wangzan101.mika.chat.ConversationCall
+import com.wangzan101.mika.chat.ui.callTime
 import kotlin.math.abs
 import kotlin.math.sin
 
 /**
- * 语音通话页:通话就是一段对话。全屏 Dialog(返回键、点外部都不收起),跟随 App 的浅/深色与强调色。
+ * 语音通话页:只放这一通(整条对话在聊天页里,通话里说的一句句也排在那里)。页面栈里的一页,跟随 App 的浅/深色与强调色。
  *
  * 顶栏:收起 ⌄ + 小点阵球(形态随状态)+「和 Mika 通话中」与一句状态(在听你说 / 在想 / Mika 在说 /
  * 正在办事 / 已静音;终态是结束或出错文案)。中间是对话流:你说的、Mika 说的实时成气泡(说到一半的半透明),
  * 办事是步骤卡,出错是带「重试」的卡,还没人开口时居中放一颗大球。底部控制台:声波条 + 静音 / 打字 /
- * 挂断(带计时)/ 免提;结束后控制台换成「回到聊天」。
+ * 挂断(带计时)/ 免提;结束后控制台换成「回到聊天」。右上角 ⋯:这个对话的「通话记录」(点一条到聊天里那一段)和「通话设置」。
  *
  * 页面只认 [VoiceCallHolder] 里各路状态流,不依赖前台服务在位(见 [VoiceCallController])。
  */
 @Composable
-fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit, onOpenTask: (VoiceCallFeedItem.Task) -> Unit = {}) {
-    CallDialog {
+fun VoiceCallPage(
+    call: VoiceCallHolder,
+    onCollapse: () -> Unit,
+    onOpenTask: (VoiceCallFeedItem.Task) -> Unit = {},
+    /** 这个对话的通话记录,含这一通。 */
+    calls: List<ConversationCall> = emptyList(),
+    /** 点了通话记录里的一条(或页顶「上次通话」):到聊天里那一通开头。 */
+    onOpenRecord: (callId: String) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
+) {
+    var records by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val last = calls.lastOrNull { it.id != call.callId }
+    Box(Modifier.fillMaxSize()) {
         val session = call.session
         val state by session.state.collectAsState()
         val turn by session.turn.collectAsState()
@@ -146,6 +160,7 @@ fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit, onOpenTask: 
         val ballColors = ballColors(c, failed = state is VoiceCallState.Failed)
         CallPage(
             onCollapse = onCollapse,
+            menu = { CallMenu(onRecords = { records = true }, onSettings = onOpenSettings) },
             header = {
                 VoiceCallBall(shape, level, Modifier.size(34.dp), dotCount = 110, dotRadius = 0.055f, near = ballColors.first, far = ballColors.second)
             },
@@ -167,6 +182,7 @@ fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit, onOpenTask: 
                     screens = screens,
                     onOpenTask = onOpenTask,
                     onWatch = { call.watching = it },
+                    lastCall = last?.let { stringResource(R.string.voicecall_last_call, callTime(context, it.startMs)) to { onOpenRecord(it.id) } },
                 )
                 // 还没人开口:中间放一颗大球,别让页面空着
                 if (items.isEmpty() && state !is VoiceCallState.Failed && state !is VoiceCallState.Ended) {
@@ -192,6 +208,13 @@ fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit, onOpenTask: 
                     onHangup = session::hangup,
                 )
             }
+        }
+        if (records) {
+            CallRecordsSheet(
+                calls, current = call.callId,
+                onPick = { records = false; onOpenRecord(it) },
+                onDismiss = { records = false },
+            )
         }
     }
 }
@@ -286,6 +309,7 @@ private fun View.dialogWindow(): Window? {
 @Composable
 private fun CallPage(
     onCollapse: () -> Unit,
+    menu: @Composable () -> Unit = {},
     header: @Composable () -> Unit,
     status: String?,
     statusColor: Color,
@@ -319,6 +343,7 @@ private fun CallPage(
                     }
                 }
             }
+            menu()
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.hair))
         Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) { content() }
@@ -336,6 +361,8 @@ private fun CallFeed(
     screens: Set<String> = emptySet(),
     onOpenTask: (VoiceCallFeedItem.Task) -> Unit = {},
     onWatch: (String) -> Unit = {},
+    /** 页顶那行「上次通话 · 9:20 ›」的字和点了做什么;这个对话没打过别的通话为 null。 */
+    lastCall: Pair<String, () -> Unit>? = null,
 ) {
     val list = rememberLazyListState()
     val lastText = (items.lastOrNull() as? VoiceCallFeedItem.Said)?.text
@@ -352,23 +379,34 @@ private fun CallFeed(
             contentPadding = PaddingValues(horizontal = MikaSpace.Page, vertical = MikaSpace.S12),
             verticalArrangement = Arrangement.spacedBy(MikaSpace.S8),
         ) {
-            // 之前的对话(到分隔线为止)在上,这通电话从「已接通」那行往下
-            val split = items.indexOfFirst { it is VoiceCallFeedItem.Earlier } + 1
-            val row: @Composable (VoiceCallFeedItem) -> Unit = { item ->
-                when (item) {
-                    is VoiceCallFeedItem.Said -> SaidBubble(item, bubbleMax)
-                    is VoiceCallFeedItem.Task -> TaskCard(item, hasScreen = item.running && item.taskId in screens, onOpen = { onOpenTask(item) }, onWatch = { onWatch(item.taskId) })
-                    is VoiceCallFeedItem.Earlier -> SystemPill(stringResource(R.string.voicecall_earlier))
-                }
-            }
-            items(items.subList(0, split), key = { it.id }) { row(it) }
+            // 只这一通:「已接通」那行往下;之前的在聊天页和「通话记录」里
+            if (lastCall != null) item("last-call") { LastCallLink(lastCall.first, lastCall.second) }
             if (startedAt != null) item("connected") {
                 SystemPill(stringResource(R.string.voicecall_connected_at, DateFormat.getTimeFormat(context).format(startedAt)))
             }
-            items(items.subList(split, items.size), key = { it.id }) { row(it) }
+            items(items, key = { it.id }) { item ->
+                when (item) {
+                    is VoiceCallFeedItem.Said -> SaidBubble(item, bubbleMax)
+                    is VoiceCallFeedItem.Task -> TaskCard(item, hasScreen = item.running && item.taskId in screens, onOpen = { onOpenTask(item) }, onWatch = { onWatch(item.taskId) })
+                }
+            }
             if (failedText != null) item("failed") { FailedCard(failedText, onRetry) }
             if (endedText != null) item("ended") { SystemPill(endedText) }
         }
+    }
+}
+
+/** 页顶一行浅色小字「上次通话 · 9:20 ›」,点了到聊天里那一段。 */
+@Composable
+private fun LastCallLink(text: String, onClick: () -> Unit) {
+    val c = MikaTheme.colors
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Text(
+            "$text ›",
+            Modifier.clip(MikaShapes.Chip).clickable(role = Role.Button, onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 4.dp).testTag("voicecall-last-call"),
+            style = MikaType.Hint, color = c.accent,
+        )
     }
 }
 
@@ -390,7 +428,7 @@ private fun SaidBubble(item: VoiceCallFeedItem.Said, max: androidx.compose.ui.un
     val mine = item.speaker == VoiceCallFeedItem.Speaker.User
     Box(Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
         val shape = if (mine) MikaShapes.UserBubble else MikaShapes.AnswerBubble
-        val base = Modifier.widthIn(max = max).alpha(if (item.partial || item.earlier) EARLIER_ALPHA else 1f).animateContentSize()
+        val base = Modifier.widthIn(max = max).alpha(if (item.partial) PARTIAL_ALPHA else 1f).animateContentSize()
         Text(
             if (item.partial && mine) item.text + "…" else item.text,
             (if (mine) base.background(c.accent.copy(alpha = 0.14f), shape) else base.background(c.surface, shape).border(1.dp, c.hair, shape))
@@ -410,7 +448,7 @@ private fun SaidBubble(item: VoiceCallFeedItem.Said, max: androidx.compose.ui.un
 private fun TaskCard(item: VoiceCallFeedItem.Task, hasScreen: Boolean, onOpen: () -> Unit, onWatch: () -> Unit) {
     val c = MikaTheme.colors
     Column(
-        Modifier.fillMaxWidth().alpha(if (item.earlier) EARLIER_ALPHA else 1f).clip(MikaShapes.Card)
+        Modifier.fillMaxWidth().clip(MikaShapes.Card)
             .background(c.surface, MikaShapes.Card).border(1.dp, c.hair, MikaShapes.Card)
             .clickable(role = Role.Button, onClickLabel = stringResource(R.string.voicecall_task_open), onClick = onOpen)
             .padding(horizontal = 14.dp, vertical = 12.dp).animateContentSize().testTag("voicecall-task"),
@@ -742,7 +780,7 @@ private fun phaseText(phase: DeskTaskPhase): Int = when (phase) {
 }
 
 /** 打开通话前就有的内容(和说到一半的话)画淡一点,和这通电话里说的分开。 */
-private const val EARLIER_ALPHA = 0.6f
+private const val PARTIAL_ALPHA = 0.6f
 
 /** 任务卡上平时露出的步骤条数。 */
 private const val VISIBLE_STEPS = 2

@@ -144,7 +144,7 @@
 - Modify: `app/src/main/java/com/wangzan101/mika/capsule/CapsuleController.kt` + `CapsuleCardContent.kt`(菜单「语音聊天」)
 - Modify: `app/src/main/java/com/wangzan101/mika/ui/MainActivity.kt`(EXTRA_OPEN_VOICE_CALL 直开)
 - Create: `app/src/main/res/values*/strings_voicecall.xml`(×12 目录)
-- Test: `app/src/androidTest/java/com/wangzan101/mika/voicecall/ui/VoiceCallOverlayTest.kt`
+- Test: `app/src/androidTest/java/com/wangzan101/mika/voicecall/ui/VoiceCallPageTest.kt`
 
 **Interfaces:**
 - Consumes: Task 4 的 `VoiceCallState`/`micLevel/speakerLevel`、Task 5 的状态行流、Task 6 的免提。

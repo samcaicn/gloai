@@ -1,14 +1,13 @@
 package com.wangzan101.mika.voicecall
 
-import com.wangzan101.mika.core.agent.Turn as ChatTurn
 import com.wangzan101.mika.core.frontdesk.DeskTaskPhase
 import com.wangzan101.mika.core.frontdesk.DeskTaskView
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * 通话页对话流里的一条:一句话(你/Mika,说到一半的是 partial),或一张办事步骤卡;
- * [Earlier] 是分隔线,它上面 earlier 为 true 的是打开通话前这条会话里已有的内容。
+ * 通话页对话流里的一条:一句话(你/Mika,说到一半的是 partial),或一张办事步骤卡。
+ * 通话页只放这一通里的;整条对话在聊天页,之前的通话在「通话记录」里。
  */
 sealed interface VoiceCallFeedItem {
     val id: Long
@@ -18,11 +17,7 @@ sealed interface VoiceCallFeedItem {
         val speaker: Speaker,
         val text: String,
         val partial: Boolean,
-        val earlier: Boolean = false,
     ) : VoiceCallFeedItem
-
-    /** 「以上是之前的对话」那条分隔线。 */
-    data class Earlier(override val id: Long) : VoiceCallFeedItem
 
     /** 前台派出的一件任务:步骤按出现顺序排,最后一条是当前这步;[phase] 是任务此刻所处的阶段。 */
     data class Task(
@@ -31,7 +26,6 @@ sealed interface VoiceCallFeedItem {
         val title: String,
         val steps: List<String>,
         val phase: DeskTaskPhase,
-        val earlier: Boolean = false,
     ) : VoiceCallFeedItem {
         /** 还没收尾(在做、排队、等你处理)。 */
         val running: Boolean get() = phase == DeskTaskPhase.Running || phase == DeskTaskPhase.Queued || phase == DeskTaskPhase.NeedsYou
@@ -56,37 +50,6 @@ class VoiceCallFeed(private val maxItems: Int = MAX_ITEMS) {
     private var nextId = 0L
     /** 第一次收到任务板时已收尾的任务编号(之前派的,不上卡);还没收到过时为 null。 */
     private var ignored: Set<String>? = null
-    /** 对话流开头属于之前对话的条数(含分隔线);这些不按 [maxItems] 滚掉。 */
-    private var earlierCount = 0
-
-    /**
-     * 打开通话时把这条会话已有的内容完整摆在上面(只在对话流还空着时):每一轮,不论是通话里说的还是聊天页打的字,
-     * 用户的话和回话各一条气泡(回话转成纯文字,不截字),那一轮派过的任务按 [tasks] 里的样子各一张卡,
-     * 最后一条分隔线。之前的这些不受 [maxItems] 限制,只有这通电话里新说的才按上限滚掉。
-     * 之后任务板再变,这些卡照样跟着变,不另开一张。
-     */
-    fun seed(turns: List<ChatTurn>, tasks: List<DeskTaskView>, plain: (String) -> String = { it }) {
-        synchronized(lock) {
-            if (_items.value.isNotEmpty()) return
-            val out = mutableListOf<VoiceCallFeedItem>()
-            for (turn in turns) {
-                if (turn.userText.isNotBlank()) out += VoiceCallFeedItem.Said(nextId++, VoiceCallFeedItem.Speaker.User, turn.userText.trim(), false, earlier = true)
-                val reply = plain(turn.outcome).trim()
-                if (reply.isNotEmpty()) out += VoiceCallFeedItem.Said(nextId++, VoiceCallFeedItem.Speaker.Mika, reply, false, earlier = true)
-                for (taskId in turn.deskTasks) {
-                    val view = tasks.firstOrNull { it.taskId == taskId } ?: continue
-                    if (out.none { it is VoiceCallFeedItem.Task && it.taskId == taskId }) {
-                        out += VoiceCallFeedItem.Task(nextId++, view.taskId, view.title, steps(view), view.state, earlier = true)
-                    }
-                }
-            }
-            if (out.isEmpty()) return
-            out += VoiceCallFeedItem.Earlier(nextId++)
-            earlierCount = out.size
-            publish(out)
-        }
-    }
-
     private fun steps(view: DeskTaskView) = (view.recent + listOfNotNull(view.line)).distinct()
 
     fun onUser(text: String, isFinal: Boolean) = said(VoiceCallFeedItem.Speaker.User, text, partial = !isFinal)
@@ -105,7 +68,7 @@ class VoiceCallFeed(private val maxItems: Int = MAX_ITEMS) {
         synchronized(lock) {
             val baseline = ignored ?: views.filter { it.state in ENDED }.map { it.taskId }.toSet().also { ignored = it }
             var current = _items.value
-            // 已经有卡的(之前对话里摆上来的)照样跟着变;没卡又已收尾的是更早的,不上卡
+            // 这通里上过卡的照样跟着变;没卡又已收尾的是更早的,不上卡
             for (view in views.filter { it.taskId !in baseline || hasCard(current, it.taskId) }) current = withTask(current, view)
             if (current !== _items.value) publish(current)
         }
@@ -141,10 +104,9 @@ class VoiceCallFeed(private val maxItems: Int = MAX_ITEMS) {
         }
     }
 
-    /** 之前的对话整段留着;这通电话里的超过 [maxItems] 条时只留最新的。 */
+    /** 超过 [maxItems] 条时只留最新的(整段都在聊天页里)。 */
     private fun publish(items: List<VoiceCallFeedItem>) {
-        val live = items.size - earlierCount
-        _items.value = if (live > maxItems) items.take(earlierCount) + items.takeLast(maxItems) else items
+        _items.value = if (items.size > maxItems) items.takeLast(maxItems) else items
     }
 
     companion object {
