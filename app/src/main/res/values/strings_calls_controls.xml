@@ -30,4 +30,5 @@
     <string name="calls_owner_ask_line">The other party on the call asks: %1$s\nReply here and I\'ll pass it on.</string>
     <string name="calls_owner_ask_notify_off">Call question notifications are off, so you may miss these. Turn them on in system Settings → Notifications.</string>
     <string name="calls_owner_ask_answered">Passed on to the call.</string>
+    <string name="calls_owner_ask_withdrawn">The call has ended, so this question is withdrawn. No need to reply.</string>
 </resources>

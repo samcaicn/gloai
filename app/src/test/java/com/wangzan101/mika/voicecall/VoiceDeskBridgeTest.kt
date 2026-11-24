@@ -7,11 +7,15 @@ import com.wangzan101.mika.core.agent.TaskState
 import com.wangzan101.mika.core.frontdesk.DeskEvent
 import com.wangzan101.mika.core.frontdesk.DeskLedger
 import com.wangzan101.mika.core.frontdesk.DeskReport
+import com.wangzan101.mika.core.frontdesk.DeskSurface
 import com.wangzan101.mika.core.frontdesk.DeskToolExecutor
 import com.wangzan101.mika.core.frontdesk.DeskTools
 import com.wangzan101.mika.core.frontdesk.FrontDesk
 import com.wangzan101.mika.core.frontdesk.ReportPolicy
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.currentTime
@@ -22,6 +26,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -155,5 +161,36 @@ class VoiceDeskBridgeTest {
         r.realtime.endNotice(spoken = true)
         runCurrent()
         assertEquals(1, r.sink.recorded.size)
+    }
+
+    // 通话结束(页面藏着也一样):通话松开前台,聊天页接回来,之后的汇报给聊天页说,不落到兜底。
+    // 失败时也松开;用户重试连上后再接回通话。
+    @Test fun anEndedCallReleasesTheDeskForTheChat() = runTest {
+        val r = rig()
+        r.attachment.close()
+        val state = MutableStateFlow<VoiceCallState>(VoiceCallState.Connecting)
+        val live = backgroundScope.launch(start = CoroutineStart.UNDISPATCHED) { r.bridge.attachWhileLive(state) }
+        assertSame(r.bridge, r.desk.attached.value)
+        state.value = VoiceCallState.Failed(VoiceCallError.Disconnected, 1)
+        runCurrent()
+        assertNull(r.desk.attached.value)
+        state.value = VoiceCallState.Active(0)
+        runCurrent()
+        assertSame(r.bridge, r.desk.attached.value)
+
+        state.value = VoiceCallState.Ended(EndReason.Notification)
+        runCurrent()
+        assertTrue(live.isCompleted)
+        assertNull(r.desk.attached.value)
+        val chat = mutableListOf<String>()
+        r.desk.attach(object : DeskSurface {
+            override suspend fun deliver(report: DeskReport): Boolean { chat += report.event.taskId; return true }
+        })
+        r.executor.execute(DeskTools.DISPATCH, dispatch("帮我订明晚的日料"))
+        runCurrent()
+        r.port.states.getValue("t1").value = TaskState.Succeeded("订好了")
+        runCurrent()
+        assertEquals(listOf("t1", "t1"), chat)
+        assertTrue(r.sink.recorded.isEmpty())
     }
 }

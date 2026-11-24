@@ -30,4 +30,5 @@
     <string name="calls_owner_ask_line">Aramadaki kişi soruyor: %1$s\nBuradan yanıtlayın, ben iletirim.</string>
     <string name="calls_owner_ask_notify_off">Arama soruları bildirimleri kapalı, bunları kaçırabilirsiniz. Sistem Ayarları → Bildirimler\'den açabilirsiniz.</string>
     <string name="calls_owner_ask_answered">Aramaya iletildi.</string>
+    <string name="calls_owner_ask_withdrawn">Arama bitti, bu soru geri çekildi. Yanıt vermenize gerek yok.</string>
 </resources>

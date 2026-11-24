@@ -295,6 +295,7 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                 tr(R.string.calls_owner_ask_line, question) + if (notified) "" else "\n" + tr(R.string.calls_owner_ask_notify_off)
             },
             answeredLine = { tr(R.string.calls_owner_ask_answered) },
+            withdrawnLine = { tr(R.string.calls_owner_ask_withdrawn) },
         )
     }
 

@@ -25,7 +25,12 @@ internal class OwnerAskNotifier(
     private var token: String? = null
 
     override fun ask(question: String, onReply: (String) -> Unit): OwnerReach {
-        cancel()
+        // 又问了一句:旧的那个悄悄换掉(新问题那一行会写进会话)
+        token?.let {
+            questions.cancel(it)
+            dismiss(context)
+        }
+        token = null
         val ready = CallNotifications(context).ownerAskReady()
         val handle = questions.open(conversationId, question, notified = ready) { reply ->
             dismiss(context)
@@ -38,10 +43,11 @@ internal class OwnerAskNotifier(
         return OwnerReach.Unreachable
     }
 
+    /** 通话结束:还没回的问题撤掉,会话里补一行「已撤回」,通知一并撤掉。 */
     override fun cancel() {
         val id = token ?: return
         token = null
-        questions.cancel(id)
+        questions.withdraw(id)
         dismiss(context)
     }
 

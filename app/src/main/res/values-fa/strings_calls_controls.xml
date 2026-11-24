@@ -30,4 +30,5 @@
     <string name="calls_owner_ask_line">طرف مقابل در تماس می‌پرسد: %1$s\nهمین‌جا پاسخ دهید تا به او برسانم.</string>
     <string name="calls_owner_ask_notify_off">اعلان‌های پرسش تماس خاموش است و ممکن است آن‌ها را نبینید. از تنظیمات سیستم ← اعلان‌ها روشنش کنید.</string>
     <string name="calls_owner_ask_answered">به تماس منتقل شد.</string>
+    <string name="calls_owner_ask_withdrawn">تماس تمام شد، پس این سؤال پس گرفته شد. نیازی به پاسخ نیست.</string>
 </resources>

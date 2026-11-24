@@ -14,6 +14,7 @@ class OwnerQuestionsTest {
         write = { id, turn -> written += id to turn },
         askedLine = { question, notified -> "问：$question" + if (notified) "" else "（通知关了）" },
         answeredLine = { "已转告" },
+        withdrawnLine = { "已撤回" },
     )
 
     @Test fun theQuestionLandsInTheOwnersConversation() {
@@ -77,5 +78,24 @@ class OwnerQuestionsTest {
         assertFalse(questions.answerIn("chat-1", "  "))
         assertFalse(questions.answer(handle.token, ""))
         assertEquals("几点到", questions.question(handle.token))
+    }
+
+    // 电话挂了、问题还没回:会话里补一行「已撤回」,之后在这里打的字照常交给前台,不再当成回答
+    @Test fun aQuestionLeftOpenAtHangupIsWithdrawnInTheConversation() {
+        val handle = questions.open("chat-1", "要不要加辣", notified = true) { error("no answer after hangup") }
+        questions.withdraw(handle.token)
+        assertEquals(listOf("问：要不要加辣", "已撤回"), written.map { it.second.outcome })
+        assertEquals("", written.last().second.userText)
+        assertEquals(DeskNotifier.STATUS, written.last().second.status)
+        assertFalse(questions.answerIn("chat-1", "加"))
+        // 已回的、已撤的再撤一次不再写
+        questions.withdraw(handle.token)
+        val answered = questions.open("chat-1", "几点到", notified = true) {}
+        assertTrue(questions.answerIn("chat-1", "七点"))
+        questions.withdraw(answered.token)
+        assertEquals(4, written.size)
+        // 没有所属会话的电话没地方写
+        questions.withdraw(questions.open(null, "几个人", notified = true) {}.token)
+        assertEquals(4, written.size)
     }
 }

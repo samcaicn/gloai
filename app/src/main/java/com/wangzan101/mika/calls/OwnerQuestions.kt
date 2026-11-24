@@ -13,6 +13,7 @@ class OwnerQuestions(
     private val write: (conversationId: String, turn: Turn) -> Unit,
     private val askedLine: (question: String, notified: Boolean) -> String,
     private val answeredLine: () -> String,
+    private val withdrawnLine: () -> String,
 ) {
     class Handle(val token: String, val conversationId: String?, val question: String)
 
@@ -49,8 +50,18 @@ class OwnerQuestions(
         return true
     }
 
+    /** 悄悄撤掉(换成新问的一句时用:新问题那一行已经写进会话)。 */
     fun cancel(token: String) {
         synchronized(open) { open.remove(token) }
+    }
+
+    /**
+     * 电话挂了、问题还没回:撤掉,并在所属会话里补一行「已撤回」,免得主人去回一个没人等的问题,
+     * 迟到的话也有上下文(之后在会话里打的字照常交给前台)。已回、已撤的不再写。
+     */
+    fun withdraw(token: String) {
+        val entry = synchronized(open) { open.remove(token) } ?: return
+        entry.handle.conversationId?.let { write(it, Turn(userText = "", outcome = withdrawnLine(), status = DeskNotifier.STATUS)) }
     }
 
     private fun deliver(entry: Entry, reply: String) {

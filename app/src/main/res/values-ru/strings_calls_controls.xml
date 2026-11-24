@@ -30,4 +30,5 @@
     <string name="calls_owner_ask_line">Собеседник спрашивает: %1$s\nОтветьте здесь, и я передам.</string>
     <string name="calls_owner_ask_notify_off">Уведомления о вопросах из звонков выключены, вы можете их пропустить. Включите их в системных настройках → Уведомления.</string>
     <string name="calls_owner_ask_answered">Передано в звонок.</string>
+    <string name="calls_owner_ask_withdrawn">Звонок завершён, поэтому вопрос снят. Отвечать не нужно.</string>
 </resources>

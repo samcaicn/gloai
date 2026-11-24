@@ -55,6 +55,7 @@ import com.wangzan101.mika.voicecall.VoiceDeskBridge
 import com.wangzan101.mika.voicecall.deskReportSpeech
 import com.wangzan101.mika.voicecall.typedDeskResult
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -99,8 +100,6 @@ class VoiceCallController(
         private set
 
     @Volatile private var currentRealtime: CallRealtimeSession? = null
-    /** 这通电话接在前台上的句柄;拆通话时关掉,之后的汇报交给兜底(写回会话、发通知)。 */
-    private var deskAttachment: AutoCloseable? = null
     private var callScope: CoroutineScope? = null
 
     /** After migration both entry points resolve the active model through this one controller. */
@@ -126,8 +125,6 @@ class VoiceCallController(
         callScope?.cancel()
         callScope = null
         currentRealtime = null
-        deskAttachment?.close()
-        deskAttachment = null
     }
 
     /** 入口(听筒按钮/胶囊菜单/直开 extra):活的通话只重新亮出,终态的换新一通。 */
@@ -328,7 +325,12 @@ class VoiceCallController(
             session.end(EndReason.Hangup)
             return
         }
-        deskAttachment = bridge.attach()
+        // 通话活着才接着前台;结束了(页面藏着也一样)就松开,聊天页接回去,之后的汇报不再落到兜底
+        callScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            bridge.attachWhileLive(session.state)
+            // 这时已换成下一通的话不动它的会话
+            if (this@VoiceCallController.callScope === callScope) currentRealtime = null
+        }
         // 前台的任务板进对话流:每件任务一张卡,进展加步骤
         callScope.launch { desk.active.collect(feed::onTasks) }
         val busy = desk.active

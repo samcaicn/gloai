@@ -30,4 +30,5 @@
     <string name="calls_owner_ask_line">A outra pessoa na chamada pergunta: %1$s\nResponda aqui e eu repasso.</string>
     <string name="calls_owner_ask_notify_off">As notificações de perguntas de chamadas estão desativadas e você pode não vê-las. Ative-as em Configurações do sistema → Notificações.</string>
     <string name="calls_owner_ask_answered">Repassado à chamada.</string>
+    <string name="calls_owner_ask_withdrawn">A chamada terminou, então esta pergunta foi retirada. Não é preciso responder.</string>
 </resources>

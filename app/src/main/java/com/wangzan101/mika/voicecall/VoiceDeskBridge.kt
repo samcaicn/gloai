@@ -9,6 +9,8 @@ import com.wangzan101.mika.core.frontdesk.DeskTools
 import com.wangzan101.mika.core.frontdesk.FrontDesk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -31,6 +33,26 @@ class VoiceDeskBridge(
 ) : DeskSurface {
     /** 接到前台上;关掉返回的句柄后汇报都交给 sink。 */
     fun attach(): AutoCloseable = desk.attach(this)
+
+    /**
+     * 跟着通话状态接前台,不看通话页藏没藏:没结束就接着;失败时松开(汇报交给聊天页或兜底),用户重试连上了再接;
+     * 落到 Ended 就松开并返回,聊天页据此把前台接回去。被取消时也松开。
+     */
+    suspend fun attachWhileLive(state: StateFlow<VoiceCallState>) {
+        var handle: AutoCloseable? = null
+        try {
+            state.takeWhile { it !is VoiceCallState.Ended }.collect {
+                if (it is VoiceCallState.Failed) {
+                    handle?.close()
+                    handle = null
+                } else if (handle == null) {
+                    handle = attach()
+                }
+            }
+        } finally {
+            handle?.close()
+        }
+    }
 
     /** 执行一次工具调用并把结果回给通话会话;返回结果本身。 */
     suspend fun onFunctionCall(callId: String, name: String, args: JsonObject): JsonObject {
