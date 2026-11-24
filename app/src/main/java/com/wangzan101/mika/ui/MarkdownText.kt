@@ -42,6 +42,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -94,10 +97,37 @@ internal class FindHighlight(
 
 internal val LocalFindHighlight = compositionLocalOf<FindHighlight?> { null }
 
+/**
+ * 某一处界面里 Markdown 的排版口味;不提供时就是各处通用的默认样子。
+ * 聊天页的回答用它:正文深灰、加粗纯黑,标题不放大,列表点淡,引用是浅色底块而不是竖线。
+ */
+@Immutable
+data class MarkdownLook(
+    /** 段与段之间的距离(dp)。 */
+    val gap: Int = 8,
+    /** 标题和正文差不多大,只靠加粗区分。 */
+    val flatHeadings: Boolean = false,
+    /** 正文颜色:给了就替换掉调用方给的主文字色。 */
+    val bodyInk: Color = Color.Unspecified,
+    /** 加粗字的颜色。 */
+    val strongInk: Color = Color.Unspecified,
+    /** 列表点、序号的颜色。 */
+    val markerInk: Color = Color.Unspecified,
+    /** 引用的底色;给了就画成浅色底块,不画左边竖线。 */
+    val quoteFill: Color = Color.Unspecified,
+    /** 行内代码的底色。 */
+    val codeFill: Color = Color.Unspecified,
+)
+
+val LocalMarkdownLook = staticCompositionLocalOf { MarkdownLook() }
+
 @Composable
 fun MarkdownText(markdown: String, style: TextStyle, modifier: Modifier = Modifier, streaming: Boolean = false, reportStyle: Boolean = false) {
+    val look = LocalMarkdownLook.current
+    val colors = MikaTheme.colors
+    val body = if (look.bodyInk.isSpecified && style.color == colors.ink) style.copy(color = look.bodyInk) else style
     MarkdownDocument(markdown, streaming, reportStyle) { blocks ->
-        MarkdownBlocks(blocks, style, modifier, gap = if (reportStyle) 16 else 8)
+        MarkdownBlocks(blocks, body, modifier, gap = if (reportStyle) 16 else look.gap)
     }
 }
 
@@ -105,7 +135,13 @@ fun MarkdownText(markdown: String, style: TextStyle, modifier: Modifier = Modifi
 internal fun MarkdownDocument(markdown: String, streaming: Boolean = false, reportStyle: Boolean = false, content: @Composable (List<MdBlock>) -> Unit) {
     // 流式片段更新频繁，在后台解析；上一帧保留到新片段准备好，避免主线程卡顿和文字闪空。
     val colors = MikaTheme.colors
-    val styles = remember(colors, reportStyle) { MarkdownModel.Styles.of(colors, if (reportStyle) FontWeight.Bold else FontWeight.SemiBold) }
+    val look = LocalMarkdownLook.current
+    val styles = remember(colors, reportStyle, look) {
+        MarkdownModel.Styles.of(
+            colors, if (reportStyle) FontWeight.Bold else FontWeight.SemiBold,
+            strongColor = look.strongInk, codeFill = look.codeFill.takeOrElse { colors.fill },
+        )
+    }
     val blocks = if (streaming) {
         val parsed by produceState<List<MdBlock>>(emptyList(), markdown, styles) {
             value = withContext(Dispatchers.Default) { MarkdownModel.parseStreaming(markdown, styles) }
@@ -237,6 +273,7 @@ private fun JustifiedText(text: AnnotatedString, style: TextStyle, modifier: Mod
 @Composable
 private fun Block(b: MdBlock, style: TextStyle, depth: Int) {
     val find = LocalFindHighlight.current
+    val look = LocalMarkdownLook.current
     when (b) {
         is MdBlock.Para -> {
             val text = remember(b.text, find) { b.text.withFind(find) }
@@ -244,27 +281,35 @@ private fun Block(b: MdBlock, style: TextStyle, depth: Int) {
         }
         is MdBlock.Heading -> Text(
             remember(b.text, find) { b.text.withFind(find) },
-            Modifier.padding(top = if (LocalReportStyle.current) 12.dp else 2.dp),
+            Modifier.padding(top = if (LocalReportStyle.current) 12.dp else if (look.flatHeadings) 4.dp else 2.dp),
             style = style.copy(
-                fontSize = when (b.level) { 1 -> 19.sp; 2 -> 17.5.sp; 3 -> 16.sp; else -> style.fontSize },
-                lineHeight = when (b.level) { 1 -> 25.sp; 2 -> 23.sp; else -> style.lineHeight },
+                color = look.strongInk.takeOrElse { style.color },
+                fontSize = if (look.flatHeadings) (style.fontSize.value + if (b.level <= 2) 1f else 0.5f).sp
+                    else when (b.level) { 1 -> 19.sp; 2 -> 17.5.sp; 3 -> 16.sp; else -> style.fontSize },
+                lineHeight = if (look.flatHeadings) style.lineHeight
+                    else when (b.level) { 1 -> 25.sp; 2 -> 23.sp; else -> style.lineHeight },
                 fontWeight = if (LocalReportStyle.current) FontWeight.Bold else FontWeight.SemiBold,
                 // 标题保持左对齐:两端对齐会把两行以上的标题也拉满,标题不该被撑开
                 textAlign = TextAlign.Start,
             ),
         )
         is MdBlock.Code -> CodeBlock(b, style)
-        is MdBlock.Quote -> Row(Modifier.height(IntrinsicSize.Min)) {
+        is MdBlock.Quote -> if (look.quoteFill.isSpecified) {
+            MarkdownBlocks(
+                b.blocks, style.copy(color = MikaTheme.colors.ink2),
+                Modifier.fillMaxWidth().background(look.quoteFill, MikaShapes.Button).padding(horizontal = 11.dp, vertical = 7.dp), depth + 1, look.gap,
+            )
+        } else Row(Modifier.height(IntrinsicSize.Min)) {
             Box(Modifier.width(3.dp).fillMaxHeight().background(MikaTheme.colors.hair, MikaShapes.Micro))
             MarkdownBlocks(b.blocks, style.copy(color = MikaTheme.colors.ink2), Modifier.padding(start = 10.dp), depth + 1)
         }
-        is MdBlock.ListBlock -> Column(verticalArrangement = Arrangement.spacedBy(if (b.tight) 3.dp else 8.dp)) {
+        is MdBlock.ListBlock -> Column(verticalArrangement = Arrangement.spacedBy(if (b.tight) (if (look.flatHeadings) 4.dp else 3.dp) else look.gap.dp)) {
             b.items.forEachIndexed { i, item ->
                 val reportItem = LocalReportStyle.current && depth == 0
                 Row(Modifier.then(if (reportItem) Modifier.fillMaxWidth().clip(MikaShapes.Button)
                     .background(MikaTheme.colors.bg).padding(14.dp) else Modifier)) {
                     val marker = if (b.start != null) "${b.start + i}." else if (depth % 2 == 0) "•" else "◦"
-                    Text(marker, Modifier.widthIn(min = 18.dp).padding(end = 6.dp), style = style.copy(color = if (reportItem) MikaTheme.colors.accent else MikaTheme.colors.ink2))
+                    Text(marker, Modifier.widthIn(min = 18.dp).padding(end = 6.dp), style = style.copy(color = if (reportItem) MikaTheme.colors.accent else look.markerInk.takeOrElse { MikaTheme.colors.ink2 }))
                     MarkdownBlocks(item, style, depth = depth + 1, gap = if (b.tight) 3 else 8)
                 }
             }

@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -437,6 +438,8 @@ fun ChatScreen(
                     exchange(
                         i, ex, ui.conversationId, ui.takeoverStage, vm, reduceMotion, backgroundNote, openRun, kept,
                         highlightKey = highlightKey,
+                        joinedAbove = replyJoinsAbove(ui.exchanges, i, calls),
+                        joinedBelow = replyJoinsAbove(ui.exchanges, i + 1, calls),
                         recover = { resume ->
                             val label = if (resume) R.string.chat_resume_request else R.string.chat_restart_request
                             vm.send(context.getString(label, ex.goal), check)
@@ -462,7 +465,9 @@ fun ChatScreen(
             }
         }
 
-        Column(Modifier.behindMenu(menuOpen) { lift.value }.onSizeChanged { topHeight = it.height }) {
+        // 状态栏和顶栏后面从页面底色淡出到透明:往上滚的内容不和时间、电量叠在一起
+        val topFade = MikaTheme.colors.bg.let { bg -> remember(bg) { Brush.verticalGradient(0f to bg, 0.4f to bg, 1f to bg.copy(alpha = 0f)) } }
+        Column(Modifier.behindMenu(menuOpen) { lift.value }.background(topFade).onSizeChanged { topHeight = it.height }) {
             // 悬浮玻璃三件套:菜单 / 标题 / 新建,各自一小块磨砂玻璃,不铺一整条
             Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
                 Row(

@@ -22,9 +22,10 @@ internal val ComposerInset = 12.dp
 
 internal val FileTileShape = MikaShapes.Tile
 internal val EmptyLead = MikaType.Value
-internal val BubbleText = MikaType.Body
+internal val BubbleText = MikaType.Body.copy(fontSize = 15.sp)
 /** 回答:正文字号,两端对齐(中文整段行尾整齐,最后一行除外)。 */
-internal val AnswerText = MikaType.Body.copy(textAlign = TextAlign.Justify)
+/** Mika 回答的正文:左对齐(两端对齐会把字撑开)、行高放宽到 1.7 倍、字距略松。 */
+internal val AnswerText = MikaType.Body.copy(fontSize = 15.sp, lineHeight = 25.5.sp, letterSpacing = 0.2.sp, textAlign = TextAlign.Start)
 internal val NowText = MikaType.Value
 internal val ClockText = MikaType.Hint.copy(fontFeatureSettings = "tnum")
 internal val StepText = MikaType.Caption
@@ -41,3 +42,20 @@ private val PillText = MikaType.Caption
 private val ChipText = MikaType.Hint.copy(fontWeight = FontWeight.Medium)
 internal val FileName = MikaType.Body.copy(fontWeight = FontWeight.Medium)
 internal val FileMeta = MikaType.Hint
+
+/**
+ * 聊天回答的 Markdown 排版:正文深灰、加粗纯黑,段距 10,标题不放大,列表点淡,
+ * 引用和行内代码是比回答气泡深一级的浅色底。
+ */
+internal fun chatMarkdownLook(c: com.wangzan101.mika.ui.theme.MikaColors): com.wangzan101.mika.ui.MarkdownLook {
+    val deeper = if (c.isDark) androidx.compose.ui.graphics.Color(0x14FFFFFF) else androidx.compose.ui.graphics.Color(0xFFE9EBEF)
+    return com.wangzan101.mika.ui.MarkdownLook(
+        gap = 10,
+        flatHeadings = true,
+        bodyInk = if (c.isDark) androidx.compose.ui.graphics.Color(0xFFE2E2E6) else androidx.compose.ui.graphics.Color(0xFF2B2E34),
+        strongInk = c.ink,
+        markerInk = c.ink3,
+        quoteFill = deeper,
+        codeFill = deeper,
+    )
+}

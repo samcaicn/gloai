@@ -7,6 +7,7 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
@@ -66,12 +67,17 @@ object MarkdownModel {
     private val LINK_SCHEMES = setOf("http", "https", "mailto", "tel")
 
     /** 行内代码和链接的样式;颜色跟着深浅色,由显示的地方按当前配色给。 */
-    class Styles(val code: SpanStyle, val link: TextLinkStyles, val strong: FontWeight = FontWeight.SemiBold) {
+    class Styles(
+        val code: SpanStyle, val link: TextLinkStyles, val strong: FontWeight = FontWeight.SemiBold,
+        /** 加粗字的颜色;不指定时跟正文同色。 */
+        val strongColor: Color = Color.Unspecified,
+    ) {
         companion object {
-            fun of(c: MikaColors, strong: FontWeight = FontWeight.SemiBold) = Styles(
-                code = SpanStyle(fontFamily = FontFamily.Monospace, background = c.fill),
+            fun of(c: MikaColors, strong: FontWeight = FontWeight.SemiBold, strongColor: Color = Color.Unspecified, codeFill: Color = c.fill) = Styles(
+                code = SpanStyle(fontFamily = FontFamily.Monospace, background = codeFill),
                 link = TextLinkStyles(SpanStyle(color = c.accent)),
                 strong = strong,
+                strongColor = strongColor,
             )
 
             val Light = of(LightColors)
@@ -191,7 +197,7 @@ object MarkdownModel {
             is SoftLineBreak, is HardLineBreak -> append('\n')
             is Code -> withStyle(s.code) { append(n.literal) }
             is Emphasis -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { appendInlines(n, s) }
-            is StrongEmphasis -> withStyle(SpanStyle(fontWeight = s.strong)) { appendInlines(n, s) }
+            is StrongEmphasis -> withStyle(SpanStyle(fontWeight = s.strong, color = s.strongColor)) { appendInlines(n, s) }
             is Strikethrough -> withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) { appendInlines(n, s) }
             is Link -> link(n.destination, s) { appendInlines(n, s) }
             // 聊天里不显示图片,只留替代文字(有可打开的地址就做成链接)

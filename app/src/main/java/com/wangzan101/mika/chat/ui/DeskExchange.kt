@@ -38,12 +38,13 @@ import com.wangzan101.mika.ui.theme.MikaType
  */
 internal fun LazyListScope.deskExchange(
     index: Int, ex: Exchange, conversationId: String?, reduceMotion: Boolean, highlightKey: String?,
+    joinedAbove: Boolean = false, joinedBelow: Boolean = false,
 ) {
     if (ex.goal.isNotEmpty()) item("u$index") {
         JumpHighlight(highlightKey == "u$index", reduceMotion) { UserBubble(ex.goal, conversationId, key = "u$index") }
     }
     item("r$index") {
-        JumpHighlight(highlightKey == "r$index", reduceMotion) { DeskReply(ex, "r$index", reduceMotion) }
+        JumpHighlight(highlightKey == "r$index", reduceMotion) { DeskReply(ex, "r$index", reduceMotion, joinedAbove, joinedBelow) }
     }
 }
 
@@ -52,12 +53,12 @@ internal fun LazyListScope.deskExchange(
  * 没说出话就收尾的那一轮(只派了单)整行不画。
  */
 @Composable
-private fun DeskReply(ex: Exchange, key: String, reduceMotion: Boolean) {
+private fun DeskReply(ex: Exchange, key: String, reduceMotion: Boolean, joinedAbove: Boolean, joinedBelow: Boolean) {
     if (!deskReplyShown(ex)) return
     val c = MikaTheme.colors
     val text = ex.deskReply.orEmpty()
     val working = ex.status == ExchangeStatus.Working
-    Column(Modifier.fillMaxWidth().padding(bottom = ReplyGap).testTag("desk-reply")) {
+    Column(Modifier.fillMaxWidth().padding(bottom = if (joinedBelow) JoinedReplyGap else ReplyGap).testTag("desk-reply")) {
         ex.deskTool?.let { tool ->
             Text(
                 tool, Modifier.padding(bottom = 4.dp).background(c.fill, MikaShapes.Chip).padding(horizontal = 8.dp, vertical = 1.dp),
@@ -65,8 +66,8 @@ private fun DeskReply(ex: Exchange, key: String, reduceMotion: Boolean) {
             )
         }
         when {
-            text.isNotBlank() && working -> MarkdownText(text, AnswerText.copy(color = c.ink), Modifier.answerSurface(), streaming = true)
-            text.isNotBlank() -> AnswerArea(key, text, Modifier.answerSurface()) { MarkdownText(text, AnswerText.copy(color = c.ink)) }
+            text.isNotBlank() && working -> MarkdownText(text, AnswerText.copy(color = c.ink), Modifier.answerSurface(joinedAbove), streaming = true)
+            text.isNotBlank() -> AnswerArea(key, text, Modifier.answerSurface(joinedAbove)) { MarkdownText(text, AnswerText.copy(color = c.ink)) }
             working -> Thinking(reduceMotion)
         }
         if (ex.status is ExchangeStatus.Failed) {

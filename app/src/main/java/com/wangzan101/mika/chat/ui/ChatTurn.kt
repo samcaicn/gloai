@@ -103,10 +103,14 @@ internal fun LazyListScope.exchange(
     highlightKey: String? = null,
     /** 终态后的两个新运行入口:true 从摘要断点继续,false 按原目标重新开始。 */
     recover: (Boolean) -> Unit = {},
+    /** 前台回的话紧接在上一条前台回话下面(Mika 连发):左上角收小、和上一条靠近。 */
+    joinedAbove: Boolean = false,
+    /** 下一条前台回话紧接在这条下面。 */
+    joinedBelow: Boolean = false,
 ) {
     // 前台的一轮:用户的话、前台回的话;不走任务那套步骤和状态卡
     if (ex.deskReply != null) {
-        deskExchange(index, ex, conversationId, reduceMotion, highlightKey)
+        deskExchange(index, ex, conversationId, reduceMotion, highlightKey, joinedAbove, joinedBelow)
         return
     }
     if (ex.goal.isNotEmpty()) item("u$index") {
@@ -195,9 +199,9 @@ internal fun UserBubble(text: String, conversationId: String?, note: String? = n
             }
             if (attached.hasAttachments && attached.words.isNotEmpty()) Spacer(Modifier.size(6.dp))
             if ((!attached.hasAttachments || attached.words.isNotEmpty()) && (paged.page == null || quoted.words.isNotEmpty())) UserMessage(conversationId, attached.words.takeIf { attached.hasAttachments } ?: quoted.words, ChatThumbWidth) { words ->
-                // 用户气泡是淡蓝底 + 深字:选中的底色用稍浓一点的蓝,把手仍是强调色(画在气泡外面)
+                // 用户气泡是实色淡强调色 + 深字:选中的底色用稍浓一点的强调色,把手仍是强调色(画在气泡外面)
                 val colors = MikaTheme.colors
-                val bubble = colors.accent.copy(alpha = 0.14f)
+                val bubble = colors.userBubble
                 CompositionLocalProvider(LocalTextSelectionColors provides TextSelectionColors(colors.accent, colors.accent.copy(alpha = 0.3f))) {
                     MessageArea(
                         key, QuoteMessage.From.You, words, "selectable-user",
@@ -213,7 +217,7 @@ internal fun UserBubble(text: String, conversationId: String?, note: String? = n
 
 @Composable
 private fun UserBubbleText(words: String) {
-    Text(words, Modifier.padding(horizontal = 14.dp, vertical = 10.dp), style = BubbleText, color = MikaTheme.colors.ink)
+    Text(words, Modifier.padding(horizontal = 13.dp, vertical = 9.dp), style = BubbleText, color = MikaTheme.colors.ink)
 }
 
 /** 长按抬起的那条消息:[color] 底、带阴影;太长时(最高半屏)只露开头,下面裁掉。 */
@@ -281,10 +285,29 @@ internal fun AnswerArea(key: String, answer: String, modifier: Modifier, content
 /** 同一句话下面几条回复之间的距离。 */
 internal val ReplyGap = 8.dp
 
-/** Mika 回答的底:很淡的灰,左下尾角。短的贴着字宽,长的铺满;前台回话、汇报、旧式回答都用这一种。 */
+/**
+ * Mika 回答的底:浅色下是浅灰实色,深色下是亮一级的实色;不叠透明、不加阴影。左下尾角。
+ * 短的贴着字宽,长的铺满;前台回话、汇报、旧式回答都用这一种。
+ */
 @Composable
-internal fun Modifier.answerSurface(): Modifier =
-    background(MikaTheme.colors.answer, MikaShapes.AnswerBubble).padding(horizontal = 14.dp, vertical = 12.dp)
+internal fun Modifier.answerSurface(joinedAbove: Boolean = false): Modifier =
+    background(MikaTheme.colors.answer, if (joinedAbove) MikaShapes.AnswerBubbleJoined else MikaShapes.AnswerBubble)
+        .padding(horizontal = 13.dp, vertical = 10.dp)
+
+/** Mika 连发时两条回话之间的距离。 */
+internal val JoinedReplyGap = 3.dp
+
+/**
+ * 第 [i] 轮前台回的话是否紧接在上一轮前台回话下面:这一轮没有用户的话,上一轮的回话画出来了,
+ * 中间也没有时间线、通话线隔开。
+ */
+internal fun replyJoinsAbove(exchanges: List<Exchange>, i: Int, calls: CallMarks): Boolean {
+    if (i <= 0 || i > exchanges.lastIndex) return false
+    val ex = exchanges[i]
+    val prev = exchanges[i - 1]
+    if (ex.deskReply == null || ex.goal.isNotEmpty() || !deskReplyShown(ex) || !deskReplyShown(prev)) return false
+    return calls.before(i).isEmpty() && timeMarkAt(exchanges, i, calls) == null
+}
 
 // ---------- 进度 ----------
 
