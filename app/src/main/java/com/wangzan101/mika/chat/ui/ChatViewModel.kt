@@ -365,6 +365,9 @@ class ChatViewModel(
     fun attach(uris: List<String>, conversationId: String? = _ui.value.conversationId) = attaching.attach(uris, conversationId)
     internal fun importDeviceAttachments(conversationId: String, paths: List<String>, copy: suspend (String, String) -> com.wangzan101.mika.core.workspace.DeviceFileImport) = attaching.importDeviceAttachments(conversationId, paths, copy)
     fun libraryTargetConversation(): String = attaching.libraryTargetConversation()
+
+    /** 当前会话的编号;还是空白新对话时占下一条(聊天页停到这条上),给通话这类要落进当前会话的入口用。 */
+    fun claimConversation(): String = session.draftConversation()
     fun planLibraryAttachments(conversationId: String, sources: List<LibraryFileHandle>): LibraryAddPlan? = attaching.planLibraryAttachments(conversationId, sources)
     fun addLibraryAttachments(conversationId: String, items: List<LibraryStaged>, overLimit: Int = 0): LibraryMergeResult = attaching.addLibraryAttachments(conversationId, items, overLimit)
     fun addLibraryAttachment(conversationId: String, item: PendingAttachment, source: LibraryFileHandle? = null, release: () -> Unit = {}): LibraryAttachmentResult = attaching.addLibraryAttachment(conversationId, item, source, release)

@@ -520,7 +520,8 @@ private fun MikaRoot(
             foregroundResumed = voiceCallResumed,
             desks = app.desks,
             conversationId = { app.chat.ui.value.conversationId },
-            newConversation = { ConversationStore.shared(context).newConversation() },
+            newConversation = { app.chat.claimConversation() },
+            deskParent = { ConversationStore.shared(context).deskParent(it) },
             turns = { ConversationStore.shared(context).turns(it) },
             // 通话里边说边存,从应用级作用域调过来:文件读写放到 IO 上
             appendTurn = { id, turn -> withContext(Dispatchers.IO) { ConversationStore.shared(context).append(id, turn) } },

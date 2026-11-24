@@ -61,6 +61,7 @@ import com.wangzan101.mika.ui.MarkdownModel
 import kotlinx.coroutines.CoroutineStart
 import android.graphics.Bitmap
 import com.wangzan101.mika.voicecall.VoiceCallTaskLink
+import com.wangzan101.mika.voicecall.VoiceCallConversation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -264,8 +265,8 @@ class VoiceCallController(
             stage = VoiceCallStage.Gate(VoiceCallGateStage.UnsupportedProtocol)
             return
         }
-        // 通话接着发起它的会话;从胶囊直开没有会话时新开一条,任务和转写都挂在它下面。
-        val conversation = deps.conversationId() ?: deps.newConversation()
+        // 通话接着发起它的会话(停在任务会话里时接回它的前台会话);没有会话时占一条,任务和转写都挂在它下面。
+        val conversation = VoiceCallConversation.pick(deps.conversationId(), deps.deskParent, deps.newConversation)
         // 边说边存:说完一轮就写进会话(挂在应用级作用域上,通话页没了也写完)
         val transcript = VoiceCallTranscript(
             conversationId = { conversation },
@@ -399,8 +400,10 @@ class VoiceCallDeps(
     /** 各会话的前台:通话接着发起会话的那一个。 */
     val desks: DeskRegistry,
     val conversationId: () -> String?,
-    /** 新开一条会话(从胶囊直开、没有发起会话时),返回它的编号。 */
+    /** 没有发起会话时(聊天页是空白新对话、从胶囊直开)占一条会话,聊天页也停到这条上;返回它的编号。 */
     val newConversation: () -> String,
+    /** 前台派出的任务会话属于哪条前台会话;不是任务会话为 null。 */
+    val deskParent: (String) -> String? = { null },
     /** 一条会话已有的轮次,标准模式开场时给思考模型接上前文。 */
     val turns: (String) -> List<ChatTurn>,
     val appendTurn: suspend (String, ChatTurn) -> Unit,
