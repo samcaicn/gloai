@@ -46,7 +46,9 @@ internal fun callSetupMissing(
 ): List<CallSetupStep> = CallSetupStep.entries.filter { step ->
     when (step) {
         CallSetupStep.Voice -> !voiceReady
-        CallSetupStep.Phone -> !config.enabled || !device.phoneAllowed || !device.callNotificationsAllowed
+        // Android forgets the call-companion setup on every restart, so it is redone after one.
+        CallSetupStep.Phone -> !config.enabled || !device.phoneAllowed || !device.callNotificationsAllowed ||
+            !state.prepared
         CallSetupStep.Helper -> !state.shellConnected
         CallSetupStep.Audio -> !config.audioVerified
         CallSetupStep.Standby -> config.autoAnswer &&
