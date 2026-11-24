@@ -35,11 +35,11 @@ import org.junit.Test
 class VolcRealtimeAgentToolsTest {
     @Test fun deskToolsAreTheUserSetAndWordsGetAFullUtterance() {
         assertEquals(DeskTools.specs(DeskToolSet.User).map { it.getValue("name").jsonPrimitive.content }.toSet(), VolcRealtimeProtocol.deskToolNames)
-        for (name in listOf(DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER)) {
+        // 停任务也要带上用户这一句的原话,一句长的「停掉那件事」不能被整包上限挡掉
+        for (name in listOf(DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER, DeskTools.CANCEL)) {
             // 整包上限给原话以外的字段(title、note)和 JSON 转义留出余量
             assertTrue(VolcRealtimeProtocol.maxArgumentCharsFor(name) > VolcRealtimeProtocol.MAX_UTTERANCE_CHARS + 2 * VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS)
         }
-        assertEquals(VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS, VolcRealtimeProtocol.maxArgumentCharsFor(DeskTools.CANCEL))
         assertEquals(VolcRealtimeProtocol.MAX_FUNCTION_ARGUMENT_CHARS, VolcRealtimeProtocol.maxArgumentCharsFor("send_dtmf"))
     }
 

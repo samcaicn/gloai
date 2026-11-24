@@ -86,6 +86,32 @@ class DeskBrainTest {
     }
 
     @Test
+    fun seedEndingOnUnansweredUserTurnMergesTheNextUserMessage() = runBlocking {
+        val model = FakeModel()
+        val brain = LlmBrain(model, "rules", emptyList())
+        // 上一轮前台只派了活、没说话(或者失败、被停下):存下来的最后一行只有用户原话
+        brain.seed(listOf(Turn("订日料", "好，我让后面去订", "desk"), Turn("再查下天气", "", "desk")))
+        brain.reply("几点？", Recorder())
+        val messages = model.seen.single()
+        assertEquals(listOf(Role.User, Role.Assistant, Role.User), messages.map { it.role })
+        assertEquals(listOf("订日料", "好，我让后面去订", "再查下天气\n几点？"), messages.map { it.text() })
+        assertEquals(Author.User, messages.last().author)
+    }
+
+    @Test
+    fun noticeAfterUnansweredUserTurnKeepsRolesAlternating() = runBlocking {
+        val model = FakeModel()
+        val brain = LlmBrain(model, "rules", emptyList())
+        brain.seed(listOf(Turn("再查下天气", "", "desk")))
+        brain.notice("Task A finished: sunny", Recorder())
+        val messages = model.seen.single()
+        assertEquals(listOf(Role.User), messages.map { it.role })
+        assertEquals("再查下天气\n[update] Task A finished: sunny", messages.single().text())
+        // 有用户原话的那条仍算用户说的,截断历史时不会被当成前台的说明丢掉
+        assertEquals(Author.User, messages.single().author)
+    }
+
+    @Test
     fun seedAfterHistoryIsIgnored() = runBlocking {
         val model = FakeModel("你好")
         val brain = LlmBrain(model, "rules", emptyList())

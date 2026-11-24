@@ -186,7 +186,7 @@ internal object VolcRealtimeProtocol {
      * against [MAX_UTTERANCE_CHARS] after parsing, so a near-limit utterance is never lost to the envelope.
      */
     fun maxArgumentCharsFor(name: String?): Int = when (name) {
-        DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER, DeskTools.ASK_OWNER -> MAX_WORDS_ARGUMENT_CHARS
+        DeskTools.DISPATCH, DeskTools.ADD, DeskTools.ANSWER, DeskTools.CANCEL, DeskTools.ASK_OWNER -> MAX_WORDS_ARGUMENT_CHARS
         else -> MAX_FUNCTION_ARGUMENT_CHARS
     }
 

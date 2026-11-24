@@ -70,17 +70,17 @@ class LlmBrain(
     private val lock = Any()
 
     override suspend fun reply(userText: String, ctx: ReplyContext) {
-        add(Message(Role.User, listOf(Part.Text(userText)), Author.User))
+        addUser(userText, Author.User)
         run(ctx)
     }
 
     override suspend fun lateResult(name: String, result: JsonObject, ctx: ReplyContext) {
-        add(Message(Role.User, listOf(Part.Text("[$name result arrived] $result")), Author.Mika))
+        addUser("[$name result arrived] $result", Author.Mika)
         run(ctx)
     }
 
     override suspend fun notice(text: String, ctx: ReplyContext) {
-        add(Message(Role.User, listOf(Part.Text("[update] $text")), Author.Mika))
+        addUser("[update] $text", Author.Mika)
         run(ctx)
     }
 
@@ -197,9 +197,26 @@ class LlmBrain(
         null
     }
 
+    /**
+     * A user-side line joins the previous one when that is also plain user-side text (a seeded turn the desk never
+     * answered, a note that arrived before the reply): providers that need alternating roles never see two in a row.
+     */
+    private fun addUser(text: String, author: Author) {
+        synchronized(lock) {
+            history.addText(Role.User, text, author)
+            trim()
+        }
+    }
+
     private fun add(message: Message) {
         synchronized(lock) {
             history += message
+            trim()
+        }
+    }
+
+    private fun trim() {
+        synchronized(lock) {
             // Keep the tail, starting at a user turn so tool calls never lose their request.
             while (history.size > maxMessages) {
                 history.removeAt(0)
