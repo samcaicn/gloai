@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -81,10 +82,16 @@ class TeachScreenTest {
     }
 
     @Test fun introStartCallsBack() {
-        var started = 0
-        compose.setContent { MikaTheme { TeachIntroPage("", { started++ }) } }
+        val started = mutableListOf<String>()
+        compose.setContent { MikaTheme { TeachIntroPage("", { started += it }) } }
+        // 没写目标:不开始,框下面直接说
         compose.onNodeWithTag("teach-start").performClick()
-        assertEquals(1, started)
+        assertEquals(0, started.size)
+        compose.onNodeWithText("先写一句目标。").assertExists()
+        // 写了目标再开始
+        compose.onNodeWithTag("teach-goal").performTextInput("每天早上打卡")
+        compose.onNodeWithTag("teach-start").performClick()
+        assertEquals(listOf("每天早上打卡"), started)
     }
 
     @Test fun donePageOffersChatAndTeachAgain() {

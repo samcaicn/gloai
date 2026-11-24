@@ -28,7 +28,7 @@ class CallTypeRulesUiTest {
                     CallReceivePage(CallConfig(incomingScope = IncomingScope.STRANGERS), CallRuntimeState(),
                         ready = true, missing = emptyList(), controlsEnabled = true, canStartStandby = false, standbyNeedsSetup = false,
                         onSetup = {}, onToggle = {}, onRules = { opened += "scope" }, onBypass = { opened += "bypass" }, onProfile = null,
-                        onPause = {}, onResume = {}, onInstructions = {}, onStartStandby = {})
+                        onResume = {}, onInstructions = {}, onStartStandby = {})
                 }
             }
         }

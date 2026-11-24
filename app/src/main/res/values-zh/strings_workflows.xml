@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="workflows_title">多步骤任务</string>
+    <string name="workflows_title">流程</string>
     <string name="workflow_progress">已完成 %1$d / %2$d 步</string>
     <string name="workflow_pause">此步完成后暂停</string>
     <string name="workflow_continue">继续</string>
@@ -24,7 +24,7 @@
     <string name="workflow_start">开始执行</string>
     <string name="workflow_edit">编辑任务</string>
     <string name="workflow_duplicate">复制任务</string>
-    <string name="workflow_new">新建多步骤任务</string>
+    <string name="workflow_new">新建流程</string>
     <string name="workflow_step_count">%1$d 个步骤</string>
     <string name="workflow_history">执行记录</string>
     <string name="workflow_run_input">本次要求（选填）</string>
@@ -42,7 +42,7 @@
     <string name="workflow_invalid">请填写标题和 2–8 个步骤。标题最多 100 字、步骤要求 2000 字、本次要求 4000 字、结果 12000 字。</string>
     <string name="workflow_full">保存的任务、执行记录或重试次数已达到上限。</string>
     <string name="workflow_changed">任务已变化，请重新打开后操作。</string>
-    <string name="workflow_busy">另一个多步骤任务正在执行，请先暂停它。</string>
+    <string name="workflow_busy">另一个流程正在执行，请先暂停它。</string>
     <string name="workflow_read_failed">没能读取已存任务，请重试。</string>
     <string name="workflow_result_save_failed">进度没能保存，后续步骤尚未开始。请重试保存后继续。</string>
 </resources>

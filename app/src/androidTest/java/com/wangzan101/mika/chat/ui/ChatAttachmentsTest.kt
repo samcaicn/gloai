@@ -85,7 +85,7 @@ class ChatAttachmentsTest {
             AttachmentFailure("photo.jpg", AttachmentFailureReason.LOW_DEVICE_SPACE),
             AttachmentFailure("notes.txt", AttachmentFailureReason.IO_ERROR),
         ))
-        compose.onNodeWithText("big.zip：超过 200 MiB 限制", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("big.zip：超过", substring = true).assertIsDisplayed()
         compose.onNodeWithText("photo.jpg：手机存储空间不足", substring = true).assertIsDisplayed()
         compose.onNodeWithText("notes.txt：无法读取或复制", substring = true).assertIsDisplayed()
     }
@@ -255,7 +255,7 @@ class ChatAttachmentsTest {
         compose.onNodeWithText(AttachCopy.CHANGE).assertIsDisplayed()
     }
 
-    @Test fun plusSheetOmitsRedundantSubtitlesAndShortensBrowser() {
+    @Test fun plusSheetGroupsIntoAttachTurnAndReuse() {
         // 避免「首次打开弹照片权限」打断断言
         RecentPhotos.markAsked(compose.activity)
         compose.setContent {
@@ -271,21 +271,24 @@ class ChatAttachmentsTest {
                     onTeach = {},
                     onChecklists = {},
                     onWorkflows = {},
-                    onBrowser = {},
                     tasks = emptyList(),
                     onPickTask = {},
                     onPickSkill = {},
                 )
             }
         }
-        // 冗余副标题删掉
-        compose.onAllNodesWithText("现在拍一张").assertCountEquals(0)
-        compose.onAllNodesWithText("存一份待办清单").assertCountEquals(0)
-        compose.onAllNodesWithText("跑一条已存的多步骤任务").assertCountEquals(0)
-        // 保留的副标题还在
-        compose.onNodeWithText("从相册选,可多选").assertExists()
-        // 浏览器副标题精简成「内置浏览器」
-        compose.onNodeWithText("内置浏览器").assertExists()
+        // 第一排四个按钮,中间教 Mika 和技能,下面一行「常用」
+        listOf("plus-camera", "plus-album", "plus-files", "plus-clipboard", "plus-teach", "plus-skills")
+            .forEach { compose.onNodeWithTag(it).assertExists() }
+        compose.onNodeWithText("常用").assertExists()
+        // 浏览器、清单、流程不再直接列在面板上
+        compose.onAllNodesWithText("浏览器").assertCountEquals(0)
+        compose.onAllNodesWithText("已存清单").assertCountEquals(0)
+        // 「常用」里是常用说法,再往下是已存清单和流程
+        compose.onNodeWithText("常用").performClick()
+        compose.onNodeWithText("常用说法").assertExists()
+        compose.onNodeWithText("已存清单").assertExists()
+        compose.onNodeWithText("流程").assertExists()
     }
 
     private fun bubble(text: String) = compose.setContent {

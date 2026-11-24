@@ -324,4 +324,7 @@
     <string name="plus_skills_empty">هنوز مهارت شخصی نداری. مهارت‌هایی که Mika از کارهای انجام‌شده یاد می‌گیرد اینجا نمایش داده می‌شوند.</string>
     <string name="plus_clipboard_empty">متنی برای چسباندن از تخته‌شمار نیست</string>
     <string name="plus_skill_directive">از مهارت «%1$s» استفاده کن: </string>
+    <string name="plus_reuse">ذخیره‌شده‌ها</string>
+    <string name="plus_reuse_hint">عبارت · فهرست · روند</string>
+    <string name="plus_reuse_phrases">عبارت‌های ذخیره‌شده</string>
 </resources>

@@ -338,4 +338,7 @@
     <string name="plus_skills_empty">Aún no hay habilidades personales. Las que Mika aprenda de tareas completadas aparecerán aquí.</string>
     <string name="plus_clipboard_empty">No hay texto que pegar del portapapeles</string>
     <string name="plus_skill_directive">Usar la habilidad «%1$s»: </string>
+    <string name="plus_reuse">Guardados</string>
+    <string name="plus_reuse_hint">Frases · listas · flujos</string>
+    <string name="plus_reuse_phrases">Frases guardadas</string>
 </resources>

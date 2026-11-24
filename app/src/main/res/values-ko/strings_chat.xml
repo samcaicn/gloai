@@ -310,4 +310,7 @@
     <string name="plus_skills_empty">아직 개인 스킬이 없습니다. 완료한 작업에서 Mika가 배운 스킬이 여기에 표시됩니다.</string>
     <string name="plus_clipboard_empty">클립보드에 붙여넣을 텍스트가 없습니다</string>
     <string name="plus_skill_directive">"%1$s" 스킬 사용:</string>
+    <string name="plus_reuse">자주 쓰는 항목</string>
+    <string name="plus_reuse_hint">문구 · 목록 · 흐름</string>
+    <string name="plus_reuse_phrases">자주 쓰는 문구</string>
 </resources>

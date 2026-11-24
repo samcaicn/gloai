@@ -2,8 +2,8 @@
 <resources>
     <string name="teach_title">Ensinar a Mika</string>
     <string name="teach_menu">Ensinar a Mika</string>
-    <string name="teach_goal_label">Objetivo</string>
-    <string name="teach_goal_hint">O que a Mika deve lembrar? Uma frase.</string>
+    <string name="teach_goal_label">O que ensinar</string>
+    <string name="teach_goal_hint">ex.: bater o ponto todo dia no app de frequência</string>
     <string name="teach_disclosure">Os passos ficam neste telefone e só depois de tocar em Começar demonstração. Se houver um modelo configurado, gerar a habilidade envia um resumo sem dados sensíveis do objetivo e dos passos a esse modelo. Senhas, códigos e dados de pagamento ficam de fora. Sem modelo, o rascunho é escrito no telefone e nada é enviado. Ele não é usado até você aceitar e não foi testado com sucesso.</string>
     <string name="teach_continue">Continuar</string>
     <string name="teach_ready_body">A Mika só observa e não opera o telefone. Você pode pausar, terminar ou descartar. Nada é gravado até tocar em Começar demonstração.</string>
@@ -34,7 +34,7 @@
     <string name="teach_accept">Guardar esta habilidade</string>
     <string name="teach_retry">Preparar de novo</string>
     <string name="teach_intro_title">Ensina-me uma vez</string>
-    <string name="teach_intro_body">Faz uma vez do início ao fim enquanto eu observo. Quando terminares, transformo isto numa habilidade para usares da próxima vez.</string>
+    <string name="teach_intro_body">Faça uma vez, o Mika observa e aprende para a próxima</string>
     <string name="teach_disclosure_short">Só vejo o que acontece neste telemóvel. Palavras-passe, códigos de verificação e dados de pagamento não são registados.</string>
     <string name="teach_summary_ready">Pronta</string>
     <string name="teach_summary_head">Escrita como a Mika faria, não é uma repetição dos teus toques.</string>
@@ -46,4 +46,11 @@
     <string name="teach_teach_again">Ensinar outra coisa</string>
     <string name="teach_no_steps_again">Não vi ações desta vez. Tentamos outra vez?</string>
     <string name="teach_redo">Demonstrar outra vez</string>
+    <string name="teach_step1">Escreva o que ensinar</string>
+    <string name="teach_step1_note">Uma frase basta</string>
+    <string name="teach_step2">Faça uma vez, como sempre</string>
+    <string name="teach_step2_note">No topo aparece «Aprendendo»; pause ou encerre quando quiser</string>
+    <string name="teach_step3">Aceite</string>
+    <string name="teach_step3_note">O Mika mostra a habilidade; ela só é usada depois que você aceita</string>
+    <string name="teach_good_for">Vale a pena ensinar: o seu jeito de fazer, opções escondidas e tarefas com vários toques</string>
 </resources>

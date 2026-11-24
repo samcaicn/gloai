@@ -2,8 +2,8 @@
 <resources>
     <string name="teach_title">教 Mika</string>
     <string name="teach_menu">教 Mika</string>
-    <string name="teach_goal_label">目標</string>
-    <string name="teach_goal_hint">希望 Mika 記住什麼？一句話。</string>
+    <string name="teach_goal_label">要學的事</string>
+    <string name="teach_goal_hint">比如：每天早上在考勤 App 裡打卡</string>
     <string name="teach_disclosure">點「開始示範」之後，步驟只留在這台手機上。如果已經配置了模型，生成技能時會把目標和步驟的脫敏摘要發給當前模型，不含密碼、驗證碼和支付內容。沒有配置模型時，草稿只在手機上按步驟整理，不會上傳。草稿在收下之前不會被調用，也還沒有試跑成功。</string>
     <string name="teach_continue">繼續</string>
     <string name="teach_ready_body">Mika 只會看，不會操作手機。可以暫停、結束或放棄。點「開始示範」之前不會記錄。</string>
@@ -34,7 +34,7 @@
     <string name="teach_accept">收下這個技能</string>
     <string name="teach_retry">再整理一次</string>
     <string name="teach_intro_title">教一遍，我就學會</string>
-    <string name="teach_intro_body">你先完整做一遍，我在旁邊看。做完自動整理成技能，下次直接用。</string>
+    <string name="teach_intro_body">你做一遍，Mika 看著學，下次交給它</string>
     <string name="teach_disclosure_short">只看這台手機上的操作；密碼、驗證碼、支付內容不記錄。</string>
     <string name="teach_summary_ready">總結好了</string>
     <string name="teach_summary_head">按 Mika 自己的做法整理，不是把你的操作重放一遍。</string>
@@ -46,4 +46,11 @@
     <string name="teach_teach_again">再教一件</string>
     <string name="teach_no_steps_again">這次沒看到操作，再來一次？</string>
     <string name="teach_redo">再示範一次</string>
+    <string name="teach_step1">寫下要學的事</string>
+    <string name="teach_step1_note">一句話說清目標</string>
+    <string name="teach_step2">照常做一遍</string>
+    <string name="teach_step2_note">螢幕頂部有「正在學習」，隨時暫停或結束</string>
+    <string name="teach_step3">確認收下</string>
+    <string name="teach_step3_note">整理成技能給你看，收下才會用</string>
+    <string name="teach_good_for">適合教：你自己的習慣做法、藏得深的入口、每次都要點好幾步的事</string>
 </resources>

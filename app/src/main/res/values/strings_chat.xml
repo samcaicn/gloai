@@ -318,10 +318,13 @@
     <string name="plus_clipboard">Clipboard</string>
     <string name="plus_sub_clipboard">Paste what you just copied</string>
     <string name="plus_sub_teach">Show it once and Mika learns</string>
-    <string name="plus_sub_skills">Use a skill for this turn</string>
+    <string name="plus_sub_skills">Use for this turn</string>
     <string name="plus_sub_tasks">Fill a saved task into the input</string>
     <string name="plus_sub_browser">Built-in browser</string>
     <string name="plus_skills_empty">No personal skills yet. Skills Mika learns from finished tasks appear here.</string>
     <string name="plus_clipboard_empty">Nothing to paste from the clipboard</string>
     <string name="plus_skill_directive">Use the “%1$s” skill: </string>
+    <string name="plus_reuse">Saved</string>
+    <string name="plus_reuse_hint">Phrases · lists · flows</string>
+    <string name="plus_reuse_phrases">Saved phrases</string>
 </resources>

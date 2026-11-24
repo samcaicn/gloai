@@ -2,8 +2,8 @@
 <resources>
     <string name="teach_title">Mika に教える</string>
     <string name="teach_menu">Mika に教える</string>
-    <string name="teach_goal_label">目標</string>
-    <string name="teach_goal_hint">Mika に何を覚えてほしいですか。一文で。</string>
+    <string name="teach_goal_label">覚えてほしいこと</string>
+    <string name="teach_goal_hint">例：毎朝、勤怠アプリで打刻する</string>
     <string name="teach_disclosure">「示範を開始」を押したあと、手順はこの端末だけに残します。モデルが設定されている場合、技能の下書きを作るときに目標と手順の要約（パスワード、確認コード、支払い内容は除く）をそのモデルへ送ります。モデルが無いときは端末上で整理するだけで、送信しません。受け入れるまで技能は使われず、試し実行は成功していません。</string>
     <string name="teach_continue">続ける</string>
     <string name="teach_ready_body">Mika は見るだけで、端末は操作しません。一時停止、終了、破棄ができます。「示範を開始」を押すまで記録しません。</string>
@@ -34,7 +34,7 @@
     <string name="teach_accept">このスキルを受け取る</string>
     <string name="teach_retry">もう一度整理する</string>
     <string name="teach_intro_title">一度教えれば覚えます</string>
-    <string name="teach_intro_body">最初に一度だけ最後までやってみせてください。終わったら自動でスキルにまとめます。次回からは一言で使えます。</string>
+    <string name="teach_intro_body">一度やって見せれば、次から Mika に任せられます</string>
     <string name="teach_disclosure_short">この端末上の操作だけを見ます。パスワード、確認コード、支払い内容は記録しません。</string>
     <string name="teach_summary_ready">まとまりました</string>
     <string name="teach_summary_head">Mika 自身のやり方でまとめたもので、操作の再生ではありません。</string>
@@ -46,4 +46,11 @@
     <string name="teach_teach_again">もう一つ教える</string>
     <string name="teach_no_steps_again">操作が見えませんでした。もう一度試しますか？</string>
     <string name="teach_redo">もう一度やってみせる</string>
+    <string name="teach_step1">覚えてほしいことを書く</string>
+    <string name="teach_step1_note">ひとことでOK</string>
+    <string name="teach_step2">いつも通り一度やる</string>
+    <string name="teach_step2_note">上部に「学習中」が出ます。いつでも一時停止・終了できます</string>
+    <string name="teach_step3">受け取る</string>
+    <string name="teach_step3_note">まとめたスキルを確認し、受け取ってから使われます</string>
+    <string name="teach_good_for">教えるのに向いているもの：自分なりのやり方、奥にある入口、毎回何度もタップすること</string>
 </resources>

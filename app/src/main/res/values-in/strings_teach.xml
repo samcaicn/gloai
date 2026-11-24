@@ -2,8 +2,8 @@
 <resources>
     <string name="teach_title">Ajari Mika</string>
     <string name="teach_menu">Ajari Mika</string>
-    <string name="teach_goal_label">Tujuan</string>
-    <string name="teach_goal_hint">Apa yang harus diingat Mika? Satu kalimat.</string>
+    <string name="teach_goal_label">Yang diajarkan</string>
+    <string name="teach_goal_hint">mis. absen setiap pagi di aplikasi kehadiran</string>
     <string name="teach_disclosure">Langkah hanya disimpan di ponsel ini, dan hanya setelah Anda mengetuk Mulai demonstrasi. Jika model sudah diatur, membuat keterampilan mengirim ringkasan tujuan dan langkah yang sudah disensor ke model itu. Kata sandi, kode, dan detail pembayaran tidak ikut. Jika tidak ada model, draf ditulis di ponsel dan tidak ada yang diunggah. Draf tidak dipakai sebelum diterima, dan belum berhasil diuji coba.</string>
     <string name="teach_continue">Lanjut</string>
     <string name="teach_ready_body">Mika hanya melihat dan tidak mengoperasikan ponsel. Anda bisa menjeda, mengakhiri, atau membuang. Tidak ada yang direkam sebelum mengetuk Mulai demonstrasi.</string>
@@ -34,7 +34,7 @@
     <string name="teach_accept">Simpan keterampilan ini</string>
     <string name="teach_retry">Siapkan ulang</string>
     <string name="teach_intro_title">Ajari sekali saja</string>
-    <string name="teach_intro_body">Lakukan sekali dari awal sampai akhir sambil aku melihat. Setelah selesai, aku ubah otomatis jadi keterampilan untuk dipakai lain kali.</string>
+    <string name="teach_intro_body">Lakukan sekali, Mika melihat dan belajar</string>
     <string name="teach_disclosure_short">Hanya yang terjadi di ponsel ini yang dilihat. Kata sandi, kode verifikasi, dan data pembayaran tidak dicatat.</string>
     <string name="teach_summary_ready">Siap</string>
     <string name="teach_summary_head">Ditulis dengan cara Mika sendiri, bukan mengulang ketukanmu.</string>
@@ -46,4 +46,11 @@
     <string name="teach_teach_again">Ajari hal lain</string>
     <string name="teach_no_steps_again">Kali ini tidak ada tindakan yang terlihat. Coba lagi?</string>
     <string name="teach_redo">Tunjukkan lagi</string>
+    <string name="teach_step1">Tulis yang ingin diajarkan</string>
+    <string name="teach_step1_note">Satu kalimat cukup</string>
+    <string name="teach_step2">Lakukan sekali seperti biasa</string>
+    <string name="teach_step2_note">Di atas muncul «Sedang belajar»; jeda atau akhiri kapan saja</string>
+    <string name="teach_step3">Terima</string>
+    <string name="teach_step3_note">Mika menampilkan skill-nya; baru dipakai setelah kamu terima</string>
+    <string name="teach_good_for">Cocok diajarkan: cara kamu sendiri, menu yang tersembunyi, dan tugas yang butuh beberapa ketukan</string>
 </resources>

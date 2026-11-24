@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -45,6 +46,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.material3.Icon
+import androidx.compose.ui.platform.testTag
 import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.core.learn.knowledge.FrontMatter
@@ -53,10 +57,10 @@ import com.wangzan101.mika.settings.RecommendedTask
 import com.wangzan101.mika.ui.components.ButtonKind
 import com.wangzan101.mika.ui.components.ButtonSize
 import com.wangzan101.mika.ui.components.DirectionalIcon
-import com.wangzan101.mika.ui.components.IconTile
 import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.components.MikaCard
 import com.wangzan101.mika.ui.components.RowChevron
+import com.wangzan101.mika.ui.components.PlainListTheme
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaTheme
@@ -84,8 +88,8 @@ internal fun readClipboardText(context: Context): String? {
 
 /**
  * 「＋」打开的功能面板:从底部升起,先占半屏;往上拖(或滚)到 82%,往下拖、点遮罩或返回关掉。
- * 内容是一张张卡片、每张卡片里每行一件事:上面那张往这一轮里放东西,下面那张是让 Mika 做事或去别处。
- * 相册、技能、常用任务在面板里翻到二级页;拍照、文件、清单这些直接交给系统或对话页。
+ * 分三层:最上面一排四个按钮和最近照片,往这条消息里放东西;中间两张大卡片(教 Mika、技能)决定这一轮怎么做;
+ * 最下面「常用」一行,进去是常用说法、已存清单和流程。相册、技能、常用在面板里翻到二级页。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,12 +105,10 @@ internal fun ChatPlusSheet(
     onTeach: (() -> Unit)?,
     onChecklists: () -> Unit,
     onWorkflows: () -> Unit,
-    onBrowser: () -> Unit,
     tasks: List<RecommendedTask>,
     onPickTask: (RecommendedTask) -> Unit,
     onPickSkill: (PlusSkill) -> Unit,
 ) {
-    val c = MikaTheme.colors
     val context = LocalContext.current
     val attach = rememberAttachLaunchers(onPicked, onToggle, onFull, onDeviceFiles)
     var view by remember { mutableStateOf(PlusView.Main) }
@@ -117,6 +119,9 @@ internal fun ChatPlusSheet(
         }
     }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    // 和设置页一样的简约列表配色:浅灰底上放白块,不描边
+    PlainListTheme {
+    val c = MikaTheme.colors
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -132,27 +137,54 @@ internal fun ChatPlusSheet(
                 when (view) {
                     PlusView.Main -> Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = PlusInset, vertical = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        // 第一块:往这条消息里放东西。四个按钮和最近照片放在同一张白卡片里
                         MikaCard {
-                            PlusRow(MikaIcons.PhotoCamera, AttachCopy.CAMERA, null, first = true, onClick = attach.camera)
-                            PlusRow(MikaIcons.Photo, AttachCopy.ALBUM, stringResource(R.string.plus_sub_album), onClick = { view = PlusView.Photos }, trailing = { RowChevron() })
-                            PlusRow(MikaIcons.Paperclip, AttachCopy.FILES, stringResource(R.string.plus_sub_files), onClick = attach.files, trailing = { RowChevron() })
-                            attach.deviceFiles?.let { open ->
-                                PlusRow(MikaIcons.Folder, stringResource(R.string.device_browser_title), stringResource(R.string.plus_sub_device), onClick = open, trailing = { RowChevron() })
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 8.dp)) {
+                                QuickButton(MikaIcons.PhotoCamera, AttachCopy.CAMERA, "plus-camera", attach.camera)
+                                QuickButton(MikaIcons.Photo, AttachCopy.ALBUM, "plus-album") { view = PlusView.Photos }
+                                QuickButton(MikaIcons.Paperclip, AttachCopy.FILES, "plus-files", attach.files)
+                                QuickButton(MikaIcons.Copy, stringResource(R.string.plus_clipboard), "plus-clipboard", onPaste)
                             }
-                            PlusRow(MikaIcons.Copy, stringResource(R.string.plus_clipboard), stringResource(R.string.plus_sub_clipboard), onClick = onPaste)
+                            val recent = attach.recent.orEmpty()
+                            if (attach.access != PhotoAccess.None && recent.isNotEmpty()) {
+                                Row(
+                                    Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    recent.take(4).forEach { p ->
+                                        Box(Modifier.weight(1f)) { RecentCell(p, AttachTray.order(selected, p.uri)) { attach.toggle(p) } }
+                                    }
+                                    Box(
+                                        Modifier.weight(1f).aspectRatio(1f).clip(MikaShapes.Tile).background(c.fill)
+                                            .clickable(role = Role.Button) { view = PlusView.Photos },
+                                        contentAlignment = Alignment.Center,
+                                    ) { Text(AttachCopy.ALL, style = MikaType.Caption, color = c.ink2) }
+                                }
+                            }
                         }
+                        Spacer(Modifier.height(12.dp))
+                        // 第二块:这一轮怎么做、存下来的拿来再用。和设置页一样的列表
                         MikaCard {
+                            var first = true
                             onTeach?.let { teach ->
-                                PlusRow(MikaIcons.Hand, stringResource(R.string.teach_menu), stringResource(R.string.plus_sub_teach), first = true, onClick = teach)
+                                PlusRow(MikaIcons.Hand, stringResource(R.string.teach_menu), stringResource(R.string.plus_sub_teach), first = true, onClick = teach, tag = "plus-teach")
+                                first = false
                             }
-                            PlusRow(MikaIcons.Book, stringResource(R.string.memory_skills), stringResource(R.string.plus_sub_skills), first = onTeach == null, onClick = { view = PlusView.Skills }, trailing = { RowChevron() })
-                            PlusRow(MikaIcons.ListChecks, stringResource(R.string.checklists_title), null, onClick = onChecklists)
-                            PlusRow(MikaIcons.Route, stringResource(R.string.workflows_title), null, onClick = onWorkflows)
-                            PlusRow(MikaIcons.Star, stringResource(R.string.recommendations_title), stringResource(R.string.plus_sub_tasks), onClick = { view = PlusView.Tasks }, trailing = { RowChevron() })
-                            PlusRow(MikaIcons.Globe, stringResource(R.string.drawer_browser), stringResource(R.string.plus_sub_browser), onClick = onBrowser, trailing = { RowChevron() })
+                            PlusRow(MikaIcons.Book, stringResource(R.string.memory_skills), null, first = first, onClick = { view = PlusView.Skills }, tag = "plus-skills", trailing = { RowChevron() })
+                            PlusRow(
+                                MikaIcons.Star, stringResource(R.string.plus_reuse), null,
+                                onClick = { view = PlusView.Tasks }, tag = "plus-reuse",
+                                trailing = {
+                                    Text(stringResource(R.string.plus_reuse_hint), style = MikaType.Caption, color = c.ink3)
+                                    RowChevron()
+                                },
+                            )
+                            attach.deviceFiles?.let { open ->
+                                PlusRow(MikaIcons.Folder, stringResource(R.string.device_browser_title), null, onClick = open, trailing = { RowChevron() })
+                            }
                         }
+                        Spacer(Modifier.height(16.dp))
                     }
                     PlusView.Photos -> PlusPhotosPage(
                         access = attach.access,
@@ -168,15 +200,18 @@ internal fun ChatPlusSheet(
                         onPick = onPickSkill,
                         onBack = { view = PlusView.Main },
                     )
-                    PlusView.Tasks -> PlusTasksPage(
+                    PlusView.Tasks -> PlusReusePage(
                         tasks = tasks,
                         onPick = onPickTask,
+                        onChecklists = onChecklists,
+                        onWorkflows = onWorkflows,
                         onBack = { view = PlusView.Main },
                     )
                 }
             }
         }
     }
+}
 }
 
 /** 顶部把手:一条 36×5 的短横线;拖动和点按的语义由 Material 的弹窗壳子给。 */
@@ -198,21 +233,22 @@ private fun PlusRow(
     subtitle: String?,
     first: Boolean = false,
     onClick: () -> Unit,
+    tag: String? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val c = MikaTheme.colors
     Row(
-        Modifier.fillMaxWidth()
+        Modifier.fillMaxWidth().heightIn(min = 54.dp).then(if (tag != null) Modifier.testTag(tag) else Modifier)
             .then(if (first) Modifier else Modifier.drawBehind {
-                val x = 58.dp.toPx()
+                val x = 50.dp.toPx()
                 drawLine(c.hair, Offset(x, 0f), Offset(size.width, 0f), strokeWidth = 0.5.dp.toPx())
             })
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(start = 16.dp, end = 14.dp, top = 7.dp, bottom = 7.dp),
+            .padding(start = 16.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        IconTile(icon)
+        Icon(icon, null, Modifier.size(22.dp), tint = c.ink2)
         Column(Modifier.weight(1f)) {
             Text(title, style = MikaType.Body, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (!subtitle.isNullOrEmpty()) {
@@ -324,16 +360,28 @@ private fun PlusSkillsPage(skills: List<PlusSkill>?, onPick: (PlusSkill) -> Unit
     }
 }
 
-/** 常用任务的二级页:点一条把它的说法填进输入框(不自动发)。 */
+/** 「常用」的二级页:上面去已存清单和流程,下面是常用说法(点一条填进输入框,不自动发)。 */
 @Composable
-private fun PlusTasksPage(tasks: List<RecommendedTask>, onPick: (RecommendedTask) -> Unit, onBack: () -> Unit) {
+private fun PlusReusePage(
+    tasks: List<RecommendedTask>,
+    onPick: (RecommendedTask) -> Unit,
+    onChecklists: () -> Unit,
+    onWorkflows: () -> Unit,
+    onBack: () -> Unit,
+) {
     val c = MikaTheme.colors
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = PlusInset)) {
-        SheetHead(title = stringResource(R.string.recommendations_title), onBack = onBack)
+        SheetHead(title = stringResource(R.string.plus_reuse), onBack = onBack)
+        MikaCard {
+            PlusRow(MikaIcons.ListChecks, stringResource(R.string.checklists_title), null, first = true, onClick = onChecklists, trailing = { RowChevron() })
+            PlusRow(MikaIcons.Route, stringResource(R.string.workflows_title), null, onClick = onWorkflows, trailing = { RowChevron() })
+        }
+        Spacer(Modifier.height(16.dp))
+        PlusLabel(stringResource(R.string.plus_reuse_phrases))
         if (tasks.isEmpty()) {
             Text(
                 stringResource(R.string.recommendations_empty),
-                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 20.dp),
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                 style = MikaType.Caption, color = c.ink3,
             )
         } else {
@@ -344,6 +392,25 @@ private fun PlusTasksPage(tasks: List<RecommendedTask>, onPick: (RecommendedTask
             }
         }
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun PlusLabel(text: String) {
+    Text(text, Modifier.padding(start = 16.dp, bottom = 6.dp), style = MikaType.Caption, color = MikaTheme.colors.ink3)
+}
+
+/** 第一排的按钮:图标和下面一行字,整块可点。 */
+@Composable
+private fun RowScope.QuickButton(icon: ImageVector, label: String, tag: String, onClick: () -> Unit) {
+    val c = MikaTheme.colors
+    Column(
+        Modifier.weight(1f).clip(MikaShapes.Tile).clickable(role = Role.Button, onClick = onClick).padding(vertical = 10.dp).testTag(tag),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(icon, null, Modifier.size(26.dp), tint = c.ink)
+        Text(label, style = MikaType.Caption, color = c.ink2, maxLines = 1)
     }
 }
 

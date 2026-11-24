@@ -2,8 +2,8 @@
 <resources>
     <string name="teach_title">علّم Mika</string>
     <string name="teach_menu">علّم Mika</string>
-    <string name="teach_goal_label">الهدف</string>
-    <string name="teach_goal_hint">ماذا يجب أن تتذكر Mika؟ جملة واحدة.</string>
+    <string name="teach_goal_label">ما تريد تعليمه</string>
+    <string name="teach_goal_hint">مثلًا: تسجيل الحضور كل صباح في تطبيق الدوام</string>
     <string name="teach_disclosure">تبقى الخطوات على هذا الهاتف وفقط بعد الضغط على بدء العرض. إذا كان هناك نموذج مضبوط، فإن إنشاء المهارة يرسل ملخصا منزوع الحساسية للهدف والخطوات إلى ذلك النموذج. كلمات السر والرموز وبيانات الدفع لا تُرسل. إذا لم يوجد نموذج، يُكتب المسودة على الهاتف ولا يُرفع شيء. لا تُستخدم قبل أن تقبلها، ولم يُثبت نجاح تجربة تشغيل.</string>
     <string name="teach_continue">متابعة</string>
     <string name="teach_ready_body">Mika تشاهد فقط ولا تشغّل الهاتف. يمكنك الإيقاف المؤقت أو الإنهاء أو التجاهل. لا يُسجل شيء قبل الضغط على بدء العرض.</string>
@@ -34,7 +34,7 @@
     <string name="teach_accept">قبول هذه المهارة</string>
     <string name="teach_retry">إعادة الترتيب</string>
     <string name="teach_intro_title">علّمني مرة واحدة</string>
-    <string name="teach_intro_body">نفّذ المهمة مرة واحدة كاملة وأنا أراقب. عندما تنتهي سأحوّلها تلقائيًا إلى مهارة تستخدمها في المرة القادمة.</string>
+    <string name="teach_intro_body">نفّذه مرة ويتعلّم Mika بالمشاهدة</string>
     <string name="teach_disclosure_short">أرى ما يحدث على هذا الهاتف فقط. لا تُسجَّل كلمات المرور ولا رموز التحقق ولا بيانات الدفع.</string>
     <string name="teach_summary_ready">جاهزة</string>
     <string name="teach_summary_head">مكتوبة بطريقة Mika نفسها، وليست إعادة تشغيل لما فعلته.</string>
@@ -46,4 +46,11 @@
     <string name="teach_teach_again">علّمني شيئًا آخر</string>
     <string name="teach_no_steps_again">لم أرَ أي إجراءات هذه المرة. هل نحاول مرة أخرى؟</string>
     <string name="teach_redo">اعرضها مرة أخرى</string>
+    <string name="teach_step1">اكتب ما تريد تعليمه</string>
+    <string name="teach_step1_note">تكفي جملة واحدة</string>
+    <string name="teach_step2">نفّذه مرة كالمعتاد</string>
+    <string name="teach_step2_note">يظهر «يتعلّم» في الأعلى؛ أوقف مؤقتًا أو أنهِ متى شئت</string>
+    <string name="teach_step3">اقبله</string>
+    <string name="teach_step3_note">يعرض Mika المهارة؛ ولا تُستخدم إلا بعد قبولك</string>
+    <string name="teach_good_for">يستحق التعليم: طريقتك الخاصة، والمداخل المخفية، والمهام التي تحتاج عدة نقرات كل مرة</string>
 </resources>

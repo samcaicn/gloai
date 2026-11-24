@@ -338,4 +338,7 @@
     <string name="plus_skills_empty">Ainda não há habilidades pessoais. As que o Mika aprender com tarefas concluídas aparecerão aqui.</string>
     <string name="plus_clipboard_empty">Nada para colar da área de transferência</string>
     <string name="plus_skill_directive">Usar a habilidade “%1$s”: </string>
+    <string name="plus_reuse">Salvos</string>
+    <string name="plus_reuse_hint">Frases · listas · fluxos</string>
+    <string name="plus_reuse_phrases">Frases salvas</string>
 </resources>

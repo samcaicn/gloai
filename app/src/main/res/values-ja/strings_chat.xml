@@ -310,4 +310,7 @@
     <string name="plus_skills_empty">個人スキルはまだありません。やり遂げたタスクから Mika が覚えたスキルがここに表示されます。</string>
     <string name="plus_clipboard_empty">クリップボードに貼り付けられる文字がありません</string>
     <string name="plus_skill_directive">「%1$s」スキルを使う：</string>
+    <string name="plus_reuse">よく使う</string>
+    <string name="plus_reuse_hint">フレーズ · リスト · フロー</string>
+    <string name="plus_reuse_phrases">よく使うフレーズ</string>
 </resources>

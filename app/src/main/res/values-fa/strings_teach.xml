@@ -2,8 +2,8 @@
 <resources>
     <string name="teach_title">آموزش به میکا</string>
     <string name="teach_menu">آموزش به میکا</string>
-    <string name="teach_goal_label">هدف</string>
-    <string name="teach_goal_hint">میکا چه چیزی یاد بگیرد؟ در یک جمله بنویسید.</string>
+    <string name="teach_goal_label">چه چیزی یاد بگیرد</string>
+    <string name="teach_goal_hint">مثلاً: هر صبح در اپ حضور و غیاب ورود بزن</string>
     <string name="teach_disclosure">مراحل فقط در این گوشی نگهداری می‌شوند و ثبت آن‌ها تنها پس از زدن «شروع نمایش» آغاز می‌شود. اگر مدلی تنظیم شده باشد، برای ساخت مهارت، خلاصه‌ای از هدف و مراحل که اطلاعات حساس آن پوشانده شده به آن مدل ارسال می‌شود. گذرواژه‌ها، کدهای تأیید و اطلاعات پرداخت حذف می‌شوند. اگر مدلی تنظیم نشده باشد، پیش‌نویس در این گوشی نوشته می‌شود و چیزی بارگذاری نمی‌شود. تا پیش از پذیرش شما از پیش‌نویس استفاده نمی‌شود و این پیش‌نویس هنوز آزمایش نشده است.</string>
     <string name="teach_continue">ادامه</string>
     <string name="teach_ready_body">میکا مشاهده می‌کند و گوشی را کنترل نمی‌کند. می‌توانید مکث کنید، نمایش را پایان دهید یا کنار بگذارید. تا زمانی که «شروع نمایش» را نزنید چیزی ثبت نمی‌شود.</string>
@@ -34,7 +34,7 @@
     <string name="teach_accept">پذیرفتن این مهارت</string>
     <string name="teach_retry">دوباره مرتب کن</string>
     <string name="teach_intro_title">یک بار یادم بده</string>
-    <string name="teach_intro_body">یک بار از اول تا آخر انجامش بده، من نگاه می‌کنم. بعد از تمام شدن خودکار به یک مهارت تبدیلش می‌کنم که دفعه بعد مستقیم استفاده کنی.</string>
+    <string name="teach_intro_body">یک بار انجامش بده، Mika نگاه می‌کند و یاد می‌گیرد</string>
     <string name="teach_disclosure_short">فقط کارهایی که روی این گوشی انجام می‌شود دیده می‌شود. رمز عبور، کد تأیید و اطلاعات پرداخت ثبت نمی‌شود.</string>
     <string name="teach_summary_ready">آماده شد</string>
     <string name="teach_summary_head">به روش خود Mika نوشته شده، نه پخش دوبارهٔ کارهای تو.</string>
@@ -46,4 +46,11 @@
     <string name="teach_teach_again">یک چیز دیگر یادم بده</string>
     <string name="teach_no_steps_again">این بار حرکتی دیده نشد. دوباره امتحان کنیم؟</string>
     <string name="teach_redo">دوباره نشان بده</string>
+    <string name="teach_step1">بنویس چه چیزی یاد بگیرد</string>
+    <string name="teach_step1_note">یک جمله کافی است</string>
+    <string name="teach_step2">یک بار مثل همیشه انجامش بده</string>
+    <string name="teach_step2_note">بالای صفحه «در حال یادگیری» می‌آید؛ هر وقت خواستی مکث کن یا تمام کن</string>
+    <string name="teach_step3">تأیید کن</string>
+    <string name="teach_step3_note">Mika مهارت را نشان می‌دهد؛ فقط بعد از تأیید استفاده می‌شود</string>
+    <string name="teach_good_for">ارزش یاد دادن دارد: روش خودت، ورودی‌های پنهان، و کارهایی که هر بار چند ضربه می‌خواهند</string>
 </resources>

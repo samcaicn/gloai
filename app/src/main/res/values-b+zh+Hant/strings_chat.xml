@@ -304,10 +304,13 @@
     <string name="plus_clipboard">剪貼簿</string>
     <string name="plus_sub_clipboard">貼上剛剛複製的內容</string>
     <string name="plus_sub_teach">做一遍,讓它學會</string>
-    <string name="plus_sub_skills">選一個技能用在這一輪</string>
+    <string name="plus_sub_skills">用在這一輪</string>
     <string name="plus_sub_tasks">把常用的說法填進輸入框</string>
     <string name="plus_sub_browser">內建瀏覽器</string>
     <string name="plus_skills_empty">還沒有個人技能。Mika 從做成的任務裡學會的技能會出現在這裡。</string>
     <string name="plus_clipboard_empty">剪貼簿裡沒有可貼上的文字</string>
     <string name="plus_skill_directive">用「%1$s」技能：</string>
+    <string name="plus_reuse">常用</string>
+    <string name="plus_reuse_hint">說法 · 清單 · 流程</string>
+    <string name="plus_reuse_phrases">常用說法</string>
 </resources>

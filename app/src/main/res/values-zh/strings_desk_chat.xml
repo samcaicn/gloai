@@ -25,6 +25,6 @@
     <string name="desk_need_stop">停止这件事</string>
     <string name="desk_tray_stop">停止</string>
     <string name="desk_tray_detail">查看详细过程 ›</string>
-    <string name="chat_menu_tasks">这个对话里的事</string>
+    <string name="chat_menu_tasks">本对话任务</string>
     <string name="desk_tasks_empty">这个对话里还没派过事。</string>
 </resources>

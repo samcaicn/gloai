@@ -640,7 +640,6 @@ fun ChatScreen(
                 }) else null,
                 onChecklists = { showPlus = false; showChecklists = true },
                 onWorkflows = { showPlus = false; showWorkflows = true },
-                onBrowser = { showPlus = false; onOpenBrowser() },
                 tasks = recommendedTasks,
                 onPickTask = { showPlus = false; pickTask(it) },
                 onPickSkill = { skill ->

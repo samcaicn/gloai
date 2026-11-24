@@ -2,8 +2,8 @@
 <resources>
     <string name="teach_title">Научить Mika</string>
     <string name="teach_menu">Научить Mika</string>
-    <string name="teach_goal_label">Цель</string>
-    <string name="teach_goal_hint">Что Mika должна запомнить? Одно предложение.</string>
+    <string name="teach_goal_label">Чему научить</string>
+    <string name="teach_goal_hint">например: каждое утро отмечаться в приложении учёта времени</string>
     <string name="teach_disclosure">Шаги остаются на этом телефоне и только после нажатия «Начать показ». Если модель настроена, при создании навыка ей отправляется краткое описание цели и шагов без паролей, кодов и платежных данных. Если модели нет, черновик пишется на телефоне и ничего не отправляется. Пока вы его не примете, он не используется и не был успешно проверен.</string>
     <string name="teach_continue">Далее</string>
     <string name="teach_ready_body">Mika только смотрит и не управляет телефоном. Можно поставить на паузу, закончить или отменить. До нажатия «Начать показ» ничего не записывается.</string>
@@ -34,7 +34,7 @@
     <string name="teach_accept">Сохранить навык</string>
     <string name="teach_retry">Подготовить ещё раз</string>
     <string name="teach_intro_title">Покажи один раз</string>
-    <string name="teach_intro_body">Сделай один раз от начала до конца, я смотрю. Когда закончишь, я сам превращу это в навык для следующего раза.</string>
+    <string name="teach_intro_body">Сделайте один раз — Mika посмотрит и научится</string>
     <string name="teach_disclosure_short">Я вижу только то, что происходит на этом телефоне. Пароли, коды подтверждения и платёжные данные не записываются.</string>
     <string name="teach_summary_ready">Готово</string>
     <string name="teach_summary_head">Записано так, как сделала бы Mika, а не повтор твоих нажатий.</string>
@@ -46,4 +46,11 @@
     <string name="teach_teach_again">Научить ещё</string>
     <string name="teach_no_steps_again">В этот раз действий не видно. Попробуем ещё раз?</string>
     <string name="teach_redo">Показать ещё раз</string>
+    <string name="teach_step1">Напишите, чему научить</string>
+    <string name="teach_step1_note">Хватит одной фразы</string>
+    <string name="teach_step2">Сделайте это один раз</string>
+    <string name="teach_step2_note">Вверху будет «Учусь» — можно приостановить или завершить</string>
+    <string name="teach_step3">Примите навык</string>
+    <string name="teach_step3_note">Mika покажет навык; он используется только после принятия</string>
+    <string name="teach_good_for">Стоит учить: ваш собственный порядок действий, глубоко спрятанные разделы и дела в несколько касаний</string>
 </resources>

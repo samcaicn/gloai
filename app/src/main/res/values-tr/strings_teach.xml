@@ -2,8 +2,8 @@
 <resources>
     <string name="teach_title">Mika\'ya öğret</string>
     <string name="teach_menu">Mika\'ya öğret</string>
-    <string name="teach_goal_label">Amaç</string>
-    <string name="teach_goal_hint">Mika ne öğrenmeli? Tek cümle.</string>
+    <string name="teach_goal_label">Öğrenilecek iş</string>
+    <string name="teach_goal_hint">örn. her sabah mesai uygulamasında giriş yapmak</string>
     <string name="teach_disclosure">Adımlar bu telefonda kalır ve yalnızca Gösterimi başlat\'a dokunduktan sonra. Bir model kuruluysa, beceri oluşturmak amacın ve adımların redakte edilmiş bir özetini o modele gönderir. Parolalar, doğrulama kodları ve ödeme ayrıntıları hariç tutulur. Model kurulu değilse taslak bu telefonda yazılır ve hiçbir şey yüklenmez. Taslak siz kabul edene kadar kullanılmaz ve deneme çalıştırması yapılmamıştır.</string>
     <string name="teach_continue">Devam et</string>
     <string name="teach_ready_body">Mika izler ve telefonu çalıştırmaz. Duraklatabilir, bitirebilir veya atabilirsiniz. Gösterimi başlat\'a dokunana kadar hiçbir şey kaydedilmez.</string>
@@ -34,7 +34,7 @@
     <string name="teach_accept">Bu beceriyi al</string>
     <string name="teach_retry">Yeniden hazırla</string>
     <string name="teach_intro_title">Bir kez öğret</string>
-    <string name="teach_intro_body">Baştan sona bir kez yap, ben izliyorum. Bitince bunu otomatik olarak bir beceriye dönüştüreceğim; bir dahaki sefere doğrudan kullanırsın.</string>
+    <string name="teach_intro_body">Bir kez yap, Mika izleyip öğrensin</string>
     <string name="teach_disclosure_short">Yalnızca bu telefondaki işlemleri görüyorum. Parolalar, doğrulama kodları ve ödeme bilgileri kaydedilmez.</string>
     <string name="teach_summary_ready">Hazır</string>
     <string name="teach_summary_head">Mika’nın kendi yapacağı şekilde yazıldı, dokunuşlarının tekrarı değil.</string>
@@ -46,4 +46,11 @@
     <string name="teach_teach_again">Bir şey daha öğret</string>
     <string name="teach_no_steps_again">Bu sefer hiç işlem görülmedi. Tekrar deneyelim mi?</string>
     <string name="teach_redo">Tekrar göster</string>
+    <string name="teach_step1">Öğrenilecek işi yaz</string>
+    <string name="teach_step1_note">Tek cümle yeter</string>
+    <string name="teach_step2">Her zamanki gibi bir kez yap</string>
+    <string name="teach_step2_note">Üstte «Öğreniyor» görünür; istediğin an duraklat veya bitir</string>
+    <string name="teach_step3">Onayla</string>
+    <string name="teach_step3_note">Mika beceriyi gösterir; ancak onayladıktan sonra kullanılır</string>
+    <string name="teach_good_for">Öğretmeye değer: kendi alışkanlıkların, derinde kalan menüler ve her seferinde birkaç dokunuş isteyen işler</string>
 </resources>

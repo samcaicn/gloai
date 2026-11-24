@@ -2,8 +2,8 @@
 <resources>
     <string name="teach_title">Teach Mika</string>
     <string name="teach_menu">Teach Mika</string>
-    <string name="teach_goal_label">Goal</string>
-    <string name="teach_goal_hint">What should Mika learn? One sentence.</string>
+    <string name="teach_goal_label">What to learn</string>
+    <string name="teach_goal_hint">e.g. clock in on the attendance app every morning</string>
     <string name="teach_disclosure">Steps stay on this phone, and only after you tap Start demonstration. If a model is set up, generating a skill sends a redacted summary of the goal and steps to that model. Passwords, verification codes and payment details are left out. If no model is set up, the draft is written on this phone and nothing is uploaded. The draft is not used until you accept it, and it has not been trial-run.</string>
     <string name="teach_continue">Continue</string>
     <string name="teach_ready_body">Mika will watch and will not operate the phone. You can pause, finish or discard. Nothing is recorded until you tap Start demonstration.</string>
@@ -34,7 +34,7 @@
     <string name="teach_accept">Keep this skill</string>
     <string name="teach_retry">Try writing it again</string>
     <string name="teach_intro_title">Teach me once</string>
-    <string name="teach_intro_body">Do it once in front of me. When you finish, I’ll write it into a skill you can use next time.</string>
+    <string name="teach_intro_body">Do it once and Mika watches and learns, so next time you can hand it over</string>
     <string name="teach_disclosure_short">Only what happens on this phone is read. Passwords, verification codes and payment details are not recorded.</string>
     <string name="teach_summary_ready">Ready</string>
     <string name="teach_summary_head">Written the way Mika would do it, not a replay of your taps.</string>
@@ -46,4 +46,11 @@
     <string name="teach_teach_again">Teach another</string>
     <string name="teach_no_steps_again">No actions were seen. Try again?</string>
     <string name="teach_redo">Demonstrate again</string>
+    <string name="teach_step1">Write down what to learn</string>
+    <string name="teach_step1_note">One sentence is enough</string>
+    <string name="teach_step2">Do it once as usual</string>
+    <string name="teach_step2_note">A “Learning” bar stays at the top; pause or end any time</string>
+    <string name="teach_step3">Accept it</string>
+    <string name="teach_step3_note">Mika shows the skill it made; it is only used after you accept</string>
+    <string name="teach_good_for">Worth teaching: your own way of doing things, entries buried deep in an app, and tasks that take several taps every time</string>
 </resources>

@@ -1,6 +1,21 @@
 package com.wangzan101.mika.teach.ui
 
 import android.app.Activity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.Role
+import com.wangzan101.mika.ui.components.PlainListTheme
+import com.wangzan101.mika.ui.theme.MikaShapes
+import com.wangzan101.mika.ui.theme.MikaSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,7 +27,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import com.wangzan101.mika.ui.components.MikaTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -60,7 +74,8 @@ internal data class TeachSummaryView(
 fun TeachScreen(runtime: TeachRuntime, onBack: () -> Unit) {
     val ui by runtime.ui.collectAsState()
     val session = ui.session
-    Column(Modifier.fillMaxSize()) {
+    PlainListTheme {
+    Column(Modifier.fillMaxSize().background(MikaTheme.colors.bg)) {
         TopBar(stringResource(R.string.teach_title), MikaIcons.Back, onBack, stringResource(R.string.back))
         Notice(ui.notice)
         val draft = ui.draft
@@ -87,6 +102,7 @@ fun TeachScreen(runtime: TeachRuntime, onBack: () -> Unit) {
                 onTeachAgain = { teachAgain(runtime, session.goal) },
             ) else Intro(ui.hint.orEmpty(), runtime)
         }
+    }
     }
 }
 
@@ -122,34 +138,104 @@ private fun Notice(notice: TeachNotice?) {
 
 @Composable
 internal fun TeachIntroPage(initial: String, onStart: (String) -> Unit) {
+    val c = MikaTheme.colors
     var goal by remember(initial) { mutableStateOf(initial) }
     var detailed by remember { mutableStateOf(false) }
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp).testTag("teach-form"),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(stringResource(R.string.teach_intro_title), style = MikaType.Title, color = MikaTheme.colors.ink)
-        Text(stringResource(R.string.teach_intro_body), style = MikaType.Body, color = MikaTheme.colors.ink2)
-        MikaTextField(
-            goal, { goal = it },
-            Modifier.fillMaxWidth().testTag("teach-goal"),
-            label = { Text(stringResource(R.string.teach_goal_label)) },
-            placeholder = { Text(stringResource(R.string.teach_goal_hint)) },
-        )
-        MikaCard(Modifier.clickable { detailed = !detailed }.testTag("teach-disclosure")) {
+    var empty by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize()) {
+        Column(
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).testTag("teach-form"),
+        ) {
+            // 开头:图标、一句话说清这是什么
+            Column(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(MikaIcons.Hand, null, Modifier.size(34.dp), tint = c.ink)
+                Spacer(Modifier.height(10.dp))
+                Text(stringResource(R.string.teach_intro_title), style = MikaType.Title, color = c.ink)
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.teach_intro_body), style = MikaType.Caption, color = c.ink3, textAlign = TextAlign.Center)
+            }
+            // 三步:看完就知道点了开始之后会发生什么
+            MikaCard {
+                TeachStep(1, stringResource(R.string.teach_step1), stringResource(R.string.teach_step1_note), first = true)
+                TeachStep(2, stringResource(R.string.teach_step2), stringResource(R.string.teach_step2_note))
+                TeachStep(3, stringResource(R.string.teach_step3), stringResource(R.string.teach_step3_note))
+            }
+            // 说清什么值得教:Mika 自己摸不到的事
             Text(
-                stringResource(if (detailed) R.string.teach_disclosure else R.string.teach_disclosure_short),
-                Modifier.padding(12.dp),
-                style = MikaType.Caption,
-                color = MikaTheme.colors.ink2,
+                stringResource(R.string.teach_good_for),
+                Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp), style = MikaType.Caption, color = c.ink3,
             )
+            Text(
+                stringResource(R.string.teach_goal_label),
+                Modifier.padding(start = 16.dp, top = 20.dp, bottom = 6.dp), style = MikaType.Caption, color = c.ink3,
+            )
+            Box(
+                Modifier.fillMaxWidth().background(if (empty) c.badSoft else c.surface, RoundedCornerShape(18.dp))
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+            ) {
+                if (goal.isEmpty()) Text(stringResource(R.string.teach_goal_hint), style = MikaType.Body, color = c.ink3)
+                BasicTextField(
+                    goal, { goal = it; empty = false },
+                    Modifier.fillMaxWidth().testTag("teach-goal"),
+                    textStyle = MikaType.Body.copy(color = c.ink),
+                    cursorBrush = SolidColor(c.ink),
+                )
+            }
+            if (empty) {
+                Text(stringResource(R.string.teach_need_goal), Modifier.padding(start = 16.dp, top = 6.dp), style = MikaType.Caption, color = c.bad)
+            }
+            // 隐私:一行小字,点开看完整说明
+            Row(
+                Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 16.dp).clip(MikaShapes.Tile)
+                    .clickable { detailed = !detailed }.padding(horizontal = 4.dp, vertical = 4.dp).testTag("teach-disclosure"),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(MikaIcons.Shield, null, Modifier.size(15.dp).padding(top = 1.dp), tint = c.ink3)
+                Text(
+                    stringResource(if (detailed) R.string.teach_disclosure else R.string.teach_disclosure_short),
+                    style = MikaType.Caption, color = c.ink3,
+                )
+            }
         }
-        MikaButton(
-            stringResource(R.string.teach_start), { onStart(goal) },
-            kind = ButtonKind.Primary, size = ButtonSize.Medium,
-            modifier = Modifier.testTag("teach-start"),
+        InkButton(
+            stringResource(R.string.teach_start),
+            { if (goal.isBlank()) empty = true else onStart(goal) },
+            Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp).testTag("teach-start"),
         )
     }
+}
+
+/** 三步里的一步:左边黑底序号,右边标题和一句说明。 */
+@Composable
+private fun TeachStep(n: Int, title: String, note: String, first: Boolean = false) {
+    val c = MikaTheme.colors
+    Row(
+        Modifier.fillMaxWidth()
+            .then(if (first) Modifier else Modifier.drawBehind {
+                drawLine(c.hair, Offset(52.dp.toPx(), 0f), Offset(size.width, 0f), strokeWidth = 0.5.dp.toPx())
+            })
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Box(Modifier.size(22.dp).background(c.ink, CircleShape), contentAlignment = Alignment.Center) {
+            Text("$n", style = MikaType.Caption, color = c.surface)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MikaType.Body, color = c.ink)
+            Text(note, style = MikaType.Caption, color = c.ink3)
+        }
+    }
+}
+
+/** 页面底部的主按钮:铺满、黑底白字,和设置里的黑色开关、单选一致。 */
+@Composable
+internal fun InkButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val c = MikaTheme.colors
+    Box(
+        modifier.fillMaxWidth().height(MikaSize.Button).clip(MikaShapes.Button).background(c.ink)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) { Text(text, style = MikaType.BodyStrong, color = c.surface) }
 }
 
 @Composable
@@ -226,7 +312,7 @@ internal fun TeachSummaryPage(
                 .padding(horizontal = 20.dp).padding(top = 8.dp).testTag("teach-summary"),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(stringResource(R.string.teach_summary_ready), style = MikaType.Label, color = MikaTheme.colors.accent)
+            Text(stringResource(R.string.teach_summary_ready), style = MikaType.Label, color = MikaTheme.colors.ink3)
             Text(view.display, style = MikaType.Title, color = MikaTheme.colors.ink)
             if (view.description.isNotBlank()) {
                 Text(view.description, style = MikaType.Caption, color = MikaTheme.colors.ink2)
@@ -261,11 +347,7 @@ internal fun TeachSummaryPage(
             Modifier.padding(horizontal = 20.dp).padding(top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            MikaButton(
-                stringResource(R.string.teach_accept), onAccept,
-                kind = ButtonKind.Primary, size = ButtonSize.Medium,
-                modifier = Modifier.testTag("teach-accept"),
-            )
+            InkButton(stringResource(R.string.teach_accept), onAccept, Modifier.testTag("teach-accept"))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     stringResource(R.string.teach_redo),
@@ -297,7 +379,8 @@ internal fun TeachDonePage(
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(stringResource(R.string.teach_accepted_title), style = MikaType.Label, color = MikaTheme.colors.accent)
+        Icon(MikaIcons.Check, null, Modifier.size(36.dp), tint = MikaTheme.colors.ok)
+        Text(stringResource(R.string.teach_accepted_title), style = MikaType.Label, color = MikaTheme.colors.ink3)
         Text(
             stringResource(R.string.teach_accepted_body, name),
             style = MikaType.Title, color = MikaTheme.colors.ink, textAlign = TextAlign.Center,
@@ -306,15 +389,10 @@ internal fun TeachDonePage(
             Text(description, style = MikaType.Body, color = MikaTheme.colors.ink2, textAlign = TextAlign.Center)
         }
         Spacer(Modifier.height(8.dp))
-        MikaButton(
-            stringResource(R.string.teach_back_chat), onBackToChat,
-            kind = ButtonKind.Primary, size = ButtonSize.Medium,
-            modifier = Modifier.testTag("teach-back-chat"),
-        )
+        InkButton(stringResource(R.string.teach_back_chat), onBackToChat, Modifier.testTag("teach-back-chat"))
         MikaButton(
             stringResource(R.string.teach_teach_again), onTeachAgain,
-            kind = ButtonKind.Tonal, size = ButtonSize.Medium,
-            modifier = Modifier.testTag("teach-again"),
+            kind = ButtonKind.Tonal, modifier = Modifier.fillMaxWidth().testTag("teach-again"),
         )
     }
 }
