@@ -76,7 +76,7 @@ fun DeviceAccessSection(settings: DeviceAccessSettings, localTasks: Boolean = fa
     GroupCard {
         ListRow(if (localTasks) MikaIcons.Phone else MikaIcons.Desktop,
             stringResource(if (localTasks) R.string.device_local_title else R.string.device_access_title),
-            stringResource(if (localTasks) R.string.device_local_sub else R.string.device_access_sub), first = true) {
+            note = stringResource(if (localTasks) R.string.device_local_sub else R.string.device_access_sub), first = true) {
             MikaSwitch(if (localTasks) config.localEnabled else config.enabled,
                 { on -> change({ if (localTasks) settings.setLocalEnabled(on) else settings.setEnabled(on) }) },
                 Modifier.testTag(if (localTasks) "device-access-local-enabled" else "device-access-enabled"), enabled = !busy)

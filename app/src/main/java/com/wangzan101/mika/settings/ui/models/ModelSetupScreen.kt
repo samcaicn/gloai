@@ -494,7 +494,7 @@ fun ModelSetupContent(
                     }
                     actions.openDecision?.let { openDecision ->
                         GroupCard {
-                            ListRow(MikaIcons.Route, stringResource(R.string.jev_title), stringResource(R.string.jev_row_sub),
+                            ListRow(MikaIcons.Route, stringResource(R.string.jev_title),
                                 first = true, onClick = openDecision) { RowChevron() }
                         }
                     }

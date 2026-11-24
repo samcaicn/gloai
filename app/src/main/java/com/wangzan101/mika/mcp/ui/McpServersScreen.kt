@@ -97,7 +97,7 @@ private fun McpServerList(
     PageScaffold(stringResource(R.string.mcp_servers_title), onBack) {
         if (servers.isEmpty()) {
             GroupCard {
-                ListRow(MikaIcons.Link, stringResource(R.string.mcp_servers_empty), stringResource(R.string.mcp_servers_empty_sub), first = true)
+                ListRow(MikaIcons.Link, stringResource(R.string.mcp_servers_empty), subtitle = stringResource(R.string.mcp_servers_empty_sub), first = true)
             }
             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MikaButton(stringResource(R.string.mcp_catalog_browse), onBrowseCatalog, Modifier.weight(1f), size = ButtonSize.Medium)

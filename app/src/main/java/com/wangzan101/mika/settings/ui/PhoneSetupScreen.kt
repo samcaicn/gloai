@@ -663,12 +663,12 @@ fun PhoneHelperSection(status: BuiltinShellStatus, onRepair: () -> Unit, onUnpai
         ListRow(MikaIcons.Phone, PhoneSetupCopy.ROW_TITLE, PhoneSetupCopy.statusLine(status, usbDebugging), first = true) {
             RowValue(value, tone)
         }
-        ListRow(MikaIcons.Link, PhoneSetupCopy.REPAIR, PhoneSetupCopy.REPAIR_SUBTITLE, onClick = onRepair) {
+        ListRow(MikaIcons.Link, PhoneSetupCopy.REPAIR, note = PhoneSetupCopy.REPAIR_SUBTITLE, onClick = onRepair) {
             RowChevron()
         }
         val paired = status != BuiltinShellStatus.NotPaired
         ListRow(
-            MikaIcons.Close, PhoneSetupCopy.UNPAIR, PhoneSetupCopy.UNPAIR_SUBTITLE,
+            MikaIcons.Close, PhoneSetupCopy.UNPAIR,
             titleColor = if (paired) MikaTheme.colors.bad else MikaTheme.colors.ink3, tone = if (paired) TileTone.Bad else TileTone.Neutral, onClick = if (paired) ({ confirming = true }) else null,
         )
     }

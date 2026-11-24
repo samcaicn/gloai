@@ -103,10 +103,10 @@ internal fun SkillsSection(vm: MemoryViewModel, ui: SkillsUi, pending: Boolean, 
         }
         GroupLabel(stringResource(R.string.skills_get))
         GroupCard {
-            ListRow(null, stringResource(R.string.skills_import), stringResource(R.string.skills_import_sub), first = true, onClick = { importing = true }) {
+            ListRow(null, stringResource(R.string.skills_import), first = true, onClick = { importing = true }) {
                 RowChevron()
             }
-            ListRow(null, stringResource(R.string.market_title), stringResource(R.string.market_sub), onClick = onMarket) {
+            ListRow(null, stringResource(R.string.market_title), onClick = onMarket) {
                 RowChevron()
             }
         }

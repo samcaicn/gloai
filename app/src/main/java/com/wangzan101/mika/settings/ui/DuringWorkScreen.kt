@@ -75,7 +75,7 @@ fun DuringWorkScreen(
     PageScaffold(stringResource(R.string.settings_during_work), onBack) {
         GroupLabel(AutonomyCopy.GROUP)
         GroupCard {
-            ListRow(null, AutonomyCopy.TITLE, AutonomyCopy.SUBTITLE, first = true, onClick = { onAutonomous(!autonomous) }) {
+            ListRow(null, AutonomyCopy.TITLE, note = AutonomyCopy.SUBTITLE, first = true, onClick = { onAutonomous(!autonomous) }) {
                 MikaSwitch(autonomous, onAutonomous, Modifier.testTag("work-autonomous"))
             }
         }
@@ -84,10 +84,10 @@ fun DuringWorkScreen(
                 MikaSwitch(keepScreenOn, onKeepScreenOn, Modifier.testTag("work-keep-screen-on"))
             }
             val pocketAvailable = remember { com.wangzan101.mika.pocket.PocketGuardManager.sensorsAvailable(context) }
-            ListRow(MikaIcons.Shield, stringResource(R.string.pocket_guard_title), stringResource(if (pocketAvailable) R.string.pocket_guard_summary else R.string.pocket_guard_unavailable), onClick = { if (pocketAvailable || pocketGuard) onPocketGuard(!pocketGuard) }) {
+            ListRow(MikaIcons.Shield, stringResource(R.string.pocket_guard_title), note = stringResource(if (pocketAvailable) R.string.pocket_guard_summary else R.string.pocket_guard_unavailable), onClick = { if (pocketAvailable || pocketGuard) onPocketGuard(!pocketGuard) }) {
                 MikaSwitch(pocketGuard, onPocketGuard, Modifier.testTag("work-pocket-guard"), enabled = pocketAvailable || pocketGuard)
             }
-            ListRow(MikaIcons.Lock, stringResource(R.string.pocket_completion_lock_title), stringResource(if (pocketAvailable) R.string.pocket_completion_lock_summary else R.string.pocket_guard_unavailable), onClick = { if (pocketAvailable || pocketCompletionLock) onPocketCompletionLock(!pocketCompletionLock) }) {
+            ListRow(MikaIcons.Lock, stringResource(R.string.pocket_completion_lock_title), note = stringResource(if (pocketAvailable) R.string.pocket_completion_lock_summary else R.string.pocket_guard_unavailable), onClick = { if (pocketAvailable || pocketCompletionLock) onPocketCompletionLock(!pocketCompletionLock) }) {
                 MikaSwitch(pocketCompletionLock, onPocketCompletionLock, Modifier.testTag("work-pocket-completion-lock"), enabled = pocketAvailable || pocketCompletionLock)
             }
             ListRow(MikaIcons.Mute, stringResource(R.string.settings_mute), onClick = { onMuteTarget(!muteTarget) }) {
@@ -158,7 +158,7 @@ fun DuringWorkScreen(
         GroupCard {
             ListRow(
                 MikaIcons.Spark, stringResource(R.string.settings_self_config),
-                stringResource(R.string.settings_self_config_sub),
+                note = stringResource(R.string.settings_self_config_sub),
                 first = true,
                 onClick = { onSelfConfig(!selfConfig) },
             ) {
@@ -169,7 +169,7 @@ fun DuringWorkScreen(
         GroupCard {
             ListRow(
                 MikaIcons.Screens, stringResource(R.string.settings_self_operate),
-                stringResource(R.string.settings_self_operate_sub),
+                note = stringResource(R.string.settings_self_operate_sub),
                 first = true,
                 onClick = { onSelfOperate(!selfOperate) },
             ) {
@@ -190,7 +190,7 @@ fun DuringWorkScreen(
         GroupCard {
             ListRow(
                 MikaIcons.Code, stringResource(R.string.settings_external_schedule),
-                stringResource(R.string.settings_external_schedule_sub),
+                note = stringResource(R.string.settings_external_schedule_sub),
                 first = true,
                 onClick = { onExternalSchedule(!externalSchedule) },
             ) {
@@ -200,11 +200,11 @@ fun DuringWorkScreen(
         GroupLabel(stringResource(R.string.settings_pace))
         GroupCard {
             OperatingPace.entries.forEachIndexed { i, p ->
-                RadioRow(paceLabel(p), selected = p == operatingPace, onClick = { onOperatingPace(p) }, subtitle = paceDetail(p), first = i == 0)
+                RadioRow(paceLabel(p), selected = p == operatingPace, onClick = { onOperatingPace(p) }, note = paceDetail(p), first = i == 0)
             }
             // 按应用覆盖:单个 App 单独设快慢,没设的跟着上面选的全局档
             ListRow(
-                null, stringResource(R.string.settings_pace_per_app), stringResource(R.string.settings_pace_per_app_sub),
+                null, stringResource(R.string.settings_pace_per_app), note = stringResource(R.string.settings_pace_per_app_sub),
                 onClick = onOpenAppPace,
             )
         }
@@ -298,7 +298,7 @@ private fun ParallelRow(p: ParallelSetting, onMax: (Int) -> Unit) {
     val supported = p.limit.reason == null
     ListRow(
         MikaIcons.Phone, stringResource(R.string.settings_parallel),
-        subtitle = p.limit.reason ?: stringResource(R.string.settings_parallel_sub),
+        note = p.limit.reason ?: stringResource(R.string.settings_parallel_sub),
         titleColor = if (supported) MikaTheme.colors.ink else MikaTheme.colors.ink3,
     ) {
         if (!supported) {

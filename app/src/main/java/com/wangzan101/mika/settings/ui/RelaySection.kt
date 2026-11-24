@@ -79,7 +79,7 @@ internal fun RelayControls(config: RelayConfig, state: RelayState, busy: Boolean
     var confirm by remember { mutableStateOf(false) }
     if (!config.paired) {
         GroupCard {
-            ListRow(MikaIcons.Link, stringResource(R.string.relay_pair_title), stringResource(R.string.relay_pair_sub), first = true)
+            ListRow(MikaIcons.Link, stringResource(R.string.relay_pair_title), note = stringResource(R.string.relay_pair_sub), first = true)
             InputRow(stringResource(R.string.relay_gateway), gateway, { if (!busy) gateway = it.take(2048) },
                 "https://mika.example.com", keyboard = KeyboardType.Uri, modifier = Modifier.testTag("relay-gateway"))
             InputRow(stringResource(R.string.relay_code), code, { if (!busy) code = it.take(64) },
@@ -104,7 +104,7 @@ internal fun RelayControls(config: RelayConfig, state: RelayState, busy: Boolean
             ListRow(MikaIcons.Link, stringResource(R.string.relay_enable), stringResource(status), first = true) {
                 MikaSwitch(config.enabled, onEnabled, Modifier.testTag("relay-enabled"), enabled = !busy)
             }
-            ListRow(null, stringResource(R.string.relay_device_access), stringResource(R.string.relay_device_access_sub)) {
+            ListRow(null, stringResource(R.string.relay_device_access), note = stringResource(R.string.relay_device_access_sub)) {
                 MikaSwitch(config.deviceAccess, onDeviceAccess, Modifier.testTag("relay-device-access"), enabled = !busy)
             }
             ListRow(null, stringResource(R.string.relay_gateway), config.gateway)

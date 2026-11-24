@@ -93,7 +93,7 @@ fun McpScreen(runtime: McpRuntime, onBack: () -> Unit) {
         deviceSettings = {
             val historyEnabled by runtime.settings.historyEnabled.collectAsState()
             GroupCard {
-                ListRow(MikaIcons.Desktop, stringResource(R.string.mcp_history_title), stringResource(R.string.mcp_history_detail),
+                ListRow(MikaIcons.Desktop, stringResource(R.string.mcp_history_title), note = stringResource(R.string.mcp_history_detail),
                     first = true, onClick = { runtime.settings.setHistoryEnabled(!historyEnabled) }) {
                     MikaSwitch(historyEnabled, runtime.settings::setHistoryEnabled, Modifier.testTag("computer-history"))
                 }
@@ -162,8 +162,7 @@ internal fun ComputerAccessPage(
         }
 
         GroupCard {
-            ListRow(MikaIcons.Gear, stringResource(if (advanced) R.string.mcp_advanced_hide else R.string.mcp_advanced),
-                stringResource(R.string.mcp_advanced_sub), first = true, onClick = { advanced = !advanced })
+            ListRow(MikaIcons.Gear, stringResource(if (advanced) R.string.mcp_advanced_hide else R.string.mcp_advanced), first = true, onClick = { advanced = !advanced })
         }
         if (advanced) {
             GroupCard {
@@ -300,7 +299,7 @@ private fun NetworkGuide(ui: ComputerAccessUi, mcp: Boolean, onNetworkEnabled: (
     if (!mcp) {
         val command = address?.let { "mika connect --url http://$it:${ui.port} --token-file /path/to/token" }
         GroupCard {
-            ListRow(MikaIcons.Code, stringResource(R.string.mcp_cli_connect), stringResource(R.string.mcp_cli_network_sub), first = true)
+            ListRow(MikaIcons.Code, stringResource(R.string.mcp_cli_connect), note = stringResource(R.string.mcp_cli_network_sub), first = true)
             command?.let { CommandText(it) }
             RowActions {
                 MikaButton(stringResource(R.string.mcp_copy_command), { command?.let(onCopy) }, size = ButtonSize.Small,
@@ -314,7 +313,7 @@ private fun NetworkGuide(ui: ComputerAccessUi, mcp: Boolean, onNetworkEnabled: (
         return
     }
     GroupCard {
-        ListRow(MikaIcons.Code, stringResource(R.string.mcp_network_config_step), stringResource(R.string.mcp_network_config_sub), first = true)
+        ListRow(MikaIcons.Code, stringResource(R.string.mcp_network_config_step), note = stringResource(R.string.mcp_network_config_sub), first = true)
         val canCopy = address != null && ui.token != null && ui.server is McpServerState.Listening
         RowActions {
             MikaButton(stringResource(R.string.mcp_copy_config), {

@@ -209,7 +209,7 @@ private fun HeaderGroup(h: TimelineHeader, stepCount: Int, onExport: () -> Unit)
                     }
                 }
             }
-            ListRow(null, stringResource(R.string.timeline_export), stringResource(R.string.timeline_export_hint), onClick = onExport) { RowChevron() }
+            ListRow(null, stringResource(R.string.timeline_export), note = stringResource(R.string.timeline_export_hint), onClick = onExport) { RowChevron() }
             Text(
                 stringResource(R.string.timeline_timing_note),
                 Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp),

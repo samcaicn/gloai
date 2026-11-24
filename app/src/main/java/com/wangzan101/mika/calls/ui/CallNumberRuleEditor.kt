@@ -93,17 +93,17 @@ internal fun CallNumberRuleEditor(config: CallConfig, personal: Boolean, onDismi
                         GroupCard {
                             RadioRow(stringResource(R.string.calls_only_list), mode == IncomingScope.LIST, { mode = IncomingScope.LIST }, first = true, enabled = !busy)
                             RadioRow(stringResource(R.string.calls_all_incoming), mode == IncomingScope.ALL, { mode = IncomingScope.ALL },
-                                subtitle = stringResource(R.string.calls_all_note), enabled = !busy && draft.valid)
+                                note = stringResource(R.string.calls_all_note), enabled = !busy && draft.valid)
                             RadioRow(stringResource(R.string.calls_only_strangers), strangers,
                                 { mode = IncomingScope.STRANGERS }, enabled = !busy && draft.valid,
-                                subtitle = if (strangers) stringResource(R.string.calls_strangers_note) else null)
+                                note = if (strangers) stringResource(R.string.calls_strangers_note) else null)
                             if (strangers) permission?.actionLabel?.let { label ->
                                 TextButton(onClick = permission.action, enabled = !busy,
                                     modifier = Modifier.padding(start = 50.dp)) { Text(stringResource(label)) }
                             }
                             RadioRow(stringResource(R.string.calls_only_types), showTypes,
                                 { mode = IncomingScope.TYPES }, enabled = !busy && draft.valid,
-                                subtitle = if (showTypes) stringResource(R.string.calls_type_note) else null)
+                                note = if (showTypes) stringResource(R.string.calls_type_note) else null)
                         }
                     }
                     if (showTypes) item {

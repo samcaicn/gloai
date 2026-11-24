@@ -313,7 +313,7 @@ fun RealtimeVoiceScreen(store: ProviderStore, onBack: () -> Unit, onOpenCalls: (
         Text(stringResource(R.string.realtime_lead), Modifier.padding(top = 4.dp, bottom = 12.dp), style = MikaType.Body, color = c.ink2)
         if (selected == null) {
             GroupCard {
-                ListRow(null, stringResource(R.string.realtime_empty), stringResource(R.string.realtime_empty_note), first = true)
+                ListRow(null, stringResource(R.string.realtime_empty), subtitle = stringResource(R.string.realtime_empty_note), first = true)
             }
         }
         if (choices.isEmpty()) {

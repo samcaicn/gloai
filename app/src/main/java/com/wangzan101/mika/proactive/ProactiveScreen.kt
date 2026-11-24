@@ -227,13 +227,13 @@ fun ProactiveScreen(onBack: () -> Unit) {
         GroupLabel(stringResource(R.string.settings_title))
         GroupCard {
             // 激进程度:一次调一组门槛(话题几天算数、每天提醒多少、归纳出的东西带不带进任务)
-            ListRow(null, stringResource(R.string.proactive_learn_level), stringResource(levelDesc(level)), first = true, onClick = { pickLevel = true }) {
+            ListRow(null, stringResource(R.string.proactive_learn_level), note = stringResource(levelDesc(level)), first = true, onClick = { pickLevel = true }) {
                 RowValue(stringResource(levelName(level)))
             }
             // 敏感类推断:默认关;打开先确认,关掉时问已存的敏感话题删不删
             val toggleSensitive: (Boolean) -> Unit = { on -> if (on) confirmSensitiveOn = true else confirmSensitiveOff = true }
             ListRow(
-                null, stringResource(R.string.proactive_learn_sensitive), stringResource(R.string.proactive_learn_sensitive_sub),
+                null, stringResource(R.string.proactive_learn_sensitive), note = stringResource(R.string.proactive_learn_sensitive_sub),
                 onClick = { toggleSensitive(!sensitiveOn) },
             ) {
                 MikaSwitch(sensitiveOn, toggleSensitive, Modifier.testTag("proactive-learn-sensitive"))
@@ -374,13 +374,13 @@ fun ProactiveScreen(onBack: () -> Unit) {
                     RadioRow(
                         stringResource(R.string.proactive_app_off), selected = current == null,
                         onClick = { unsaved = !runtime.setAppReading(pkg, null) || runtime.allowed.dirty; pickApp = null },
-                        subtitle = stringResource(R.string.proactive_app_off_sub), first = true,
+                        note = stringResource(R.string.proactive_app_off_sub), first = true,
                     )
                     SourceTier.entries.forEach { t ->
                         RadioRow(
                             stringResource(tierName(t)), selected = t == current,
                             onClick = { unsaved = !runtime.setAppReading(pkg, t) || runtime.allowed.dirty; pickApp = null },
-                            subtitle = stringResource(tierDesc(t)),
+                            note = stringResource(tierDesc(t)),
                         )
                     }
                 }
@@ -398,7 +398,7 @@ fun ProactiveScreen(onBack: () -> Unit) {
                         RadioRow(
                             stringResource(levelName(l)), selected = l == level,
                             onClick = { runtime.setLearnLevel(l); pickLevel = false },
-                            subtitle = stringResource(levelDesc(l)), first = l == LearnLevel.entries.first(),
+                            note = stringResource(levelDesc(l)), first = l == LearnLevel.entries.first(),
                         )
                     }
                     Text(stringResource(R.string.proactive_learn_level_note), Modifier.padding(top = 10.dp))

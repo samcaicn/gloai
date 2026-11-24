@@ -211,8 +211,7 @@ fun WechatSettingsScreen(runtime: WechatRuntime, onBack: () -> Unit) {
             GroupCard {
                 val receiving = state !is WechatConnectionState.Off && state !is WechatConnectionState.NeedsBinding
                 ListRow(
-                    MikaIcons.Message, stringResource(R.string.wechat_receive),
-                    stringResource(R.string.wechat_receive_sub), first = true,
+                    MikaIcons.Message, stringResource(R.string.wechat_receive), first = true,
                     onClick = if (actionBusy) null else ({
                         val target = !receiving
                         actionBusy = true
@@ -234,7 +233,7 @@ fun WechatSettingsScreen(runtime: WechatRuntime, onBack: () -> Unit) {
                 }
                 ListRow(
                     MikaIcons.Key, stringResource(R.string.wechat_allow_unlock),
-                    stringResource(R.string.wechat_allow_unlock_sub),
+                    note = stringResource(R.string.wechat_allow_unlock_sub),
                 ) {
                     MikaSwitch(
                         allowUnlock, ::changeUnlockAllowed, Modifier.testTag("wechat-allow-unlock"),
@@ -272,7 +271,7 @@ fun WechatSettingsScreen(runtime: WechatRuntime, onBack: () -> Unit) {
             ListRow(null, stringResource(R.string.wechat_capability_replies)) {
                 CapabilityTag(stringResource(R.string.wechat_supported))
             }
-            ListRow(null, stringResource(R.string.wechat_capability_phone), stringResource(R.string.wechat_capability_phone_sub)) {
+            ListRow(null, stringResource(R.string.wechat_capability_phone),) {
                 CapabilityTag(stringResource(R.string.wechat_phone_only))
             }
             ListRow(null, stringResource(R.string.wechat_capability_later)) {

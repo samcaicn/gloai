@@ -53,7 +53,7 @@ fun WebSitesSection(state: WebSitesState, labeled: Boolean = true) {
     if (labeled) GroupLabel(tr(R.string.settings_web_logins))
     GroupCard {
         if (state.sites.isEmpty()) {
-            ListRow(MikaIcons.Globe, tr(R.string.web_none), tr(R.string.web_none_sub), first = true)
+            ListRow(MikaIcons.Globe, tr(R.string.web_none), subtitle = tr(R.string.web_none_sub), first = true)
         }
         val now = System.currentTimeMillis()
         state.sites.forEachIndexed { i, s ->

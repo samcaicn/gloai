@@ -57,7 +57,7 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
         Text(tr(R.string.image_hint), Modifier.padding(top = 4.dp, bottom = 12.dp), fontSize = 14.5.sp, lineHeight = 22.sp, color = c.ink2)
         GroupCard {
             ListRow(
-                null, tr(R.string.image_enable), tr(R.string.image_enable_note), first = true,
+                null, tr(R.string.image_enable), note = tr(R.string.image_enable_note), first = true,
                 trailing = { MikaSwitch(state.enabled, settings::setEnabled) },
             )
         }
@@ -120,7 +120,7 @@ fun ImageModelScreen(store: ProviderStore, onBack: () -> Unit) {
                 keyboard = KeyboardType.Number, first = true,
             )
             ListRow(
-                null, tr(R.string.image_save_enabled), tr(R.string.image_save_enabled_note),
+                null, tr(R.string.image_save_enabled), note = tr(R.string.image_save_enabled_note),
                 trailing = { MikaSwitch(state.saveEnabled, settings::setSaveEnabled) },
             )
             ListRow(

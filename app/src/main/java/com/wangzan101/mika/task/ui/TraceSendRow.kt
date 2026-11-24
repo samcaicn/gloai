@@ -59,7 +59,7 @@ internal fun TraceSendRow(archive: TraceArchive) {
         ViewModelProvider(owner)["otlp-send:${archive.runId}", TraceSendState::class.java]
     }
     var dialog by remember(archive.runId) { mutableStateOf(false) }
-    ListRow(null, stringResource(R.string.trace_send), stringResource(R.string.trace_network_hint),
+    ListRow(null, stringResource(R.string.trace_send), note = stringResource(R.string.trace_network_hint),
         onClick = if (sender.busy) null else ({ dialog = true })) { RowChevron() }
     val message = when (val r = sender.receipt) {
         OtlpReceipt.Accepted -> stringResource(R.string.trace_sent)

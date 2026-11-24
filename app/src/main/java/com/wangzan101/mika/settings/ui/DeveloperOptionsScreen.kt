@@ -79,11 +79,11 @@ fun DeveloperOptionsScreen(
         SwitchGroup(DeveloperSwitches.speed(speed), onSpeed)
         GroupLabel(tr(R.string.dev_experiments))
         SwitchGroup(DeveloperSwitches.experimental(speed), onSpeed) {
-            ListRow(null, tr(R.string.dev_device_files), tr(R.string.dev_device_files_sub), onClick = { onDeviceFiles(!deviceFiles) }) {
+            ListRow(null, tr(R.string.dev_device_files), note = tr(R.string.dev_device_files_sub), onClick = { onDeviceFiles(!deviceFiles) }) {
                 MikaSwitch(deviceFiles, onDeviceFiles, Modifier.testTag("dev-device-files"))
             }
             if (onDeviceDirectories != null) {
-                ListRow(null, tr(R.string.device_dirs_entry), tr(R.string.device_dirs_entry_sub), onClick = onDeviceDirectories) { RowChevron() }
+                ListRow(null, tr(R.string.device_dirs_entry), onClick = onDeviceDirectories) { RowChevron() }
             }
         }
         if (grounding != null) {
@@ -98,7 +98,7 @@ fun DeveloperOptionsScreen(
         GroupCard {
             TraceSettingsRows()
             if (onOpenRunStats != null) {
-                ListRow(null, RunMetricsCopy.STATS_TITLE, RunMetricsCopy.STATS_SUBTITLE, onClick = onOpenRunStats) { RowChevron() }
+                ListRow(null, RunMetricsCopy.STATS_TITLE, onClick = onOpenRunStats) { RowChevron() }
             }
         }
         FooterNote(DEVELOPER_NOTE)

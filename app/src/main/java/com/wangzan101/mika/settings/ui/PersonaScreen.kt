@@ -123,7 +123,7 @@ private fun PersonaPage(store: PersonaStore, onBack: () -> Unit, onManage: () ->
                 RadioRow(
                     title = stringResource(baseLabel(base)), selected = style.base == base,
                     onClick = { style = style.copy(base = base) },
-                    subtitle = stringResource(baseAbout(base)), first = i == 0,
+                    note = stringResource(baseAbout(base)), first = i == 0,
                 )
             }
         }
@@ -250,7 +250,7 @@ private fun ManagePersonas(store: PersonaStore, onBack: () -> Unit) {
     PageScaffold(stringResource(R.string.persona_manage), onBack) {
         GroupCard {
             if (personas.isEmpty()) {
-                ListRow(MikaIcons.Spark, stringResource(R.string.persona_empty), stringResource(R.string.persona_empty_sub), first = true)
+                ListRow(MikaIcons.Spark, stringResource(R.string.persona_empty), subtitle = stringResource(R.string.persona_empty_sub), first = true)
             }
             personas.forEachIndexed { i, p ->
                 ListRow(

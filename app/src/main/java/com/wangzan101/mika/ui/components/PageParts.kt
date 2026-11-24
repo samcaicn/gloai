@@ -82,7 +82,7 @@ fun SearchField(
 ) {
     val c = MikaTheme.colors
     Row(
-        Modifier.fillMaxWidth().height(40.dp).keepsKeyboard().background(c.fill, MikaShapes.Button).padding(horizontal = 12.dp),
+        Modifier.fillMaxWidth().height(40.dp).keepsKeyboard().background(if (LocalPlainList.current) c.surface else c.fill, MikaShapes.Button).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {

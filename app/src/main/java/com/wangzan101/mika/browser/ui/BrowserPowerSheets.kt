@@ -241,7 +241,7 @@ fun ClearDataSheet(onDismiss: () -> Unit, onClear: (history: Boolean, siteData: 
             )
             ListRow(MikaIcons.Clock, tr(R.string.browser_history), first = true, trailing = { MikaSwitch(history, { history = it }) })
             ListRow(
-                MikaIcons.Globe, tr(R.string.browser_clear_site_data), subtitle = tr(R.string.browser_clear_site_data_sub),
+                MikaIcons.Globe, tr(R.string.browser_clear_site_data), note = tr(R.string.browser_clear_site_data_sub),
                 trailing = { MikaSwitch(siteData, { siteData = it }) },
             )
             ListRow(MikaIcons.Refresh, tr(R.string.browser_clear_cache), trailing = { MikaSwitch(cache, { cache = it }) })

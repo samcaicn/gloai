@@ -186,7 +186,7 @@ fun RunStatsContent(
         GroupCard { RunMetricsCopy.splitRows(stats).forEachIndexed { i, (k, v) -> ListRow(null, k, first = i == 0) { RowValue(v) } } }
         GroupLabel(tr(R.string.metrics_export))
         GroupCard {
-            ListRow(null, trPlural(R.plurals.metrics_summary_of, stats.runs), tr(R.string.metrics_summary_sub), first = true)
+            ListRow(null, trPlural(R.plurals.metrics_summary_of, stats.runs), note = tr(R.string.metrics_summary_sub), first = true)
             RowActions {
                 MikaButton(RunMetricsCopy.COPY, onCopy, Modifier.testTag("run-stats-copy"), size = ButtonSize.Small)
                 MikaButton(RunMetricsCopy.SHARE, onShare, Modifier.testTag("run-stats-share"), kind = ButtonKind.Tonal, size = ButtonSize.Small)

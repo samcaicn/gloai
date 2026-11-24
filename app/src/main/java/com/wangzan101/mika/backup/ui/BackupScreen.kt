@@ -158,7 +158,7 @@ fun BackupScreen(onBack: () -> Unit) {
 
         GroupCard {
             ListRow(
-                MikaIcons.Download, stringResource(R.string.backup_export), stringResource(R.string.backup_export_sub),
+                MikaIcons.Download, stringResource(R.string.backup_export),
                 first = true, onClick = {
                     if (!busy) {
                         val name = "mika-backup-${BuildConfig.VERSION_NAME}-${LocalDate.now()}.zip"
@@ -167,7 +167,7 @@ fun BackupScreen(onBack: () -> Unit) {
                 },
             ) { }
             ListRow(
-                MikaIcons.Archive, stringResource(R.string.backup_import), stringResource(R.string.backup_import_sub),
+                MikaIcons.Archive, stringResource(R.string.backup_import),
                 onClick = { if (!busy) importLauncher.launch(arrayOf("application/zip")) },
             ) { }
         }

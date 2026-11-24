@@ -93,18 +93,17 @@ class MikaColors(
     }
 
     /**
-     * AI 电话几页用的配色:白页面、浅灰实色分组、白底图标块,分组不描边不投影。
-     * 深色下分组比页面亮一级,图标块再亮一级。
+     * 简约列表页(设置、AI 电话)的配色:浅灰页面上放纯白分组,分组不描边不投影。
+     * 深色下页面纯黑,分组深灰。
      */
-    fun forCalls(): MikaColors = MikaColors(
-        bg = if (isDark) bg else surface,
-        surface = if (isDark) Color(0xFF1C1C1F) else Color(0xFFF4F5F7),
+    fun forPlainList(): MikaColors = MikaColors(
+        bg = if (isDark) Color(0xFF000000) else Color(0xFFF2F2F4),
+        surface = if (isDark) Color(0xFF1C1C1E) else Color(0xFFFFFFFF),
         fill = fill, ink = ink, ink2 = ink2, ink3 = ink3, inkSoft = inkSoft, hair = hair,
         edge = Color.Transparent,
         accent = accent, accentSoft = accentSoft, onAccent = onAccent,
         ok = ok, okSoft = okSoft, warn = warn, warnSolid = warnSolid, warnSoft = warnSoft, bad = bad, badSoft = badSoft,
-        neutralSoft = if (isDark) Color(0xFF2C2C30) else Color(0xFFFFFFFF),
-        answer = answer, greySoft = greySoft, glass = glass, glassEdge = glassEdge,
+        neutralSoft = neutralSoft, answer = answer, greySoft = greySoft, glass = glass, glassEdge = glassEdge,
         cardShadow = Color.Transparent, floatShadow = floatShadow, thumb = thumb, series = series, seriesOther = seriesOther,
         grid = grid, isDark = isDark,
     )

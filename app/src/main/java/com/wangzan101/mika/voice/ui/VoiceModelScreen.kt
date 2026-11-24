@@ -85,7 +85,7 @@ internal fun VoiceModelContent(store: ProviderStore, settings: VoiceSettings, on
     Page(tr(R.string.role_voice), onBack) {
         GroupCard {
             ListRow(
-                null, tr(R.string.voice_enable), tr(R.string.voice_enable_note), first = true,
+                null, tr(R.string.voice_enable), note = tr(R.string.voice_enable_note), first = true,
                 trailing = { MikaSwitch(state.enabled, settings::setEnabled) },
             )
         }
@@ -122,7 +122,7 @@ internal fun VoiceModelContent(store: ProviderStore, settings: VoiceSettings, on
                 )
                 if (choice.protocol == TtsProtocol.OpenAiSpeech) {
                     ListRow(
-                        null, tr(R.string.voice_streaming), tr(R.string.voice_streaming_note),
+                        null, tr(R.string.voice_streaming), note = tr(R.string.voice_streaming_note),
                         trailing = {
                             MikaSwitch(choice.streaming, onCheckedChange = {
                                 settings.setChoice(choice.copy(streaming = it))
@@ -144,7 +144,7 @@ internal fun VoiceModelContent(store: ProviderStore, settings: VoiceSettings, on
                 trailing = { MikaSwitch(state.speakTool, settings::setSpeakTool) },
             )
             ListRow(
-                null, tr(R.string.voice_save_enabled), tr(R.string.voice_save_note),
+                null, tr(R.string.voice_save_enabled), note = tr(R.string.voice_save_note),
                 trailing = { MikaSwitch(state.saveEnabled, settings::setSaveEnabled) },
             )
             ListRow(
@@ -232,7 +232,7 @@ private fun MigratedVoiceModelContent(
     Page(tr(R.string.role_voice), onBack) {
         GroupCard {
             ListRow(
-                null, tr(R.string.voice_enable), tr(R.string.voice_enable_note), first = true,
+                null, tr(R.string.voice_enable), note = tr(R.string.voice_enable_note), first = true,
                 trailing = { MikaSwitch(state.enabled, settings::setEnabled) },
             )
         }
@@ -283,7 +283,7 @@ private fun MigratedVoiceModelContent(
                 )
                 if (model.tts?.protocol == com.wangzan101.mika.voice.model.TtsProtocol.OpenAiSpeech) {
                     ListRow(
-                        null, tr(R.string.voice_streaming), tr(R.string.voice_streaming_note),
+                        null, tr(R.string.voice_streaming), note = tr(R.string.voice_streaming_note),
                         trailing = {
                             MikaSwitch(state.streaming, onCheckedChange = {
                                 settings.setStreaming(it)
@@ -305,7 +305,7 @@ private fun MigratedVoiceModelContent(
                 trailing = { MikaSwitch(state.speakTool, settings::setSpeakTool) },
             )
             ListRow(
-                null, tr(R.string.voice_save_enabled), tr(R.string.voice_save_note),
+                null, tr(R.string.voice_save_enabled), note = tr(R.string.voice_save_note),
                 trailing = { MikaSwitch(state.saveEnabled, settings::setSaveEnabled) },
             )
             ListRow(

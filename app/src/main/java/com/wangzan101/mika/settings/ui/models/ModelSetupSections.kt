@@ -134,7 +134,7 @@ internal fun SpeechSection(ui: ModelSetupUi, onSpeech: (() -> Unit)?) {
 internal fun ImageModelSection(ui: ModelSetupUi, onImage: (() -> Unit)?) {
     if (onImage == null) return
     GroupCard {
-        ListRow(ModelsCopy.IMAGE_ICON, stringResource(R.string.role_image), subtitle = stringResource(R.string.role_image_what), first = true, onClick = onImage) {
+        ListRow(ModelsCopy.IMAGE_ICON, stringResource(R.string.role_image), first = true, onClick = onImage) {
             RowValue(ModelsCopy.imageLine(ui).title)
             RowChevron()
         }
@@ -148,7 +148,6 @@ internal fun VoiceCatalogSection(onOpenVoiceCatalog: (() -> Unit)?) {
     GroupCard {
         ListRow(
             ModelsCopy.VOICE_ICON, stringResource(R.string.models_voice_catalog),
-            subtitle = stringResource(R.string.models_voice_catalog_sub),
             first = true, onClick = onOpenVoiceCatalog,
         ) { RowChevron() }
     }

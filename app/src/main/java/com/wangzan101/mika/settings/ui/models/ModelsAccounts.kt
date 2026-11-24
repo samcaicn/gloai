@@ -85,7 +85,7 @@ internal fun AccountConnection(ui: ModelSetupUi, p: Provider, state: ListState?,
         }
         ListRow(null, ModelsCopy.accountManage(kind), titleColor = c.accent, first = !(signedIn && !isMain && ui.options(p).isNotEmpty()), onClick = actions.manageUsage) { RowChevron() }
         if (signedIn) {
-            ListRow(null, ModelsCopy.CHATGPT_SIGN_OUT, ModelsCopy.SIGN_OUT_NOTE, titleColor = c.bad, onClick = actions.signOut)
+            ListRow(null, ModelsCopy.CHATGPT_SIGN_OUT, note = ModelsCopy.SIGN_OUT_NOTE, titleColor = c.bad, onClick = actions.signOut)
         } else {
             ListRow(null, if (waiting) ModelsCopy.SIGN_IN_RUNNING else ModelsCopy.signInStart(kind), titleColor = c.accent, onClick = actions.signIn)
         }

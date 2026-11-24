@@ -215,7 +215,7 @@ fun MemoryScreen(
             }
         }
         GroupCard {
-            ListRow(MikaIcons.Close, stringResource(R.string.routes_clear_all), stringResource(R.string.memory_clear_sub), first = true, titleColor = MikaTheme.colors.bad, tone = TileTone.Bad, onClick = vm::requestClear)
+            ListRow(MikaIcons.Close, stringResource(R.string.routes_clear_all), first = true, titleColor = MikaTheme.colors.bad, tone = TileTone.Bad, onClick = vm::requestClear)
         }
     }
 

@@ -524,7 +524,7 @@ fun SettingsContent(
             ListRow(MikaIcons.Clock, stringResource(R.string.drawer_plans), onClick = onOpenPlans) { RowChevron() }
             ListRow(MikaIcons.Globe, stringResource(R.string.drawer_browser), onClick = onOpenBrowser) { RowChevron() }
             ListRow(MikaIcons.Paperclip, stringResource(R.string.file_library_title), onClick = onOpenFiles) { RowChevron() }
-            ListRow(MikaIcons.Phone, stringResource(R.string.calls_title), onClick = onOpenCalls) { RowChevron() }
+            ListRow(MikaIcons.Handset, stringResource(R.string.calls_title), onClick = onOpenCalls) { RowChevron() }
             ListRow(MikaIcons.Chats, stringResource(R.string.wechat_title), onClick = onOpenWechat) {
                 WechatEntryStatus(wechatState, wechatBound)
                 RowChevron()
@@ -710,7 +710,7 @@ fun AdvancedSettingsContent(
         // 完全退出:和无障碍服务不同,它只是让 Mika 安静下来;下次打开 App 就回来
         GroupCard {
             ListRow(
-                MikaIcons.Power, stringResource(R.string.quit_title), stringResource(R.string.quit_row_sub),
+                MikaIcons.Power, stringResource(R.string.quit_title), note = stringResource(R.string.quit_row_sub),
                 first = true, titleColor = MikaTheme.colors.bad, onClick = onQuit,
             ) { RowChevron() }
         }

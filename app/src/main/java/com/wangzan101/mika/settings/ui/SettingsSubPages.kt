@@ -90,7 +90,7 @@ fun RecoveryScreen(onBack: () -> Unit, onOpenSelfCheck: () -> Unit = {}) {
         RecoverySwitches()
         GroupCard {
             ListRow(
-                MikaIcons.Bug, stringResource(R.string.selfcheck_title), stringResource(R.string.selfcheck_row_sub), first = true,
+                MikaIcons.Bug, stringResource(R.string.selfcheck_title), first = true,
                 onClick = onOpenSelfCheck,
             ) { RowChevron() }
         }
@@ -136,7 +136,7 @@ internal fun SkinControls(skin: SkinSpec, onChange: (SkinSpec) -> Unit, onClear:
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
     )
     ListRow(
-        null, stringResource(R.string.skin_accent_follow), stringResource(R.string.skin_accent_follow_sub),
+        null, stringResource(R.string.skin_accent_follow), note = stringResource(R.string.skin_accent_follow_sub),
         onClick = { onChange(skin.copy(accentFromImage = !skin.accentFromImage)) },
     ) {
         MikaSwitch(skin.accentFromImage, { onChange(skin.copy(accentFromImage = it)) }, Modifier.testTag("skin-accent-follow"))

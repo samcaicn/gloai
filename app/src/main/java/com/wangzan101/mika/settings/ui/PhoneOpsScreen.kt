@@ -32,6 +32,7 @@ import com.wangzan101.mika.ui.components.DetailNote
 import com.wangzan101.mika.ui.components.GroupCard
 import com.wangzan101.mika.ui.components.GroupLabel
 import com.wangzan101.mika.ui.components.ListRow
+import com.wangzan101.mika.ui.components.SegmentedControl
 import com.wangzan101.mika.ui.components.PageScaffold
 import com.wangzan101.mika.ui.components.RowChevron
 import com.wangzan101.mika.ui.components.RowValue
@@ -74,8 +75,8 @@ fun PhoneOpsScreen(
                 val reconnect = PhoneSetupCopy.canReconnect(helper)
                 ListRow(
                     MikaIcons.Link, PhoneSetupCopy.ROW_TITLE,
-                    if (reconnect && helper is BuiltinShellStatus.Failed) PhoneSetupCopy.failure(helper.reason).title
-                    else PhoneSetupCopy.statusLine(helper, status.usbDebugging, status.rootStart, status.shizukuStart),
+                    // 右边的值已说明状态;只有连不上时才在下面说原因
+                    if (reconnect && helper is BuiltinShellStatus.Failed) PhoneSetupCopy.failure(helper.reason).title else null,
                     onClick = { onProblem(Problem.PhoneHelper(helper)) },
                 ) { if (reconnect) RowValue(PhoneSetupCopy.RECONNECT, ValueTone.Link) else RowValue(hText, hTone) }
                 val shizuku = status.shizuku
@@ -93,19 +94,10 @@ fun PhoneOpsScreen(
                     status.shellTransport == ShellTransport.Shizuku -> ValueTone.Bad
                     else -> ValueTone.Plain
                 }
-                val yes = stringResource(R.string.phone_shizuku_yes)
-                val no = stringResource(R.string.phone_shizuku_no)
-                val shizukuDetail = stringResource(
-                    R.string.phone_shizuku_detail,
-                    if (shizuku.installed) yes else no,
-                    if (shizuku.running) yes else no,
-                    if (shizuku.permissionGranted) stringResource(R.string.phone_shizuku_perm_granted)
-                    else stringResource(R.string.phone_shizuku_perm_missing),
-                )
                 ListRow(
                     MikaIcons.Shield,
                     stringResource(R.string.phone_shizuku_group),
-                    if (shizuku.ready) null else shizukuDetail,
+                    null,
                     onClick = if (shizuku.installed || shizuku.running) onGrantShizuku else onOpenShizukuGuide,
                     modifier = Modifier.testTag("phone-shizuku-status"),
                 ) { RowValue(shizukuValue, shizukuTone) }
@@ -135,26 +127,19 @@ fun PhoneOpsScreen(
         if (status.sdkInt >= Prerequisites.MIN_SDK) {
             GroupLabel(stringResource(R.string.phone_transport_title))
             GroupCard {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp)) {
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        val options = listOf(
-                            ShellTransport.Auto to stringResource(R.string.phone_transport_auto),
-                            ShellTransport.WirelessDebugging to stringResource(R.string.phone_transport_wireless),
-                            ShellTransport.Shizuku to stringResource(R.string.phone_transport_shizuku),
-                        )
-                        options.forEach { (transport, label) ->
-                            SelectChip(
-                                label,
-                                status.shellTransport == transport,
-                                { onSelectTransport(transport) },
-                                Modifier.testTag("phone-transport-${transport.name}"),
-                            )
-                        }
-                    }
-                }
+                // 固定三选一,和其它页面一样用分段控件
+                val options = listOf(
+                    ShellTransport.Auto to stringResource(R.string.phone_transport_auto),
+                    ShellTransport.WirelessDebugging to stringResource(R.string.phone_transport_wireless),
+                    ShellTransport.Shizuku to stringResource(R.string.phone_transport_shizuku),
+                )
+                SegmentedControl(
+                    options.map { it.second },
+                    options.indexOfFirst { it.first == status.shellTransport },
+                    { onSelectTransport(options[it].first) },
+                    Modifier.padding(12.dp),
+                    tags = options.map { "phone-transport-${it.first.name}" },
+                )
             }
             FooterNote(stringResource(R.string.phone_transport_sub))
 
@@ -165,18 +150,9 @@ fun PhoneOpsScreen(
                     if (shizuku.running && !shizuku.permissionGranted) R.string.phone_shizuku_grant
                     else R.string.phone_shizuku_open_app
                 )
-                val actionSub = stringResource(
-                    when {
-                        !shizuku.installed -> R.string.phone_shizuku_action_install_sub
-                        !shizuku.running -> R.string.phone_shizuku_action_start_sub
-                        !shizuku.permissionGranted -> R.string.phone_shizuku_action_grant_sub
-                        else -> R.string.phone_shizuku_action_ready_sub
-                    }
-                )
                 ListRow(
                     MikaIcons.Shield,
                     actionTitle,
-                    actionSub,
                     first = true,
                     onClick = if (shizuku.installed || shizuku.running) onGrantShizuku else onOpenShizukuGuide,
                     modifier = Modifier.testTag("phone-shizuku-action"),
@@ -185,7 +161,6 @@ fun PhoneOpsScreen(
                     ListRow(
                         MikaIcons.Book,
                         stringResource(R.string.phone_shizuku_guide),
-                        stringResource(R.string.phone_shizuku_guide_sub),
                         onClick = onOpenShizukuGuide,
                         modifier = Modifier.testTag("phone-shizuku-guide"),
                     ) { RowChevron() }
@@ -200,7 +175,7 @@ fun PhoneOpsScreen(
                 }
                 val paired = status.wirelessPaired ?: (status.builtinShell != BuiltinShellStatus.NotPaired)
                 ListRow(
-                    MikaIcons.Close, PhoneSetupCopy.UNPAIR, PhoneSetupCopy.UNPAIR_SUBTITLE,
+                    MikaIcons.Close, PhoneSetupCopy.UNPAIR,
                     titleColor = if (paired) MikaTheme.colors.bad else MikaTheme.colors.ink3,
                     tone = if (paired) TileTone.Bad else TileTone.Neutral,
                     onClick = if (paired) ({ confirmUnpair = true }) else null,

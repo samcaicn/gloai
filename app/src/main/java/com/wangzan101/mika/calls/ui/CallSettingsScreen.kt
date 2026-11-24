@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
 import com.wangzan101.mika.calls.*
+import com.wangzan101.mika.ui.components.PlainListTheme
 import com.wangzan101.mika.ui.components.*
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaShapes
@@ -71,10 +72,8 @@ fun CallSettingsScreen(runtime: CallRuntime, onInstructions: (() -> Unit)? = nul
         voiceProfilesOpen = false
         instructionsOpen = false
     }
-    // 电话几页自成一套配色:白页面、浅灰分组、白底图标块
-    val base = MikaTheme.colors
-    val callColors = remember(base) { base.forCalls() }
-    CompositionLocalProvider(LocalMikaColors provides callColors) { when {
+    // 电话几页用简约列表:浅灰页面、纯白分组、图标不垫底块
+    PlainListTheme { when {
         // 迁移后旧的配置页不再用:在这里从语音目录里选通话用的实时模型,新增/编辑去目录
         voiceProfilesOpen && runtime.realtimeMigrated -> CallVoiceScreen(
             runtime, onBack = { voiceProfilesOpen = false }, onOpenServices = onOpenVoiceCatalog,

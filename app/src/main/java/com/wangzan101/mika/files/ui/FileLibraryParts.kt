@@ -45,31 +45,29 @@ import com.wangzan101.mika.memory.ui.Row
 
 internal val LibraryTitleStyle = MikaType.LargeTitle.copy(fontWeight = FontWeight.SemiBold, letterSpacing = (-0.4).sp)
 
-/** 文件库顶栏:返回、左对齐大标题、右边「多选」胶囊。 */
+/** 文件库顶栏:和其它页面一样,左边返回、标题居中、右边「多选」。 */
 @Composable
 internal fun LibraryTopBar(canSelect: Boolean, working: Boolean, onBack: () -> Unit, onSelect: () -> Unit) {
     val c = MikaTheme.colors
-    Row(
-        Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)
-            .heightIn(min = 64.dp).padding(start = 4.dp, end = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        BarIconButton(MikaIcons.Back, stringResource(R.string.back), onBack)
+    val enabled = canSelect && !working
+    Box(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).height(60.dp)) {
         Text(
-            stringResource(R.string.file_library_title), Modifier.weight(1f).padding(start = 4.dp),
-            style = LibraryTitleStyle, color = c.ink, maxLines = 1,
+            stringResource(R.string.file_library_title), Modifier.align(Alignment.Center).padding(horizontal = 92.dp),
+            style = MikaType.Title, color = c.ink, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis,
         )
         Row(
-            Modifier.clip(MikaShapes.Chip).background(c.fill)
-                .clickable(enabled = canSelect && !working, role = Role.Button, onClick = onSelect)
-                .testTag("file-library-select")
-                .alpha(if (canSelect && !working) 1f else 0.4f)
-                .padding(horizontal = 12.dp, vertical = 9.dp),
+            Modifier.fillMaxSize().padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Icon(MikaIcons.ListChecks, null, Modifier.size(17.dp), tint = c.ink2)
-            Text(stringResource(R.string.file_library_select), style = MikaType.Label, color = c.ink2)
+            BarIconButton(MikaIcons.Back, stringResource(R.string.back), onBack)
+            TextButton(
+                onClick = onSelect, enabled = enabled,
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                modifier = Modifier.testTag("file-library-select"),
+            ) {
+                Text(stringResource(R.string.file_library_select), style = MikaType.Body, color = if (enabled) c.ink else c.ink3)
+            }
         }
     }
 }
@@ -133,8 +131,8 @@ internal fun LibraryFilterPill(
     Box(modifier) {
         Row(
             Modifier.heightIn(min = 40.dp).clip(shape)
-                .border(1.dp, if (active || expanded) c.accent.copy(alpha = 0.55f) else c.edge, shape)
-                .background(if (expanded) c.fill else Color.Transparent)
+                .border(1.dp, if (active || expanded) c.ink else c.edge, shape)
+                .background(if (expanded) c.fill else c.surface)
                 .clickable(role = Role.Button, onClick = onToggle)
                 .padding(start = 14.dp, end = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -142,9 +140,9 @@ internal fun LibraryFilterPill(
         ) {
             Text(
                 label, Modifier.weight(1f, fill = false),
-                style = MikaType.Caption, color = if (active) c.accent else c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = MikaType.Caption, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
-            Icon(MikaIcons.Chevron, null, Modifier.size(13.dp).rotate(90f), tint = if (active) c.accent else c.ink3)
+            Icon(MikaIcons.Chevron, null, Modifier.size(13.dp).rotate(90f), tint = if (active) c.ink else c.ink3)
         }
         DropdownMenu(
             expanded = expanded,

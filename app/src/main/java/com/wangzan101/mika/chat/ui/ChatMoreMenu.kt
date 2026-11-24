@@ -77,6 +77,9 @@ internal fun ChatMoreMenu(
     }
 }
 
+/** 顶栏三块玻璃的形状:圆角收一点,不做成胶囊。 */
+internal val TopBarShape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+
 /** 顶栏玻璃块里的一个图标:没有自己的底,按下只有水波。 */
 @Composable
 internal fun TopBarIcon(
@@ -89,7 +92,7 @@ internal fun TopBarIcon(
 ) {
     val c = MikaTheme.colors
     Box(
-        Modifier.size(width = 44.dp, height = MikaSize.IconButton + 4.dp).clip(CircleShape)
+        Modifier.size(width = 44.dp, height = MikaSize.IconButton + 4.dp).clip(TopBarShape)
             .clickable(enabled = enabled, role = androidx.compose.ui.semantics.Role.Button, onClickLabel = label, onClick = onClick)
             .testTag(tag),
         contentAlignment = Alignment.Center,

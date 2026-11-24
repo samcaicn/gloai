@@ -178,7 +178,7 @@ fun AdvancedSection(
     var clearingAll by remember { mutableStateOf(false) }
 
     GroupCard {
-        ListRow(MikaIcons.Link, SandboxCopy.NETWORK_TITLE, SandboxCopy.NETWORK_SUBTITLE, first = true) {
+        ListRow(MikaIcons.Link, SandboxCopy.NETWORK_TITLE, first = true) {
             MikaSwitch(networkAllowed, onNetworkChange, Modifier.testTag("sandbox-network"))
         }
         Note(SandboxCopy.NETWORK_EXPLAIN, if (networkAllowed) MikaTheme.colors.warn else MikaTheme.colors.ink3)

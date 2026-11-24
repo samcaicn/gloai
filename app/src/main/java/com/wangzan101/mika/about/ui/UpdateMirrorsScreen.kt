@@ -104,7 +104,7 @@ fun UpdateMirrorsScreen(store: UpdateMirrorStore, onBack: () -> Unit) {
             ListRow(
                 MikaIcons.Refresh,
                 stringResource(R.string.about_mirror_download),
-                stringResource(R.string.about_mirror_download_detail),
+                note = stringResource(R.string.about_mirror_download_detail),
                 first = true,
             ) {
                 // 列表读不出来时不能改开关,不显示一个点了没反应的控件。
@@ -158,7 +158,6 @@ fun UpdateMirrorsScreen(store: UpdateMirrorStore, onBack: () -> Unit) {
                 ListRow(
                     MikaIcons.Shield,
                     stringResource(R.string.about_mirrors_official),
-                    stringResource(R.string.about_mirrors_official_sub),
                     first = true,
                 )
             }

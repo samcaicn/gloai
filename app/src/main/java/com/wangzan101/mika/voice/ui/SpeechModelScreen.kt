@@ -258,7 +258,7 @@ private fun MigratedSpeechModelContent(
             )
             RadioRow(
                 tr(R.string.models_off), selected = selection == SttSelection.Off,
-                onClick = { actions.pick(SpeechChoice.Off) }, subtitle = tr(R.string.speech_off_note),
+                onClick = { actions.pick(SpeechChoice.Off) }, note = tr(R.string.speech_off_note),
             )
         }
         val choices = voiceOptions(VoiceCapability.STT, catalog, ui.providers).filter { it.source != VoiceSource.Device }
@@ -314,7 +314,7 @@ fun SpeechModelContent(
             )
             RadioRow(
                 tr(R.string.models_off), selected = choice == SpeechChoice.Off, onClick = { actions.pick(SpeechChoice.Off) },
-                subtitle = tr(R.string.speech_off_note),
+                note = tr(R.string.speech_off_note),
             )
         }
         LiveRows(choice, doubaoConfigured, funAsrConfigured, actions)
@@ -422,11 +422,11 @@ fun DoubaoSetupPage(choice: SpeechChoice, configured: Boolean, actions: SpeechPi
         GroupCard {
             RadioRow(
                 tr(R.string.speech_doubao_duration), selected = resource == DoubaoProtocol.DURATION, first = true,
-                onClick = { resource = DoubaoProtocol.DURATION }, subtitle = tr(R.string.speech_doubao_duration_note),
+                onClick = { resource = DoubaoProtocol.DURATION }, note = tr(R.string.speech_doubao_duration_note),
             )
             RadioRow(
                 tr(R.string.speech_doubao_concurrent), selected = resource == DoubaoProtocol.CONCURRENT,
-                onClick = { resource = DoubaoProtocol.CONCURRENT }, subtitle = tr(R.string.speech_doubao_concurrent_note),
+                onClick = { resource = DoubaoProtocol.CONCURRENT }, note = tr(R.string.speech_doubao_concurrent_note),
             )
         }
         FooterNote(tr(R.string.speech_doubao_privacy), Modifier.padding(top = 8.dp))

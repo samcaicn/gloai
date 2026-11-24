@@ -120,7 +120,7 @@ internal fun CallVoiceScreen(runtime: CallRuntime, onBack: () -> Unit, onOpenSer
             )
             RadioRow(
                 stringResource(R.string.calls_voice_own_settings), selected = !follows, enabled = !busy,
-                subtitle = stringResource(R.string.calls_voice_own_settings_sub),
+                note = stringResource(R.string.calls_voice_own_settings_sub),
                 onClick = {
                     if (follows) run { runtime.selectPhoneVoice(engine, sharedListen, s.tts) }
                 },
@@ -276,7 +276,7 @@ internal fun CallAudioScreen(
                     stringResource(if (mode == CallAudioMode.DIRECT) R.string.calls_audio_direct else R.string.calls_audio_redirect),
                     selected = config.audioMode == mode, onClick = { if (config.audioMode != mode) onMode(mode) },
                     first = i == 0, enabled = canConfigure,
-                    subtitle = stringResource(if (mode == CallAudioMode.DIRECT) R.string.calls_audio_direct_note else R.string.calls_audio_redirect_note),
+                    note = stringResource(if (mode == CallAudioMode.DIRECT) R.string.calls_audio_direct_note else R.string.calls_audio_redirect_note),
                     modifier = Modifier.testTag("call-audio-${mode.name.lowercase()}"),
                 )
             }

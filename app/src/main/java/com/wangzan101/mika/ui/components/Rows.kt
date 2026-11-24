@@ -115,6 +115,13 @@ enum class TileTone {
 @Composable
 fun IconTile(icon: ImageVector, tone: TileTone = TileTone.Neutral, brandTile: Color? = null) {
     val (bg, fg) = if (brandTile != null) (brandTile to Color.Unspecified) else tone.colors(MikaTheme.colors)
+    // 简约列表:图标直接画,不垫底块;占位宽度不变,分隔线和文字仍对齐
+    if (brandTile == null && LocalPlainList.current) {
+        Box(Modifier.size(MikaSize.Tile), contentAlignment = Alignment.Center) {
+            Icon(icon, null, Modifier.size(22.dp), tint = if (tone == TileTone.Neutral || tone == TileTone.Ok) MikaTheme.colors.ink else fg)
+        }
+        return
+    }
     Box(Modifier.size(MikaSize.Tile).background(bg, MikaShapes.Tile), contentAlignment = Alignment.Center) {
         Icon(icon, null, Modifier.size(MikaSize.TileIcon), tint = fg)
     }
@@ -152,9 +159,14 @@ fun ListRow(
     modifier: Modifier = Modifier,
     /** 标题最多几行,超出省略(列表里的长标题用 1)。 */
     titleMaxLines: Int = Int.MAX_VALUE,
+    /** 解释这一行是什么的说明:简约列表里收到卡片下面当脚注,别处照旧显示在标题下。 */
+    note: String? = null,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     val c = MikaTheme.colors
+    val noteInCard = rememberCardNote(title, note)
+    val icon = if (brandTile != null) icon else rememberCardIcon(icon)
+    val sub = listOfNotNull(subtitle?.takeIf { it.isNotEmpty() }, note?.takeIf { !noteInCard && it.isNotEmpty() }).joinToString("\n").ifEmpty { null }
     Row(
         modifier.fillMaxWidth()
             .topHairline(first, if (icon != null) TextStartWithIcon else TextStartPlain, c.hair)
@@ -168,7 +180,7 @@ fun ListRow(
         Column(Modifier.weight(1f).padding(vertical = 11.dp)) {
             Text(title, style = MikaType.Body, color = titleColor.takeOrElse { c.ink },
                 maxLines = titleMaxLines, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            if (!subtitle.isNullOrEmpty()) Text(subtitle, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink3)
+            if (!sub.isNullOrEmpty()) Text(sub, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink3)
             if (!detail.isNullOrEmpty()) Text(detail, Modifier.padding(top = 2.dp), style = MikaType.Hint, color = detailColor.takeOrElse { c.ink3 })
         }
         trailing()
@@ -186,7 +198,8 @@ fun RowValue(text: String, tone: ValueTone = ValueTone.Plain) {
         fontWeight = if (tone == ValueTone.Link) FontWeight.Medium else FontWeight.Normal,
         color = when (tone) {
             ValueTone.Plain -> c.ink3
-            ValueTone.Ok -> c.ok
+            // 简约列表里「正常」不上色,只有要你处理的才有颜色
+            ValueTone.Ok -> if (LocalPlainList.current) c.ink3 else c.ok
             ValueTone.Warn -> c.warn
             ValueTone.Bad -> c.bad
             ValueTone.Link -> c.accent
@@ -214,9 +227,13 @@ fun RadioRow(
     /** 标题下面的附加内容(例如能力小标签)。 */
     below: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
+    /** 这一项的说明:简约列表里只在选中时显示在卡片下面,别处显示在标题下。 */
+    note: String? = null,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     val c = MikaTheme.colors
+    val noteInCard = rememberCardNote(title, note, selected)
+    val sub = listOfNotNull(subtitle?.takeIf { it.isNotEmpty() }, note?.takeIf { !noteInCard && it.isNotEmpty() }).joinToString("\n").ifEmpty { null }
     Row(
         modifier.fillMaxWidth()
             .topHairline(first, 50.dp, c.hair)
@@ -229,7 +246,7 @@ fun RadioRow(
         RadioMark(selected, enabled)
         Column(Modifier.weight(1f).padding(vertical = 9.dp)) {
             Text(title, style = titleStyle, color = if (enabled) c.ink else c.ink3)
-            if (!subtitle.isNullOrEmpty()) Text(subtitle, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink3)
+            if (!sub.isNullOrEmpty()) Text(sub, Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink3)
             if (below != null) Box(Modifier.padding(top = 4.dp)) { below() }
         }
         trailing()

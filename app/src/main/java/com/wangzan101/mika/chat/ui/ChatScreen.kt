@@ -475,7 +475,7 @@ fun ChatScreen(
                     Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
                 ) {
                     // 左右各一块玻璃,组里几个图标共用这一块底:左边菜单 + 新对话,右边通话 + 更多
-                    GlassSurface(backdrop = backdrop, modifier = Modifier.align(Alignment.CenterStart)) {
+                    GlassSurface(backdrop = backdrop, modifier = Modifier.align(Alignment.CenterStart), shape = TopBarShape) {
                         Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                             // 别的对话里还有任务在跑(并行时):菜单右上角一个小圆点,侧栏「进行中」里能切过去
                             if (!adaptive.hasNavigation || screenDocked) {
@@ -484,14 +484,14 @@ fun ChatScreen(
                             TopBarIcon(MikaIcons.New, stringResource(R.string.chat_new), "chat-new", enabled = vm.canSwitch()) { vm.newConversation() }
                         }
                     }
-                    GlassSurface(backdrop = backdrop, modifier = Modifier.align(Alignment.Center)) {
-                        Row(Modifier.clickable(role = Role.Button, onClickLabel = stringResource(R.string.chat_usage_title)) { showUsage = true }
+                    GlassSurface(backdrop = backdrop, modifier = Modifier.align(Alignment.Center), shape = TopBarShape) {
+                        Row(Modifier.clip(TopBarShape).clickable(role = Role.Button, onClickLabel = stringResource(R.string.chat_usage_title)) { showUsage = true }
                             .testTag("chat-usage-title").height(MikaSize.IconButton + 4.dp).padding(horizontal = 16.dp),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(ChatCopy.APP_TITLE, style = MikaType.Title.copy(fontWeight = WordmarkWeight), color = c.ink, maxLines = 1)
                         }
                     }
-                    GlassSurface(backdrop = backdrop, modifier = Modifier.align(Alignment.CenterEnd)) {
+                    GlassSurface(backdrop = backdrop, modifier = Modifier.align(Alignment.CenterEnd), shape = TopBarShape) {
                         Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                             // 语音通话是整段对话的事,入口放顶栏,不挤在输入框里
                             if (onVoiceCall != null) {
