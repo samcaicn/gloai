@@ -101,9 +101,9 @@ class DeskEventTest {
     }
 
     @Test
-    fun succeededAnswerIsCappedAtResultLimit() {
+    fun succeededAnswerKeepsTheWholeResult() {
         val event = classify(running("读"), TaskState.Succeeded("x".repeat(DESK_RESULT_MAX_CHARS + 5))) as DeskEvent.Succeeded
-        assertEquals(DESK_RESULT_MAX_CHARS, event.answer.length)
+        assertEquals(DESK_RESULT_MAX_CHARS + 5, event.answer.length)
     }
 
     @Test

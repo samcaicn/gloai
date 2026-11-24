@@ -12,13 +12,20 @@
     <string name="desk_phase_done">Selesai</string>
     <string name="desk_phase_failed">Tidak berhasil</string>
     <string name="desk_phase_cancelled">Dibatalkan</string>
-    <string name="desk_card_details">Detail ›</string>
-    <string name="desk_card_open">Buka tugas ini</string>
-    <string name="desk_tray_caption">Tugas di obrolan ini · ketuk salah satu untuk lihat progres</string>
-    <string name="desk_tray_progress">Lihat progres ›</string>
     <string name="desk_tray_expand">Tampilkan tugas</string>
     <string name="desk_tray_collapse">Sembunyikan tugas</string>
-    <plurals name="desk_tray_count">
-        <item quantity="other">%1$d tugas dikerjakan</item>
-    </plurals>
+    <string name="chat_time_yesterday">Kemarin %1$s</string>
+    <string name="desk_need_choose">Pilih satu · %1$s</string>
+    <string name="desk_need_answer">Perlu jawabanmu · %1$s</string>
+    <string name="desk_need_takeover">Ambil alih · %1$s</string>
+    <string name="desk_need_handle">Perlu kamu · %1$s</string>
+    <string name="desk_need_choose_foot">Bukan semuanya? Ketik di bawah atau tahan untuk bicara.</string>
+    <string name="desk_need_answer_foot">Ketik di bawah atau tahan untuk bicara.</string>
+    <string name="desk_need_takeover_foot">Setelah kamu selesai di layar, aku lanjutkan.</string>
+    <string name="desk_need_go">Tangani</string>
+    <string name="desk_need_stop">Hentikan tugas ini</string>
+    <string name="desk_tray_stop">Hentikan</string>
+    <string name="desk_tray_detail">Lihat proses lengkap ›</string>
+    <string name="chat_menu_tasks">Tugas di obrolan ini</string>
+    <string name="desk_tasks_empty">Belum ada tugas yang dikirim di obrolan ini.</string>
 </resources>

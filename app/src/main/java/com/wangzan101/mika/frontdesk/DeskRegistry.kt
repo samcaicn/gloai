@@ -118,7 +118,7 @@ class DeskRegistry(
             desks[conversationId]?.let { return it }
             val deskScope = CoroutineScope(scope.coroutineContext + SupervisorJob(root))
             val ledger = DeskLedger()
-            Desk(FrontDesk(conversationId, deskScope, tasks, ledger, ReportPolicy(clock), sink), ledger, deskScope)
+            Desk(FrontDesk(conversationId, deskScope, tasks, ledger, ReportPolicy(clock), sink, clock), ledger, deskScope)
                 .also { desks[conversationId] = it }
         }
         // 接回要读子会话,不占这把锁;接回本身可以重复做,先拿到前台的入口不受影响。

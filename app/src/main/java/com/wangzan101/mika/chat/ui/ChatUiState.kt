@@ -160,12 +160,12 @@ data class Exchange(
 val Exchange.recordedRun: String? get() = runId?.takeUnless { it.startsWith(NoticeTurn.RUN_PREFIX) || it.startsWith(DeskChatOps.RUN_PREFIX) }
 
 /**
- * 前台汇报那一行(没有用户的话)只指回它说的那张卡片([deskRef]),不再画一张;前台的一问一答下面每件派出的任务一张卡片。
- * 汇报那一轮前台顺手又派的任务排在 [deskTasks] 后面,照样画卡片。
+ * 这一轮新派出去的任务。前台汇报那一行(没有用户的话)的第一件是被汇报的那件([deskRef]),不算新派;
+ * 汇报那一轮前台顺手又派的排在后面,算新派。「这个对话里的事」按它列。
  */
 val Exchange.deskCards: List<String> get() = if (goal.isEmpty()) deskTasks.drop(1) else deskTasks
 
-/** 前台汇报那一行指回的任务;不是汇报为 null。 */
+/** 前台汇报那一行汇报的是哪件;不是汇报为 null。 */
 val Exchange.deskRef: String? get() = if (goal.isEmpty()) deskTasks.firstOrNull() else null
 
 /** 前台这一行画不画字:还在想(三个点)、说了话、或没回成都画;办好了却一句没说(只派了单)不画空气泡。 */

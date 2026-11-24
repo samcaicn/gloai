@@ -12,13 +12,20 @@
     <string name="desk_phase_done">完了</string>
     <string name="desk_phase_failed">うまくいきませんでした</string>
     <string name="desk_phase_cancelled">取り消し済み</string>
-    <string name="desk_card_details">詳細 ›</string>
-    <string name="desk_card_open">このタスクを開く</string>
-    <string name="desk_tray_caption">この会話のタスク · タップで進み具合を表示</string>
-    <string name="desk_tray_progress">進み具合を見る ›</string>
     <string name="desk_tray_expand">タスクを表示</string>
     <string name="desk_tray_collapse">タスクを隠す</string>
-    <plurals name="desk_tray_count">
-        <item quantity="other">%1$d 件対応中</item>
-    </plurals>
+    <string name="chat_time_yesterday">昨日 %1$s</string>
+    <string name="desk_need_choose">選んでください · %1$s</string>
+    <string name="desk_need_answer">回答が必要 · %1$s</string>
+    <string name="desk_need_takeover">操作を代わってください · %1$s</string>
+    <string name="desk_need_handle">対応が必要 · %1$s</string>
+    <string name="desk_need_choose_foot">どれでもない？下に入力するか、長押しで話してください。</string>
+    <string name="desk_need_answer_foot">下に入力するか、長押しで話してください。</string>
+    <string name="desk_need_takeover_foot">画面で操作が終わったら、続きをやります。</string>
+    <string name="desk_need_go">対応する</string>
+    <string name="desk_need_stop">このタスクを止める</string>
+    <string name="desk_tray_stop">停止</string>
+    <string name="desk_tray_detail">詳しい経過を見る ›</string>
+    <string name="chat_menu_tasks">このチャットのタスク</string>
+    <string name="desk_tasks_empty">このチャットではまだタスクを頼んでいません。</string>
 </resources>

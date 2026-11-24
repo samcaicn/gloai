@@ -12,13 +12,20 @@
     <string name="desk_phase_done">辦好了</string>
     <string name="desk_phase_failed">沒辦成</string>
     <string name="desk_phase_cancelled">已取消</string>
-    <string name="desk_card_details">查看詳情 ›</string>
-    <string name="desk_card_open">打開這件任務</string>
-    <string name="desk_tray_caption">這個對話裡的事 · 點一件看詳細進展</string>
-    <string name="desk_tray_progress">查看詳細進展 ›</string>
     <string name="desk_tray_expand">展開在辦的事</string>
     <string name="desk_tray_collapse">收起在辦的事</string>
-    <plurals name="desk_tray_count">
-        <item quantity="other">%1$d 件在辦</item>
-    </plurals>
+    <string name="chat_time_yesterday">昨天 %1$s</string>
+    <string name="desk_need_choose">要你選 · %1$s</string>
+    <string name="desk_need_answer">要你回答 · %1$s</string>
+    <string name="desk_need_takeover">要你接管 · %1$s</string>
+    <string name="desk_need_handle">要你處理 · %1$s</string>
+    <string name="desk_need_choose_foot">都不是？直接在下面打字或按住說。</string>
+    <string name="desk_need_answer_foot">直接在下面打字或按住說。</string>
+    <string name="desk_need_takeover_foot">你在畫面裡點完，我接著往下辦。</string>
+    <string name="desk_need_go">去處理</string>
+    <string name="desk_need_stop">停止這件事</string>
+    <string name="desk_tray_stop">停止</string>
+    <string name="desk_tray_detail">查看詳細過程 ›</string>
+    <string name="chat_menu_tasks">這個對話裡的事</string>
+    <string name="desk_tasks_empty">這個對話裡還沒派過事。</string>
 </resources>

@@ -10,7 +10,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaType
-import com.wangzan101.mika.ui.theme.WordmarkWeight
 
 /** 跳转目标行高亮停留多久(毫秒)。 */
 internal const val JUMP_HIGHLIGHT_MS = 1_800L
@@ -27,7 +26,6 @@ internal val BubbleText = MikaType.Body
 /** 回答:正文字号,两端对齐(中文整段行尾整齐,最后一行除外)。 */
 internal val AnswerText = MikaType.Body.copy(textAlign = TextAlign.Justify)
 internal val NowText = MikaType.Value
-internal val TurnNameText = MikaType.Label.copy(fontWeight = WordmarkWeight)
 internal val ClockText = MikaType.Hint.copy(fontFeatureSettings = "tnum")
 internal val StepText = MikaType.Caption
 internal val StepCurrentText = MikaType.Caption.copy(fontWeight = FontWeight.Medium)

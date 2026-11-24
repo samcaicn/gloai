@@ -12,14 +12,20 @@
     <string name="desk_phase_done">انجام شد</string>
     <string name="desk_phase_failed">نشد</string>
     <string name="desk_phase_cancelled">لغو شد</string>
-    <string name="desk_card_details">جزئیات ›</string>
-    <string name="desk_card_open">باز کردن این کار</string>
-    <string name="desk_tray_caption">کارهای این گفتگو · برای دیدن پیشرفت روی یکی بزنید</string>
-    <string name="desk_tray_progress">دیدن پیشرفت ›</string>
     <string name="desk_tray_expand">نمایش کارها</string>
     <string name="desk_tray_collapse">پنهان کردن کارها</string>
-    <plurals name="desk_tray_count">
-        <item quantity="one">%1$d کار در حال انجام</item>
-        <item quantity="other">%1$d کار در حال انجام</item>
-    </plurals>
+    <string name="chat_time_yesterday">دیروز %1$s</string>
+    <string name="desk_need_choose">یکی را انتخاب کن · %1$s</string>
+    <string name="desk_need_answer">پاسخ تو لازم است · %1$s</string>
+    <string name="desk_need_takeover">کنترل را به دست بگیر · %1$s</string>
+    <string name="desk_need_handle">به تو نیاز دارد · %1$s</string>
+    <string name="desk_need_choose_foot">هیچ‌کدام؟ پایین بنویس یا نگه دار و حرف بزن.</string>
+    <string name="desk_need_answer_foot">پایین بنویس یا نگه دار و حرف بزن.</string>
+    <string name="desk_need_takeover_foot">وقتی روی صفحه تمامش کردی، من ادامه می‌دهم.</string>
+    <string name="desk_need_go">رسیدگی کن</string>
+    <string name="desk_need_stop">این کار را متوقف کن</string>
+    <string name="desk_tray_stop">توقف</string>
+    <string name="desk_tray_detail">دیدن جزئیات روند ›</string>
+    <string name="chat_menu_tasks">کارهای این گفتگو</string>
+    <string name="desk_tasks_empty">هنوز در این گفتگو کاری سپرده نشده است.</string>
 </resources>

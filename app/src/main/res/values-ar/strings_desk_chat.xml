@@ -12,18 +12,20 @@
     <string name="desk_phase_done">تم</string>
     <string name="desk_phase_failed">لم ينجح</string>
     <string name="desk_phase_cancelled">أُلغي</string>
-    <string name="desk_card_details">التفاصيل ›</string>
-    <string name="desk_card_open">فتح هذه المهمة</string>
-    <string name="desk_tray_caption">مهام هذه المحادثة · اضغط على واحدة لمعرفة التقدم</string>
-    <string name="desk_tray_progress">عرض التقدم ›</string>
     <string name="desk_tray_expand">إظهار المهام</string>
     <string name="desk_tray_collapse">إخفاء المهام</string>
-    <plurals name="desk_tray_count">
-        <item quantity="zero">%1$d مهمة قيد التنفيذ</item>
-        <item quantity="one">%1$d مهمة قيد التنفيذ</item>
-        <item quantity="two">%1$d مهمتان قيد التنفيذ</item>
-        <item quantity="few">%1$d مهام قيد التنفيذ</item>
-        <item quantity="many">%1$d مهمة قيد التنفيذ</item>
-        <item quantity="other">%1$d مهمة قيد التنفيذ</item>
-    </plurals>
+    <string name="chat_time_yesterday">أمس %1$s</string>
+    <string name="desk_need_choose">اختر واحدًا · %1$s</string>
+    <string name="desk_need_answer">يحتاج إلى إجابتك · %1$s</string>
+    <string name="desk_need_takeover">تولَّ الأمر · %1$s</string>
+    <string name="desk_need_handle">يحتاج إليك · %1$s</string>
+    <string name="desk_need_choose_foot">لا شيء منها؟ اكتب بالأسفل أو اضغط مطولًا للتحدث.</string>
+    <string name="desk_need_answer_foot">اكتب بالأسفل أو اضغط مطولًا للتحدث.</string>
+    <string name="desk_need_takeover_foot">بعد أن تنتهي على الشاشة، سأكمل أنا.</string>
+    <string name="desk_need_go">تعامل معه</string>
+    <string name="desk_need_stop">أوقف هذه المهمة</string>
+    <string name="desk_tray_stop">إيقاف</string>
+    <string name="desk_tray_detail">عرض الخطوات بالتفصيل ›</string>
+    <string name="chat_menu_tasks">المهام في هذه المحادثة</string>
+    <string name="desk_tasks_empty">لم تُرسَل أي مهام في هذه المحادثة بعد.</string>
 </resources>

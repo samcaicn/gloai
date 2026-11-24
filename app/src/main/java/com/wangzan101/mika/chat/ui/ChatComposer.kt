@@ -126,10 +126,12 @@ internal fun Composer(
     onVoiceHolding: (Boolean) -> Unit = {},
     sendFromIme: Boolean = false,
     draftKey: String? = null,
-    /** 这条会话前台派过的任务:有在办的就在输入栏上方一条「在办」。 */
+    /** 这条会话前台派过的任务:有在办的就在输入栏上方一条进度条。 */
     deskTasks: List<com.wangzan101.mika.core.frontdesk.DeskTaskView> = emptyList(),
-    /** 点「在办」里的一件:滚到它的卡片。 */
-    onJumpTask: (String) -> Unit = {},
+    /** 进度条里一件的「停止」。 */
+    onStopTask: (String) -> Unit = {},
+    /** 进度条里一件的「查看详细过程」。 */
+    onTaskDetail: (String) -> Unit = {},
 ) {
     val c = MikaTheme.colors
     var fieldFocused by remember { mutableStateOf(false) }
@@ -177,7 +179,7 @@ internal fun Composer(
             .padding(start = ComposerInset, end = ComposerInset, top = 10.dp, bottom = 6.dp),
     ) {
         Column(Modifier.fillMaxWidth()) {
-            DeskTray(deskTasks, reduceMotion, onJumpTask)
+            DeskTray(deskTasks, reduceMotion, backdrop, onStopTask, onTaskDetail)
             FollowUpTray(
                 queued, active = mode != ComposerMode.Idle,
                 onEdit = onEditQueued, onCancel = onCancelQueued, onStartNow = onStartQueued, onActions = onQueueActions,

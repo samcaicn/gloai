@@ -5,6 +5,7 @@ import com.wangzan101.mika.chat.RetryAttachmentStatus
 import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.Turn
 import com.wangzan101.mika.core.agent.UserWords
+import com.wangzan101.mika.core.frontdesk.DESK_RESULT_MAX_CHARS
 import com.wangzan101.mika.core.frontdesk.DeskBrain
 import com.wangzan101.mika.core.frontdesk.DeskEvent
 import com.wangzan101.mika.core.frontdesk.DeskReport
@@ -81,6 +82,18 @@ internal class ChatDesk(private val vm: ChatViewModel, private val session: Chat
     /** 这条会话的前台入口;同一条会话一直是同一个(它记着这条会话的前台说过的话)。 */
     fun line(conversationId: String): DeskChatOps = synchronized(lines) {
         lines.getOrPut(conversationId) { DeskChatOps(conversationId, vm, session, deps, this) }
+    }
+
+    /** 问题卡上点了一个选项:原话直接回给屏上这条会话派出的任务 [taskId],不经前台模型。 */
+    fun answer(taskId: String, words: String) {
+        val id = _ui.value.conversationId ?: return
+        vm.scope.launch(vm.io) { deps.desk(id).answer(taskId, words) }
+    }
+
+    /** 进度条或问题卡上点了停止:停下屏上这条会话派出的任务 [taskId]。 */
+    fun cancel(taskId: String) {
+        val id = _ui.value.conversationId ?: return
+        vm.scope.launch(vm.io) { deps.desk(id).cancel(taskId) }
     }
 
     fun start() {
@@ -227,14 +240,16 @@ internal class DeskChatOps(
     }
 
     /**
-     * 页面开着这条会话时说一句汇报。开始、排队、进度卡片上和「在办」条里实时看得到,不另说一句;
-     * 要你处理、办好、没办成由前台说,写成一行汇报。页面不在、没配模型、前台什么也没说时返回 false(交给兜底);
-     * 前台说失败时去掉这一行、抛出,也交给兜底。
+     * 页面开着这条会话时说一句汇报。开始、排队、进度在进度条里实时看得到,要你处理在对话里有问题卡,都不另说一句;
+     * 办好了把后台的完整结果原文写成一行汇报,不经前台模型转述;没办成由前台说(原因和下一步),写成一行汇报。
+     * 页面不在、没配模型、前台什么也没说时返回 false(交给兜底);前台说失败时去掉这一行、抛出,也交给兜底。
      */
     override suspend fun deliver(report: DeskReport): Boolean {
         if (!page.showing(conversationId)) return false
-        when (report.event) {
-            is DeskEvent.Started, is DeskEvent.Queued, is DeskEvent.Progress -> return true
+        when (val event = report.event) {
+            is DeskEvent.Started, is DeskEvent.Queued, is DeskEvent.Progress,
+            is DeskEvent.NeedsAnswer, is DeskEvent.NeedsAction -> return true
+            is DeskEvent.Succeeded -> return turns.withLock { result(event.taskId, DeskNotifier.rowText(report).orEmpty()) }
             else -> Unit
         }
         val brain = deps.brain(conversationId) ?: return false
@@ -266,6 +281,20 @@ internal class DeskChatOps(
             persist(Turn("", text, DeskTurn.REPORT_STATUS, runId = runId, atMs = startedAt, deskTasks = tasks))
             true
         }
+    }
+
+    /** 办好了的结果原文写成一行汇报(页面换走了就不写,返回 false 交给兜底)。 */
+    private suspend fun result(taskId: String, text: String): Boolean {
+        if (!page.showing(conversationId) || text.isBlank()) return false
+        val runId = newRunId()
+        val at = vm.clock()
+        _ui.update {
+            if (it.conversationId != conversationId) it
+            else it.copy(exchanges = it.exchanges + Exchange("", emptyList(), ExchangeStatus.Done(text, null), live = true, runId = runId,
+                startedAt = at, deskReply = text, deskTasks = listOf(taskId)))
+        }
+        persist(Turn("", text, DeskTurn.REPORT_STATUS, runId = runId, atMs = at, deskTasks = listOf(taskId)))
+        return true
     }
 
     private suspend fun answer(brain: DeskBrain, text: String, runId: String, startedAt: Long) {
@@ -341,7 +370,7 @@ internal class DeskChatOps(
 
     /** 给前台的一条汇报:带上任务编号(它要接着回话、补话时用),后面是这件任务这次的变化。 */
     private fun noticeText(report: DeskReport) =
-        "task_id ${report.event.taskId} · " + tr(R.string.desk_report_line, report.title, DeskNotifier.line(report.event))
+        "task_id ${report.event.taskId} · " + tr(R.string.desk_report_line, report.title, DeskNotifier.line(report.event).take(DESK_RESULT_MAX_CHARS))
 
     /** 前台给已有任务补话、回话、取消后,那一行上的小标签。 */
     private fun toolLabel(name: String, taskId: String?): String? {

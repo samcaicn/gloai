@@ -227,8 +227,8 @@ class DeskChatOpsTest {
         assertEquals("订日料", view.title)
         assertEquals(DeskTaskPhase.Running, view.state)
         assertEquals(listOf("child-1"), h.store.turns("c").single().deskTasks)
-        // 卡片是同一轮下面的一行
-        assertEquals(listOf("u0", "r0", "c0-child-1"), chatItemKeys(h.vm.ui.value.exchanges, kept = null, phoneSetupRow = null, hasBlocked = false))
+        // 对话里不夹卡片:最前面一行时间,下面是原话和前台的回话
+        assertEquals(listOf("t0", "u0", "r0"), chatItemKeys(h.vm.ui.value.exchanges, kept = null, phoneSetupRow = null, hasBlocked = false))
     }
 
     @Test fun quotedMikaTextIsNotTheUserWords() = runTest {
@@ -325,7 +325,9 @@ class DeskChatOpsTest {
         runCurrent()
         h.port.states.getValue("child-2").value = TaskState.Succeeded("后天 9 点")
         runCurrent()
-        assertEquals(1, brain.notices.size)
+        // 通话挂了,聊天页接回来:结果原文写成一行汇报,不经前台模型
+        assertTrue(brain.notices.isEmpty())
+        assertEquals("后天 9 点", h.vm.ui.value.exchanges.last().deskReply)
         assertEquals(listOf("child-1", "child-1"), heard)
         assertTrue(h.sunk.isEmpty())
     }
@@ -349,16 +351,15 @@ class DeskChatOpsTest {
         assertTrue(h.sunk.isEmpty())
         h.port.states.getValue("child-1").value = TaskState.Succeeded("明早 8 点")
         runCurrent()
-        // 办好了:页面开着这条会话,由前台说一句,画成一行前台汇报,指向那张卡片
-        assertEquals(1, brain.notices.size)
-        assertTrue(brain.notices.single(), "child-1" in brain.notices.single() && "订日料" in brain.notices.single())
+        // 办好了:页面开着这条会话,后台的结果原文写成一行汇报,不经前台模型转述
+        assertTrue(brain.notices.isEmpty())
         val row = h.vm.ui.value.exchanges.last()
         assertEquals("", row.goal)
-        assertEquals("订好了,明早 8 点。", row.deskReply)
+        assertEquals("明早 8 点", row.deskReply)
         assertEquals(listOf("child-1"), row.deskTasks)
         val saved = h.store.turns("c").last()
         assertEquals(DeskTurn.REPORT_STATUS, saved.status)
-        assertEquals("订好了,明早 8 点。", saved.outcome)
+        assertEquals("明早 8 点", saved.outcome)
         assertEquals(listOf("child-1"), saved.deskTasks)
         assertTrue(h.sunk.isEmpty())
         assertEquals(DeskTaskPhase.Done, h.vm.ui.value.deskTasks.single().state)
@@ -369,7 +370,7 @@ class DeskChatOpsTest {
         runCurrent()
         h.port.states.getValue("child-2").value = TaskState.Succeeded("后天 9 点")
         runCurrent()
-        assertEquals(1, brain.notices.size)
+        assertTrue(brain.notices.isEmpty())
         assertEquals("child-2", h.sunk.single().second.event.taskId)
     }
 
@@ -628,7 +629,8 @@ class DeskChatOpsTest {
         runCurrent()
         assertTrue(h.vm.send("打开计算器或者时钟都行", ok))
         runCurrent()
-        h.port.states.getValue("child-1").value = TaskState.WaitingInput("打开哪一个?")
+        // 没办成由前台说一句(要你处理的出问题卡,不经前台)
+        h.port.states.getValue("child-1").value = TaskState.Failed("不知道打开哪一个", com.wangzan101.mika.core.agent.FailKind.GaveUp)
         runCurrent()
         assertEquals(1, brain.notices.size)
         assertEquals(List(4) { "rejected" }, results.map { it!!["status"].toString().trim('"') })

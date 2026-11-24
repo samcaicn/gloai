@@ -30,25 +30,23 @@ class DeskNotifierTest {
         assertEquals(DeskNotifier.STATUS, last.status)
         assertEquals("", last.userText)
         assertEquals(listOf("c1"), last.deskTasks)
-        assertTrue(last.outcome.contains("订票"))
-        assertTrue(last.outcome.contains("订好了明早 8 点的票"))
+        // 办好了写后台给的结果原文,不加任务名、不截断
+        assertEquals("订好了明早 8 点的票", last.outcome)
         val notice = notices.single()
         assertEquals("p", notice.conversationId)
         assertEquals("订票", notice.title)
         assertFalse(notice.needsYou)
     }
 
-    // 要用户回答、确认、接管的:任务自己发带按钮的「需要你处理」通知,前台兜底只把这句写回会话,不再发第二条。
-    @Test fun needsYouIsWrittenBackWithoutASecondNotification() = runBlocking {
+    // 要用户回答、确认、接管的:任务自己发带按钮的「需要你处理」通知;前台兜底不写行(聊天页对话末尾有问题卡),也不发第二条。
+    @Test fun needsYouWritesNoRowAndNoSecondNotification() = runBlocking {
         val store = ConversationStore(tmp.newFolder())
         val notices = mutableListOf<DeskNotice>()
         val notifier = DeskNotifier(store) { notices += it }
         notifier.record("p", DeskReport(DeskEvent.NeedsAnswer("c1", "要几点的车?", null), "订票"))
         notifier.record("p", DeskReport(DeskEvent.NeedsAction("c1", ActionKind.Confirm), "订票"))
         notifier.record("p", DeskReport(DeskEvent.NeedsAction("c1", ActionKind.Takeover), "订票"))
-        val lines = store.turns("p").filter { it.status == DeskNotifier.STATUS }
-        assertEquals(3, lines.size)
-        assertTrue(lines.first().outcome.contains("要几点的车?"))
+        assertTrue(store.turns("p").isEmpty())
         assertTrue(notices.isEmpty())
     }
 
@@ -76,37 +74,31 @@ class DeskNotifierTest {
         assertEquals(events.size, lines.toSet().size)
     }
 
-    // 页面不在时:排队不写;开始写一行(不发通知);之后的进度都并进那一行,只留最新的一句,不在会话里一条条堆。
-    @Test fun queueWritesNothingAndProgressCollapsesIntoTheStartedRow() = runBlocking {
+    // 页面不在时:排队、开始、进度都不写行也不发通知(聊天页的进度条看任务的实时状态)。
+    @Test fun queueStartAndProgressWriteNothing() = runBlocking {
         val store = ConversationStore(tmp.newFolder())
         val notices = mutableListOf<DeskNotice>()
         val notifier = DeskNotifier(store) { notices += it }
         notifier.record("p", DeskReport(DeskEvent.Queued("c1", 1), "查天气"))
-        assertTrue(store.turns("p").isEmpty())
         notifier.record("p", DeskReport(DeskEvent.Started("c1"), "查天气"))
         notifier.record("p", DeskReport(DeskEvent.Progress("c1", "打开天气"), "查天气"))
-        notifier.record("p", DeskReport(DeskEvent.Progress("c1", "看明天的预报"), "查天气"))
-        val rows = store.turns("p").filter { it.status == DeskNotifier.STATUS }
-        assertEquals(1, rows.size)
-        assertTrue(rows.single().outcome, rows.single().outcome.contains("看明天的预报"))
-        assertFalse(rows.single().outcome, rows.single().outcome.contains("打开天气"))
+        assertTrue(store.turns("p").isEmpty())
         assertTrue(notices.isEmpty())
     }
 
-    // 要你回答之后又有进度:问题那行留着,进度另起一行再往里并;收尾照常另写一行。
-    @Test fun progressAfterAQuestionStartsAFreshRow() = runBlocking {
+    // 一件事从开始到收尾,会话里只留收尾那一行:办好了是原文,没办成是「这件:…」一句。
+    @Test fun onlyTheEndingIsWritten() = runBlocking {
         val store = ConversationStore(tmp.newFolder())
         val notifier = DeskNotifier(store) { }
         notifier.record("p", DeskReport(DeskEvent.Started("c1"), "订票"))
         notifier.record("p", DeskReport(DeskEvent.NeedsAnswer("c1", "要几点的车?", null), "订票"))
-        notifier.record("p", DeskReport(DeskEvent.Progress("c1", "选八点的车"), "订票"))
         notifier.record("p", DeskReport(DeskEvent.Progress("c1", "填乘车人"), "订票"))
         notifier.record("p", DeskReport(DeskEvent.Succeeded("c1", "订好了"), "订票"))
+        notifier.record("p", DeskReport(DeskEvent.Failed("c2", "没网"), "查汇率"))
         val rows = store.turns("p").map { it.outcome }
-        assertEquals(4, rows.size)
-        assertTrue(rows[1], rows[1].contains("要几点的车?"))
-        assertTrue(rows[2], rows[2].contains("填乘车人"))
-        assertTrue(rows[3], rows[3].contains("订好了"))
+        assertEquals(2, rows.size)
+        assertEquals("订好了", rows[0])
+        assertTrue(rows[1], rows[1].contains("查汇率") && rows[1].contains("没网"))
     }
 
     // 通知正文是纯文字:任务回答里的 Markdown 记号不原样出现在通知里;写回会话的那行照旧保留(聊天页会渲染)。

@@ -60,7 +60,7 @@ class FrontDeskTest {
     private val sink = FakeSink()
     private var now = 0L
 
-    private fun TestScope.desk() = FrontDesk("c1", backgroundScope, port, ledger, ReportPolicy(clock = { now }), sink)
+    private fun TestScope.desk() = FrontDesk("c1", backgroundScope, port, ledger, ReportPolicy(clock = { now }), sink, clock = { now })
 
     private fun running(narration: String? = null) = TaskState.Running(step = 1, note = "", narration = narration)
 
@@ -177,7 +177,7 @@ class FrontDeskTest {
         desk.attach(surface)
         desk.track("t1", "订会议室")
         runCurrent()
-        assertEquals(DeskTaskView("t1", "订会议室", DeskTaskPhase.Running, "打开日历", null, listOf("打开日历")), desk.active.value.single())
+        assertEquals(DeskTaskView("t1", "订会议室", DeskTaskPhase.Running, "打开日历", null, listOf("打开日历"), startedAt = 0L, steps = listOf(DeskStep("打开日历", 0L))), desk.active.value.single())
 
         state.value = TaskState.Succeeded("订好了")
         runCurrent()
@@ -211,6 +211,47 @@ class FrontDeskTest {
     }
 
     @Test
+    fun activeKeepsEveryStepWithItsTimeAndWhatItWaitsOn() = runTest {
+        ledger.add(DeskTaskEntry("t1", "订会议室", "帮我订明天十点的会议室", 0L))
+        now = 1_000L
+        val state = port.add("t1", running("打开「日历」 [10,20]"))
+        val desk = desk()
+        desk.track("t1", "订会议室")
+        runCurrent()
+        for ((at, narration) in listOf(3_000L to "打开「日程」 [1,2]", 5_000L to "找日程", 9_000L to "选时间", 12_000L to "找日程")) {
+            now = at
+            state.value = running(narration)
+            runCurrent()
+        }
+        now = 15_000L
+        state.value = TaskState.WaitingInput("要订「三楼」还是「五楼」那间?", listOf("三楼", "五楼"))
+        runCurrent()
+
+        val view = desk.active.value.single()
+        assertEquals("帮我订明天十点的会议室", view.goal)
+        assertEquals(1_000L, view.startedAt)
+        // 只差细节的不算新的一步;隔开了又说回来的算新的一步
+        assertEquals(
+            listOf(DeskStep("打开", 1_000L), DeskStep("找日程", 5_000L), DeskStep("选时间", 9_000L), DeskStep("找日程", 12_000L),
+                DeskStep("要订还是那间?", 15_000L)),
+            view.steps,
+        )
+        assertEquals(DeskNeed("要订「三楼」还是「五楼」那间?", listOf("三楼", "五楼")), view.need)
+        assertEquals(15_000L, view.updatedAt)
+
+        now = 20_000L
+        state.value = TaskState.WaitingTakeover("pay", "要你本人确认付款")
+        runCurrent()
+        assertEquals(DeskNeed("要你本人确认付款", action = ActionKind.Takeover), desk.active.value.single().need)
+
+        state.value = TaskState.Succeeded("x".repeat(DESK_RESULT_MAX_CHARS + 5))
+        runCurrent()
+        val done = desk.active.value.single()
+        assertEquals(null, done.need)
+        assertEquals(6, done.steps.size)
+    }
+
+    @Test
     fun queuedTaskShowsPositionAndReportsStartWhenItsTurnComes() = runTest {
         val state = port.add("t2", TaskState.Held(GateReason.queued("前面还有 1 个")))
         port.positions["t2"] = 1
@@ -225,7 +266,7 @@ class FrontDeskTest {
         state.value = running()
         runCurrent()
         assertEquals(listOf(DeskEvent.Started("t2")), surface.delivered.map { it.event })
-        assertEquals(DeskTaskView("t2", "查快递", DeskTaskPhase.Running, null, null), desk.active.value.single())
+        assertEquals(DeskTaskView("t2", "查快递", DeskTaskPhase.Running, null, null, startedAt = 0L), desk.active.value.single())
     }
 
     /**
@@ -238,7 +279,7 @@ class FrontDeskTest {
         val desk = desk()
         desk.track("t1", "看设置首页")
         runCurrent()
-        assertEquals(DeskTaskView("t1", "看设置首页", DeskTaskPhase.Running, null, null), desk.active.value.single())
+        assertEquals(DeskTaskView("t1", "看设置首页", DeskTaskPhase.Running, null, null, startedAt = 0L), desk.active.value.single())
 
         state.value = running()
         runCurrent()

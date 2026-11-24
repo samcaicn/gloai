@@ -339,6 +339,9 @@ class ChatViewModel(
     /** 这个对话的语音通话记录(聊天页画通话起止线用);没有对话为空。 */
     fun calls(conversationId: String?): kotlinx.coroutines.flow.Flow<List<com.wangzan101.mika.chat.ConversationCall>> =
         conversationId?.let(store::observeCalls) ?: kotlinx.coroutines.flow.flowOf(emptyList())
+    /** 前台派过的几件事各自会话起好的标题(「这个对话里的事」用);没起好的不在里面。 */
+    suspend fun deskTaskTitles(ids: List<String>): Map<String, String> =
+        kotlinx.coroutines.withContext(io) { ids.mapNotNull { id -> store.title(id)?.let { id to it } }.toMap() }
     fun consumeJump(jump: ChatJump) = chats.consumeJump(jump)
     fun createProject(name: String): Result<Project>? = chats.createProject(name)
     fun renameProject(projectId: String, name: String): Result<Project>? = chats.renameProject(projectId, name)
@@ -419,9 +422,21 @@ class ChatViewModel(
     fun reopenPip() = sending.reopenPip()
     fun togglePipSound() = sending.togglePipSound()
 
+    /** 让服务显示前台派出的那件任务 [taskId](它的对话编号就是任务编号):小窗的画面跟着换,屏上的对话不变。 */
+    fun showDeskScreen(taskId: String) = actions.show(taskId)
+
+    /** 前台派出的那件任务小窗里的声音开关。 */
+    fun togglePipSoundIn(taskId: String) = actions.togglePipSoundIn(taskId)
+
     // ChatDesk
     /** 聊天页在不在屏上:在的时候后台的汇报由前台在页面上说一句,不在时交给兜底(写回会话、发通知)。 */
     fun pageShown(shown: Boolean) { desking?.pageShown(shown) }
+
+    /** 前台派出的一件在问问题,用户在问题卡上点了 [words]。 */
+    fun answerDeskTask(taskId: String, words: String) { desking?.answer(taskId, words) }
+
+    /** 停下前台派出的一件。 */
+    fun cancelDeskTask(taskId: String) { desking?.cancel(taskId) }
 
     // ChatNoteOps
     fun noteText(note: MemoryNote): String = noting.noteText(note)

@@ -19,52 +19,45 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.R
-import com.wangzan101.mika.core.frontdesk.DeskTaskView
 import com.wangzan101.mika.ui.MarkdownText
 import com.wangzan101.mika.ui.theme.MikaShapes
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 
 /**
- * 前台的一轮在对话里的几行(按原型):用户的话(汇报那一轮没有)、前台回的话(不套气泡,顶上可带一个工具小标签,
- * 汇报的下面带一个跳到卡片的小标签)、这一轮派出去的任务卡片。行 key 与 [chatItemKeys] 一致。
+ * 前台的一轮在对话里的几行(按原型):用户的话(汇报那一轮没有)、前台回的话(和别的回答一样的浅灰块,顶上可带一个工具小标签)。
+ * 前台派出去的任务不在对话里画卡片,看输入框上方的进度条;要你处理时对话末尾一张问题卡。行 key 与 [chatItemKeys] 一致。
  */
 internal fun LazyListScope.deskExchange(
-    index: Int, ex: Exchange, conversationId: String?, tasks: List<DeskTaskView>, reduceMotion: Boolean,
-    highlightKey: String?, jumpToCard: (String) -> Unit, openTask: (String) -> Unit,
+    index: Int, ex: Exchange, conversationId: String?, reduceMotion: Boolean, highlightKey: String?,
 ) {
     if (ex.goal.isNotEmpty()) item("u$index") {
         JumpHighlight(highlightKey == "u$index", reduceMotion) { UserBubble(ex.goal, conversationId, key = "u$index") }
     }
     item("r$index") {
-        JumpHighlight(highlightKey == "r$index", reduceMotion) { DeskReply(ex, "r$index", tasks, reduceMotion, jumpToCard) }
-    }
-    ex.deskCards.forEach { taskId ->
-        val key = deskCardKey(index, taskId)
-        item(key) {
-            JumpHighlight(highlightKey == key, reduceMotion) {
-                DeskTaskCard(tasks.firstOrNull { it.taskId == taskId }, reduceMotion) { openTask(taskId) }
-            }
-        }
+        JumpHighlight(highlightKey == "r$index", reduceMotion) { DeskReply(ex, "r$index", reduceMotion) }
     }
 }
 
-/** 前台回的话:在想时三个点,边说边长;没说出话就收尾的那一轮(只派了单)整行不画。 */
+/**
+ * 前台回的话:浅灰块,短的贴字宽、长的铺满;在想时块里三个点加「在想」,边说边长(末尾带光标);
+ * 没说出话就收尾的那一轮(只派了单)整行不画。
+ */
 @Composable
-private fun DeskReply(ex: Exchange, key: String, tasks: List<DeskTaskView>, reduceMotion: Boolean, jumpToCard: (String) -> Unit) {
+private fun DeskReply(ex: Exchange, key: String, reduceMotion: Boolean) {
     if (!deskReplyShown(ex)) return
     val c = MikaTheme.colors
     val text = ex.deskReply.orEmpty()
     val working = ex.status == ExchangeStatus.Working
-    Column(Modifier.fillMaxWidth().padding(bottom = 12.dp).testTag("desk-reply")) {
+    Column(Modifier.fillMaxWidth().padding(bottom = ReplyGap).testTag("desk-reply")) {
         ex.deskTool?.let { tool ->
             Text(
                 tool, Modifier.padding(bottom = 4.dp).background(c.fill, MikaShapes.Chip).padding(horizontal = 8.dp, vertical = 1.dp),
@@ -72,14 +65,23 @@ private fun DeskReply(ex: Exchange, key: String, tasks: List<DeskTaskView>, redu
             )
         }
         when {
-            text.isNotBlank() && working -> MarkdownText(text, AnswerText.copy(color = c.ink), Modifier.fillMaxWidth(), streaming = true)
-            text.isNotBlank() -> AnswerArea(key, text, Modifier.fillMaxWidth()) { MarkdownText(text, AnswerText.copy(color = c.ink)) }
-            working -> ThinkingDots(reduceMotion)
+            text.isNotBlank() && working -> MarkdownText(text, AnswerText.copy(color = c.ink), Modifier.answerSurface(), streaming = true)
+            text.isNotBlank() -> AnswerArea(key, text, Modifier.answerSurface()) { MarkdownText(text, AnswerText.copy(color = c.ink)) }
+            working -> Thinking(reduceMotion)
         }
         if (ex.status is ExchangeStatus.Failed) {
             Text(stringResource(R.string.desk_reply_failed), Modifier.padding(top = 2.dp), style = MikaType.Caption, color = c.ink3)
         }
-        ex.deskRef?.let { taskId -> tasks.firstOrNull { it.taskId == taskId }?.let { DeskRefChip(it) { jumpToCard(taskId) } } }
+    }
+}
+
+/** 还没开口:灰块里三个起伏的点加一句「在想」。 */
+@Composable
+private fun Thinking(reduceMotion: Boolean) {
+    val c = MikaTheme.colors
+    Row(Modifier.answerSurface(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ThinkingDots(reduceMotion)
+        Text(stringResource(R.string.desk_thinking), style = MikaType.Caption, color = c.ink3, maxLines = 1)
     }
 }
 
@@ -87,9 +89,8 @@ private fun DeskReply(ex: Exchange, key: String, tasks: List<DeskTaskView>, redu
 @Composable
 private fun ThinkingDots(reduceMotion: Boolean) {
     val c = MikaTheme.colors
-    val label = stringResource(R.string.desk_thinking)
     Row(
-        Modifier.padding(vertical = 6.dp, horizontal = 2.dp).semantics { contentDescription = label },
+        Modifier.padding(vertical = 6.dp, horizontal = 2.dp).clearAndSetSemantics {},
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         repeat(3) { i ->

@@ -115,7 +115,6 @@ import com.wangzan101.mika.chat.ui.ShareContent
 import com.wangzan101.mika.chat.ui.SourceScreen
 import com.wangzan101.mika.chat.ui.SourceViewModel
 import com.wangzan101.mika.chat.ui.draft
-import com.wangzan101.mika.chat.ui.evidenceSource
 import com.wangzan101.mika.chat.ui.isShareIntent
 import com.wangzan101.mika.chat.ui.readShare
 import com.wangzan101.mika.chat.ui.shareCanRead
@@ -551,7 +550,6 @@ private fun MikaRoot(
                 app.chat.openConversationAt(id, com.wangzan101.mika.chat.ui.ChatTarget.Call(callId))
                 nav.reset()
             },
-            openCallSettings = { nav.push(Route.CallMode) },
             liveRun = { id -> app.taskState.runs.value.firstOrNull { it.conversationId == id }?.runId?.value },
             screens = app.taskState.screenConversations(app.appScope),
             frames = { id -> app.taskState.runs.value.firstOrNull { it.conversationId == id }?.frames },
@@ -724,6 +722,7 @@ private fun MikaRoot(
                             frames = app.taskState.frames,
                             webOpen = app.tasks.webScreenOpen,
                             pipInput = app.taskState.pipInput,
+                            screens = remember(app) { app.taskState.screenConversations(app.appScope) },
                             pipSoundOn = app.taskState.pipSoundOn,
                             pipOperateEnabled = FeatureFlags.get(context).pipOperate(),
                             reduceMotion = MikaTheme.reduceMotion,
@@ -731,18 +730,8 @@ private fun MikaRoot(
                             openSettings = { nav.push(Route.Settings) },
                             onOpenBrowser = { nav.push(Route.Browser) },
                             openRun = { runId = it; nav.push(Route.Run) },
-                            openReport = { reportRunId = it; nav.push(Route.Report) },
-                            openPlayback = { reportRunId = it; playbackScreenshotId = null; nav.push(Route.Playback) },
                             phoneSetupNeed = (if (status.builtinShell != BuiltinShellStatus.Running) phoneSetupNeed else null),
                             openPhoneSetup = { onFix(Fix.OpenPhoneSetup) },
-                            loadSource = { id ->
-                                withContext(Dispatchers.IO) { evidenceSource(RunStore(context).events(id)) { ConfirmationNotifier.appLabel(context, it) } }
-                            },
-                            openSource = { id, legacy ->
-                                sourceRunId = id
-                                sourceLegacyText = legacy
-                                nav.push(Route.Source)
-                            },
                             voice = app.voice,
                             openSpeechModel = { nav.push(Route.SpeechModel) },
                             onOpenTeach = { hint ->
@@ -751,6 +740,16 @@ private fun MikaRoot(
                             },
                             // 入口常驻:没配凭据/协议不兼容时进的是门禁页(说明 + 去配置),不静默消失
                             onVoiceCall = { localVoiceCall++ },
+                            openDeskRun = { id, phase ->
+                                voiceCallScope.launch {
+                                    val live = app.taskState.runs.value.firstOrNull { it.conversationId == id }?.runId?.value
+                                    val run = withContext(Dispatchers.IO) {
+                                        com.wangzan101.mika.voicecall.VoiceCallTaskLink.runFor(phase, live) { ConversationStore.shared(context).turns(id) }
+                                    }
+                                    if (run == null) app.chat.openConversation(id) else { runId = run; nav.push(Route.Run) }
+                                }
+                            },
+                            openCallSettings = { nav.push(Route.CallMode) },
                         )
                     }
                     var installUpdate by remember { mutableStateOf<ReleaseInfo?>(null) }

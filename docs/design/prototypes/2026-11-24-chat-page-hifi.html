@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>聊天页高保真</title>
+<!--
+  聊天页高保真原型(2026-11-24)。颜色、字号、圆角、图标都取自 app 里的 ui/theme(Colors.kt / Tokens.kt / Icons.kt),
+  组件形状照 ChatComposer、VoiceHold、VoiceCallPage、VoiceCallBar、VoiceCallRecords、ChatEmptyState 画。
+  要看的改动:所有回复一样的灰底块、不要头部和尾部按钮、完整正文、输入框上方进度条、虚拟屏照旧、⋯ 移到聊天页。
+-->
+<style>
+:root{
+  --bg:#F7F7F8;--surface:#FFFFFF;--fill:rgba(0,0,0,.039);--ink:#1C1C1E;--ink2:#5F6068;--ink3:#9A9BA3;--inkSoft:#4A4A50;
+  --hair:rgba(0,0,0,.07);--edge:rgba(0,0,0,.05);--accent:#0A7CFF;--accentSoft:rgba(10,124,255,.10);--userBub:rgba(10,124,255,.14);
+  --ok:#1F9D55;--okSoft:rgba(31,157,85,.12);--warn:#B86E00;--warnSolid:#FF9F0A;--warnSoft:rgba(255,159,10,.12);
+  --bad:#E5483D;--badSoft:rgba(229,72,61,.10);--answer:rgba(0,0,0,.035);--neutralSoft:rgba(0,0,0,.043);
+  --glass:rgba(255,255,255,.72);--glassEdge:rgba(0,0,0,.06);--float:0 6px 22px rgba(0,0,0,.09),0 1px 3px rgba(0,0,0,.05);
+  --page:#E8E8EC;--pageInk:#1C1C1E;--pageInk2:#5F6068;--pageCard:#fff;--bezel:#111;
+}
+:root[data-theme="dark"]{
+  --bg:#0E0E10;--surface:#1A1A1D;--fill:rgba(255,255,255,.059);--ink:#F2F2F4;--ink2:#A4A5AD;--ink3:#6C6D75;--inkSoft:#C6C6CD;
+  --hair:rgba(255,255,255,.08);--edge:rgba(255,255,255,.06);--accent:#3D97FF;--accentSoft:rgba(61,151,255,.16);--userBub:rgba(61,151,255,.14);
+  --ok:#3CCF7A;--okSoft:rgba(60,207,122,.14);--warn:#FFB340;--warnSolid:#FF9F0A;--warnSoft:rgba(255,159,10,.16);
+  --bad:#FF6961;--badSoft:rgba(255,105,97,.14);--answer:rgba(255,255,255,.05);--neutralSoft:rgba(255,255,255,.07);
+  --glass:rgba(26,26,29,.72);--glassEdge:rgba(255,255,255,.08);--float:0 6px 22px rgba(0,0,0,.45),0 1px 3px rgba(0,0,0,.3);
+  --page:#050506;--pageInk:#F2F2F4;--pageInk2:#A4A5AD;--pageCard:#151517;--bezel:#2a2a2e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--page);color:var(--pageInk);font-family:-apple-system,"PingFang SC","Noto Sans SC","Roboto","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+svg{display:block;flex:none}
+
+/* ---------- 外层:左边场景表,中间手机,右边说明 ---------- */
+.wrap{display:grid;grid-template-columns:250px auto minmax(240px,320px);gap:28px;justify-content:center;align-items:start;padding:24px 20px 40px;min-height:100vh}
+.side{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto;padding-right:4px}
+.side h1{font-size:18px;font-weight:700;margin-bottom:4px}
+.side .sub{font-size:12.5px;color:var(--pageInk2);line-height:18px;margin-bottom:14px}
+.grp{font-size:11.5px;color:var(--pageInk2);font-weight:600;letter-spacing:.04em;margin:14px 0 6px}
+.sc{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:10px;margin-bottom:2px}
+.sc b{display:block;font-size:13.5px;font-weight:600;line-height:19px}
+.sc span{display:block;font-size:11.5px;color:var(--pageInk2);line-height:16px;margin-top:1px}
+.sc:hover{background:rgba(127,127,127,.10)}
+.sc.on{background:var(--pageCard);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.theme{margin-top:14px;display:flex;gap:6px}
+.theme button{flex:1;padding:7px 0;border-radius:9px;font-size:12.5px;background:rgba(127,127,127,.12)}
+.theme button.on{background:var(--pageCard);box-shadow:0 1px 4px rgba(0,0,0,.1);font-weight:600}
+.notes{position:sticky;top:24px;background:var(--pageCard);border-radius:16px;padding:16px 16px 14px;font-size:13px;line-height:20px;color:var(--pageInk)}
+.notes h2{font-size:15px;font-weight:700;margin-bottom:2px}
+.notes .d{color:var(--pageInk2);font-size:12.5px;margin-bottom:10px}
+.notes h3{font-size:12px;color:var(--pageInk2);font-weight:600;margin:10px 0 4px}
+.notes ul{padding-left:16px}
+.notes li{margin-bottom:4px}
+.notes .ask li::marker{content:"？ ";color:#FF9F0A;font-weight:700}
+.notes .try{margin-top:10px;padding-top:10px;border-top:1px solid rgba(127,127,127,.18);font-size:12px;color:var(--pageInk2)}
+
+/* ---------- 手机 ---------- */
+.phone{width:390px;height:844px;border-radius:48px;padding:10px;background:var(--bezel);box-shadow:0 30px 70px rgba(0,0,0,.22)}
+.scr{position:relative;width:100%;height:100%;border-radius:38px;overflow:hidden;background:var(--bg);color:var(--ink);font-size:15.5px;line-height:22px}
+.status{position:absolute;left:0;right:0;top:0;height:40px;display:flex;align-items:center;justify-content:space-between;padding:6px 26px 0 28px;font-size:14px;font-weight:600;z-index:30;color:var(--ink)}
+.status .si{display:flex;gap:5px;align-items:center}
+.status.green{background:var(--ok);color:#fff}
+.navh{position:absolute;bottom:7px;left:50%;width:108px;height:4px;margin-left:-54px;border-radius:4px;background:var(--ink);opacity:.85;z-index:40}
+
+.feed{position:absolute;inset:0;overflow-y:auto;padding:0 16px;scrollbar-width:none}
+.feed::-webkit-scrollbar{display:none}
+
+/* 顶栏:浮着的玻璃圆钮 + 中间标题胶囊 */
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:.5px solid var(--glassEdge);box-shadow:var(--float)}
+.top{position:absolute;left:0;right:0;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;z-index:20;pointer-events:none}
+.top>*{pointer-events:auto}
+.rb{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.tpill{height:36px;padding:0 18px;border-radius:18px;display:flex;align-items:center;font-size:17px;line-height:22px;font-weight:600}
+.topfade{position:absolute;left:0;right:0;top:0;height:96px;background:linear-gradient(var(--bg) 42%,transparent);z-index:15;pointer-events:none}
+
+.callbar{position:absolute;left:0;right:0;top:40px;height:36px;background:var(--ok);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;line-height:18px;font-weight:500;z-index:30;cursor:pointer}
+.callbar .ck{opacity:.85;font-variant-numeric:tabular-nums}
+
+/* 对话内容 */
+.tm{text-align:center;font-size:12px;line-height:17px;color:var(--ink3);margin:18px 0 10px;font-variant-numeric:tabular-nums}
+.urow{display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin:12px 0 14px}
+.ububble{max-width:80%;background:var(--userBub);border-radius:20px 20px 6px 20px;padding:10px 14px;white-space:pre-wrap;word-break:break-word}
+.uimg{width:132px;height:132px;border-radius:16px;overflow:hidden;border:.5px solid var(--edge)}
+.reply{background:var(--answer);border-radius:20px 20px 20px 6px;padding:12px 14px;margin-bottom:8px;max-width:100%;text-align:justify;word-break:break-word}
+.reply.fit{width:fit-content}
+.md p+p,.md p+ul,.md ul+p,.md p+ol,.md ol+p,.md h4+p,.md p+h4,.md ul+h4,.md ol+h4,.md table+p,.md p+table,.md pre+p,.md p+pre,.md blockquote+p,.md p+blockquote,.md h4+ul,.md h4+ol,.md h4+table{margin-top:8px}
+.md h4{font-size:16px;line-height:22px;font-weight:600}
+.md ul,.md ol{padding-left:20px}
+.md li{margin:3px 0}
+.md li::marker{color:var(--ink3)}
+.md strong{font-weight:600}
+.md code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13.5px;word-break:break-all;background:var(--fill);padding:1px 5px;border-radius:5px}
+.md pre{background:var(--surface);border:.5px solid var(--edge);border-radius:12px;padding:10px 12px;overflow-x:auto;text-align:left}
+.md pre code{background:none;padding:0;font-size:12.5px;line-height:19px;white-space:pre}
+.md table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:19px;text-align:left}
+.md th{font-weight:600;color:var(--ink2);font-size:12.5px}
+.md th,.md td{padding:6px 8px 6px 0;border-bottom:.5px solid var(--hair);vertical-align:top}
+.md tr:last-child td{border-bottom:0}
+.md blockquote{border-left:3px solid var(--hair);padding-left:10px;color:var(--ink2)}
+.caret{display:inline-block;width:8px;height:16px;margin-left:2px;vertical-align:-2px;border-radius:2px;background:var(--ink);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.think{display:inline-flex;align-items:center;gap:8px;color:var(--ink3);font-size:13px;line-height:18px;padding:12px 16px}
+.dots{display:inline-flex;gap:4px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--ink3);animation:dot 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.cline{display:flex;justify-content:center;align-items:center;gap:6px;padding:10px 0;color:var(--ink3);font-size:12px;line-height:17px}
+.cline.hl{background:var(--accentSoft);border-radius:10px}
+
+/* 要你处理的卡片 */
+.need{background:var(--surface);border:.5px solid var(--edge);border-radius:16px;padding:14px;margin:4px 0 8px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.nh{display:flex;align-items:center;gap:8px;font-size:13px;line-height:18px;font-weight:500;color:var(--warn)}
+.nh .dt{width:8px;height:8px;border-radius:50%;background:var(--warnSolid)}
+.nh .tt{color:var(--ink3);font-weight:400}
+.nq{margin-top:8px}
+.opts{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;align-items:center;justify-content:space-between;height:46px;padding:0 14px;border-radius:14px;background:var(--fill);font-size:15px;color:var(--ink);text-align:left}
+.opt:hover{background:var(--accentSoft)}
+.opt .sm{color:var(--ink3);font-size:12px}
+.nbtns{display:flex;gap:8px;margin-top:12px}
+.btn{height:40px;padding:0 16px;border-radius:14px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.pri{background:var(--ink);color:var(--bg)}
+.btn.sec{background:var(--fill);color:var(--ink)}
+.nfoot{margin-top:10px;font-size:12px;line-height:17px;color:var(--ink3)}
+
+/* 空对话 */
+.empty{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 0 40px}
+.empty h2{font-size:28px;line-height:35px;font-weight:700}
+.empty .lead{margin-top:11px;font-size:16px;line-height:23px;color:var(--ink2)}
+.rec{margin-top:24px;display:flex;flex-direction:column;gap:8px}
+.rcard{display:flex;align-items:center;gap:12px;background:var(--surface);border:.5px solid var(--edge);border-radius:16px;padding:12px 14px;text-align:left;width:100%}
+.rcard .ti{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.rcard b{display:block;font-size:15.5px;line-height:22px;font-weight:600}
+.rcard span{display:block;font-size:13px;line-height:18px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcard .tx{min-width:0;flex:1}
+
+/* 底部:托盘 + 输入框 */
+.dock{position:absolute;left:0;right:0;bottom:0;padding:0 12px 22px;z-index:25;display:flex;flex-direction:column;gap:8px}
+.comp{border-radius:24px;padding:0}
+.cin{min-height:46px;padding:12px 16px 2px;color:var(--ink3);white-space:pre-wrap}
+.cin.has{color:var(--ink)}
+.crow{display:flex;align-items:center;height:50px;padding:0 6px 6px}
+.cb{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.sp{flex:1}
+.send{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--neutralSoft);color:var(--ink3);margin-left:4px}
+.send.go{background:var(--ink);color:var(--bg)}
+.mic.hold{background:var(--accentSoft);color:var(--accent)}
+
+/* 进度条(在办的事) */
+.tray{border-radius:16px;overflow:hidden}
+.trow{display:flex;align-items:center;gap:10px;height:46px;padding:0 10px 0 14px;cursor:pointer}
+.sdot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none;position:relative}
+.sdot.run::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--accent);opacity:0;animation:ring 1.6s infinite}
+.sdot.wt{background:var(--warnSolid)}
+.sdot.wt::after{content:"";position:absolute;inset:-4px;border-radius:50%;background:var(--warnSolid);opacity:.25;animation:breathe 1.8s infinite}
+@keyframes ring{0%{transform:scale(.5);opacity:.7}100%{transform:scale(1.4);opacity:0}}
+@keyframes breathe{50%{opacity:.05;transform:scale(1.3)}}
+.tline{flex:1;min-width:0;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden}
+.tline b{font-size:13px;line-height:18px;font-weight:500;color:var(--ink);flex:none;max-width:52%;overflow:hidden;text-overflow:ellipsis}
+.tline span{font-size:13px;line-height:18px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis}
+.tline span.w{color:var(--warn)}
+.tmeta{font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums;flex:none}
+.plus{font-size:11px;line-height:16px;padding:0 6px;border-radius:8px;background:var(--neutralSoft);color:var(--ink2);flex:none}
+.chev{color:var(--ink3);transition:transform .2s}
+.tbody{border-top:.5px solid var(--hair);max-height:330px;overflow-y:auto;padding:4px 0 6px}
+.tk{padding:10px 14px 6px}
+.tk+.tk{border-top:.5px solid var(--hair)}
+.tkh{display:flex;align-items:center;gap:8px}
+.tkh b{font-size:15px;line-height:20px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph{font-size:11.5px;line-height:17px;padding:0 7px;border-radius:7px;font-weight:500;flex:none}
+.ph.run{background:var(--accentSoft);color:var(--accent)}
+.ph.wt{background:var(--warnSoft);color:var(--warn)}
+.ph.q{background:var(--neutralSoft);color:var(--ink2)}
+.ph.ok{background:var(--okSoft);color:var(--ok)}
+.ph.bad{background:var(--badSoft);color:var(--bad)}
+.goal{font-size:12px;line-height:17px;color:var(--ink3);margin-top:2px}
+.steps{margin-top:8px;position:relative}
+.st{display:flex;gap:10px;position:relative;padding:3px 0 5px}
+.st .rail{width:8px;flex:none;display:flex;flex-direction:column;align-items:center;padding-top:6px}
+.st .rail i{width:7px;height:7px;border-radius:50%;background:var(--ink3);opacity:.55;flex:none}
+.st .rail u{flex:1;width:1px;background:var(--hair);margin-top:4px;min-height:8px}
+.st:last-child .rail u{display:none}
+.st.cur .rail i{background:var(--accent);opacity:1;box-shadow:0 0 0 3px var(--accentSoft)}
+.st.wait .rail i{background:var(--warnSolid);opacity:1;box-shadow:0 0 0 3px var(--warnSoft)}
+.st .sx{flex:1;font-size:13px;line-height:18px;color:var(--ink2)}
+.st.cur .sx{color:var(--ink)}
+.st.wait .sx{color:var(--warn)}
+.st .stt{font-size:11.5px;color:var(--ink3);font-variant-numeric:tabular-nums;line-height:18px}
+.tfoot{display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding-bottom:4px}
+.tfoot button{font-size:13px;line-height:18px;font-weight:500;padding:6px 0}
+.tfoot .stop{color:var(--bad)}
+.tfoot .more{color:var(--accent)}
+
+/* 待发的图片 */
+.pend{display:flex;gap:8px;padding:8px;border-radius:16px}
+.pth{position:relative;width:58px;height:58px;border-radius:12px;overflow:hidden;border:.5px solid var(--edge)}
+.pth .x{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center}
+
+/* 按住说话 */
+.hint{align-self:center;height:30px;padding:0 14px;border-radius:15px;display:flex;align-items:center;font-size:12px;color:var(--ink2)}
+.hint.bad{background:var(--bad);color:#fff;border-color:transparent;box-shadow:none}
+.listen{border-radius:20px;padding:8px 12px 7px}
+.listen.armb{outline:1.5px solid var(--bad)}
+.lh{display:flex;align-items:center;gap:8px;font-size:13px;line-height:18px;font-weight:500;color:var(--ink2)}
+.rdot{width:8px;height:8px;border-radius:50%;background:var(--accent);position:relative;flex:none}
+.rdot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--accent);animation:ring 1.4s infinite}
+.rdot.bad{background:var(--bad)}.rdot.bad::after{display:none}
+.eng{font-size:11px;line-height:16px;background:var(--fill);padding:1px 8px;border-radius:9px;color:var(--ink2);font-weight:400}
+.lclock{margin-left:auto;font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums;font-weight:400}
+.ltext{margin-top:10px;min-height:54px;font-size:17px;line-height:25px;color:var(--ink)}
+.ltext .tail{color:var(--ink3)}
+.ltext.x{text-decoration:line-through;opacity:.4}
+.lfoot{margin-top:8px;font-size:12px;line-height:17px;color:var(--ink3)}
+.cover{height:96px;border-radius:24px;background:var(--accent);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:13px;font-weight:500;transition:background .15s}
+.cover.bad{background:var(--bad)}
+.wave{display:flex;gap:4px;align-items:center;height:26px}
+.wave i{width:3px;border-radius:2px;background:#fff;animation:wv .9s ease-in-out infinite}
+@keyframes wv{0%,100%{height:5px}50%{height:var(--h)}}
+.cover.bad .wave i{animation:none;height:5px}
+
+/* 虚拟屏小窗 */
+.pip{position:absolute;right:12px;z-index:22;border-radius:14px;overflow:hidden;cursor:pointer;background:#000;transition:width .25s,height .25s}
+.pip.run{box-shadow:0 0 0 2px var(--ok),0 8px 24px rgba(0,0,0,.25)}
+.pip.wt{box-shadow:0 0 0 2px var(--warnSolid),0 8px 24px rgba(0,0,0,.25);animation:glow 1.8s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 2px var(--warnSolid),0 0 0 9px rgba(255,159,10,.28),0 8px 24px rgba(0,0,0,.25)}}
+.pip .vs{position:absolute;left:0;top:0;width:360px;height:780px;transform-origin:0 0}
+.pipbadge{position:absolute;right:12px;z-index:23;font-size:11.5px;line-height:17px;padding:2px 8px;border-radius:9px;background:var(--warnSolid);color:#fff;font-weight:600}
+.pipctl{position:absolute;right:12px;z-index:23;display:flex;gap:6px}
+.pipctl .rb{width:32px;height:32px}
+
+/* 虚拟屏里的假画面(通用安卓应用样子) */
+.vs{font-family:Roboto,"Noto Sans SC",sans-serif;color:#fff;line-height:1.3}
+.vs .vst{height:30px;display:flex;justify-content:space-between;padding:8px 18px 0;font-size:13px;opacity:.9}
+.vcard{margin:12px 16px;background:rgba(255,255,255,.18);border-radius:18px;padding:14px 16px}
+.vrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:16px}
+.vrow+.vrow{border-top:1px solid rgba(255,255,255,.16)}
+.tap{position:absolute;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.45);border:3px solid #fff;animation:tap 1.4s infinite}
+@keyframes tap{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.3);opacity:0}}
+.vsl{background:#F3F4F7;color:#1b1b1f}
+.vsl .vst{color:#1b1b1f}
+.vlist{margin:8px 14px;background:#fff;border-radius:20px;overflow:hidden}
+.vli{display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:16px}
+.vli+.vli{border-top:1px solid #eceef2}
+.vli i{width:34px;height:34px;border-radius:50%;flex:none}
+.vdlg{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
+.vdlg>div{width:300px;background:#fff;color:#1b1b1f;border-radius:26px;padding:22px 22px 14px}
+
+/* 菜单和底部面板 */
+.scrim{position:absolute;inset:0;z-index:50;background:rgba(0,0,0,.0)}
+.scrim.dim{background:rgba(0,0,0,.32)}
+.menu{position:absolute;right:10px;min-width:188px;background:var(--surface);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.08);padding:6px 0;z-index:51}
+.mi{display:flex;align-items:center;gap:12px;height:48px;padding:0 16px;width:100%;font-size:15.5px;color:var(--ink);text-align:left}
+.mi:hover{background:var(--fill)}
+.mi svg{color:var(--ink2)}
+.mdiv{height:.5px;background:var(--hair);margin:4px 0}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:20px 20px 0 0;z-index:51;padding:10px 0 26px}
+.handle{width:32px;height:4px;border-radius:2px;background:var(--ink3);opacity:.4;margin:0 auto 16px}
+.sht{padding:0 16px;font-size:15.5px;line-height:22px;font-weight:600}
+.shh{padding:4px 16px 8px;font-size:13px;line-height:18px;color:var(--ink3)}
+.lr{position:relative;display:flex;align-items:center;gap:12px;padding:11px 16px;width:100%;text-align:left}
+.lr+.lr::before{content:"";position:absolute;left:58px;right:0;top:0;height:.5px;background:var(--hair)}
+.lr .tile{width:30px;height:30px;border-radius:9px;background:var(--fill);display:flex;align-items:center;justify-content:center;color:var(--ink2);flex:none}
+.lr .tx{flex:1;min-width:0}
+.lr b{display:block;font-size:15px;line-height:20px;font-weight:400;color:var(--ink)}
+.lr span{display:block;font-size:12.5px;line-height:17px;color:var(--ink3);margin-top:1px}
+.lr .live{color:var(--ok)}
+
+/* ---------- 通话页 ---------- */
+.call{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg)}
+.chdr{margin-top:40px;height:56px;display:flex;align-items:center;padding:0 8px;flex:none}
+.cav{width:40px;height:40px;border-radius:50%;background:var(--fill);display:flex;align-items:center;justify-content:center;margin-left:4px;color:var(--accent)}
+.ctt{flex:1;margin-left:12px;min-width:0}
+.ctt b{display:block;font-size:15.5px;line-height:22px;font-weight:600}
+.cst{display:flex;align-items:center;gap:6px;font-size:13px;line-height:18px;color:var(--ink2)}
+.cst i{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.chair{height:1px;background:var(--hair);flex:none}
+.cfeed{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px;scrollbar-width:none}
+.cfeed::-webkit-scrollbar{display:none}
+.lcl{align-self:center;font-size:12px;line-height:17px;color:var(--accent);padding:4px 10px}
+.spill{align-self:center;font-size:12px;line-height:17px;color:var(--ink3);background:var(--fill);padding:4px 10px;border-radius:12px}
+.said{max-width:80%;padding:10px 14px;border-radius:20px 20px 6px 20px;align-self:flex-end;background:var(--userBub)}
+.said.m{align-self:flex-start;background:var(--surface);border:.5px solid var(--hair);border-radius:20px 20px 20px 6px}
+.said.part{opacity:.55}
+.ctask{background:var(--surface);border:.5px solid var(--hair);border-radius:16px;padding:12px 14px}
+.cth{display:flex;align-items:center;gap:8px;font-size:13px;line-height:18px;font-weight:500}
+.cth .ph2{color:var(--ink2)}
+.watch{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--accent);background:var(--accentSoft);padding:3px 8px;border-radius:12px;font-weight:400}
+.cstep{display:flex;align-items:center;gap:10px;padding-top:8px;color:var(--ink2)}
+.cstep.r{color:var(--ink)}
+.ok16{width:16px;height:16px;border-radius:50%;background:var(--okSoft);color:var(--ok);display:flex;align-items:center;justify-content:center;margin:0 1px}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--accentSoft);border-top-color:var(--accent);animation:spin .8s linear infinite;margin:0 2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cdock{margin:8px 12px 24px;background:var(--surface);border:.5px solid var(--hair);border-radius:24px;padding:12px;flex:none}
+.lvl{height:30px;display:flex;align-items:center;justify-content:center;gap:3px}
+.lvl i{width:3px;border-radius:2px;background:var(--accent);animation:wv 1s ease-in-out infinite}
+.crow2{display:flex;align-items:center;margin-top:8px}
+.tog{width:48px;height:48px;border-radius:50%;background:var(--fill);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.tog.on{background:var(--ink);color:var(--bg)}
+.hang{height:48px;border-radius:24px;background:var(--bad);color:#fff;display:flex;align-items:center;gap:6px;padding:0 20px;font-size:15.5px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---------- 窄屏:场景表变成上面一条 ---------- */
+@media (max-width:1060px){
+  .wrap{grid-template-columns:230px auto}
+  .notes{grid-column:2;position:static;max-width:390px}
+}
+@media (max-width:760px){
+  .wrap{display:block;padding:12px 16px 32px}
+  .side{position:static;max-height:none;overflow:visible;padding:0}
+  .side .sub{margin-bottom:8px}
+  .grp{display:none}
+  .sclist{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+  .sclist::-webkit-scrollbar{display:none}
+  .sc{flex:none;width:auto;padding:6px 12px;border-radius:16px;background:rgba(127,127,127,.12)}
+  .sc span{display:none}
+  .sc b{font-size:13px;white-space:nowrap}
+  .theme{margin:6px 0 12px}
+  .phone{width:100%;max-width:390px;height:780px;margin:0 auto;padding:8px;border-radius:44px}
+  .scr{border-radius:36px}
+  .notes{margin:16px auto 0;max-width:390px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="side">
+    <h1>聊天页 · 高保真</h1>
+    <div class="sub">颜色、字号、图标照 app 现在的主题。点左边换场景；手机里的进度条、小窗、⋯、绿条、麦克风（按住、往上拖）都能点。</div>
+    <div class="sclist" id="list"></div>
+    <div class="theme"><button id="tl">浅色</button><button id="td">深色</button></div>
+  </aside>
+  <div class="phone"><div class="scr" id="ph"></div></div>
+  <section class="notes" id="notes"></section>
+</div>
+
+<script>
+const ICONS = {"Menu":{"p":["M4 7 h16 M4 12 h16 M4 17 h10"],"w":1.7,"f":false},"More":{"p":["M4.7 12 a1.3 1.3 0 1 0 2.6 0 a1.3 1.3 0 1 0 -2.6 0","M10.7 12 a1.3 1.3 0 1 0 2.6 0 a1.3 1.3 0 1 0 -2.6 0","M16.7 12 a1.3 1.3 0 1 0 2.6 0 a1.3 1.3 0 1 0 -2.6 0"],"w":1.7,"f":false},"Handset":{"p":["M6.39 5.17 A9.1 9.1 0 0 1 18.82 17.6 A2.5 2.5 0 0 1 16.32 13.27 A4.1 4.1 0 0 0 10.72 7.67 A2.5 2.5 0 0 1 6.39 5.17 Z"],"w":1.7,"f":false},"HangUp":{"p":["M3.5 14.5 c0 -3 3.8 -5.5 8.5 -5.5 s8.5 2.5 8.5 5.5 l-0.3 1.3 a1 1 0 0 1 -1.2 0.7 l-3 -0.8 a1 1 0 0 1 -0.7 -1 v-1.6 c-2.1 -0.7 -4.5 -0.7 -6.6 0 v1.6 a1 1 0 0 1 -0.7 1 l-3 0.8 a1 1 0 0 1 -1.2 -0.7 z"],"w":1.7,"f":false},"Mic":{"p":["M9 6 a3 3 0 0 1 6 0 v5 a3 3 0 0 1 -6 0 z","M5 11 a7 7 0 0 0 14 0","M12 18 v3"],"w":1.7,"f":false},"Plus":{"p":["M12 5 v14 M5 12 h14"],"w":1.7,"f":false},"Up":{"p":["M12 19 V5 M6 11 l6 -6 l6 6"],"w":2.2,"f":false},"Stop":{"p":["M8.28 6 h7.44 a2.28 2.28 0 0 1 2.28 2.28 v7.44 a2.28 2.28 0 0 1 -2.28 2.28 H8.28 A2.28 2.28 0 0 1 6 15.72 V8.28 A2.28 2.28 0 0 1 8.28 6 z"],"w":1.7,"f":true},"Check":{"p":["M5 12.5 l4.5 4.5 L19 7.5"],"w":2.2,"f":false},"Close":{"p":["M6 6 l12 12 M18 6 L6 18"],"w":2.0,"f":false},"Clock":{"p":["M3 12 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0","M12 7 v5 l3 2"],"w":1.7,"f":false},"Sound":{"p":["M4.2 9.6 h3.6 l4.8 -3.6 v12 l-4.8 -3.6 h-3.6 z","M16.2 8.4 a5.1 5.1 0 0 1 0 7.2 M19.2 5.4 a9.2 9.2 0 0 1 0 13.2"],"w":1.7,"f":false},"Keyboard":{"p":["M5.5 6 h13 a2.5 2.5 0 0 1 2.5 2.5 v7 a2.5 2.5 0 0 1 -2.5 2.5 h-13 a2.5 2.5 0 0 1 -2.5 -2.5 v-7 a2.5 2.5 0 0 1 2.5 -2.5 z","M7 10 h.01 M10.3 10 h.01 M13.7 10 h.01 M17 10 h.01 M8 14.5 h8"],"w":1.7,"f":false},"Chevron":{"p":["M9 6 l6 6 l-6 6"],"w":2.0,"f":false},"Spark":{"p":["M12 3 l1.9 5.6 L19.5 10.5 L13.9 12.4 L12 18 l-1.9 -5.6 L4.5 10.5 l5.6 -1.9 z","M19 17 l0.7 2 l2 0.7 l-2 0.7 L19 22.4 l-0.7 -2 l-2 -0.7 l2 -0.7 z"],"w":1.7,"f":false},"New":{"p":["M12 20 h8","M16.5 3.5 a2.1 2.1 0 0 1 3 3 L7 19 l-4 1 l1 -4 z"],"w":1.7,"f":false},"Globe":{"p":["M3 12 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0","M3 12 h18 M12 3 c2.5 2.6 3.8 5.6 3.8 9 s-1.3 6.4 -3.8 9 c-2.5 -2.6 -3.8 -5.6 -3.8 -9 s1.3 -6.4 3.8 -9 z"],"w":1.7,"f":false},"Calendar":{"p":["M5 5.5 h14 a2 2 0 0 1 2 2 v12 a2 2 0 0 1 -2 2 H5 a2 2 0 0 1 -2 -2 v-12 a2 2 0 0 1 2 -2 z","M3 10.5 h18 M8 3.5 v4 M16 3.5 v4"],"w":1.7,"f":false},"Alarm":{"p":["M5 13 a7 7 0 1 0 14 0 a7 7 0 1 0 -14 0","M12 10 v3 l2 1.5 M5 4 L2.5 6.5 M19 4 l2.5 2.5"],"w":1.7,"f":false},"Message":{"p":["M21 12 a8 8 0 0 1 -11.6 7.1 L4 20 l1 -4.6 A8 8 0 1 1 21 12 z"],"w":1.7,"f":false},"Screens":{"p":["M3.5 5.5 h13 a1.5 1.5 0 0 1 1.5 1.5 v7 a1.5 1.5 0 0 1 -1.5 1.5 h-13 a1.5 1.5 0 0 1 -1.5 -1.5 v-7 a1.5 1.5 0 0 1 1.5 -1.5 z","M7.5 19 h9 M12 15.5 v3","M19.5 8.5 h1 a1.5 1.5 0 0 1 1.5 1.5 v7 a1.5 1.5 0 0 1 -1.5 1.5 h-1"],"w":1.7,"f":false},"ListChecks":{"p":["M3 17 l2 2 l4 -4","M3 7 l2 2 l4 -4","M13 6 h8 M13 12 h8 M13 18 h8"],"w":1.7,"f":false}};
+function ic(n, s = 22, extra = '') {
+  const d = ICONS[n]; if (!d) return '';
+  const f = d.f;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${f ? 'currentColor' : 'none'}" stroke="${f ? 'none' : 'currentColor'}" stroke-width="${d.w}" stroke-linecap="round" stroke-linejoin="round" ${extra}>${d.p.map(p => `<path d="${p}"/>`).join('')}</svg>`;
+}
+const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ---------- 对话片段 ---------- */
+const T = v => ({t:'time', v});
+const U = (v, o = {}) => ({t:'user', v, ...o});
+const R = (html, o = {}) => ({t:'reply', html, ...o});
+const C = (v, o = {}) => ({t:'call', v, ...o});
+
+const YESTERDAY = [
+  T('昨天 21:30'),
+  U('明早几点出门不堵车？'),
+  R(`<p>按最近两周的路况，<strong>7:20 之前出门</strong>最稳，走高架大约 35 分钟；7:40 以后会多出 15–20 分钟。</p>`, {fit:true}),
+];
+
+const POMODORO = R(`<p><strong>番茄工作法</strong>就是把工作切成一段段固定时长，中间强制休息，用“段”来计量专注，而不是用“小时”。</p>
+<h4>基本做法</h4>
+<ol><li>选一件事，定 <strong>25 分钟</strong>计时；</li><li>计时内只做这一件，有别的念头先写在纸上；</li><li>响铃后休息 <strong>5 分钟</strong>，走动、喝水，别刷手机；</li><li>每做满 4 段，休息 15–30 分钟。</li></ol>
+<h4>老被打断的人适不适合</h4>
+<p>适合，但要改一下：</p>
+<table><tr><th>情况</th><th>怎么改</th></tr>
+<tr><td>别人随时找你</td><td>段长缩到 <strong>15 分钟</strong>，被打断就作废重来，别硬撑</td></tr>
+<tr><td>消息一来就想回</td><td>每段结束统一回，计时内开勿扰</td></tr>
+<tr><td>任务太大开不了头</td><td>第一段只做“列出三步”，降低起步门槛</td></tr></table>
+<p>先试三天，记下每天完整做成几段；能稳定在 6 段以上，再把时长加回 25 分钟。</p>`);
+
+const ASK_WEATHER = [T('14:02'), U('看看明天上海会不会下雨')];
+const ACK_WEATHER = R(`<p>好，我去天气 App 看看明天上海的预报，看完告诉你。</p>`, {fit:true});
+const WEATHER_RESULT = R(`<p><strong>明天（周三）上海：多云转小雨</strong>，白天 18–23°C。</p>
+<ul><li>降雨概率 <strong>70%</strong>，雨大概从<strong>下午 3 点</strong>下到晚上 7 点，中到小雨；</li><li>早上 8 点前后 19°C，东北风 3 级，上午出门淋不到；</li><li>空气质量良（AQI 62）。</li></ul>
+<p>下午要出门记得带伞；晚上 7 点以后回家，雨应该已经停了。</p>`);
+const STORAGE_RESULT = R(`<p>存储空间：<strong>已用 86.2 GB，还剩 41.8 GB</strong>（共 128 GB）。</p>
+<ul><li>应用 38.5 GB，最大的是一个视频 App，占 9.6 GB（其中缓存 6.1 GB）；</li><li>照片和视频 31.2 GB；</li><li>系统 12.4 GB，其他 4.1 GB。</li></ul>
+<p>暂时够用。想腾地方的话，清掉那个视频 App 的缓存最省事，能空出 6 GB 左右。</p>`);
+
+const NEED_ASK = {t:'need', kind:'ask', task:'看明天上海的天气', q:'天气 App 里搜出两个“上海”，要看哪个？', opts:[['上海','市区'],['上海 · 崇明','崇明区']]};
+const NEED_TAKE = {t:'need', kind:'take', task:'看明天上海的天气', q:'天气 App 第一次打开，弹出了隐私条款，要你本人看过再点同意，我不替你点。'};
+
+/* ---------- 进度条里的事 ---------- */
+const TASK_W = {title:'看明天上海的天气', goal:'看明天上海会不会下雨，几点下', phase:'run', clock:'0:18', step:'往下翻到明天的预报',
+  steps:[['打开天气 App','0:03'],['切换到“上海”','0:09'],['往下翻到明天的预报','0:18','cur']]};
+const TASK_W_NEED = {...TASK_W, phase:'need', clock:'0:12', step:'要你选：哪个“上海”',
+  steps:[['打开天气 App','0:03'],['搜索“上海”','0:09'],['要你选：哪个“上海”','0:12','wait']]};
+const TASK_W_TAKE = {...TASK_W, phase:'need', clock:'0:06', step:'要你接管：隐私条款',
+  steps:[['打开天气 App','0:03'],['等你看完隐私条款','0:06','wait']]};
+const TASK_S = {title:'看看还剩多少存储空间', goal:'打开设置的“存储”，看已用和剩余', phase:'run', clock:'0:07', step:'打开“存储”',
+  steps:[['打开设置','0:02'],['打开“存储”','0:07','cur']]};
+const TASK_S_Q = {...TASK_S, phase:'q', clock:'', step:'等前一件办完', steps:[]};
+
+/* ---------- 场景 ---------- */
+const BASE = {feed:[], tray:null, pip:null, mode:'idle', text:'', hold:null, callBar:false, page:'chat', overlay:null, pend:false};
+const SC = [
+ {g:'对话', id:'empty', n:'新对话', d:'问候 + 推荐的事', s:{empty:true},
+  look:['空对话就是现在 app 的样子：大标题问候、一句能做什么、几张推荐卡；点卡把提示填进输入框。','右上角从“新建”铅笔换成 ⋯（里面有“新对话”）。'],
+  ask:['空对话右上角的 ⋯ 还要不要（这时“新对话”没意义，只剩“通话记录”“任务”）？']},
+ {g:'对话', id:'qa', n:'一问一答', d:'完整正文、标题、列表、表格', s:{feed:[...YESTERDAY, T('14:02'), U('帮我解释一下什么是番茄工作法，适合我这种老被打断的人吗？'), POMODORO]},
+  look:['回答是一整块浅灰底，左下角是小尖角，和原来的回答块一样；去掉了顶上的“Mika · 时长 · Token”和底下的朗读/复制/分享。','正文里的标题、编号、粗体、表格都照常渲染；两端对齐。','超过 5 分钟才插一行时间（“昨天 21:30”“14:02”）。'],
+  ask:['短回复（一两句）的灰块要不要收窄到文字宽度（现在短的收窄、长的占满）？']},
+ {g:'对话', id:'think', n:'在想', d:'发出去，还没开始写', s:{feed:[...YESTERDAY, T('14:02'), U('写个 adb 命令，看手机当前前台是哪个 App'), {t:'think'}], mode:'busy'},
+  look:['还没出字时是一个小灰块：三个点 + “在想”。','输入框右下角从发送变成停止（实心方块）。']},
+ {g:'对话', id:'stream', n:'正在写', d:'一边出字一边显示', s:{feed:[...YESTERDAY, T('14:02'), U('写个 adb 命令，看手机当前前台是哪个 App'),
+   {t:'stream', html:`<p>用这条就行：</p><pre><code>adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity"</code></pre><p>输出里 <code>u0</code> 后面那段就是前台 App 的包名和页面，比如 <code>com.example.app/.MainActivity</code>。如果手机是 Android 10 以下，把 <code>topResumedActivity</code></p>`}], mode:'busy'},
+  look:['字是一点点长出来的，末尾一个闪的光标；代码块白底、等宽、可以左右滑。']},
+ {g:'对话', id:'multi', n:'一句话，几条回复', d:'先答应、再交结果，同一种样子', s:{feed:[...YESTERDAY, T('14:02'), U('看看明天上海会不会下雨，再看看手机还剩多少存储空间'),
+   R(`<p>两件事我都去看：先看天气，存储空间接着看，看完一件告诉你一件。</p>`, {fit:true}), WEATHER_RESULT, STORAGE_RESULT]},
+  look:['三条回复一样的灰块，上下贴着（间距 8），不分“前台说的”和“办事的结果”。','办完的结果是<strong>完整正文</strong>，不再是前台用一两句话转述。','没有任务卡片夹在对话里；在办的时候看下面的进度条（见“办事”那组）。'],
+  ask:['几条回复之间要不要再拉开一点，或者加一行很淡的“看完了：看明天上海的天气”当分隔？']},
+ {g:'对话', id:'attach', n:'发图片', d:'图片在气泡上方，待发的在输入框上方', s:{feed:[...YESTERDAY, T('14:02'), U('这是什么植物，好养吗？', {img:'plant'}),
+   R(`<p>看叶子上的裂口和孔洞，这是<strong>龟背竹</strong>，挺好养的。</p><ul><li><strong>光</strong>：放在明亮但晒不到直射太阳的地方，北窗、东窗都行；</li><li><strong>水</strong>：表层 2–3 厘米土干了再浇透，冬天半个月一次就够；</li><li><strong>温度</strong>：别低于 10°C，冬天离开暖气出风口；</li><li><strong>叶子发黄</strong>多半是浇多了，先停水、看看盆底有没有积水。</li></ul><p>长得快的话一两年换一次大一号的盆。</p>`)],
+   pend:true, text:'这张截图里的报错是什么意思'},
+  look:['你发的图片在你的气泡上方，圆角缩略图。','还没发出去的图片排在输入框上方，可以点 × 去掉；有字有图时发送键变成实心。']},
+
+ {g:'办事', id:'run', n:'在办 · 进度条收起', d:'输入框上方一行 + 虚拟屏小窗', s:{feed:[...YESTERDAY, ...ASK_WEATHER, ACK_WEATHER], tray:[TASK_W], pip:'run', mode:'busy'},
+  look:['进度条是输入框上方一条玻璃条：蓝点在闪、事情名字、此刻这一步、已用时间；点它展开看全程。','虚拟屏小窗照原来：右下角、输入框上方、绿边表示在办；点它放大。','对话里只有前台那一句“好，我去看看”，没有任务卡片。','输入框提示变成“打字插话，或按住说话”，右下角是停止。']},
+ {g:'办事', id:'runOpen', n:'在办 · 进度条展开', d:'看全程：每一步和用时', s:{feed:[...YESTERDAY, ...ASK_WEATHER, ACK_WEATHER], tray:[TASK_W], trayOpen:true, pip:'run', mode:'busy'},
+  look:['展开后是这件事的全程：目标一行，下面每一步一个点，走过的灰点、正在做的蓝点，右边是用时。','底下两个按钮：停止、查看详细过程（进这件事的运行页，有截图和每一步的细节）。','展开时小窗让到进度条上方。'],
+  ask:['展开的高度：现在最多 330，步骤多了在里面滑；要不要直接到半屏？']},
+ {g:'办事', id:'pipBig', n:'虚拟屏放大', d:'点小窗变大，再点变回', s:{feed:[...YESTERDAY, ...ASK_WEATHER, ACK_WEATHER], tray:[TASK_W], pip:'run', pipBig:true, mode:'busy'},
+  look:['小窗放大到能看清内容；放大时上方出现关闭按钮（关掉只是这件事不再弹小窗，可从侧边栏“后台画面”再打开）。','画面上白圈是 Mika 正在点的地方。']},
+ {g:'办事', id:'ask', n:'要你选', d:'问题卡 + 橙色小窗', s:{feed:[...YESTERDAY, ...ASK_WEATHER, ACK_WEATHER, NEED_ASK], tray:[TASK_W_NEED], pip:'need', mode:'answer'},
+  ask:['小窗会挡住问题卡的右半边（原来的设计也一样）。要不要等你处理时小窗自动缩成右下角一个橙色小圆点，点了再展开？'],
+  look:['要你选的时候，对话里出现一张白卡：橙点 + “要你选”、问题、可点的选项；也可以直接打字回答。','进度条和小窗都变橙色，小窗慢慢呼吸、上面一个“等你处理”。','点一个选项试试：会回到“在办”。']},
+ {g:'办事', id:'take', n:'要你接管', d:'要你本人在手机上点', s:{feed:[...YESTERDAY, ...ASK_WEATHER, ACK_WEATHER, NEED_TAKE], tray:[TASK_W_TAKE], pip:'need', mode:'answer'},
+  look:['需要你本人做的（同意条款、输密码、付款前确认），卡片写清楚为什么要你来，按钮是“去处理”和“停止这件事”。','“去处理”打开虚拟屏大图，你在里面点完，Mika 接着办。']},
+ {g:'办事', id:'done', n:'办完了', d:'结果是完整正文', s:{feed:[...YESTERDAY, ...ASK_WEATHER, ACK_WEATHER, WEATHER_RESULT]},
+  look:['办完后进度条和小窗都收起，结果作为一条普通回复出现，写全。','以后想回看这件事怎么办的：⋯ → 任务，或者在侧边栏的运行记录里。'],
+  ask:['结果下面要不要留一个很淡的“查看过程 ›”（原来尾部那排按钮里唯一跟办事有关的）？现在按你说的全部去掉了。']},
+ {g:'办事', id:'fail', n:'没办成 / 停下了', d:'说明原因和下一步', s:{feed:[...YESTERDAY, ...ASK_WEATHER, ACK_WEATHER,
+   R(`<p><strong>这次没看成。</strong>天气 App 打开后一直转圈，等了三次（每次 20 秒）都没加载出来，像是网络不太好。</p><p>要不我换成上网查？或者你连上 Wi-Fi 后再叫我。</p>`),
+   T('14:10'), U('再看看后天的'), R(`<p>好，我去看后天的。</p>`, {fit:true}),
+   R(`<p>好，停下了。刚才走到“切换到上海”这一步，没有改动任何东西。</p>`, {fit:true})]},
+  look:['没办成也是一条普通回复：先一句结论，再说原因和你可以怎么做。','你按了停止，Mika 说一句停在哪一步、有没有动过东西。']},
+ {g:'办事', id:'two', n:'两件事一起', d:'进度条里两件', s:{feed:[...YESTERDAY, T('14:02'), U('看看明天上海会不会下雨，再看看手机还剩多少存储空间'),
+   R(`<p>两件事我都去看：先看天气，存储空间接着看，看完一件告诉你一件。</p>`, {fit:true})], tray:[TASK_W, TASK_S_Q], trayOpen:true, pip:'run', mode:'busy'},
+  look:['收起时只显示正在动的那件，右边“+1”表示还有一件；展开后两件都列出来，各自的状态和步骤。','排队的那件只有一行，轮到它才有步骤。'],
+  ask:['两件事真的同时在跑（两块虚拟屏）时，小窗显示哪一件？现在想法：显示最新动的那件，小窗左上角写是哪件。']},
+
+ {g:'语音', id:'hold', n:'按住说话', d:'输入框变蓝、上方实时出字', s:{feed:[...YESTERDAY, T('14:02'), U('帮我解释一下什么是番茄工作法，适合我这种老被打断的人吗？'), POMODORO], hold:'listen'},
+  look:['按住麦克风：整个输入框变成蓝色胶囊，里面声波 + “松开 填入”。','上方玻璃卡：录音点、“在听”、计时，下面是实时听到的字（还没定下来的字是灰的）。','再上面一个小胶囊提示“上滑 发送/取消”。','在手机里按住麦克风键试试，往上拖超过一点就变成取消。']},
+ {g:'语音', id:'holdX', n:'上滑取消', d:'松开就丢掉', s:{feed:[...YESTERDAY, T('14:02'), U('帮我解释一下什么是番茄工作法，适合我这种老被打断的人吗？'), POMODORO], hold:'cancel'},
+  look:['拖到取消区：胶囊和提示变红，“松开 取消”，听到的字划掉变淡。']},
+ {g:'语音', id:'holdTask', n:'办事时插话', d:'说的话补给在办的事', s:{feed:[...YESTERDAY, ...ASK_WEATHER, ACK_WEATHER], tray:[TASK_W], pip:'run', mode:'busy', hold:'listen', holdTo:'看明天上海的天气', heard:['顺便看看后天的', '，还有风大不大']},
+  look:['有事在办时按住说话，卡片标题变成“插话给『看明天上海的天气』”，说的话补给这件事。','进度条和小窗还在，让到语音卡上方。']},
+
+ {g:'通话', id:'inCall', n:'聊天页 · 通话中', d:'顶上绿条，说的话进对话', s:{feed:[...YESTERDAY, C('语音通话 · 14:20'), U('明天上海下雨吗'), R(`<p>明天下午三点到七点有小雨，上午没事，下午出门带把伞。</p>`, {fit:true}), U('那后天呢'), R(`<p>后天转晴，20 到 25 度，挺舒服的。</p>`, {fit:true})], callBar:true},
+  look:['通话没挂、你回到聊天页时，顶上一条绿色“通话中 · 回到通话”和计时，点它回通话页。','通话里你说的、Mika 说的，和打字一样进这个对话，样子完全一样；开头一行“语音通话 · 14:20”。']},
+ {g:'通话', id:'callPage', n:'通话页', d:'只有这一通，没有 ⋯', s:{page:'call'},
+  look:['通话页只放这一通：顶上“上次通话 ›”可以跳回聊天里看之前那段。','右上角不再有 ⋯（通话记录、通话设置挪到聊天页的 ⋯ 里）。','通话里派出去的事是一张卡片，在办时有“看画面”，点卡片进运行过程。','左上角 ⌄ 收起：通话不断，回到聊天页，顶上出现绿条。']},
+ {g:'通话', id:'afterCall', n:'通话结束后', d:'通话行 + 接着打字', s:{feed:[...YESTERDAY, C('语音通话 · 14:20'), U('明天上海下雨吗'), R(`<p>明天下午三点到七点有小雨，上午没事，下午出门带把伞。</p>`, {fit:true}), U('那后天呢'), R(`<p>后天转晴，20 到 25 度，挺舒服的。</p>`, {fit:true}), C('通话结束 · 3:12'),
+   T('14:30'), U('把刚才说的总结一下'), R(`<p>刚才通话里说了两件：</p><ol><li><strong>明天（周三）</strong>：下午 3 点到 7 点小雨，上午不下，下午出门带伞；</li><li><strong>后天（周四）</strong>：转晴，20–25°C。</li></ol><p>要的话我可以明早 7 点提醒你带伞。</p>`)]},
+  look:['挂断后一行“通话结束 · 3:12”，之后接着打字聊，上下文是连着的。']},
+
+ {g:'菜单', id:'menu', n:'⋯ 菜单', d:'聊天页右上角', s:{feed:[...YESTERDAY, ...ASK_WEATHER, ACK_WEATHER, WEATHER_RESULT], overlay:'menu'},
+  look:['聊天页右上角的 ⋯：新对话、通话记录、这个对话里的事；以后要加的（比如导出、清空）往下排。','通话设置也放这里（原来在通话页的 ⋯ 里）。'],
+  ask:['“通话设置”放这个菜单，还是只放在 设置 → 语音通话 里？']},
+ {g:'菜单', id:'records', n:'通话记录', d:'点一条跳到那一段', s:{feed:[...YESTERDAY, C('语音通话 · 14:20', {hl:true}), U('明天上海下雨吗'), R(`<p>明天下午三点到七点有小雨，上午没事，下午出门带把伞。</p>`, {fit:true}), C('通话结束 · 3:12')], overlay:'records'},
+  look:['底部面板列出这个对话打过的每一通：时间、时长、没说话的注明；正在通的写“通话中”。','点一条关掉面板，聊天滚到那一通开头，那行亮一下。']},
+ {g:'菜单', id:'tasks', n:'这个对话里的事', d:'在办的、办完的', s:{feed:[...YESTERDAY, ...ASK_WEATHER, ACK_WEATHER, WEATHER_RESULT], overlay:'tasks'},
+  look:['这个对话里派出去的每件事，在办的在上；点一件进它的运行过程（截图、每一步）。','这是“查看过程”的固定入口，回复下面不用再放按钮。']},
+];
+
+/* ---------- 状态 ---------- */
+let cur = 'run', st = {};
+function load(id) {
+  cur = id;
+  const sc = SC.find(x => x.id === id);
+  st = {...BASE, ...sc.s, trayOpen: !!sc.s.trayOpen, pipBig: !!sc.s.pipBig};
+  st.heard = sc.s.heard || ['明早七点提醒我带伞', '，放在门口那把'];
+  render(true);
+  try { history.replaceState(null, '', '#' + id); } catch (e) {}
+}
+
+/* ---------- 画 ---------- */
+const statusIcons = c => `<div class="si">
+ <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".8"/><rect x="4.5" y="5.5" width="3" height="6.5" rx=".8"/><rect x="9" y="3" width="3" height="9" rx=".8"/><rect x="13.5" y="0" width="3" height="12" rx=".8"/></svg>
+ <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 11.6 0.6 4.2a10.5 10.5 0 0 1 14.8 0z"/></svg>
+ <svg width="25" height="12" viewBox="0 0 25 12"><rect x=".5" y=".5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="currentColor"/><rect x="22.5" y="4" width="1.8" height="4" rx=".9" fill="currentColor" opacity=".5"/></svg></div>`;
+
+function feedItem(it) {
+  switch (it.t) {
+    case 'time': return `<div class="tm">${it.v}</div>`;
+    case 'user': return `<div class="urow">${it.img ? `<div class="uimg">${plantSvg()}</div>` : ''}<div class="ububble">${esc(it.v)}</div></div>`;
+    case 'reply': return `<div class="reply md${it.fit ? ' fit' : ''}">${it.html}</div>`;
+    case 'think': return `<div class="reply think"><span class="dots"><i></i><i></i><i></i></span>在想</div>`;
+    case 'stream': return `<div class="reply md">${it.html.replace(/<\/p>$/, '<span class="caret"></span></p>')}</div>`;
+    case 'call': return `<div class="cline${it.hl ? ' hl' : ''}">${ic('Handset', 13)}<span>${it.v}</span></div>`;
+    case 'need': return needCard(it);
+  }
+  return '';
+}
+function needCard(it) {
+  if (it.kind === 'ask') return `<div class="need"><div class="nh"><span class="dt"></span>要你选<span class="tt">· ${it.task}</span></div>
+    <div class="nq">${it.q}</div>
+    <div class="opts">${it.opts.map(o => `<button class="opt" data-act="pick"><span>${o[0]}</span><span class="sm">${o[1]}</span></button>`).join('')}</div>
+    <div class="nfoot">都不是？直接在下面打字或按住说。</div></div>`;
+  return `<div class="need"><div class="nh"><span class="dt"></span>要你接管<span class="tt">· ${it.task}</span></div>
+    <div class="nq">${it.q}</div>
+    <div class="nbtns"><button class="btn pri" data-act="takeover">${ic('Screens', 16)}去处理</button><button class="btn sec" data-act="stopTask">停止这件事</button></div>
+    <div class="nfoot">你在画面里点完，我接着往下办。</div></div>`;
+}
+function emptyState() {
+  const card = (icon, tint, t, s) => `<button class="rcard"><span class="ti" style="background:color-mix(in srgb, ${tint} 12%, transparent);color:${tint}">${ic(icon, 20)}</span><span class="tx"><b>${t}</b><span>${s}</span></span></button>`;
+  return `<div class="empty"><h2>下午好</h2><div class="lead">一句话，让我帮你操作 App、上网、把事办成</div>
+   <div class="rec">${card('Globe', '#0A7CFF', '查附近评分高的咖啡店', '上网搜一下离我一公里内、评分 4.5 以上的')}
+   ${card('Calendar', 'var(--accent)', '看看这周的日程', '打开日历，告诉我这周哪天最空')}
+   ${card('Message', '#8E5CD9', '总结群里没看的消息', '打开聊天 App，把未读的群消息总结成三条')}
+   ${card('Alarm', 'var(--ink)', '明早 7 点叫我', '定一个明早 7 点的闹钟')}</div></div>`;
+}
+
+function trayHtml() {
+  const ts = st.tray; if (!ts) return '';
+  const a = ts[0];
+  const need = a.phase === 'need';
+  const head = `<div class="trow" data-act="tray"><span class="sdot ${need ? 'wt' : 'run'}"></span>
+    <div class="tline"><b>${a.title}</b><span class="${need ? 'w' : ''}">${a.step}</span></div>
+    ${ts.length > 1 ? `<span class="plus">+${ts.length - 1}</span>` : ''}<span class="tmeta">${a.clock}</span>
+    <span class="chev" style="transform:rotate(${st.trayOpen ? 90 : -90}deg)">${ic('Chevron', 16)}</span></div>`;
+  if (!st.trayOpen) return `<div class="tray glass">${head}</div>`;
+  const phase = {run:['run','在办'], need:['wt','要你处理'], q:['q','排队中 · 第 2 个']};
+  const body = ts.map(t => `<div class="tk"><div class="tkh"><b>${t.title}</b><span class="ph ${phase[t.phase][0]}">${phase[t.phase][1]}</span></div>
+     <div class="goal">${t.goal}</div>
+     ${t.steps.length ? `<div class="steps">${t.steps.map(s => `<div class="st ${s[2] || ''}"><div class="rail"><i></i><u></u></div><div class="sx">${s[0]}</div><div class="stt">${s[1]}</div></div>`).join('')}</div>
+     <div class="tfoot"><button class="stop" data-act="stopTask">停止</button><button class="more">查看详细过程 ›</button></div>` : ''}</div>`).join('');
+  return `<div class="tray glass">${head}<div class="tbody">${body}</div></div>`;
+}
+
+function composerHtml() {
+  if (st.hold) {
+    const x = st.hold === 'cancel';
+    const bars = Array.from({length: 14}, (_, i) => `<i style="--h:${[10,16,22,14,24,18,26,20,24,15,22,12,18,9][i]}px;animation-delay:${(i * 0.07).toFixed(2)}s"></i>`).join('');
+    const title = st.holdTo ? `插话给『${st.holdTo}』` : '在听';
+    return `<div class="hint ${x ? 'bad' : 'glass'}">${x ? '松开 取消' : '上滑 发送/取消'}</div>
+      <div class="listen glass${x ? ' armb' : ''}"><div class="lh"><span class="rdot${x ? ' bad' : ''}"></span>${title}<span class="eng">本机识别</span><span class="lclock">0:04</span></div>
+      <div class="ltext${x ? ' x' : ''}">${st.heard[0]}<span class="tail">${st.heard[1]}</span></div>
+      <div class="lfoot">松开 · 字填进输入框，可以再改</div></div>
+      <div class="cover${x ? ' bad' : ''}"><div class="wave">${bars}</div>${x ? '松开 取消' : '松开 填入'}</div>`;
+  }
+  const ph = {idle:'打字，或按住说话', busy:'打字插话，或按住说话', answer:'打字回答，或按住说话'}[st.mode];
+  const has = !!st.text;
+  const right = has || st.pend
+    ? `<button class="send go">${ic('Up', 20)}</button>`
+    : st.mode === 'busy' ? `<button class="send go" title="停止">${ic('Stop', 20)}</button>`
+    : `<button class="send">${ic('Up', 20)}</button>`;
+  return `<div class="comp glass"><div class="cin${has ? ' has' : ''}">${has ? esc(st.text) : ph}</div>
+    <div class="crow"><button class="cb">${ic('Plus', 22)}</button><div class="sp"></div>
+    <button class="cb" data-act="call" title="语音通话">${ic('Handset', 22)}</button>
+    <button class="cb mic" data-act="mic" title="按住说话">${ic('Mic', 22)}</button>${right}</div></div>`;
+}
+
+function pendHtml() {
+  if (!st.pend) return '';
+  return `<div class="pend glass"><div class="pth">${shotSvg()}<span class="x">${ic('Close', 11)}</span></div></div>`;
+}
+
+function pipHtml(dockH) {
+  if (!st.pip) return '';
+  const big = st.pipBig;
+  const w = big ? 200 : 104, h = Math.round(w * 780 / 360);
+  const bottom = dockH + 10;
+  const scale = w / 360;
+  const screen = st.pip === 'need' ? (cur === 'take' ? vsDialog() : vsPick()) : vsWeather();
+  let extra = '';
+  if (st.pip === 'need') extra += `<div class="pipbadge" style="bottom:${bottom + h + 8}px">等你处理</div>`;
+  if (big) extra += `<div class="pipctl" style="bottom:${bottom + h - 40}px;right:18px"><button class="rb glass" title="静音">${ic('Sound', 16)}</button><button class="rb glass" data-act="pipClose" title="关掉小窗">${ic('Close', 15)}</button></div>`;
+  return `<div class="pip ${st.pip === 'need' ? 'wt' : st.pip}" data-act="pip" style="width:${w}px;height:${h}px;bottom:${bottom}px"><div class="vs" style="transform:scale(${scale})">${screen}</div></div>${extra}`;
+}
+
+/* 虚拟屏里画的是通用天气 App 和设置页 */
+function vsWeather() {
+  return `<div style="position:absolute;inset:0;background:linear-gradient(180deg,#4F7FC4,#8FB0DD 60%,#B9CDEA)">
+   <div class="vst"><span>14:02</span><span>▮▮▮ 86%</span></div>
+   <div style="padding:26px 26px 6px"><div style="font-size:22px;opacity:.9">上海</div><div style="font-size:88px;font-weight:200;line-height:1">21°</div><div style="font-size:18px;opacity:.9;margin-top:6px">多云 · 18° / 23°</div></div>
+   <div class="vcard"><div style="display:flex;justify-content:space-between;font-size:14px;text-align:center">${['现在','15时','16时','17时','18时'].map((t, i) => `<div>${t}<div style="font-size:22px;margin:8px 0">${i > 0 && i < 4 ? '☂' : '☁'}</div>${[21,20,19,19,18][i]}°</div>`).join('')}</div></div>
+   <div class="vcard" style="position:relative"><div class="vrow"><span>今天</span><span>☁ 18° / 23°</span></div><div class="vrow" style="background:rgba(255,255,255,.14);margin:0 -16px;padding:9px 16px"><span>明天 周三</span><span>☂ 18° / 23° · 70%</span></div><div class="vrow"><span>周四</span><span>☀ 20° / 25°</span></div><div class="vrow"><span>周五</span><span>⛅ 19° / 24°</span></div>
+   <span class="tap" style="left:120px;top:44px"></span></div></div>`;
+}
+function vsPick() {
+  return `<div class="vsl" style="position:absolute;inset:0"><div class="vst"><span>14:02</span><span>▮▮▮ 86%</span></div>
+   <div style="margin:14px;background:#fff;border-radius:28px;padding:14px 18px;font-size:17px;color:#1b1b1f">🔍 上海</div>
+   <div class="vlist"><div class="vli"><i style="background:#DCE7FA"></i><div>上海<div style="font-size:13px;color:#777">中国 · 上海市</div></div></div><div class="vli"><i style="background:#DCE7FA"></i><div>崇明<div style="font-size:13px;color:#777">中国 · 上海市</div></div></div></div></div>`;
+}
+function vsDialog() {
+  return `<div style="position:absolute;inset:0;background:linear-gradient(180deg,#4F7FC4,#8FB0DD)"><div class="vst"><span>14:02</span><span>▮▮▮ 86%</span></div>
+   <div class="vdlg"><div><div style="font-size:21px;font-weight:500;margin-bottom:12px">隐私条款</div><div style="font-size:15px;line-height:1.5;color:#444">使用天气服务前，请阅读并同意《用户协议》和《隐私政策》。我们会获取你的位置以提供本地天气……</div>
+   <div style="display:flex;justify-content:flex-end;gap:22px;margin-top:20px;font-size:15px;color:#2f62c9;font-weight:500"><span>不同意</span><span>同意</span></div></div></div></div>`;
+}
+function plantSvg() {
+  return `<svg viewBox="0 0 132 132" width="132" height="132"><rect width="132" height="132" fill="#E9E4DA"/><rect x="0" y="96" width="132" height="36" fill="#D8CFC0"/>
+   <path d="M50 132 L56 104 L76 104 L82 132Z" fill="#B66A45"/>
+   <g fill="#2F7A43"><path d="M66 104 C30 96 18 60 40 40 C58 52 66 78 66 104Z"/><path d="M66 104 C100 98 114 66 96 42 C78 54 68 80 66 104Z"/><path d="M66 104 C56 70 62 36 78 20 C90 42 82 78 66 104Z"/></g>
+   <g fill="#E9E4DA"><ellipse cx="40" cy="62" rx="4" ry="7" transform="rotate(30 40 62)"/><ellipse cx="96" cy="64" rx="4" ry="7" transform="rotate(-30 96 64)"/><ellipse cx="74" cy="46" rx="3" ry="6"/></g></svg>`;
+}
+function shotSvg() {
+  return `<svg viewBox="0 0 58 58" width="58" height="58"><rect width="58" height="58" fill="#1E1E22"/><rect x="6" y="8" width="30" height="4" rx="2" fill="#E5483D"/><rect x="6" y="17" width="44" height="3" rx="1.5" fill="#888"/><rect x="6" y="24" width="38" height="3" rx="1.5" fill="#888"/><rect x="6" y="31" width="42" height="3" rx="1.5" fill="#666"/><rect x="6" y="38" width="26" height="3" rx="1.5" fill="#666"/></svg>`;
+}
+
+function overlayHtml(topY) {
+  if (st.overlay === 'menu') return `<div class="scrim" data-act="close"></div><div class="menu" style="top:${topY + 50}px">
+    <button class="mi" data-act="goEmpty">${ic('New', 18)}新对话</button>
+    <button class="mi" data-act="records">${ic('Clock', 18)}通话记录</button>
+    <button class="mi" data-act="tasks">${ic('ListChecks', 18)}这个对话里的事</button>
+    <div class="mdiv"></div>
+    <button class="mi">${ic('Handset', 18)}通话设置</button></div>`;
+  if (st.overlay === 'records') {
+    const row = (t, s, live) => `<button class="lr" data-act="close"><span class="tile">${ic('Handset', 16)}</span><span class="tx"><b>${t}</b><span class="${live ? 'live' : ''}">${s}</span></span>${ic('Chevron', 14, 'style="color:var(--ink3)"')}</button>`;
+    return `<div class="scrim dim" data-act="close"></div><div class="sheet"><div class="handle"></div><div class="sht">通话记录</div><div class="shh">点一条，到聊天里看那段</div>
+     ${row('今天 14:20', '3:12')}${row('今天 09:20', '0:05 · 没有说话')}${row('昨天 21:40', '6:48')}</div>`;
+  }
+  if (st.overlay === 'tasks') {
+    const row = (t, ph, cls, s) => `<button class="lr" data-act="close"><span class="tile">${ic('ListChecks', 16)}</span><span class="tx"><b>${t}</b><span>${s}</span></span><span class="ph ${cls}">${ph}</span>${ic('Chevron', 14, 'style="color:var(--ink3)"')}</button>`;
+    return `<div class="scrim dim" data-act="close"></div><div class="sheet"><div class="handle"></div><div class="sht">这个对话里的事</div><div class="shh">点一件看详细进展和每一步</div>
+     ${row('看明天上海的天气', '办好了', 'ok', '今天 14:02 · 用时 0:41 · 6 步')}${row('看看还剩多少存储空间', '办好了', 'ok', '今天 14:03 · 用时 0:22 · 4 步')}${row('看后天上海的天气', '已取消', 'q', '今天 14:10 · 停在第 2 步')}${row('查明早路况', '办好了', 'ok', '昨天 21:30 · 用时 1:05')}</div>`;
+  }
+  return '';
+}
+
+function callPage() {
+  const bars = Array.from({length: 28}, (_, i) => { const c = 1 - Math.abs(i - 13.5) / 17.5; return `<i style="--h:${Math.round(6 + 22 * c)}px;animation-delay:${(i * 0.05).toFixed(2)}s"></i>`; }).join('');
+  return `<div class="call"><div class="chdr"><button class="rb" data-act="collapse" title="收起">${ic('Chevron', 22, 'style="transform:rotate(90deg);color:var(--ink2)"')}</button>
+    <div class="cav">${ic('Spark', 22)}</div><div class="ctt"><b>和 Mika 通话中</b><div class="cst"><i></i>正在办事 · 可以接着聊</div></div></div>
+    <div class="chair"></div>
+    <div class="cfeed">
+      <div class="lcl">上次通话 · 昨天 21:40 ›</div>
+      <div class="spill">已接通 · 14:20</div>
+      <div class="said">明天上海下雨吗</div>
+      <div class="said m">明天下午三点到七点有小雨，上午没事，下午出门带把伞。</div>
+      <div class="said">那后天呢，帮我去天气 App 里确认一下</div>
+      <div class="said m">好，我去天气 App 看一眼后天的，你可以接着说。</div>
+      <div class="ctask"><div class="cth"><span style="flex:1">看后天上海的天气</span><span class="ph2">在办</span><span class="watch">${ic('Screens', 13)}看画面</span>${ic('Chevron', 14, 'style="color:var(--ink3)"')}</div>
+        <div class="cstep"><span class="ok16">${ic('Check', 11)}</span>打开天气 App</div>
+        <div class="cstep r"><span class="spin"></span>往后翻到周四的预报</div></div>
+      <div class="said part">顺便看看风大不大…</div>
+    </div>
+    <div class="cdock"><div class="lvl">${bars}</div>
+      <div class="crow2"><button class="tog">${ic('Mic', 22)}</button><span style="width:8px"></span><button class="tog">${ic('Keyboard', 22)}</button>
+      <div class="sp"></div><button class="hang">${ic('HangUp', 22)}3:12</button><div class="sp"></div><span style="width:56px"></span><button class="tog on">${ic('Sound', 22)}</button></div></div></div>`;
+}
+
+function render(scrollEnd) {
+  const ph = document.getElementById('ph');
+  const prevScroll = ph.querySelector('.feed')?.scrollTop;
+  let h = '';
+  if (st.page === 'call') {
+    h = `<div class="status">${'<span>14:23</span>'}${statusIcons()}</div>${callPage()}<div class="navh"></div>`;
+    ph.innerHTML = h;
+  } else {
+    const topY = 40 + (st.callBar ? 36 : 0);
+    const feed = st.empty ? emptyState() : st.feed.map(feedItem).join('');
+    h = `<div class="feed" style="padding-top:${topY + 64}px${st.empty ? ";display:flex;flex-direction:column" : ""}">${feed}</div>
+      <div class="topfade" style="top:${st.callBar ? 36 : 0}px"></div>
+      <div class="status${st.callBar ? ' green' : ''}"><span>14:23</span>${statusIcons()}</div>
+      ${st.callBar ? `<div class="callbar" data-act="toCall">${ic('Handset', 15)}<span>通话中 · 回到通话</span><span class="ck">3:12</span></div>` : ''}
+      <div class="top" style="top:${topY}px"><button class="rb glass" title="菜单">${ic('Menu', 22)}</button><div class="tpill glass">Mika</div><button class="rb glass" data-act="menu" title="更多">${ic('More', 22)}</button></div>
+      <div class="dock" id="dock">${trayHtml()}${pendHtml()}${composerHtml()}</div>
+      <div id="pipslot"></div>${overlayHtml(topY)}<div class="navh"></div>`;
+    ph.innerHTML = h;
+    const dockH = document.getElementById('dock').offsetHeight;
+    const f = ph.querySelector('.feed');
+    f.style.paddingBottom = (dockH + (st.pip ? 24 : 16)) + 'px';
+    document.getElementById('pipslot').outerHTML = pipHtml(dockH);
+    if (scrollEnd && !st.empty) f.scrollTop = f.scrollHeight; else if (prevScroll != null) f.scrollTop = prevScroll;
+    if (st.overlay === 'records') { const hl = f.querySelector('.cline.hl'); if (hl) f.scrollTop = hl.offsetTop - topY - 80; }
+  }
+  drawList(); drawNotes();
+}
+
+function drawList() {
+  let html = '', g = '';
+  SC.forEach(s => { if (s.g !== g) { g = s.g; html += `<div class="grp">${g}</div>`; } html += `<button class="sc${s.id === cur ? ' on' : ''}" data-sc="${s.id}"><b>${s.n}</b><span>${s.d}</span></button>`; });
+  const l = document.getElementById('list');
+  if (l.dataset.cur !== cur) { l.innerHTML = html; l.dataset.cur = cur; l.querySelector('.on')?.scrollIntoView({block:'nearest', inline:'nearest'}); }
+}
+function drawNotes() {
+  const s = SC.find(x => x.id === cur);
+  document.getElementById('notes').innerHTML = `<h2>${s.n}</h2><div class="d">${s.g} · ${s.d}</div>
+    <h3>这一屏看什么</h3><ul>${s.look.map(x => `<li>${x}</li>`).join('')}</ul>
+    ${s.ask ? `<h3>想听你的意见</h3><ul class="ask">${s.ask.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}
+    <div class="try">样子照 app 现在的主题画；手机里能点的：进度条、小窗、⋯、绿条、按住麦克风。</div>`;
+}
+
+/* ---------- 交互 ---------- */
+document.getElementById('list').addEventListener('click', e => { const b = e.target.closest('[data-sc]'); if (b) load(b.dataset.sc); });
+document.getElementById('ph').addEventListener('click', e => {
+  const a = e.target.closest('[data-act]')?.dataset.act; if (!a) return;
+  if (a === 'tray') { st.trayOpen = !st.trayOpen; render(); }
+  else if (a === 'pip') { st.pipBig = !st.pipBig; render(); }
+  else if (a === 'pipClose') { st.pip = null; render(); }
+  else if (a === 'menu') { st.overlay = 'menu'; render(); }
+  else if (a === 'close') { st.overlay = null; render(); }
+  else if (a === 'records') { st.overlay = 'records'; render(); }
+  else if (a === 'tasks') { st.overlay = 'tasks'; render(); }
+  else if (a === 'goEmpty') load('empty');
+  else if (a === 'toCall' || a === 'call') load('callPage');
+  else if (a === 'collapse') load('inCall');
+  else if (a === 'pick') load('run');
+  else if (a === 'takeover') { st.pipBig = true; render(); }
+  else if (a === 'stopTask') load('fail');
+});
+let holdY = null, holdPrev = null;
+document.getElementById('ph').addEventListener('pointerdown', e => {
+  if (!e.target.closest('[data-act="mic"]')) return;
+  e.preventDefault(); holdY = e.clientY; holdPrev = st.hold; st.hold = 'listen'; render();
+});
+window.addEventListener('pointermove', e => {
+  if (holdY == null) return;
+  const next = holdY - e.clientY > 70 ? 'cancel' : 'listen';
+  if (next !== st.hold) { st.hold = next; render(); }
+});
+window.addEventListener('pointerup', () => { if (holdY == null) return; holdY = null; st.hold = holdPrev; render(); });
+
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  document.getElementById('tl').classList.toggle('on', t === 'light');
+  document.getElementById('td').classList.toggle('on', t === 'dark');
+  try { localStorage.setItem('mika-proto-theme', t); } catch (e) {}
+}
+document.getElementById('tl').onclick = () => setTheme('light');
+document.getElementById('td').onclick = () => setTheme('dark');
+let saved = null; try { saved = localStorage.getItem('mika-proto-theme'); } catch (e) {}
+setTheme(saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+const start = location.hash.slice(1);
+load(SC.some(s => s.id === start) ? start : 'run');
+</script>
+</body>
+</html>

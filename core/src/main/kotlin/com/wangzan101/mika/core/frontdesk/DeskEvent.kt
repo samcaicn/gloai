@@ -16,7 +16,7 @@ sealed interface DeskEvent {
     data class NeedsAnswer(override val taskId: String, val prompt: String, val options: List<String>?) : DeskEvent
     /** 要用户在手机上动手(确认、接管、满足前置条件)。 */
     data class NeedsAction(override val taskId: String, val kind: ActionKind) : DeskEvent
-    /** 后台已经收尾并给出回答,[answer] 已截到 [DESK_RESULT_MAX_CHARS] 字内。 */
+    /** 后台已经收尾并给出回答,[answer] 是完整原文(交给模型、读出来时各自再截到 [DESK_RESULT_MAX_CHARS] 字内)。 */
     data class Succeeded(override val taskId: String, val answer: String) : DeskEvent
     data class Failed(override val taskId: String, val reason: String) : DeskEvent
     data class Cancelled(override val taskId: String) : DeskEvent
@@ -44,7 +44,7 @@ object DeskEvents {
             is TaskState.WaitingConfirmation -> DeskEvent.NeedsAction(taskId, ActionKind.Confirm)
             is TaskState.WaitingTakeover -> DeskEvent.NeedsAction(taskId, ActionKind.Takeover)
             is TaskState.Held -> if (next.reason.needsYou) DeskEvent.NeedsAction(taskId, ActionKind.Prerequisite) else null
-            is TaskState.Succeeded -> DeskEvent.Succeeded(taskId, next.answer.take(DESK_RESULT_MAX_CHARS))
+            is TaskState.Succeeded -> DeskEvent.Succeeded(taskId, next.answer)
             is TaskState.Failed -> DeskEvent.Failed(taskId, next.reason)
             TaskState.Cancelled -> DeskEvent.Cancelled(taskId)
         }

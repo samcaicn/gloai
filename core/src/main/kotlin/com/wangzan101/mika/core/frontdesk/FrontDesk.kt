@@ -19,9 +19,23 @@ enum class DeskTaskPhase { Running, Queued, NeedsYou, Done, Failed, Cancelled }
 /** 在做、要你处理的任务最多记这么多条最近进展。 */
 const val DESK_RECENT_LINES = 3
 
+/** 一件任务的全程最多记这么多步(进度条展开时看的),更早的丢掉。 */
+const val DESK_STEPS_MAX = 60
+
+/** 一件任务走过的一步:[text] 已剥细节、截短,[atMs] 是第一次看到这一步的时刻。 */
+data class DeskStep(val text: String, val atMs: Long)
+
+/**
+ * 一件任务此刻在等用户做的事:[action] 为 null 时是在问一个问题([prompt],[options] 非空时是可选的几项);
+ * 否则是要用户动手(确认、接管、让前置条件满足),[prompt] 是任务给的说明(可能没有)。[prompt] 是原文,不剥不截。
+ */
+data class DeskNeed(val prompt: String?, val options: List<String>? = null, val action: ActionKind? = null)
+
 /**
  * 前台列出的一件任务:[line] 是当前一句话(已剥细节),[position] 是排队时排第几(从 1 起);
  * [recent] 是在做、要你处理时最近几条不同的进展(已剥细节,最新的在最后,最多 [DESK_RECENT_LINES] 条)。
+ * [goal] 是交给后台的原话;[startedAt] 是开始做的时刻(排队时为 null);[steps] 是到此刻走过的每一步
+ * (最多 [DESK_STEPS_MAX] 步,最新的在最后);[need] 是要你处理时在等你做的事;[updatedAt] 是最近一次有变化的时刻。
  */
 data class DeskTaskView(
     val taskId: String,
@@ -30,6 +44,11 @@ data class DeskTaskView(
     val line: String?,
     val position: Int?,
     val recent: List<String> = emptyList(),
+    val goal: String? = null,
+    val startedAt: Long? = null,
+    val steps: List<DeskStep> = emptyList(),
+    val need: DeskNeed? = null,
+    val updatedAt: Long = 0L,
 )
 
 /**
@@ -47,6 +66,8 @@ class FrontDesk(
     private val ledger: DeskLedger,
     private val policy: ReportPolicy,
     private val sink: DeskSink,
+    /** 记每一步时刻用的钟;测试换成假的。 */
+    private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val reports = Channel<DeskReport>(Channel.UNLIMITED)
     private val tracked = HashSet<String>()
@@ -80,6 +101,15 @@ class FrontDesk(
     fun tracks(taskId: String): Boolean = synchronized(tracked) { taskId in tracked }
 
     /**
+     * 用户在界面上直接回答这件任务在问的问题(点了问题卡上的一个选项);不归这个前台跟的任务不认。
+     * 返回任务收下了没有。
+     */
+    fun answer(taskId: String, words: String): Boolean = tracks(taskId) && tasks.answer(taskId, words)
+
+    /** 用户在界面上点了停止这件任务;不归这个前台跟的任务不认。返回停下了没有。 */
+    fun cancel(taskId: String): Boolean = tracks(taskId) && tasks.cancel(taskId)
+
+    /**
      * 会话重新打开时接回之前派过的任务:补回账本,还在跑的重新订阅、只汇报之后的变化;
      * 已经收尾的只标出终态,不再汇报。
      */
@@ -111,22 +141,45 @@ class FrontDesk(
     }
 
     private fun updateView(taskId: String, title: String, state: TaskState) {
+        val now = clock()
         views.update { list ->
             // 刚派出、任务服务还没接手的(Idle):不在开始队列里就是正在开始,不当成排队(否则卡片先闪「排队中」,前台也照着说还在排队)
             val phase = if (state == TaskState.Idle && tasks.queuePosition(taskId) == null) DeskTaskPhase.Running else deskPhaseOf(state)
             val line = lineOf(state)
-            val before = list.firstOrNull { it.taskId == taskId }?.recent.orEmpty()
-            val recent = if (line != null && (phase == DeskTaskPhase.Running || phase == DeskTaskPhase.NeedsYou)) {
+            val old = list.firstOrNull { it.taskId == taskId }
+            val before = old?.recent.orEmpty()
+            val moving = phase == DeskTaskPhase.Running || phase == DeskTaskPhase.NeedsYou
+            val recent = if (line != null && moving) {
                 // 重复出现的一句挪到最后,不重复记。
                 (before - line + line).takeLast(DESK_RECENT_LINES)
             } else {
                 before
             }
-            val view = DeskTaskView(taskId, title, phase, line, null, recent)
-            val replaced = if (list.any { it.taskId == taskId }) list.map { if (it.taskId == taskId) view else it } else list + view
+            // 全程:和上一步说的不一样才算新的一步
+            val steps = old?.steps.orEmpty().let { s ->
+                if (line != null && moving && s.lastOrNull()?.text != line) (s + DeskStep(line, now)).takeLast(DESK_STEPS_MAX) else s
+            }
+            val startedAt = old?.startedAt ?: now.takeIf { phase != DeskTaskPhase.Queued }
+            val changed = old == null || old.state != phase || old.line != line
+            val view = DeskTaskView(
+                taskId, title, phase, line, null, recent,
+                goal = old?.goal ?: ledger.get(taskId)?.words?.ifBlank { null },
+                startedAt = startedAt, steps = steps, need = needOf(state),
+                updatedAt = if (changed) now else old!!.updatedAt,
+            )
+            val replaced = if (old != null) list.map { if (it.taskId == taskId) view else it } else list + view
             // 一件任务开始会让后面排队的往前挪,排队位置每次都整体重取。
             replaced.map { it.copy(position = if (it.state == DeskTaskPhase.Queued) tasks.queuePosition(it.taskId) else null) }
         }
+    }
+
+    /** 要你处理时在等你做的事;不在等你时为 null。说明是原文(问题卡上要看全,引号里的选项、名字都留着)。 */
+    private fun needOf(state: TaskState): DeskNeed? = when (state) {
+        is TaskState.WaitingInput -> DeskNeed(state.prompt.trim().ifBlank { null }, state.options?.takeIf { it.isNotEmpty() })
+        is TaskState.WaitingConfirmation -> DeskNeed(null, action = ActionKind.Confirm)
+        is TaskState.WaitingTakeover -> DeskNeed(state.message.trim().ifBlank { null }, action = ActionKind.Takeover)
+        is TaskState.Held -> if (state.reason.needsYou) DeskNeed(state.reason.why.trim().ifBlank { null }, action = ActionKind.Prerequisite) else null
+        else -> null
     }
 
     private suspend fun deliver(report: DeskReport) {

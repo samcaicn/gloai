@@ -95,7 +95,8 @@ class LlmBrain(
             val seeded = mutableListOf<Message>()
             for (turn in prior) {
                 if (turn.userText.isNotBlank()) seeded.addText(Role.User, turn.userText, Author.User)
-                if (turn.outcome.isNotBlank() && seeded.isNotEmpty()) seeded.addText(Role.Assistant, turn.outcome, Author.Mika)
+                // 写回会话的结果是完整原文,垫给前台时截短:前台只要知道办成了什么,不必背全文
+                if (turn.outcome.isNotBlank() && seeded.isNotEmpty()) seeded.addText(Role.Assistant, turn.outcome.take(DESK_RESULT_MAX_CHARS), Author.Mika)
             }
             seeded.forEach(::add)
         }
@@ -234,7 +235,8 @@ class LlmBrain(
 
         /** How a spoken reply should read, prepended to every call's own instructions. */
         const val SPOKEN_STYLE = "You are talking by voice: every word you write is read aloud by speech synthesis. " +
-            "Reply in short, natural spoken sentences in the language the other person speaks. " +
+            "Reply in short, natural spoken sentences in the language the other person speaks, " +
+            "usually a sentence or two a turn; say more only when asked for detail. " +
             "No markdown, lists, emoji, links or code."
 
         fun toolSpec(tool: JsonObject): ToolSpec = ToolSpec(

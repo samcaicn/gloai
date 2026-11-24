@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,6 +70,7 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.chat.ui.PipPhysics.Corner
 import com.wangzan101.mika.cap.phone.display.PipInput
@@ -128,6 +130,8 @@ fun AgentPip(
     onClose: () -> Unit = {},
     onReopen: () -> Unit = {},
     onToggleSound: () -> Unit = {},
+    /** 画面左下角写的事情名字(前台同时办着几件时说明这是哪件);为 null 不写。 */
+    label: String? = null,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val fade = if (reduceMotion) tween<Float>(150) else tween(300)
@@ -149,6 +153,7 @@ fun AgentPip(
                 topInset = topInset, bottomInset = bottomInset, onExpand = onExpand, onCollapse = onCollapse, onAttention = onAttention,
                 onClose = onClose,
                 onToggleSound = onToggleSound,
+                label = label,
             )
         }
     }
@@ -202,6 +207,7 @@ private fun PipWindow(
     onAttention: () -> Unit,
     onClose: () -> Unit,
     onToggleSound: () -> Unit,
+    label: String?,
 ) {
     val density = LocalDensity.current
     var expandedScale by rememberSaveable { mutableStateOf(1f) }
@@ -396,6 +402,15 @@ private fun PipWindow(
                             contentScale = ContentScale.Fit)
                     }
                 }
+            }
+            if (label != null) {
+                Text(
+                    label,
+                    Modifier.align(Alignment.BottomStart).padding(6.dp).widthIn(max = if (pip.expanded) w * 0.5f else w - 12.dp)
+                        .background(MikaTheme.colors.glass, MikaShapes.Pill).padding(horizontal = 7.dp, vertical = 1.dp)
+                        .testTag("pip-label"),
+                    style = MikaType.Micro, color = MikaTheme.colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
             }
             if (pip.expanded) {
                 Row(Modifier.align(Alignment.BottomEnd).padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {

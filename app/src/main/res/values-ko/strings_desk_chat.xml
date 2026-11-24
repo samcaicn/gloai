@@ -12,13 +12,20 @@
     <string name="desk_phase_done">완료</string>
     <string name="desk_phase_failed">처리하지 못함</string>
     <string name="desk_phase_cancelled">취소됨</string>
-    <string name="desk_card_details">자세히 ›</string>
-    <string name="desk_card_open">이 작업 열기</string>
-    <string name="desk_tray_caption">이 대화의 작업 · 눌러서 진행 상황 보기</string>
-    <string name="desk_tray_progress">진행 상황 보기 ›</string>
     <string name="desk_tray_expand">작업 펼치기</string>
     <string name="desk_tray_collapse">작업 접기</string>
-    <plurals name="desk_tray_count">
-        <item quantity="other">작업 %1$d개 처리 중</item>
-    </plurals>
+    <string name="chat_time_yesterday">어제 %1$s</string>
+    <string name="desk_need_choose">골라 주세요 · %1$s</string>
+    <string name="desk_need_answer">답이 필요해요 · %1$s</string>
+    <string name="desk_need_takeover">직접 해 주세요 · %1$s</string>
+    <string name="desk_need_handle">확인이 필요해요 · %1$s</string>
+    <string name="desk_need_choose_foot">다 아니라면 아래에 입력하거나 길게 눌러 말해 주세요.</string>
+    <string name="desk_need_answer_foot">아래에 입력하거나 길게 눌러 말해 주세요.</string>
+    <string name="desk_need_takeover_foot">화면에서 마치면 제가 이어서 할게요.</string>
+    <string name="desk_need_go">처리하기</string>
+    <string name="desk_need_stop">이 작업 멈추기</string>
+    <string name="desk_tray_stop">중지</string>
+    <string name="desk_tray_detail">자세한 과정 보기 ›</string>
+    <string name="chat_menu_tasks">이 채팅의 작업</string>
+    <string name="desk_tasks_empty">이 채팅에서 아직 맡긴 작업이 없어요.</string>
 </resources>

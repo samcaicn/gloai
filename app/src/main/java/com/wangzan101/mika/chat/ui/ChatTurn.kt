@@ -3,7 +3,6 @@ package com.wangzan101.mika.chat.ui
 import com.wangzan101.mika.core.agent.GoalChecklist
 import com.wangzan101.mika.core.agent.QuoteMessage
 import com.wangzan101.mika.core.agent.AttachedPage
-import com.wangzan101.mika.core.run.record.RunMetrics
 import com.wangzan101.mika.ui.components.DirectionalIcon
 import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -84,7 +83,6 @@ import com.wangzan101.mika.browser.ui.SentPage
 import com.wangzan101.mika.settings.ui.StatusCopy
 import com.wangzan101.mika.ui.MarkdownModel
 import com.wangzan101.mika.ui.MarkdownText
-import com.wangzan101.mika.core.frontdesk.DeskTaskView
 
 /** 跳转目标行的短暂高亮:一条全宽淡色底,约 1.8 秒后渐隐。 */
 @Composable
@@ -99,22 +97,16 @@ internal fun JumpHighlight(active: Boolean, reduceMotion: Boolean, content: @Com
 
 internal fun LazyListScope.exchange(
     index: Int, ex: Exchange, conversationId: String?, stage: Takeover.Stage, vm: ChatViewModel, reduceMotion: Boolean, backgroundNote: Boolean,
-    runMetrics: Map<String, RunMetrics>,
-    openRun: (String) -> Unit, loadSource: suspend (String) -> EvidenceSource?, openSource: (String?, String?) -> Unit,
+    openRun: (String) -> Unit,
     kept: KeptPage? = null,
     /** 从搜索或文件库跳过来时要高亮的行 key。 */
     highlightKey: String? = null,
     /** 终态后的两个新运行入口:true 从摘要断点继续,false 按原目标重新开始。 */
     recover: (Boolean) -> Unit = {},
-    openReport: (String) -> Unit = {}, openPlayback: (String) -> Unit = {},
-    /** 这条会话前台派过的任务(画卡片、汇报的小标签用)。 */
-    deskTasks: List<DeskTaskView> = emptyList(),
-    /** 滚到某件任务的卡片并短暂高亮。 */
-    jumpToCard: (String) -> Unit = {},
 ) {
-    // 前台的一轮:用户的话、前台回的话、这一轮派出的任务卡片;不走任务那套步骤和状态卡
+    // 前台的一轮:用户的话、前台回的话;不走任务那套步骤和状态卡
     if (ex.deskReply != null) {
-        deskExchange(index, ex, conversationId, deskTasks, reduceMotion, highlightKey, jumpToCard, vm::openConversation)
+        deskExchange(index, ex, conversationId, reduceMotion, highlightKey)
         return
     }
     if (ex.goal.isNotEmpty()) item("u$index") {
@@ -140,9 +132,7 @@ internal fun LazyListScope.exchange(
     ex.draft?.takeIf(String::isNotBlank)?.let { draft -> item("d$index") { DraftText(draft, ex.waitingForModel) } }
     item("r$index") {
         JumpHighlight(highlightKey == "r$index", reduceMotion) {
-            StatusCard(ex.status, stage, vm, ex.recordedRun, ex.elapsedMs, ex.recordedRun?.let { runMetrics[it]?.tokens }, loadSource, openSource, openRun, "r$index",
-                conversationId = conversationId,
-                recover = recover, goal = ex.goal, openReport = openReport, openPlayback = openPlayback)
+            StatusCard(ex.status, stage, vm, ex.recordedRun, "r$index", conversationId = conversationId, recover = recover)
         }
     }
     // 这一轮结束后留在后台运行的那一页:还开着是绿色一行(能关),关了是一句原因
@@ -243,7 +233,7 @@ private val ChatThumbWidth = 110.dp
 private fun DraftText(text: String, generating: Boolean) {
     MarkdownText(
         text, AnswerText.copy(color = MikaTheme.colors.ink),
-        Modifier.fillMaxWidth().padding(bottom = 12.dp).answerSurface(), streaming = generating,
+        Modifier.padding(bottom = ReplyGap).answerSurface(), streaming = generating,
     )
 }
 
@@ -288,7 +278,10 @@ internal fun AnswerArea(key: String, answer: String, modifier: Modifier, content
     ) { content() }
 }
 
-/** Mika 回答的底:很淡的灰,左下尾角。 */
+/** 同一句话下面几条回复之间的距离。 */
+internal val ReplyGap = 8.dp
+
+/** Mika 回答的底:很淡的灰,左下尾角。短的贴着字宽,长的铺满;前台回话、汇报、旧式回答都用这一种。 */
 @Composable
 internal fun Modifier.answerSurface(): Modifier =
     background(MikaTheme.colors.answer, MikaShapes.AnswerBubble).padding(horizontal = 14.dp, vertical = 12.dp)
@@ -305,7 +298,6 @@ internal fun WorkBlock(ex: Exchange, steers: List<String>, reduceMotion: Boolean
     val paused = ChatCopy.paused(ex.status)
     val elapsed = rememberElapsed(ex.startedAt)
     Column(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
-        TurnMeta(elapsed, tokens = null)
         Row(
             Modifier.fillMaxWidth().heightIn(min = 24.dp),
             verticalAlignment = Alignment.Top,
@@ -316,6 +308,7 @@ internal fun WorkBlock(ex: Exchange, steers: List<String>, reduceMotion: Boolean
                 ChatCopy.progressLine(ex), Modifier.weight(1f), style = NowText, color = c.ink,
                 maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
+            if (elapsed != null) Text(ChatCopy.clock(elapsed), style = ClockText, color = c.ink3)
         }
         ex.goals?.let { GoalChecklistRow(it, ex.runId) }
         if (ex.steps.isNotEmpty() || steers.isNotEmpty()) StepLine(ex.steps, ex.stepActions, steers, live = true, paused = paused)
@@ -338,28 +331,6 @@ internal fun WorkBlock(ex: Exchange, steers: List<String>, reduceMotion: Boolean
                 Icon(MikaIcons.Eye, null, Modifier.size(15.dp), tint = c.ink3)
                 Text(ChatCopy.BACKGROUND_NOTE, style = NoteText, color = c.ink3)
             }
-        }
-    }
-}
-
-/** 回答/干活头部那行:「Mika · 0:42 · 1.2 万 Token」;[elapsed]/[tokens] 为 null 时略去对应段。 */
-@Composable
-internal fun TurnMeta(elapsed: Long?, tokens: Long?) {
-    val c = MikaTheme.colors
-    // 和下面的正文/进展拉开距离:正文行高会把第一行顶到行框上沿,不留空就会贴住这一行
-    Row(
-        Modifier.padding(bottom = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-    ) {
-        Text(ChatCopy.APP_TITLE, style = TurnNameText, color = c.ink)
-        if (elapsed != null) {
-            Text("·", style = ClockText, color = c.ink3)
-            Text(ChatCopy.clock(elapsed), style = ClockText, color = c.ink3)
-        }
-        if (tokens != null && tokens > 0) {
-            Text("·", style = ClockText, color = c.ink3)
-            Text(ChatTokensCopy.amount(tokens), style = ClockText, color = c.ink3)
         }
     }
 }

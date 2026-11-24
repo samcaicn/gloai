@@ -112,7 +112,7 @@ import kotlin.math.sin
  * 顶栏:收起 ⌄ + 小点阵球(形态随状态)+「和 Mika 通话中」与一句状态(在听你说 / 在想 / Mika 在说 /
  * 正在办事 / 已静音;终态是结束或出错文案)。中间是对话流:你说的、Mika 说的实时成气泡(说到一半的半透明),
  * 办事是步骤卡,出错是带「重试」的卡,还没人开口时居中放一颗大球。底部控制台:声波条 + 静音 / 打字 /
- * 挂断(带计时)/ 免提;结束后控制台换成「回到聊天」。右上角 ⋯:这个对话的「通话记录」(点一条到聊天里那一段)和「通话设置」。
+ * 挂断(带计时)/ 免提;结束后控制台换成「回到聊天」。通话记录和通话设置从聊天页右上角的 ⋯ 进。
  *
  * 页面只认 [VoiceCallHolder] 里各路状态流,不依赖前台服务在位(见 [VoiceCallController])。
  */
@@ -125,9 +125,7 @@ fun VoiceCallPage(
     calls: List<ConversationCall> = emptyList(),
     /** 点了通话记录里的一条(或页顶「上次通话」):到聊天里那一通开头。 */
     onOpenRecord: (callId: String) -> Unit = {},
-    onOpenSettings: () -> Unit = {},
 ) {
-    var records by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val last = calls.lastOrNull { it.id != call.callId }
     Box(Modifier.fillMaxSize()) {
@@ -160,7 +158,6 @@ fun VoiceCallPage(
         val ballColors = ballColors(c, failed = state is VoiceCallState.Failed)
         CallPage(
             onCollapse = onCollapse,
-            menu = { CallMenu(onRecords = { records = true }, onSettings = onOpenSettings) },
             header = {
                 VoiceCallBall(shape, level, Modifier.size(34.dp), dotCount = 110, dotRadius = 0.055f, near = ballColors.first, far = ballColors.second)
             },
@@ -208,13 +205,6 @@ fun VoiceCallPage(
                     onHangup = session::hangup,
                 )
             }
-        }
-        if (records) {
-            CallRecordsSheet(
-                calls, current = call.callId,
-                onPick = { records = false; onOpenRecord(it) },
-                onDismiss = { records = false },
-            )
         }
     }
 }
@@ -309,7 +299,6 @@ private fun View.dialogWindow(): Window? {
 @Composable
 private fun CallPage(
     onCollapse: () -> Unit,
-    menu: @Composable () -> Unit = {},
     header: @Composable () -> Unit,
     status: String?,
     statusColor: Color,
@@ -343,7 +332,6 @@ private fun CallPage(
                     }
                 }
             }
-            menu()
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.hair))
         Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) { content() }

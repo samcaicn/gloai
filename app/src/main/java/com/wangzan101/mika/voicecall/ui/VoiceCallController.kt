@@ -443,8 +443,6 @@ class VoiceCallDeps(
     val calls: (String) -> kotlinx.coroutines.flow.Flow<List<com.wangzan101.mika.chat.ConversationCall>> = { kotlinx.coroutines.flow.flowOf(emptyList()) },
     /** 到聊天页里那条会话、那一通开头的地方(通话记录里点一条)。 */
     val openCallRecord: (conversationId: String, callId: String) -> Unit = { _, _ -> },
-    /** 打开「通话方式」(通话页右上角 ⋯ 里的通话设置)。 */
-    val openCallSettings: () -> Unit = {},
     /** 这件任务(会话编号)此刻在跑的那次运行;没在跑为 null。 */
     val liveRun: (String) -> String? = { null },
     /** 此刻有虚拟屏或网页的任务会话。 */
@@ -560,6 +558,5 @@ fun VoiceCallScreen(controller: VoiceCallController, onGone: () -> Unit) {
         onOpenTask = { controller.openTask(it.taskId, it.phase) },
         calls = calls,
         onOpenRecord = { deps.openCallRecord(call.conversationId, it) },
-        onOpenSettings = deps.openCallSettings,
     )
 }

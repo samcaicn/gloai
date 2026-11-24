@@ -134,17 +134,18 @@ class DeskResultNoticeTest {
         assertFalse(rig.registry.reportsEnding("k1", TaskState.Succeeded("晴")))
     }
 
-    // 前台跟着的那件停下来问用户、页面不在:只有任务自己那条带回复框的通知,前台的问话写进会话、不另发。
-    @Test fun aDeskFollowedQuestionWritesTheLineWithoutASecondNotification() = runBlocking {
+    // 前台跟着的那件停下来问用户、页面不在:只有任务自己那条带回复框的通知;前台不写行(聊天页有问题卡),也不另发。
+    @Test fun aDeskFollowedQuestionWritesNoLineAndNoSecondNotification() = runBlocking {
         val rig = Rig()
         val child = rig.dispatch("订票")
         val run = FakeRun(child, "k1", TaskState.Running(1, "打开购票"))
         rig.runs.value = listOf(run)
         eventually("port binds the run") { rig.port.followedTaskOf("k1") == child }
         run.flow.value = TaskState.WaitingInput("要几点的车?")
-        eventually("desk line in the conversation") {
-            rig.store.turns("p").any { it.status == DeskNotifier.STATUS && it.outcome.contains("要几点的车?") }
+        eventually("the desk sees the question") {
+            rig.registry.desk("p").active.value.any { it.taskId == child && it.need?.prompt == "要几点的车?" }
         }
+        assertTrue(rig.store.turns("p").none { it.status == DeskNotifier.STATUS })
         assertEquals(0, rig.deskNotices())
     }
 }

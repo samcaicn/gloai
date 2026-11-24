@@ -12,16 +12,20 @@
     <string name="desk_phase_done">Готово</string>
     <string name="desk_phase_failed">Не получилось</string>
     <string name="desk_phase_cancelled">Отменено</string>
-    <string name="desk_card_details">Подробнее ›</string>
-    <string name="desk_card_open">Открыть задачу</string>
-    <string name="desk_tray_caption">Задачи этого чата · нажмите, чтобы увидеть ход</string>
-    <string name="desk_tray_progress">Смотреть ход ›</string>
     <string name="desk_tray_expand">Показать задачи</string>
     <string name="desk_tray_collapse">Скрыть задачи</string>
-    <plurals name="desk_tray_count">
-        <item quantity="one">%1$d задача в работе</item>
-        <item quantity="few">%1$d задачи в работе</item>
-        <item quantity="many">%1$d задач в работе</item>
-        <item quantity="other">%1$d задачи в работе</item>
-    </plurals>
+    <string name="chat_time_yesterday">Вчера %1$s</string>
+    <string name="desk_need_choose">Выберите · %1$s</string>
+    <string name="desk_need_answer">Нужен ваш ответ · %1$s</string>
+    <string name="desk_need_takeover">Нужно ваше участие · %1$s</string>
+    <string name="desk_need_handle">Нужны вы · %1$s</string>
+    <string name="desk_need_choose_foot">Ничего не подходит? Напишите ниже или удерживайте, чтобы сказать.</string>
+    <string name="desk_need_answer_foot">Напишите ниже или удерживайте, чтобы сказать.</string>
+    <string name="desk_need_takeover_foot">Когда закончите на экране, я продолжу.</string>
+    <string name="desk_need_go">Перейти</string>
+    <string name="desk_need_stop">Остановить задачу</string>
+    <string name="desk_tray_stop">Остановить</string>
+    <string name="desk_tray_detail">Подробный ход ›</string>
+    <string name="chat_menu_tasks">Задачи этого чата</string>
+    <string name="desk_tasks_empty">В этом чате пока не было задач.</string>
 </resources>

@@ -227,13 +227,12 @@ class VoiceCallPageTest {
         onOpenTask: (String) -> Unit = {},
         calls: List<com.wangzan101.mika.chat.ConversationCall> = emptyList(),
         onOpenRecord: (String) -> Unit = {},
-        onOpenSettings: () -> Unit = {},
     ) {
         val audioRoute = VoiceCallAudioRoute(InstrumentationRegistry.getInstrumentation().targetContext)
         val holder = VoiceCallHolder(call.session, call.busy, audioRoute, call.transcript, call.feed, screens, frames)
         compose.setContent {
             StillTheme {
-                VoiceCallPage(holder, onCollapse, { onOpenTask(it.taskId) }, calls, onOpenRecord, onOpenSettings)
+                VoiceCallPage(holder, onCollapse, { onOpenTask(it.taskId) }, calls, onOpenRecord)
             }
         }
     }
@@ -438,23 +437,16 @@ class VoiceCallPageTest {
         call.session.end(EndReason.Hangup)
     }
 
-    @Test fun menuOpensCallRecordsAndSettingsAndTheLastCallLinkJumpsToIt() {
+    @Test fun theLastCallLinkJumpsToItAndThePageHasNoMenu() {
         val picked = mutableListOf<String>()
-        val settings = AtomicInteger(0)
         val earlier = com.wangzan101.mika.chat.ConversationCall("old", 1_000L, 61_000L, spoke = true)
         val call = Call(connect = { rt })
-        show(call, calls = listOf(earlier), onOpenRecord = { picked += it }, onOpenSettings = { settings.incrementAndGet() })
+        show(call, calls = listOf(earlier), onOpenRecord = { picked += it })
         reachActive(call)
         compose.onNodeWithTag("voicecall-last-call").performClick()
         assertEquals(listOf("old"), picked)
-        compose.onNodeWithTag("voicecall-more").performClick()
-        compose.onNodeWithTag("voicecall-records").performClick()
-        compose.onNodeWithTag("voicecall-records-sheet").assertExists()
-        compose.onNodeWithTag("voicecall-record").performClick()
-        assertEquals(listOf("old", "old"), picked)
-        compose.onNodeWithTag("voicecall-more").performClick()
-        compose.onNodeWithTag("voicecall-settings").performClick()
-        assertEquals(1, settings.get())
+        // 通话记录和通话设置从聊天页右上角的 ⋯ 进,通话页不再放 ⋯
+        compose.onNodeWithTag("voicecall-more").assertDoesNotExist()
         call.session.end(EndReason.Hangup)
     }
 

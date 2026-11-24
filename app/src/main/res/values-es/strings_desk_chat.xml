@@ -12,15 +12,20 @@
     <string name="desk_phase_done">Hecho</string>
     <string name="desk_phase_failed">No salió</string>
     <string name="desk_phase_cancelled">Cancelado</string>
-    <string name="desk_card_details">Detalles ›</string>
-    <string name="desk_card_open">Abrir esta tarea</string>
-    <string name="desk_tray_caption">Tareas de este chat · toca una para ver cómo va</string>
-    <string name="desk_tray_progress">Ver progreso ›</string>
     <string name="desk_tray_expand">Mostrar tareas</string>
     <string name="desk_tray_collapse">Ocultar tareas</string>
-    <plurals name="desk_tray_count">
-        <item quantity="one">%1$d tarea en marcha</item>
-        <item quantity="many">%1$d tareas en marcha</item>
-        <item quantity="other">%1$d tareas en marcha</item>
-    </plurals>
+    <string name="chat_time_yesterday">Ayer %1$s</string>
+    <string name="desk_need_choose">Elige una · %1$s</string>
+    <string name="desk_need_answer">Necesita tu respuesta · %1$s</string>
+    <string name="desk_need_takeover">Toma el control · %1$s</string>
+    <string name="desk_need_handle">Te necesita · %1$s</string>
+    <string name="desk_need_choose_foot">¿Ninguna? Escribe abajo o mantén pulsado para hablar.</string>
+    <string name="desk_need_answer_foot">Escribe abajo o mantén pulsado para hablar.</string>
+    <string name="desk_need_takeover_foot">Cuando termines en la pantalla, sigo yo.</string>
+    <string name="desk_need_go">Ir a resolverlo</string>
+    <string name="desk_need_stop">Detener esta tarea</string>
+    <string name="desk_tray_stop">Detener</string>
+    <string name="desk_tray_detail">Ver el proceso completo ›</string>
+    <string name="chat_menu_tasks">Tareas de este chat</string>
+    <string name="desk_tasks_empty">Aún no se ha encargado ninguna tarea en este chat.</string>
 </resources>
