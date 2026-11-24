@@ -92,6 +92,7 @@ class VoiceCallFeedTest {
                 Triple(Speaker.User, "帮我订日料", false), Triple(Speaker.Mika, "好，我让后面去订", false),
                 Triple(Speaker.Mika, "订好了，七点。", false), Triple(Speaker.User, "今天天气", false),
                 Triple(Speaker.Mika, "晴，25 度", false), Triple(Speaker.User, "打开相册", false),
+                Triple(Speaker.Mika, "没打开", false),
             ),
             feed.said(),
         )
@@ -116,14 +117,22 @@ class VoiceCallFeedTest {
         assertEquals(listOf("打开天气", "晴"), cards.single().steps)
     }
 
-    @Test fun `long earlier replies are cut and an empty conversation adds nothing`() {
-        val feed = VoiceCallFeed()
+    @Test fun `the whole conversation so far is shown as it was and an empty one adds nothing`() {
+        val feed = VoiceCallFeed(maxItems = 3)
         feed.seed(emptyList(), emptyList())
         assertTrue(feed.items.value.isEmpty())
-        feed.seed(listOf(ChatTurn("写首诗", "字".repeat(1_000), "succeeded")), emptyList())
-        val reply = feed.said().last().second
-        assertTrue(reply.length <= VoiceCallFeed.EARLIER_TEXT_CHARS + 1)
-        assertTrue(reply.endsWith("…"))
+        val long = "字".repeat(1_000)
+        feed.seed((1..30).map { ChatTurn("第$it 句", if (it == 30) long else "答$it", "desk") }, emptyList())
+        // 不截轮次、不截字:之前的对话完整摆上来
+        assertEquals(60, feed.said().size)
+        assertEquals("第1 句", feed.said().first().second)
+        assertEquals(long, feed.said().last().second)
+        // 这通电话里新说的才按上限滚掉,之前的对话一条不少
+        repeat(5) { feed.onUser("新$it", isFinal = true) }
+        val said = feed.said().map { it.second }
+        assertEquals(63, said.size)
+        assertEquals(listOf("新2", "新3", "新4"), said.takeLast(3))
+        assertTrue(feed.items.value[60] is Earlier)
     }
 
     @Test fun `the feed keeps only the latest items`() {

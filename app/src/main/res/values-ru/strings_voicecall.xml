@@ -4,9 +4,10 @@
     <string name="voicecall_task_paused">Задача на паузе</string>
     <string name="voicecall_task_running">Выполняется</string>
     <string name="voicecall_task_done">Готово</string>
-    <string name="voicecall_task_open">Открыть эту задачу</string>
+    <string name="voicecall_task_open">Посмотреть ход выполнения</string>
     <string name="voicecall_task_screen">Смотреть экран</string>
     <string name="voicecall_earlier">Ранее в этом разговоре</string>
+    <string name="voicecall_screen_close">Закрыть экран</string>
     <string name="voicecall_task_failed">Не удалось выполнить</string>
     <string name="voicecall_task_cancelled">Отменено</string>
     <string name="voicecall_notification_channel">Голосовой вызов</string>

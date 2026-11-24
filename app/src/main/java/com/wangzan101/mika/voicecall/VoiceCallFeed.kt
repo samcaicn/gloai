@@ -1,6 +1,5 @@
 package com.wangzan101.mika.voicecall
 
-import com.wangzan101.mika.core.agent.DeskTurn
 import com.wangzan101.mika.core.agent.Turn as ChatTurn
 import com.wangzan101.mika.core.frontdesk.DeskTaskPhase
 import com.wangzan101.mika.core.frontdesk.DeskTaskView
@@ -57,20 +56,23 @@ class VoiceCallFeed(private val maxItems: Int = MAX_ITEMS) {
     private var nextId = 0L
     /** 第一次收到任务板时已收尾的任务编号(之前派的,不上卡);还没收到过时为 null。 */
     private var ignored: Set<String>? = null
+    /** 对话流开头属于之前对话的条数(含分隔线);这些不按 [maxItems] 滚掉。 */
+    private var earlierCount = 0
 
     /**
-     * 打开通话时把这条会话已有的内容摆在上面(只在对话流还空着时):最近 [EARLIER_TURNS] 轮,
-     * 用户的话和回话各一条气泡(回话转成纯文字、太长截断;没办成的只留用户的话),那一轮派过的任务按 [tasks] 里的样子各一张卡,
-     * 最后一条分隔线。之后任务板再变,这些卡照样跟着变,不另开一张。
+     * 打开通话时把这条会话已有的内容完整摆在上面(只在对话流还空着时):每一轮,不论是通话里说的还是聊天页打的字,
+     * 用户的话和回话各一条气泡(回话转成纯文字,不截字),那一轮派过的任务按 [tasks] 里的样子各一张卡,
+     * 最后一条分隔线。之前的这些不受 [maxItems] 限制,只有这通电话里新说的才按上限滚掉。
+     * 之后任务板再变,这些卡照样跟着变,不另开一张。
      */
     fun seed(turns: List<ChatTurn>, tasks: List<DeskTaskView>, plain: (String) -> String = { it }) {
         synchronized(lock) {
             if (_items.value.isNotEmpty()) return
             val out = mutableListOf<VoiceCallFeedItem>()
-            for (turn in turns.takeLast(EARLIER_TURNS)) {
-                if (turn.userText.isNotBlank()) out += VoiceCallFeedItem.Said(nextId++, VoiceCallFeedItem.Speaker.User, cut(turn.userText), false, earlier = true)
-                val reply = turn.outcome.takeIf { DeskTurn.isDesk(turn) || turn.status in ANSWERED }?.let(plain)
-                if (!reply.isNullOrBlank()) out += VoiceCallFeedItem.Said(nextId++, VoiceCallFeedItem.Speaker.Mika, cut(reply), false, earlier = true)
+            for (turn in turns) {
+                if (turn.userText.isNotBlank()) out += VoiceCallFeedItem.Said(nextId++, VoiceCallFeedItem.Speaker.User, turn.userText.trim(), false, earlier = true)
+                val reply = plain(turn.outcome).trim()
+                if (reply.isNotEmpty()) out += VoiceCallFeedItem.Said(nextId++, VoiceCallFeedItem.Speaker.Mika, reply, false, earlier = true)
                 for (taskId in turn.deskTasks) {
                     val view = tasks.firstOrNull { it.taskId == taskId } ?: continue
                     if (out.none { it is VoiceCallFeedItem.Task && it.taskId == taskId }) {
@@ -79,13 +81,10 @@ class VoiceCallFeed(private val maxItems: Int = MAX_ITEMS) {
                 }
             }
             if (out.isEmpty()) return
-            publish(out + VoiceCallFeedItem.Earlier(nextId++))
+            out += VoiceCallFeedItem.Earlier(nextId++)
+            earlierCount = out.size
+            publish(out)
         }
-    }
-
-    private fun cut(text: String): String {
-        val clean = text.trim()
-        return if (clean.length <= EARLIER_TEXT_CHARS) clean else clean.take(EARLIER_TEXT_CHARS).trimEnd() + "…"
     }
 
     private fun steps(view: DeskTaskView) = (view.recent + listOfNotNull(view.line)).distinct()
@@ -142,21 +141,15 @@ class VoiceCallFeed(private val maxItems: Int = MAX_ITEMS) {
         }
     }
 
+    /** 之前的对话整段留着;这通电话里的超过 [maxItems] 条时只留最新的。 */
     private fun publish(items: List<VoiceCallFeedItem>) {
-        _items.value = if (items.size > maxItems) items.takeLast(maxItems) else items
+        val live = items.size - earlierCount
+        _items.value = if (live > maxItems) items.take(earlierCount) + items.takeLast(maxItems) else items
     }
 
     companion object {
         const val MAX_ITEMS = 80
 
-        /** 打开通话时摆上来的之前的对话最多这么多轮。 */
-        const val EARLIER_TURNS = 20
-
-        /** 之前的一句话在通话页上最多显示这么多字,多的截掉。 */
-        const val EARLIER_TEXT_CHARS = 200
-
-        /** 有回答可显示的非前台轮次。 */
-        private val ANSWERED = setOf("succeeded", "unverified")
         private val ENDED = setOf(DeskTaskPhase.Done, DeskTaskPhase.Failed, DeskTaskPhase.Cancelled)
     }
 }

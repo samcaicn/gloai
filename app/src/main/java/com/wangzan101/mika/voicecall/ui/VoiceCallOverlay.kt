@@ -7,6 +7,19 @@ import android.view.ViewParent
 import android.view.Window
 import android.view.WindowManager
 import androidx.compose.animation.animateContentSize
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.delay
+import com.wangzan101.mika.capsule.sameFrame
+import com.wangzan101.mika.capsule.previewFrames
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -102,7 +115,7 @@ import kotlin.math.sin
  * 页面只认 [VoiceCallHolder] 里各路状态流,不依赖前台服务在位(见 [VoiceCallController])。
  */
 @Composable
-fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit, onOpenTask: (String) -> Unit = {}) {
+fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit, onOpenTask: (VoiceCallFeedItem.Task) -> Unit = {}) {
     CallDialog {
         val session = call.session
         val state by session.state.collectAsState()
@@ -143,6 +156,7 @@ fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit, onOpenTask: 
                 else -> c.ink3
             },
         ) {
+            WatchedScreen(call, items, screens)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 CallFeed(
                     items = items,
@@ -152,6 +166,7 @@ fun VoiceCallOverlay(call: VoiceCallHolder, onCollapse: () -> Unit, onOpenTask: 
                     onRetry = session::retry,
                     screens = screens,
                     onOpenTask = onOpenTask,
+                    onWatch = { call.watching = it },
                 )
                 // 还没人开口:中间放一颗大球,别让页面空着
                 if (items.isEmpty() && state !is VoiceCallState.Failed && state !is VoiceCallState.Ended) {
@@ -319,7 +334,8 @@ private fun CallFeed(
     endedText: String?,
     onRetry: () -> Unit,
     screens: Set<String> = emptySet(),
-    onOpenTask: (String) -> Unit = {},
+    onOpenTask: (VoiceCallFeedItem.Task) -> Unit = {},
+    onWatch: (String) -> Unit = {},
 ) {
     val list = rememberLazyListState()
     val lastText = (items.lastOrNull() as? VoiceCallFeedItem.Said)?.text
@@ -342,7 +358,7 @@ private fun CallFeed(
             items(items, key = { it.id }) { item ->
                 when (item) {
                     is VoiceCallFeedItem.Said -> SaidBubble(item, bubbleMax)
-                    is VoiceCallFeedItem.Task -> TaskCard(item, hasScreen = item.running && item.taskId in screens) { onOpenTask(item.taskId) }
+                    is VoiceCallFeedItem.Task -> TaskCard(item, hasScreen = item.running && item.taskId in screens, onOpen = { onOpenTask(item) }, onWatch = { onWatch(item.taskId) })
                     is VoiceCallFeedItem.Earlier -> SystemPill(stringResource(R.string.voicecall_earlier))
                 }
             }
@@ -383,10 +399,11 @@ private fun SaidBubble(item: VoiceCallFeedItem.Said, max: androidx.compose.ui.un
 
 /**
  * 前台派出的一件任务:标题和此刻的阶段,前面的步骤都打勾,最后一步在办时转圈、办完时打勾。
- * 点一下进这件任务的会话(每一步和虚拟屏都在那里,通话收成小球接着通);在办而且有画面时多一个「看画面」。
+ * 步骤多了只露最新 [VISIBLE_STEPS] 条,更早的在卡片里往上滑看,有新进展自动滚回最底。
+ * 点一下进这件任务的「运行过程」(通话收成小球接着通);在办而且有画面时多一个「看画面」,点了画面出现在通话页上。
  */
 @Composable
-private fun TaskCard(item: VoiceCallFeedItem.Task, hasScreen: Boolean, onOpen: () -> Unit) {
+private fun TaskCard(item: VoiceCallFeedItem.Task, hasScreen: Boolean, onOpen: () -> Unit, onWatch: () -> Unit) {
     val c = MikaTheme.colors
     Column(
         Modifier.fillMaxWidth().alpha(if (item.earlier) EARLIER_ALPHA else 1f).clip(MikaShapes.Card)
@@ -407,7 +424,8 @@ private fun TaskCard(item: VoiceCallFeedItem.Task, hasScreen: Boolean, onOpen: (
             }
             if (hasScreen) {
                 Row(
-                    Modifier.padding(start = 8.dp).background(c.accent.copy(alpha = 0.12f), MikaShapes.Chip)
+                    Modifier.padding(start = 8.dp).clip(MikaShapes.Chip).background(c.accent.copy(alpha = 0.12f), MikaShapes.Chip)
+                        .clickable(role = Role.Button, onClick = onWatch)
                         .padding(horizontal = 8.dp, vertical = 3.dp).testTag("voicecall-task-screen"),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -417,9 +435,32 @@ private fun TaskCard(item: VoiceCallFeedItem.Task, hasScreen: Boolean, onOpen: (
             }
             Icon(MikaIcons.Chevron, null, Modifier.padding(start = 6.dp).size(14.dp), tint = c.ink3)
         }
-        item.steps.forEachIndexed { index, step ->
-            val running = item.running && index == item.steps.lastIndex
-            Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        TaskSteps(item)
+    }
+}
+
+/** 卡片里的步骤:超过 [VISIBLE_STEPS] 条时窗口只有最新几条那么高,里面能滑;新进展来了滚到最底。 */
+@Composable
+private fun TaskSteps(item: VoiceCallFeedItem.Task) {
+    val c = MikaTheme.colors
+    val steps = item.steps
+    if (steps.isEmpty()) return
+    val scroll = rememberScrollState()
+    val heights = remember(item.taskId) { mutableStateMapOf<Int, Int>() }
+    val density = LocalDensity.current
+    val windowed = steps.size > VISIBLE_STEPS
+    val window = if (windowed) {
+        val tail = (steps.size - VISIBLE_STEPS until steps.size).map { heights[it] }
+        if (tail.all { it != null }) with(density) { tail.sumOf { it ?: 0 }.toDp() } else null
+    } else null
+    LaunchedEffect(steps.size, scroll.maxValue) { scroll.scrollTo(scroll.maxValue) }
+    Column(
+        (if (windowed) Modifier.then(if (window != null) Modifier.height(window) else Modifier.heightIn(max = STEPS_WINDOW_FALLBACK)).verticalScroll(scroll) else Modifier)
+            .fillMaxWidth().testTag("voicecall-task-steps"),
+    ) {
+        steps.forEachIndexed { index, step ->
+            val running = item.running && index == steps.lastIndex
+            Row(Modifier.onSizeChanged { heights[index] = it.height }.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(18.dp), contentAlignment = Alignment.Center) {
                     if (running) {
                         CircularProgressIndicator(Modifier.size(14.dp), color = c.accent, strokeWidth = 2.dp)
@@ -698,3 +739,70 @@ private fun phaseText(phase: DeskTaskPhase): Int = when (phase) {
 
 /** 打开通话前就有的内容(和说到一半的话)画淡一点,和这通电话里说的分开。 */
 private const val EARLIER_ALPHA = 0.6f
+
+/** 任务卡上平时露出的步骤条数。 */
+private const val VISIBLE_STEPS = 2
+
+/** 还没量出最新几步多高时,步骤窗口先按这个高度。 */
+private val STEPS_WINDOW_FALLBACK = 64.dp
+
+/** 看着的那件任务没画面了(办完、屏释放),面板停在最后一帧这么久再收起。 */
+private const val SCREEN_LINGER_MS = 2_000L
+
+/**
+ * 通话页上方的虚拟屏面板:用户在任务卡上点了「看画面」才出现,只看不点;
+ * 标题是那件任务,× 关掉。那件任务没画面了,停在最后一帧 [SCREEN_LINGER_MS] 后自己收起。
+ */
+@Composable
+private fun WatchedScreen(call: VoiceCallHolder, items: List<VoiceCallFeedItem>, screens: Set<String>) {
+    val watching = call.watching ?: return
+    val source = remember(watching) { call.frames(watching) }
+    val live = watching in screens && source != null
+    LaunchedEffect(watching, live) {
+        if (!live) {
+            if (source != null) delay(SCREEN_LINGER_MS)
+            if (call.watching == watching) call.watching = null
+        }
+    }
+    if (source == null) return
+    val c = MikaTheme.colors
+    val title = items.filterIsInstance<VoiceCallFeedItem.Task>().firstOrNull { it.taskId == watching }?.title.orEmpty()
+    val frames = remember(source) { source.filterNotNull().previewFrames(same = ::sameFrame) }
+    val frame by frames.collectAsState(initial = null)
+    Column(
+        Modifier.fillMaxWidth().padding(start = MikaSpace.Page, end = MikaSpace.Page, top = MikaSpace.S8)
+            .clip(MikaShapes.Card).background(c.surface, MikaShapes.Card).border(1.dp, c.hair, MikaShapes.Card)
+            .testTag("voicecall-screen-panel"),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(start = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(MikaIcons.Screens, null, Modifier.size(14.dp), tint = c.accent)
+            Text(
+                title, Modifier.weight(1f).padding(start = 6.dp), style = MikaType.Label, color = c.ink,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            Box(
+                Modifier.size(MikaSize.IconButton).clip(CircleShape)
+                    .clickable(onClickLabel = stringResource(R.string.voicecall_screen_close)) { call.watching = null }
+                    .testTag("voicecall-screen-close"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(MikaIcons.Close, stringResource(R.string.voicecall_screen_close), Modifier.size(16.dp), tint = c.ink2)
+            }
+        }
+        Box(
+            Modifier.fillMaxWidth().height(SCREEN_PANEL_HEIGHT).padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+                .clip(MikaShapes.Tile).background(c.fill),
+            contentAlignment = Alignment.Center,
+        ) {
+            val bmp = frame
+            if (bmp == null) {
+                CircularProgressIndicator(Modifier.size(20.dp), color = c.accent, strokeWidth = 2.dp)
+            } else {
+                Image(bmp.asImageBitmap(), title, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            }
+        }
+    }
+}
+
+/** 通话页上虚拟屏面板里画面的高度。 */
+private val SCREEN_PANEL_HEIGHT = 260.dp

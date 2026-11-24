@@ -223,12 +223,13 @@ class VoiceCallOverlayTest {
         call: Call,
         onCollapse: () -> Unit = {},
         screens: StateFlow<Set<String>> = MutableStateFlow(emptySet()),
+        frames: (String) -> StateFlow<android.graphics.Bitmap?>? = { null },
         onOpenTask: (String) -> Unit = {},
     ) {
         val audioRoute = VoiceCallAudioRoute(InstrumentationRegistry.getInstrumentation().targetContext)
-        val holder = VoiceCallHolder(call.session, call.busy, audioRoute, call.transcript, call.feed, screens)
+        val holder = VoiceCallHolder(call.session, call.busy, audioRoute, call.transcript, call.feed, screens, frames)
         compose.setContent {
-            StillTheme { VoiceCallOverlay(holder, onCollapse, onOpenTask) }
+            StillTheme { VoiceCallOverlay(holder, onCollapse) { onOpenTask(it.taskId) } }
         }
     }
 
@@ -337,12 +338,13 @@ class VoiceCallOverlayTest {
         call.session.end(EndReason.Hangup)
     }
 
-    @Test fun tappingATaskCardOpensItAndAScreenShowsViewScreen() {
+    @Test fun tappingATaskCardOpensItAndViewScreenShowsTheScreenOnTheCallPage() {
         val flow = MutableStateFlow<TaskState>(TaskState.Running(1, "open_app", narration = "正在打开设置"))
         val call = Call(mapOf("t1" to flow), connect = { rt })
         val screens = MutableStateFlow<Set<String>>(emptySet())
+        val frame = MutableStateFlow<android.graphics.Bitmap?>(android.graphics.Bitmap.createBitmap(90, 160, android.graphics.Bitmap.Config.ARGB_8888))
         val opened = mutableListOf<String>()
-        show(call, screens = screens, onOpenTask = { opened += it })
+        show(call, screens = screens, frames = { frame }, onOpenTask = { opened += it })
         reachActive(call)
         compose.onNodeWithTag("voicecall-keyboard").performClick()
         compose.onNodeWithTag("voicecall-input").performTextInput("帮我开深色模式")
@@ -353,6 +355,12 @@ class VoiceCallOverlayTest {
         val taskId = call.feed.items.value.filterIsInstance<com.wangzan101.mika.voicecall.VoiceCallFeedItem.Task>().single().taskId
         screens.value = setOf(taskId)
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("voicecall-task-screen").fetchSemanticsNodes().isNotEmpty() }
+        // 点「看画面」:画面出现在通话页上,不离开通话;× 关掉
+        compose.onNodeWithTag("voicecall-task-screen").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("voicecall-screen-panel").fetchSemanticsNodes().isNotEmpty() }
+        assertTrue(opened.isEmpty())
+        compose.onNodeWithTag("voicecall-screen-close").performClick()
+        compose.onAllNodesWithTag("voicecall-screen-panel").assertCountEquals(0)
         // 点卡片:交给宿主打开那件任务
         compose.onNodeWithTag("voicecall-task").performClick()
         assertEquals(listOf(taskId), opened)

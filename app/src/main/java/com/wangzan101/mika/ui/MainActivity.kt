@@ -492,6 +492,8 @@ private fun MikaRoot(
         }
     }
     var runId by rememberSaveable { mutableStateOf<String?>(null) }
+    // 「运行过程」是从通话页点开的:返回时调它把通话页亮回来;从别处打开时为 null
+    var runReturn by remember { mutableStateOf<(() -> Unit)?>(null) }
     var reportRunId by rememberSaveable { mutableStateOf<String?>(null) }
     var playbackScreenshotId by rememberSaveable { mutableStateOf<Int?>(null) }
     var sourceRunId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -528,7 +530,14 @@ private fun MikaRoot(
                 app.chat.openConversation(id)
                 nav.reset()
             },
+            openRun = { id, onBack ->
+                runId = id
+                runReturn = onBack
+                nav.push(Route.Run)
+            },
+            liveRun = { id -> app.taskState.runs.value.firstOrNull { it.conversationId == id }?.runId?.value },
             screens = app.taskState.screenConversations(app.appScope),
+            frames = { id -> app.taskState.runs.value.firstOrNull { it.conversationId == id }?.frames },
         )
     }
     // 查到的新版本:侧栏、设置首页、关于页的红点都看它
@@ -697,7 +706,7 @@ private fun MikaRoot(
                             onOpenDrawer = openDrawer,
                             openSettings = { nav.push(Route.Settings) },
                             onOpenBrowser = { nav.push(Route.Browser) },
-                            openRun = { runId = it; nav.push(Route.Run) },
+                            openRun = { runId = it; runReturn = null; nav.push(Route.Run) },
                             openReport = { reportRunId = it; nav.push(Route.Report) },
                             openPlayback = { reportRunId = it; playbackScreenshotId = null; nav.push(Route.Playback) },
                             phoneSetupNeed = (if (status.builtinShell != BuiltinShellStatus.Running) phoneSetupNeed else null),
@@ -860,7 +869,12 @@ private fun MikaRoot(
                     RunStore(context), it, resolveMemory = app.chat::usedMemoryTexts,
                     alive = { run -> app.taskState.runs.value.any { r -> r.runId.value == run } },
                 ) } }
-            if (vm != null) RunTimelineScreen(vm, back) else LaunchedEffect(Unit) { nav.back() }
+            val runBack: () -> Unit = {
+                nav.back()
+                runReturn?.invoke()
+                runReturn = null
+            }
+            if (vm != null) RunTimelineScreen(vm, runBack) else LaunchedEffect(Unit) { nav.back() }
         }
         Route.Report, Route.Playback -> {
             val id = reportRunId
@@ -868,7 +882,7 @@ private fun MikaRoot(
             if (vm == null) LaunchedEffect(Unit) { nav.back() }
             else if (route == Route.Report) TaskReportScreen(vm, back,
                 onReplay = { playbackScreenshotId = it; nav.push(Route.Playback) },
-                onTimeline = { runId = id; nav.push(Route.Run) })
+                onTimeline = { runId = id; runReturn = null; nav.push(Route.Run) })
             else TaskPlaybackScreen(vm, playbackScreenshotId, back)
         }
         Route.Source -> {

@@ -4,9 +4,10 @@
     <string name="voicecall_task_paused">任务暂时停住了</string>
     <string name="voicecall_task_running">正在处理</string>
     <string name="voicecall_task_done">已完成</string>
-    <string name="voicecall_task_open">查看这件任务</string>
+    <string name="voicecall_task_open">查看运行过程</string>
     <string name="voicecall_task_screen">看画面</string>
     <string name="voicecall_earlier">以上是之前的对话</string>
+    <string name="voicecall_screen_close">关掉画面</string>
     <string name="voicecall_task_failed">没办成</string>
     <string name="voicecall_task_cancelled">已取消</string>
     <string name="voicecall_notification_channel">语音通话</string>

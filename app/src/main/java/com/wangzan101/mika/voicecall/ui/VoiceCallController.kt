@@ -59,6 +59,8 @@ import com.wangzan101.mika.voicecall.typedDeskResult
 import kotlinx.coroutines.CoroutineScope
 import com.wangzan101.mika.ui.MarkdownModel
 import kotlinx.coroutines.CoroutineStart
+import android.graphics.Bitmap
+import com.wangzan101.mika.voicecall.VoiceCallTaskLink
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -72,7 +74,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * 一通通话的页面侧持有物:会话、前台有没有任务在办([busy])、免提、转写、上屏的对话流,以及页面此刻显不显;
- * [screens] 是此刻有虚拟屏(或网页)的任务会话,任务卡上据此显示「看画面」。
+ * [screens] 是此刻有虚拟屏(或网页)的任务会话,任务卡上据此显示「看画面」;[frames] 按任务给出那块屏的实时画面。
  */
 @Stable
 class VoiceCallHolder(
@@ -82,8 +84,11 @@ class VoiceCallHolder(
     val transcript: VoiceCallTranscript,
     val feed: VoiceCallFeed,
     val screens: StateFlow<Set<String>> = MutableStateFlow(emptySet()),
+    val frames: (String) -> StateFlow<Bitmap?>? = { null },
 ) {
     var visible by mutableStateOf(true)
+    /** 通话页上正在看哪件任务的画面(任务会话编号);收起再亮回来还接着看。 */
+    var watching by mutableStateOf<String?>(null)
 }
 
 /** 通话页此刻在哪个阶段:门禁(还没通话)或通话中。 */
@@ -216,10 +221,21 @@ class VoiceCallController(
         }
     }
 
-    /** 点了通话页上的任务卡:通话收成小球接着通,打开那件任务的会话(每一步和虚拟屏都在那里)。 */
-    fun openTask(taskId: String) {
+    /**
+     * 点了通话页上的任务卡:通话收成小球接着通,打开那件任务的「运行过程」,从那里返回再亮回通话页;
+     * 还没开跑(排队中)、找不到运行的,退回打开那件任务的会话。
+     */
+    fun openTask(taskId: String, phase: DeskTaskPhase) {
+        val run = VoiceCallTaskLink.runFor(phase, deps.liveRun(taskId)) { deps.turns(taskId) }
         collapse()
-        deps.openConversation(taskId)
+        if (run == null) deps.openConversation(taskId) else deps.openRun(run, ::reshow)
+    }
+
+    /** 从通话页点出去的页面返回了:通话还在就把通话页亮回来;已经结束的不再打开。 */
+    fun reshow() {
+        val current = stage as? VoiceCallStage.InCall ?: return
+        val state = current.call.session.state.value
+        if (state !is VoiceCallState.Ended && state !is VoiceCallState.Failed) current.call.visible = true
     }
 
     /** 宿主要离开了:没终的通话挂断,转写在 close 里 NonCancellable 写完。 */
@@ -355,7 +371,7 @@ class VoiceCallController(
         val busy = desk.active
             .map { views -> views.any { it.state == DeskTaskPhase.Running || it.state == DeskTaskPhase.Queued } }
             .stateIn(callScope, SharingStarted.Eagerly, false)
-        stage = VoiceCallStage.InCall(VoiceCallHolder(session, busy, VoiceCallAudioRoute(deps.context), transcript, feed, deps.screens))
+        stage = VoiceCallStage.InCall(VoiceCallHolder(session, busy, VoiceCallAudioRoute(deps.context), transcript, feed, deps.screens, deps.frames))
     }
 
     /** 派单结果里开始或排上队的任务编号;别的结果为 null。 */
@@ -391,10 +407,16 @@ class VoiceCallDeps(
     val attachService: (VoiceCallSession) -> Boolean,
     /** 前台此刻用的人格(称呼和人格层),每次接通时取一次。 */
     val persona: () -> DeskPersona = { DeskPersona() },
-    /** 打开一条会话(点任务卡进那件任务)。 */
+    /** 打开一条会话(点任务卡、那件任务还没有运行可看时进它的会话)。 */
     val openConversation: (String) -> Unit = {},
+    /** 打开一次运行的「运行过程」;从那页返回时调第二个参数(把通话页亮回来)。 */
+    val openRun: (runId: String, onBack: () -> Unit) -> Unit = { _, _ -> },
+    /** 这件任务(会话编号)此刻在跑的那次运行;没在跑为 null。 */
+    val liveRun: (String) -> String? = { null },
     /** 此刻有虚拟屏或网页的任务会话。 */
     val screens: StateFlow<Set<String>> = MutableStateFlow(emptySet()),
+    /** 这件任务(会话编号)那块屏的实时画面;没有在跑的为 null。 */
+    val frames: (String) -> StateFlow<Bitmap?>? = { null },
 )
 
 /**
@@ -463,7 +485,7 @@ fun VoiceCallHost(deps: VoiceCallDeps, openSignal: Int, onGoConfigure: (VoiceCal
             onCollapse = controller::collapse,
         )
         is VoiceCallStage.InCall -> if (stage.call.visible) {
-            VoiceCallOverlay(stage.call, controller::collapse, controller::openTask)
+            VoiceCallOverlay(stage.call, controller::collapse) { controller.openTask(it.taskId, it.phase) }
         }
         null -> Unit
     }
