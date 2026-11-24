@@ -192,6 +192,8 @@ data class VoiceSelections(
     val silenceMs: Int = DEFAULT_SILENCE_MS,
     /** Stop speaking when the other side starts talking. */
     val bargeIn: Boolean = true,
+    /** In-app voice calls hang up after this many minutes with nothing new; 0 never hangs up. AI phone calls ignore it. */
+    val idleMinutes: Int = DEFAULT_IDLE_MINUTES,
     /** AI phone calls' own engine; null follows [engine]. */
     val callEngine: CallEngine? = null,
     /** AI phone calls' own listen model; null follows [stt] (device recognition excluded). */
@@ -211,6 +213,12 @@ data class VoiceSelections(
         const val DEFAULT_SILENCE_MS = 1500
         const val MIN_SILENCE_MS = 500
         const val MAX_SILENCE_MS = 4000
+        const val DEFAULT_IDLE_MINUTES = 5
+        const val NEVER_IDLE = 0
+        const val MIN_IDLE_MINUTES = 1
+        const val MAX_IDLE_MINUTES = 120
+        /** The idle choices offered as ready-made rows; anything else in range is a custom value. */
+        val IDLE_PRESETS = listOf(2, 5, 10)
     }
 }
 

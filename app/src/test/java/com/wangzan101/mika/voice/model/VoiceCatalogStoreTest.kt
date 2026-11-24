@@ -46,6 +46,21 @@ class VoiceCatalogStoreTest {
     }
 
     @Test
+    fun `idle hang-up defaults to five minutes, keeps a custom value, clamps it and can be turned off`() {
+        val backend = FakeBackend()
+        val store = VoiceCatalogStore(backend)
+        assertEquals(5, store.state.value.selections.idleMinutes)
+        store.setCallStyle(idleMinutes = 37)
+        assertEquals(37, VoiceCatalogStore(backend).state.value.selections.idleMinutes)
+        store.setCallStyle(idleMinutes = 999)
+        assertEquals(VoiceSelections.MAX_IDLE_MINUTES, store.state.value.selections.idleMinutes)
+        store.setCallStyle(idleMinutes = VoiceSelections.NEVER_IDLE)
+        assertEquals(VoiceSelections.NEVER_IDLE, VoiceCatalogStore(backend).state.value.selections.idleMinutes)
+        store.setCallStyle(bargeIn = false)
+        assertEquals("改别的不碰它", VoiceSelections.NEVER_IDLE, store.state.value.selections.idleMinutes)
+    }
+
+    @Test
     fun `changing one binding invalidates only that capability verification`() {
         val (store, backend) = populatedStore()
         store.markVerification(sttRef, VoiceVerification.Verified)

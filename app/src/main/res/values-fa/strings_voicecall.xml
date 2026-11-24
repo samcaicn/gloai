@@ -22,7 +22,8 @@
     <string name="voicecall_ended_hangup">تماس پایان یافت</string>
     <string name="voicecall_ended_notification">از اعلان قطع شد</string>
     <string name="voicecall_ended_incoming">یک تماس تلفنی آمد — تماس پایان یافت</string>
-    <string name="voicecall_ended_limit">ده دقیقه تمام شد — تماس پایان یافت</string>
+    <string name="voicecall_ended_idle">%1$d دقیقه فعالیتی نبود — تماس پایان یافت</string>
+    <string name="voicecall_idle_line">هنوز هستی؟ اگر چیزی نشنوم، تماس را قطع می‌کنم.</string>
     <string name="voicecall_ended_background">برای ادامه به Mika برگردید</string>
     <string name="voicecall_error_auth">اعتبارنامهٔ صدا رد شد — تنظیمات را بررسی کنید</string>
     <string name="voicecall_error_timeout">مهلت اتصال تمام شد — دوباره تلاش کنید</string>

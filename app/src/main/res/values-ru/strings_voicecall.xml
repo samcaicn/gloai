@@ -22,7 +22,8 @@
     <string name="voicecall_ended_hangup">Вызов завершён</string>
     <string name="voicecall_ended_notification">Завершён из уведомления</string>
     <string name="voicecall_ended_incoming">Поступил телефонный звонок — вызов завершён</string>
-    <string name="voicecall_ended_limit">10 минут истекли — вызов завершён</string>
+    <string name="voicecall_ended_idle">Нет активности %1$d мин — вызов завершён</string>
+    <string name="voicecall_idle_line">Вы ещё здесь? Если ничего не услышу, я положу трубку.</string>
     <string name="voicecall_ended_background">Вернитесь в Mika, чтобы продолжить</string>
     <string name="voicecall_error_auth">Учётные данные голосового сервиса отклонены — проверьте настройки</string>
     <string name="voicecall_error_timeout">Время подключения истекло — попробуйте ещё раз</string>

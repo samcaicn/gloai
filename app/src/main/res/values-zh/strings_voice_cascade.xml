@@ -56,4 +56,12 @@
     <string name="calls_voice_for_calls">电话专用</string>
     <string name="voicecall_standard_title">先选好听和说的模型</string>
     <string name="voicecall_standard_body">语音通话是 听 → 想 → 说：一个服务商的识别模型听你说话，聊天模型回答，合成模型读出来。</string>
+    <string name="call_mode_idle">自动挂断</string>
+    <string name="call_mode_idle_minutes">%1$d 分钟</string>
+    <string name="call_mode_idle_custom">自定义</string>
+    <string name="call_mode_idle_custom_sub">静了 %1$d 分钟挂断</string>
+    <string name="call_mode_idle_never">不自动挂断</string>
+    <string name="call_mode_idle_note">通话里这么久没有新内容（没人说话、没人打字、任务也没进展）就自动挂断；挂断前 30 秒 Mika 会先问一句还在不在。</string>
+    <string name="call_mode_idle_dialog_title">多久没动静挂断</string>
+    <string name="call_mode_idle_dialog_hint">1 到 120 分钟</string>
 </resources>

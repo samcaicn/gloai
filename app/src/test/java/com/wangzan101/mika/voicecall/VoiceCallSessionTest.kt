@@ -108,6 +108,19 @@ class VoiceCallSessionTest {
         }
         var acceptsText = false
         val texts = mutableListOf<String>()
+        /** 能让模型接着回话的提示(标准模式、能加 system 项的实时协议)收不收;不收时会话改成照念 [notices]。 */
+        var acceptsCue = true
+        val cues = mutableListOf<String>()
+        val notices = mutableListOf<String>()
+        override fun sendCue(text: String, ended: (spoken: Boolean) -> Unit): Boolean {
+            if (!acceptsCue) return false
+            cues += text
+            return true
+        }
+        override fun sendNotice(text: String, ended: (spoken: Boolean) -> Unit): Boolean {
+            notices += text
+            return true
+        }
         override fun sendUserText(text: String): Boolean {
             if (!acceptsText) return false
             texts += text
@@ -119,7 +132,7 @@ class VoiceCallSessionTest {
     private class Harness(
         scope: CoroutineScope,
         greeting: String = GREETING,
-        timeLimitMs: Long = 600_000L,
+        idleMs: Long? = 600_000L,
         connect: suspend (Int) -> CallRealtimeSession,
         onDeskCall: (String, String, JsonObject) -> Unit = { _, _, _ -> },
         onTypedText: (String) -> Unit = {},
@@ -147,7 +160,9 @@ class VoiceCallSessionTest {
             onUserTranscript = { text, isFinal -> userTranscripts += text to isFinal },
             onAssistantTranscript = { text, isFinal -> assistantTranscripts += text to isFinal },
             onAssistantDraft = { assistantDrafts += it },
-            timeLimitMs = timeLimitMs,
+            idleMs = idleMs,
+            idleCue = IDLE_CUE,
+            idleLine = IDLE_LINE,
             clockNanos = clockNanos,
             nowMillis = nowMillis,
         )
@@ -156,13 +171,13 @@ class VoiceCallSessionTest {
     private fun harness(
         scope: CoroutineScope,
         greeting: String = GREETING,
-        timeLimitMs: Long = 600_000L,
+        idleMs: Long? = 600_000L,
         connect: suspend (Int) -> CallRealtimeSession,
         onDeskCall: (String, String, JsonObject) -> Unit = { _, _, _ -> },
         onTypedText: (String) -> Unit = {},
         clockNanos: () -> Long,
         nowMillis: () -> Long,
-    ) = Harness(scope, greeting, timeLimitMs, connect, onDeskCall, onTypedText, clockNanos, nowMillis)
+    ) = Harness(scope, greeting, idleMs, connect, onDeskCall, onTypedText, clockNanos, nowMillis)
 
     private fun reachActive(h: Harness, scope: kotlinx.coroutines.test.TestScope) {
         h.audio.offerChunk()
@@ -431,17 +446,124 @@ class VoiceCallSessionTest {
         assertEquals(VoiceCallState.Ended(EndReason.IncomingCall), h.session.state.value)
     }
 
-    @Test fun `ten minute limit ends the call`() = runTest {
+    /** 静了这么久挂断;两分钟,提醒在第 90 秒。 */
+    private fun quietCall(scope: kotlinx.coroutines.test.TestScope, idleMs: Long? = 120_000L): Harness {
         lateinit var h: Harness
-        h = harness(backgroundScope, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt })
+        h = harness(scope.backgroundScope, idleMs = idleMs, clockNanos = { scope.currentTime * 1_000_000L }, nowMillis = { scope.currentTime }, connect = { h.rt })
+        scope.runCurrent()
+        reachActive(h, scope)
+        return h
+    }
+
+    private fun kotlinx.coroutines.test.TestScope.wait(ms: Long) {
+        advanceTimeBy(ms)
+        runCurrent()
+    }
+
+    @Test fun `a quiet call is asked about 30 seconds before and hangs up at the idle limit`() = runTest {
+        val h = quietCall(this)
+        wait(89_000L)
+        assertTrue(h.rt.cues.isEmpty())
+        wait(2_000L)
+        assertEquals(listOf(IDLE_CUE), h.rt.cues)
+        wait(27_000L)
+        assertTrue(h.session.state.value is VoiceCallState.Active)
+        assertEquals("只提醒一次", 1, h.rt.cues.size)
+        wait(2_000L)
+        assertEquals(VoiceCallState.Ended(EndReason.Idle, idleMinutes = 2), h.session.state.value)
+    }
+
+    @Test fun `there is no overall call limit any more, only quiet ends a call`() = runTest {
+        val h = quietCall(this)
+        repeat(30) {
+            wait(60_000L)
+            h.rt.emit(VolcRealtimeEvent.UserTranscript("嗯", isFinal = true, isCompleteFinal = true, isCurrentTurn = true))
+            runCurrent()
+        }
+        assertTrue("聊了半小时还在", h.session.state.value is VoiceCallState.Active)
+        assertTrue(h.rt.cues.isEmpty())
+    }
+
+    @Test fun `the user speaking, even half a sentence, starts the quiet clock again`() = runTest {
+        val h = quietCall(this)
+        wait(80_000L)
+        h.rt.emit(VolcRealtimeEvent.UserSpeaking)
+        runCurrent()
+        wait(80_000L)
+        h.rt.emit(VolcRealtimeEvent.UserTranscript("我想", isFinal = false, isCompleteFinal = false, isCurrentTurn = true))
+        runCurrent()
+        wait(89_000L)
+        assertTrue(h.rt.cues.isEmpty())
+        assertTrue(h.session.state.value is VoiceCallState.Active)
+        wait(32_000L)
+        assertEquals(1, h.rt.cues.size)
+    }
+
+    @Test fun `typing, Mika speaking and task progress each start the quiet clock again`() = runTest {
+        val h = quietCall(this)
+        wait(80_000L)
+        h.session.sendUserText("在吗")
+        runCurrent()
+        wait(80_000L)
+        h.rt.emit(VolcRealtimeEvent.AssistantTranscript("在的"))
+        runCurrent()
+        wait(80_000L)
+        h.rt.emit(VolcRealtimeEvent.Audio(ByteArray(960) { 1 }))
+        runCurrent()
+        wait(80_000L)
+        h.session.onActivity()
+        wait(80_000L)
+        assertTrue(h.rt.cues.isEmpty())
+        assertTrue(h.session.state.value is VoiceCallState.Active)
+    }
+
+    @Test fun `Mika asking whether you are still there does not itself keep the call open`() = runTest {
+        val h = quietCall(this)
+        wait(91_000L)
+        assertEquals(1, h.rt.cues.size)
+        h.rt.emit(VolcRealtimeEvent.AssistantTranscript("还在吗?"))
+        h.rt.emit(VolcRealtimeEvent.Audio(ByteArray(960) { 1 }))
+        h.rt.emit(VolcRealtimeEvent.AssistantTextEnded)
+        runCurrent()
+        wait(30_000L)
+        assertEquals(VoiceCallState.Ended(EndReason.Idle, idleMinutes = 2), h.session.state.value)
+    }
+
+    @Test fun `answering the warning keeps the call, and a later quiet spell is asked about again`() = runTest {
+        val h = quietCall(this)
+        wait(91_000L)
+        h.rt.emit(VolcRealtimeEvent.UserTranscript("在", isFinal = true, isCompleteFinal = true, isCurrentTurn = true))
+        runCurrent()
+        wait(60_000L)
+        assertTrue(h.session.state.value is VoiceCallState.Active)
+        assertEquals(1, h.rt.cues.size)
+        wait(31_000L)
+        assertEquals(2, h.rt.cues.size)
+    }
+
+    @Test fun `a call set never to hang up stays open however quiet`() = runTest {
+        val h = quietCall(this, idleMs = null)
+        wait(3_600_000L)
+        assertTrue(h.session.state.value is VoiceCallState.Active)
+        assertTrue(h.rt.cues.isEmpty() && h.rt.notices.isEmpty())
+    }
+
+    @Test fun `a protocol that cannot take a cue says the warning line as it is`() = runTest {
+        lateinit var h: Harness
+        h = harness(backgroundScope, idleMs = 120_000L, clockNanos = { currentTime * 1_000_000L }, nowMillis = { currentTime }, connect = { h.rt })
+        h.rt.acceptsCue = false
         runCurrent()
         reachActive(h, this)
-        advanceTimeBy(599_999L)
-        runCurrent()
-        assertTrue(h.session.state.value is VoiceCallState.Active)
-        advanceTimeBy(2L)
-        runCurrent()
-        assertEquals(VoiceCallState.Ended(EndReason.TimeLimit), h.session.state.value)
+        wait(91_000L)
+        assertEquals(listOf(IDLE_LINE), h.rt.notices)
+    }
+
+    @Test fun `a short custom limit still warns before it ends`() = runTest {
+        val h = quietCall(this, idleMs = 60_000L)
+        wait(31_000L)
+        assertEquals(1, h.rt.cues.size)
+        wait(30_000L)
+        assertEquals(VoiceCallState.Ended(EndReason.Idle, idleMinutes = 1), h.session.state.value)
     }
 
     @Test fun `external cancellation cleans up without becoming a failure`() = runTest {
@@ -924,5 +1046,7 @@ class VoiceCallSessionTest {
 
     private companion object {
         const val GREETING = "你好,我是助手"
+        const val IDLE_CUE = "问一句还在不在"
+        const val IDLE_LINE = "还在吗?没动静我就先挂了"
     }
 }

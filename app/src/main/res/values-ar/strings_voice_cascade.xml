@@ -56,4 +56,12 @@
     <string name="calls_voice_for_calls">للهاتف فقط</string>
     <string name="voicecall_standard_title">اختر كيف تستمع Mika وتتكلم</string>
     <string name="voicecall_standard_body">المكالمة الصوتية: استماع ← تفكير ← كلام. نموذج تعرف من خدمة يسمعك، ونموذج الدردشة يجيب، ونموذج النطق يقرأ الإجابة.</string>
+    <string name="call_mode_idle">إنهاء تلقائي</string>
+    <string name="call_mode_idle_minutes">%1$d دقيقة</string>
+    <string name="call_mode_idle_custom">مخصص</string>
+    <string name="call_mode_idle_custom_sub">بعد %1$d دقيقة من الهدوء</string>
+    <string name="call_mode_idle_never">أبدًا</string>
+    <string name="call_mode_idle_note">تنتهي المكالمة إذا لم يحدث فيها شيء جديد طوال هذه المدة: لا أحد يتكلم أو يكتب ولا تتقدم أي مهمة. تسأل Mika إن كنت ما زلت هنا قبل 30 ثانية.</string>
+    <string name="call_mode_idle_dialog_title">الإنهاء بعد</string>
+    <string name="call_mode_idle_dialog_hint">من 1 إلى 120 دقيقة</string>
 </resources>

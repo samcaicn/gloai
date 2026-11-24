@@ -22,7 +22,8 @@
     <string name="voicecall_ended_hangup">Chamada encerrada</string>
     <string name="voicecall_ended_notification">Encerrada pela notificação</string>
     <string name="voicecall_ended_incoming">Uma ligação telefônica chegou — chamada encerrada</string>
-    <string name="voicecall_ended_limit">10 minutos esgotados — chamada encerrada</string>
+    <string name="voicecall_ended_idle">Sem atividade por %1$d min — chamada encerrada</string>
+    <string name="voicecall_idle_line">Ainda está aí? Se eu não ouvir nada, vou desligar.</string>
     <string name="voicecall_ended_background">Volte ao Mika para continuar</string>
     <string name="voicecall_error_auth">As credenciais de voz foram rejeitadas — verifique a configuração</string>
     <string name="voicecall_error_timeout">Tempo de conexão esgotado — tente novamente</string>

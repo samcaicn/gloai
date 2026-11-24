@@ -22,7 +22,8 @@
     <string name="voicecall_ended_hangup">通話が終了しました</string>
     <string name="voicecall_ended_notification">通知から終了しました</string>
     <string name="voicecall_ended_incoming">電話がかかってきたため通話を終了しました</string>
-    <string name="voicecall_ended_limit">10 分に達したため通話を終了しました</string>
+    <string name="voicecall_ended_idle">%1$d 分間動きがなかったため通話を終了しました</string>
+    <string name="voicecall_idle_line">まだいますか？反応がなければ切りますね。</string>
     <string name="voicecall_ended_background">Mika に戻って続けてください</string>
     <string name="voicecall_error_auth">音声認証情報が拒否されました。設定を確認してください</string>
     <string name="voicecall_error_timeout">接続がタイムアウトしました。もう一度お試しください</string>

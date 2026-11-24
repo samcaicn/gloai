@@ -27,22 +27,30 @@ fun voiceCallErrorText(error: VoiceCallError): String = tr(
     },
 )
 
-fun voiceCallEndText(reason: EndReason): String = tr(
-    when (reason) {
-        EndReason.Hangup -> R.string.voicecall_ended_hangup
-        EndReason.Notification -> R.string.voicecall_ended_notification
-        EndReason.IncomingCall -> R.string.voicecall_ended_incoming
-        EndReason.TimeLimit -> R.string.voicecall_ended_limit
-        EndReason.Background -> R.string.voicecall_ended_background
-    },
-)
+/** [idleMinutes] 是静默挂断设的分钟数,只在 [EndReason.Idle] 时用。 */
+fun voiceCallEndText(reason: EndReason, idleMinutes: Int = 0): String = when (reason) {
+    EndReason.Hangup -> tr(R.string.voicecall_ended_hangup)
+    EndReason.Notification -> tr(R.string.voicecall_ended_notification)
+    EndReason.IncomingCall -> tr(R.string.voicecall_ended_incoming)
+    EndReason.Idle -> tr(R.string.voicecall_ended_idle, idleMinutes)
+    EndReason.Background -> tr(R.string.voicecall_ended_background)
+}
+
+/**
+ * 静默挂断前给模型的提示(不是给用户看的界面文字):能接着回话的会话由模型用通话的语言转述;
+ * 不能的照念 [R.string.voicecall_idle_line]。
+ */
+const val VOICECALL_IDLE_CUE =
+    "The call has been quiet for a while. In one short sentence, ask whether the user is still there " +
+        "and say you will hang up soon if you hear nothing. Do not call any tool."
+
 
 /** 顶部状态点旁边那句:进行中是状态词,终态就是结束/错误文案。 */
 fun voiceCallStatusText(state: VoiceCallState): String = when (state) {
     VoiceCallState.Connecting -> tr(R.string.voicecall_status_connecting)
     VoiceCallState.MicCheck -> tr(R.string.voicecall_status_mic_check)
     is VoiceCallState.Active -> tr(R.string.voicecall_status_active)
-    is VoiceCallState.Ended -> voiceCallEndText(state.reason)
+    is VoiceCallState.Ended -> voiceCallEndText(state.reason, state.idleMinutes)
     is VoiceCallState.Failed -> voiceCallErrorText(state.error)
 }
 

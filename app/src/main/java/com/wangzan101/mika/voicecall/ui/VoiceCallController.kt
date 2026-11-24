@@ -51,6 +51,7 @@ import com.wangzan101.mika.voicecall.ECHO_WINDOW_CAPACITY_CHARS
 import com.wangzan101.mika.voicecall.RingBuffer
 import com.wangzan101.mika.voicecall.VoiceCallRequest
 import com.wangzan101.mika.voicecall.VoiceCallSession
+import com.wangzan101.mika.voicecall.VOICECALL_IDLE_CUE
 import com.wangzan101.mika.voicecall.VoiceCallState
 import com.wangzan101.mika.voicecall.VoiceCallTranscript
 import com.wangzan101.mika.voicecall.VoiceDeskBridge
@@ -282,6 +283,7 @@ class VoiceCallController(
         val bridge = VoiceDeskBridge(desk, executor, { currentRealtime }, ::deskReportSpeech, onSpoken = echoWindow::append)
         // 会话的回调要回头告诉会话(打字结果已显示):先声明,下面建好
         lateinit var session: VoiceCallSession
+        val idleMinutes = VoiceModelEnvironment.get(deps.context).catalog.state.value.selections.idleMinutes
         val callScope = CoroutineScope(SupervisorJob(deps.scope.coroutineContext[kotlinx.coroutines.Job]) + Dispatchers.Default)
         this.callScope = callScope
         session = VoiceCallSession(
@@ -323,6 +325,10 @@ class VoiceCallController(
             },
             greeting = tr(R.string.voicecall_greeting),
             echoWindow = echoWindow,
+            // 多久没新内容就挂:「通话方式」里设的分钟数,0 是不自动挂
+            idleMs = idleMinutes.takeIf { it > 0 }?.let { it * 60_000L },
+            idleCue = VOICECALL_IDLE_CUE,
+            idleLine = tr(R.string.voicecall_idle_line),
             requestGate = gate,
             onDeskCall = { callId, name, args ->
                 callScope.launch {
@@ -367,8 +373,13 @@ class VoiceCallController(
             // 这时已换成下一通的话不动它的会话
             if (this@VoiceCallController.callScope === callScope) currentRealtime = null
         }
-        // 前台的任务板进对话流:每件任务一张卡,进展加步骤
-        callScope.launch { desk.active.collect(feed::onTasks) }
+        // 前台的任务板进对话流:每件任务一张卡,进展加步骤;任务有了进展也算通话里的新内容,静默挂断重新计时
+        callScope.launch {
+            desk.active.collect {
+                feed.onTasks(it)
+                session.onActivity()
+            }
+        }
         val busy = desk.active
             .map { views -> views.any { it.state == DeskTaskPhase.Running || it.state == DeskTaskPhase.Queued } }
             .stateIn(callScope, SharingStarted.Eagerly, false)

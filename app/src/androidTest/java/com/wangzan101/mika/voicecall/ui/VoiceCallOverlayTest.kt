@@ -153,7 +153,7 @@ class VoiceCallOverlayTest {
     private inner class Call(
         flows: Map<String, MutableStateFlow<TaskState>> = emptyMap(),
         connect: suspend Call.(Int) -> CallRealtimeSession,
-        timeLimitMs: Long = 600_000L,
+        idleMs: Long? = 600_000L,
     ) {
         val audio = FakeAudio()
         val rt = FakeRealtime()
@@ -205,7 +205,7 @@ class VoiceCallOverlayTest {
                     if (isFinal) transcript.onAssistant(text)
                 },
                 onAssistantDraft = feed::onAssistantDraft,
-                timeLimitMs = timeLimitMs,
+                idleMs = idleMs,
             )
             bridge.attach()
             scope.launch { desk.active.collect(feed::onTasks) }
@@ -415,12 +415,12 @@ class VoiceCallOverlayTest {
         call.session.end(EndReason.Hangup)
     }
 
-    @Test fun timeLimitEndsTheCallWithItsOwnCopy() {
-        val call = Call(connect = { rt }, timeLimitMs = 300L)
+    @Test fun aQuietCallEndsWithItsOwnCopy() {
+        val call = Call(connect = { rt }, idleMs = 300L)
         show(call)
         reachActive(call)
-        awaitState(call.session) { it == VoiceCallState.Ended(EndReason.TimeLimit) }
-        compose.onNodeWithText("聊满 10 分钟，通话结束").assertIsDisplayed()
+        awaitState(call.session) { it == VoiceCallState.Ended(EndReason.Idle, idleMinutes = 1) }
+        compose.onNodeWithText("1 分钟没有动静，通话已结束", substring = true).assertIsDisplayed()
     }
 
     @Test fun collapseInvokesCallback() {

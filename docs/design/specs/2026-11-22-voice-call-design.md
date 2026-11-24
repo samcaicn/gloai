@@ -25,7 +25,7 @@
 - **对话**:用户说话 → 服务端 VAD 出转写 → 模型被提示词约束:对每段完整话语只调一个 `mika_request` 工具并沉默 → App 侧严格校验后交给既有聊天/工作入口执行 → 进度以短状态行滚动(最多 12 行,不含坐标/日程标题等细节)→ 结果作为 function result 回模型 → 模型只复述结果一次。面板有文字输入框,打字与说话同路。
 - **打断(barge-in)**:用户一开口(服务端 speech_started)→ 播放队列代次作废 + AudioTrack pause/flush/play + 取消尚未完成的本地任务(不声称撤销已生效操作)。
 - **免提**:Android 12+ `setCommunicationDevice`(有线/蓝牙耳机优先于听筒;没有私密听音设备时留扬声器),更老系统用 speakerphone 开关;选中态读系统实际通信设备,热插拔经 AudioDeviceCallback 刷新;挂断恢复原音频模式。
-- **结束**:挂断钮 / 通知栏挂断 / 来电(MODE_IN_CALL/RINGTONE 或电话功能忙 → busy 错误)/ 接通后 10 分钟上限(显示原因,不自动重试)/ 页面 ON_STOP 且不允许后台时收起。通话双方文字在 finally 里 NonCancellable 批量写回发起会话。
+- **结束**:挂断钮 / 通知栏挂断 / 来电(MODE_IN_CALL/RINGTONE 或电话功能忙 → busy 错误)/ 静默挂断(通话里设定的分钟数没有新内容——没人说话、没人打字、Mika 没说话、任务没进展——就挂断,显示「X 分钟没有动静，通话已结束」,不自动重试;「通话方式」里可选 2 / 5 / 10 分钟、自定义 1–120 分钟或不自动挂断,默认 5 分钟;到点前 30 秒 Mika 先问一句还在不在,这句提醒本身不算新内容;没有总时长上限,AI 电话不受它管)/ 页面 ON_STOP 且不允许后台时收起。通话双方文字在 finally 里 NonCancellable 批量写回发起会话。
 - **错误 UX**:鉴权、连接超时、断连、限流、服务商错误、麦克风无输入、音频焦点失败、播放失败,各占一条独立文案 + 就地重试(attempt++ 重跑整个连接流程)。
 
 ## 音频管线与全双工(既定事实,照此实现)
@@ -39,7 +39,7 @@
 1. **`voice/PcmRecorder`(+~15,改)**:`inputSource`(通话传 VOICE_COMMUNICATION 触发平台 AEC/NS,初始化失败回退 MIC)、`chunkSamples`、`isSilenced` 读数(能力检测,不支持恒 false)。现有语音输入路径行为不变。
 2. **`calls/VolcRealtimeProtocol`(+~80,改)**:`mikaActions` 配置项、`mika_request` 工具注册帧、`functionResult` 帧、`synthesize` 帧(朗读复用)、`response.done` 事件解析。
 3. **`calls/VolcRealtimeClient`(+~60,改)**:`VolcRealtimeConfig.agentTools`、`sendFunctionResult(callId, text)`、`synthesize(text)`、`VolcRealtimeEvent.ResponseDone`。
-4. **`voicecall/VoiceCallSession`(~350,新)**:通话编排,**显式枚举状态机**(Connecting→MicCheck→Active→Ended/Error;禁布尔拼接,`ensureActive()` 区分外部取消):RESUMED 等待、焦点、开麦校验(3s 首块 + isSilenced + VOICE_COMMUNICATION→MIC 回退)、提示音、问候语一次、播放 writer(复用 CallPlaybackQueue)、打断(队列作废+pause/flush/play+通知路由取消任务)、10 分钟上限、8 类错误文案 + 就地重试、回声守卫(播音时与助手已说内容 500 字环形缓冲互为子串的「用户转写」丢弃,阈值可调)。
+4. **`voicecall/VoiceCallSession`(~350,新)**:通话编排,**显式枚举状态机**(Connecting→MicCheck→Active→Ended/Error;禁布尔拼接,`ensureActive()` 区分外部取消):RESUMED 等待、焦点、开麦校验(3s 首块 + isSilenced + VOICE_COMMUNICATION→MIC 回退)、提示音、问候语一次、播放 writer(复用 CallPlaybackQueue)、打断(队列作废+pause/flush/play+通知路由取消任务)、静默挂断(见上)、8 类错误文案 + 就地重试、回声守卫(播音时与助手已说内容 500 字环形缓冲互为子串的「用户转写」丢弃,阈值可调)。
 5. **`voicecall/VoiceCallRequest`(~120,新)**:执行安全闸——只有「当轮、final 且 complete」的用户转写能喂执行;`utterance` 参数与转写做归一化**单向**包含校验——utterance 必须落在当轮转写里,比转写还长(模型添了用户没说的话)一律拒(不匹配不消费该转写);callId 一次性(含重连重放);助手回声剔除;转写每轮一次性消费。按语义自行重写。
 6. **`voicecall/VoiceCallRoute`(~200,新)**:语音请求→既有聊天/工作任务入口的一次性目的地路由(先到先得);订阅 TaskState 出短状态行;任务需确认/接管时提示「去任务页看」;打断取消已启动未完成任务;结果回 `sendFunctionResult`。
 7. **`voicecall/VoiceCallTranscript`(~50,新)**:事件→Turn(问/答/时间)聚合,结束写回发起会话。
@@ -65,7 +65,7 @@
 - **音频路径设备差异(最大)**:AEC 质量、AudioTrack 假死、isSilenced、setCommunicationDevice 兼容性——能力检测 + 回退链,真机矩阵是验收门槛。
 - **回声自激固有残留**:平台 AEC 失效时守卫是概率性的(≥4 字子串启发式,可能误拦用户重复助手的话);保守方向优先(播音时降低执行敏感度),阈值真机调。
 - **权限与政策**:RECORD_AUDIO 运行时权限;后台持续录音必须挂麦克风型 FGS(Android 14+ 只能前台起);退后台 FGS 保活 + 通知挂断。
-- **耗电发热**:持续 16k 采集 + 24k 播放 + 长连;音频线程 `THREAD_PRIORITY_AUDIO`;10 分钟上限兜底。
+- **耗电发热**:持续 16k 采集 + 24k 播放 + 长连;音频线程 `THREAD_PRIORITY_AUDIO`;静默挂断兜底(没人用时不会一直开着;默认 5 分钟)。
 - **服务端计费/限流**:按时长计费;错误文案区分「可重试」与「去配置」。
 - **凭据分用途**:通话读默认实时语音档案;试听/朗读书面凭据走错 API 的坑已知晓,按用途分开存取。
 - **多播放源叠音**:进程内互斥 + 代次令牌拦迟到回调(PlaybackTickets 已是正解)。

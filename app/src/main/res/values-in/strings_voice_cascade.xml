@@ -56,4 +56,12 @@
     <string name="calls_voice_for_calls">Khusus telepon</string>
     <string name="voicecall_standard_title">Pilih cara Mika mendengar dan berbicara</string>
     <string name="voicecall_standard_body">Panggilan suara: dengar → pikir → bicara. Model pengenalan layanan mendengarmu, model obrolan menjawab, dan model suara membacakannya.</string>
+    <string name="call_mode_idle">Tutup otomatis</string>
+    <string name="call_mode_idle_minutes">%1$d mnt</string>
+    <string name="call_mode_idle_custom">Kustom</string>
+    <string name="call_mode_idle_custom_sub">Setelah %1$d mnt sunyi</string>
+    <string name="call_mode_idle_never">Tidak pernah</string>
+    <string name="call_mode_idle_note">Menutup panggilan jika tidak ada hal baru selama ini: tidak ada yang bicara atau mengetik dan tidak ada tugas yang berjalan. Mika akan bertanya apakah kamu masih di sana 30 detik sebelumnya.</string>
+    <string name="call_mode_idle_dialog_title">Tutup setelah</string>
+    <string name="call_mode_idle_dialog_hint">1 sampai 120 menit</string>
 </resources>

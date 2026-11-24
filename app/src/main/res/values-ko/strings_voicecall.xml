@@ -22,7 +22,8 @@
     <string name="voicecall_ended_hangup">통화가 종료되었습니다</string>
     <string name="voicecall_ended_notification">알림에서 종료되었습니다</string>
     <string name="voicecall_ended_incoming">전화가 걸려와 통화가 종료되었습니다</string>
-    <string name="voicecall_ended_limit">10분이 되어 통화가 종료되었습니다</string>
+    <string name="voicecall_ended_idle">%1$d분 동안 아무 움직임이 없어 통화가 종료되었습니다</string>
+    <string name="voicecall_idle_line">아직 계세요? 반응이 없으면 먼저 끊을게요.</string>
     <string name="voicecall_ended_background">Mika로 돌아와 계속해 주세요</string>
     <string name="voicecall_error_auth">음성 인증 정보가 거부되었습니다. 설정을 확인해 주세요</string>
     <string name="voicecall_error_timeout">연결 시간이 초과되었습니다. 다시 시도해 주세요</string>

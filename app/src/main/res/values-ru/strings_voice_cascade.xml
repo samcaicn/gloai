@@ -56,4 +56,12 @@
     <string name="calls_voice_for_calls">Только для звонков</string>
     <string name="voicecall_standard_title">Выберите, как Mika слушает и говорит</string>
     <string name="voicecall_standard_body">Голосовой звонок: слушать → думать → говорить. Модель распознавания слышит вас, модель чата отвечает, модель синтеза читает ответ.</string>
+    <string name="call_mode_idle">Автоматически завершать</string>
+    <string name="call_mode_idle_minutes">%1$d мин</string>
+    <string name="call_mode_idle_custom">Своё значение</string>
+    <string name="call_mode_idle_custom_sub">После %1$d мин тишины</string>
+    <string name="call_mode_idle_never">Никогда</string>
+    <string name="call_mode_idle_note">Вызов завершается, если за это время в нём ничего не происходит: никто не говорит и не пишет, задачи не продвигаются. За 30 секунд до этого Mika спросит, здесь ли вы.</string>
+    <string name="call_mode_idle_dialog_title">Завершать через</string>
+    <string name="call_mode_idle_dialog_hint">От 1 до 120 минут</string>
 </resources>

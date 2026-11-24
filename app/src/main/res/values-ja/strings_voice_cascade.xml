@@ -56,4 +56,12 @@
     <string name="calls_voice_for_calls">電話専用</string>
     <string name="voicecall_standard_title">聞く・話すモデルを選んでください</string>
     <string name="voicecall_standard_body">音声通話は 聞く → 考える → 話す：サービスの認識モデルが聞き、チャットモデルが答え、音声合成モデルが読み上げます。</string>
+    <string name="call_mode_idle">自動で切る</string>
+    <string name="call_mode_idle_minutes">%1$d 分</string>
+    <string name="call_mode_idle_custom">カスタム</string>
+    <string name="call_mode_idle_custom_sub">%1$d 分間静かなら切る</string>
+    <string name="call_mode_idle_never">自動で切らない</string>
+    <string name="call_mode_idle_note">通話で新しい動きがこの時間ないと自動で切ります（誰も話さず、入力もなく、タスクも進まない）。切る 30 秒前に Mika がまだいるか尋ねます。</string>
+    <string name="call_mode_idle_dialog_title">切るまでの時間</string>
+    <string name="call_mode_idle_dialog_hint">1〜120 分</string>
 </resources>

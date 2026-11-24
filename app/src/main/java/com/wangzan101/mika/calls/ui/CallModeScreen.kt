@@ -4,6 +4,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Slider
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.input.KeyboardType
+import com.wangzan101.mika.ui.components.MikaDialog
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -162,5 +169,83 @@ fun CallModeScreen(onBack: () -> Unit, onOpenStt: () -> Unit, onOpenTts: () -> U
             }
             FooterNote(stringResource(R.string.call_mode_realtime_note), Modifier.padding(top = 6.dp))
         }
+        IdleHangup(s.idleMinutes) { catalog.setCallStyle(idleMinutes = it) }
     }
+}
+
+/** 「自动挂断」里选中的是哪一行:现成的分钟数、自定义、或不自动挂。 */
+internal sealed interface IdleChoice {
+    data class Preset(val minutes: Int) : IdleChoice
+    data class Custom(val minutes: Int) : IdleChoice
+    data object Never : IdleChoice
+}
+
+internal fun idleChoiceOf(minutes: Int): IdleChoice = when {
+    minutes <= VoiceSelections.NEVER_IDLE -> IdleChoice.Never
+    minutes in VoiceSelections.IDLE_PRESETS -> IdleChoice.Preset(minutes)
+    else -> IdleChoice.Custom(minutes)
+}
+
+/** 自定义时长框里的字能不能存:1 到 120 分钟的整数。 */
+internal fun customIdleMinutes(text: String): Int? =
+    text.trim().toIntOrNull()?.takeIf { it in VoiceSelections.MIN_IDLE_MINUTES..VoiceSelections.MAX_IDLE_MINUTES }
+
+/** 通话里多久没有新内容就挂断(标准、实时两种通话都用;AI 电话不受它管)。 */
+@Composable
+private fun IdleHangup(minutes: Int, onChange: (Int) -> Unit) {
+    val choice = idleChoiceOf(minutes)
+    var editing by rememberSaveable { mutableStateOf(false) }
+    GroupLabel(stringResource(R.string.call_mode_idle))
+    GroupCard {
+        VoiceSelections.IDLE_PRESETS.forEachIndexed { i, preset ->
+            RadioRow(
+                stringResource(R.string.call_mode_idle_minutes, preset), choice == IdleChoice.Preset(preset),
+                onClick = { onChange(preset) }, first = i == 0, modifier = Modifier.testTag("call-idle-$preset"),
+            )
+        }
+        RadioRow(
+            stringResource(R.string.call_mode_idle_custom), choice is IdleChoice.Custom,
+            onClick = { editing = true },
+            subtitle = (choice as? IdleChoice.Custom)?.let { stringResource(R.string.call_mode_idle_custom_sub, it.minutes) },
+            modifier = Modifier.testTag("call-idle-custom"),
+        ) { RowChevron() }
+        RadioRow(
+            stringResource(R.string.call_mode_idle_never), choice == IdleChoice.Never,
+            onClick = { onChange(VoiceSelections.NEVER_IDLE) }, modifier = Modifier.testTag("call-idle-never"),
+        )
+    }
+    FooterNote(stringResource(R.string.call_mode_idle_note), Modifier.padding(top = 6.dp))
+    if (editing) {
+        CustomIdleDialog(
+            initial = (choice as? IdleChoice.Custom)?.minutes ?: (choice as? IdleChoice.Preset)?.minutes ?: VoiceSelections.DEFAULT_IDLE_MINUTES,
+            onDismiss = { editing = false },
+            onSave = { onChange(it); editing = false },
+        )
+    }
+}
+
+@Composable
+private fun CustomIdleDialog(initial: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
+    var text by rememberSaveable { mutableStateOf(initial.toString()) }
+    val value = customIdleMinutes(text)
+    MikaDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.call_mode_idle_dialog_title)) },
+        text = {
+            OutlinedTextField(
+                text, { text = it.filter(Char::isDigit).take(3) },
+                modifier = Modifier.fillMaxWidth().testTag("call-idle-custom-input"),
+                singleLine = true,
+                supportingText = { Text(stringResource(R.string.call_mode_idle_dialog_hint)) },
+                isError = text.isNotEmpty() && value == null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { value?.let(onSave) }, enabled = value != null, modifier = Modifier.testTag("call-idle-custom-save")) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }

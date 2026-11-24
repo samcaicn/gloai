@@ -56,4 +56,12 @@
     <string name="calls_voice_for_calls">Yalnızca telefon için</string>
     <string name="voicecall_standard_title">Mika\'nın nasıl dinleyip konuşacağını seç</string>
     <string name="voicecall_standard_body">Sesli arama dinler → düşünür → konuşur: bir servisin tanıma modeli seni duyar, sohbet modelin yanıtlar, ses modeli yanıtı okur.</string>
+    <string name="call_mode_idle">Otomatik kapat</string>
+    <string name="call_mode_idle_minutes">%1$d dk</string>
+    <string name="call_mode_idle_custom">Özel</string>
+    <string name="call_mode_idle_custom_sub">%1$d dk sessizlikten sonra</string>
+    <string name="call_mode_idle_never">Hiçbir zaman</string>
+    <string name="call_mode_idle_note">Aramada bu süre boyunca yeni bir şey olmazsa (kimse konuşmaz, yazmaz ve hiçbir görev ilerlemezse) kapatır. Mika kapatmadan 30 saniye önce hâlâ orada olup olmadığını sorar.</string>
+    <string name="call_mode_idle_dialog_title">Şu süreden sonra kapat</string>
+    <string name="call_mode_idle_dialog_hint">1 ile 120 dakika arası</string>
 </resources>

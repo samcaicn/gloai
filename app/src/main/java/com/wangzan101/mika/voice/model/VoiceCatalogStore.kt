@@ -154,9 +154,15 @@ class VoiceCatalogStore(
         }
     }
 
-    /** Engine, think model, turn silence and barge-in for voice calls. */
+    /** Engine, think model, turn silence, barge-in and idle hang-up for voice calls. */
     @Synchronized
-    fun setCallStyle(engine: CallEngine? = null, think: ThinkModel? = null, silenceMs: Int? = null, bargeIn: Boolean? = null) {
+    fun setCallStyle(
+        engine: CallEngine? = null,
+        think: ThinkModel? = null,
+        silenceMs: Int? = null,
+        bargeIn: Boolean? = null,
+        idleMinutes: Int? = null,
+    ) {
         commit {
             val s = it.selections
             it.copy(selections = s.copy(
@@ -164,6 +170,10 @@ class VoiceCatalogStore(
                 think = think ?: s.think,
                 silenceMs = (silenceMs ?: s.silenceMs).coerceIn(VoiceSelections.MIN_SILENCE_MS, VoiceSelections.MAX_SILENCE_MS),
                 bargeIn = bargeIn ?: s.bargeIn,
+                idleMinutes = (idleMinutes ?: s.idleMinutes).let {
+                    if (it <= VoiceSelections.NEVER_IDLE) VoiceSelections.NEVER_IDLE
+                    else it.coerceIn(VoiceSelections.MIN_IDLE_MINUTES, VoiceSelections.MAX_IDLE_MINUTES)
+                },
             ))
         }
     }

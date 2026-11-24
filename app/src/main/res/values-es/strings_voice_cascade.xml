@@ -56,4 +56,12 @@
     <string name="calls_voice_for_calls">Solo para llamadas</string>
     <string name="voicecall_standard_title">Elige cómo escucha y habla Mika</string>
     <string name="voicecall_standard_body">Las llamadas de voz escuchan → piensan → hablan: un modelo de reconocimiento te oye, tu modelo de chat responde y un modelo de voz lo lee.</string>
+    <string name="call_mode_idle">Colgar automáticamente</string>
+    <string name="call_mode_idle_minutes">%1$d min</string>
+    <string name="call_mode_idle_custom">Personalizado</string>
+    <string name="call_mode_idle_custom_sub">Tras %1$d min de silencio</string>
+    <string name="call_mode_idle_never">Nunca</string>
+    <string name="call_mode_idle_note">Cuelga cuando no pasa nada nuevo en la llamada durante este tiempo: nadie habla ni escribe y ninguna tarea avanza. Mika pregunta si sigues ahí 30 segundos antes.</string>
+    <string name="call_mode_idle_dialog_title">Colgar tras</string>
+    <string name="call_mode_idle_dialog_hint">De 1 a 120 minutos</string>
 </resources>

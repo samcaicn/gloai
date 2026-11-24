@@ -22,7 +22,8 @@
     <string name="voicecall_ended_hangup">انتهت المكالمة</string>
     <string name="voicecall_ended_notification">أُنهيت من الإشعار</string>
     <string name="voicecall_ended_incoming">ورد اتصال هاتفي — انتهت المكالمة</string>
-    <string name="voicecall_ended_limit">انتهت الدقائق العشر — انتهت المكالمة</string>
+    <string name="voicecall_ended_idle">لا نشاط منذ %1$d دقيقة — انتهت المكالمة</string>
+    <string name="voicecall_idle_line">هل ما زلت هنا؟ إن لم أسمع شيئًا فسأُنهي المكالمة.</string>
     <string name="voicecall_ended_background">عد إلى Mika للمتابعة</string>
     <string name="voicecall_error_auth">بيانات الاعتماد الصوتية مرفوضة — راجع الإعدادات</string>
     <string name="voicecall_error_timeout">انتهت مهلة الاتصال — حاول مجددًا</string>

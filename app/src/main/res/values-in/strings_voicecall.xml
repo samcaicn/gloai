@@ -22,7 +22,8 @@
     <string name="voicecall_ended_hangup">Panggilan berakhir</string>
     <string name="voicecall_ended_notification">Diakhiri dari notifikasi</string>
     <string name="voicecall_ended_incoming">Ada panggilan telepon masuk — panggilan berakhir</string>
-    <string name="voicecall_ended_limit">10 menit telah habis — panggilan berakhir</string>
+    <string name="voicecall_ended_idle">Tidak ada aktivitas selama %1$d mnt — panggilan berakhir</string>
+    <string name="voicecall_idle_line">Masih di sana? Kalau tidak ada suara, aku tutup dulu ya.</string>
     <string name="voicecall_ended_background">Kembali ke Mika untuk melanjutkan</string>
     <string name="voicecall_error_auth">Kredensial suara ditolak — periksa pengaturan</string>
     <string name="voicecall_error_timeout">Koneksi kedaluwarsa — coba lagi</string>

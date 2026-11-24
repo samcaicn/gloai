@@ -22,7 +22,8 @@
     <string name="voicecall_ended_hangup">Arama sona erdi</string>
     <string name="voicecall_ended_notification">Bildirimden kapatıldı</string>
     <string name="voicecall_ended_incoming">Telefon araması geldi — arama sona erdi</string>
-    <string name="voicecall_ended_limit">10 dakika doldu — arama sona erdi</string>
+    <string name="voicecall_ended_idle">%1$d dk hareket olmadı — arama sona erdi</string>
+    <string name="voicecall_idle_line">Hâlâ orada mısın? Bir şey duymazsam kapatacağım.</string>
     <string name="voicecall_ended_background">Devam etmek için Mika\'ya dönün</string>
     <string name="voicecall_error_auth">Ses kimlik bilgileri reddedildi — ayarları kontrol edin</string>
     <string name="voicecall_error_timeout">Bağlantı zaman aşımına uğradı — tekrar deneyin</string>

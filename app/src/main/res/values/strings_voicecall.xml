@@ -22,7 +22,8 @@
     <string name="voicecall_ended_hangup">Call ended</string>
     <string name="voicecall_ended_notification">Ended from the notification</string>
     <string name="voicecall_ended_incoming">A phone call came in — call ended</string>
-    <string name="voicecall_ended_limit">10 minutes are up — call ended</string>
+    <string name="voicecall_ended_idle">No activity for %1$d min — call ended</string>
+    <string name="voicecall_idle_line">Still there? If I don\'t hear anything, I\'ll hang up.</string>
     <string name="voicecall_ended_background">Return to Mika to continue</string>
     <string name="voicecall_error_auth">The voice credentials were rejected — check the setup</string>
     <string name="voicecall_error_timeout">Connection timed out — try again</string>

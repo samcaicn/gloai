@@ -22,7 +22,8 @@
     <string name="voicecall_ended_hangup">通话已结束</string>
     <string name="voicecall_ended_notification">已从通知挂断</string>
     <string name="voicecall_ended_incoming">有电话进来，通话结束</string>
-    <string name="voicecall_ended_limit">聊满 10 分钟，通话结束</string>
+    <string name="voicecall_ended_idle">%1$d 分钟没有动静，通话已结束</string>
+    <string name="voicecall_idle_line">还在吗？没动静的话我就先挂了。</string>
     <string name="voicecall_ended_background">请回到前台再继续</string>
     <string name="voicecall_error_auth">实时语音凭据没过，去配置里检查</string>
     <string name="voicecall_error_timeout">连接超时，再试一次</string>

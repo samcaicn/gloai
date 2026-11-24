@@ -56,4 +56,12 @@
     <string name="calls_voice_for_calls">Só para chamadas</string>
     <string name="voicecall_standard_title">Escolha como Mika ouve e fala</string>
     <string name="voicecall_standard_body">As chamadas de voz ouvem → pensam → falam: um modelo de reconhecimento ouve você, seu modelo de chat responde e um modelo de voz lê em voz alta.</string>
+    <string name="call_mode_idle">Desligar automaticamente</string>
+    <string name="call_mode_idle_minutes">%1$d min</string>
+    <string name="call_mode_idle_custom">Personalizado</string>
+    <string name="call_mode_idle_custom_sub">Após %1$d min de silêncio</string>
+    <string name="call_mode_idle_never">Nunca</string>
+    <string name="call_mode_idle_note">Desliga quando nada novo acontece na chamada por esse tempo: ninguém fala nem digita e nenhuma tarefa avança. A Mika pergunta se você ainda está aí 30 segundos antes.</string>
+    <string name="call_mode_idle_dialog_title">Desligar após</string>
+    <string name="call_mode_idle_dialog_hint">De 1 a 120 minutos</string>
 </resources>

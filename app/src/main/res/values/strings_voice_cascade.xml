@@ -56,4 +56,12 @@
     <string name="calls_voice_for_calls">Just for phone calls</string>
     <string name="voicecall_standard_title">Choose how Mika listens and speaks</string>
     <string name="voicecall_standard_body">Voice calls listen → think → speak: a service\'s recognition model hears you, your chat model answers, and a speech model reads the answer aloud.</string>
+    <string name="call_mode_idle">Auto hang-up</string>
+    <string name="call_mode_idle_minutes">%1$d min</string>
+    <string name="call_mode_idle_custom">Custom</string>
+    <string name="call_mode_idle_custom_sub">After %1$d min of quiet</string>
+    <string name="call_mode_idle_never">Never</string>
+    <string name="call_mode_idle_note">Hangs up when nothing new happens in the call for this long: no one speaks or types and no task moves on. Mika asks if you\'re still there 30 seconds before.</string>
+    <string name="call_mode_idle_dialog_title">Hang up after</string>
+    <string name="call_mode_idle_dialog_hint">1 to 120 minutes</string>
 </resources>

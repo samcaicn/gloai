@@ -56,4 +56,12 @@
     <string name="calls_voice_for_calls">전화 전용</string>
     <string name="voicecall_standard_title">듣기·말하기 모델을 먼저 고르세요</string>
     <string name="voicecall_standard_body">음성 통화는 듣기 → 생각 → 말하기입니다. 서비스 인식 모델이 듣고, 채팅 모델이 답하고, 합성 모델이 읽어 줍니다.</string>
+    <string name="call_mode_idle">자동 끊기</string>
+    <string name="call_mode_idle_minutes">%1$d분</string>
+    <string name="call_mode_idle_custom">직접 설정</string>
+    <string name="call_mode_idle_custom_sub">%1$d분 조용하면 끊기</string>
+    <string name="call_mode_idle_never">자동으로 끊지 않음</string>
+    <string name="call_mode_idle_note">통화에 이 시간 동안 새 내용이 없으면(아무도 말하거나 입력하지 않고 작업도 진행되지 않으면) 자동으로 끊습니다. 끊기 30초 전에 Mika가 아직 계신지 물어봅니다.</string>
+    <string name="call_mode_idle_dialog_title">끊기까지 시간</string>
+    <string name="call_mode_idle_dialog_hint">1~120분</string>
 </resources>
