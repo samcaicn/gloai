@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -71,7 +73,8 @@ android {
                     keyAlias = System.getenv("SIGNING_KEY_ALIAS")
                     keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
                 } else {
-                    val p = java.util.Properties().apply { propsFile.inputStream().use { load(it) } }
+                    val p = Properties()
+                    propsFile.inputStream().use { p.load(it) }
                     storeFile = rootProject.file(p.getProperty("storeFile"))
                     storePassword = p.getProperty("storePassword")
                     keyAlias = p.getProperty("keyAlias")
