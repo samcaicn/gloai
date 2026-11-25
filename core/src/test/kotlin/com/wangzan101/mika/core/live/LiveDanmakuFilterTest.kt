@@ -26,6 +26,25 @@ class LiveDanmakuFilterTest {
     }
 
     @Test
+    fun `drops douyin invisible markers and entry notices`() {
+        val welcome = "\u200E欢迎来到直播间！抖音严禁未成年人直播或礼物消费"
+        val entered = "\u200E* hncea 来了 · 主播也在成都"
+        val entered2 = "\u200E* 菜江湖～傅鲜森 来了"
+        assertFalse(LiveDanmakuText.plausible(welcome))
+        assertFalse(LiveDanmakuText.plausible(entered))
+        assertFalse(LiveDanmakuText.plausible(entered2))
+        // 真评论里带「来了」但不带前置空白,不能被误杀
+        assertTrue(LiveDanmakuText.plausible("又来了"))
+    }
+
+    @Test
+    fun `comment range scales with screen height`() {
+        assertEquals(1_447..2_170, LiveDanmakuLayout.commentRange(2_412))
+        assertTrue(1_960 in LiveDanmakuLayout.commentRange(2_412))
+        assertTrue(500 !in LiveDanmakuLayout.commentRange(2_412))
+    }
+
+    @Test
     fun `does not repeat the same comment in the window`() {
         val filter = LiveDanmakuFilter(minIntervalMs = 0)
         assertEquals("晚上好", filter.accept("晚上好", 1_000L))

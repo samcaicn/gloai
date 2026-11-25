@@ -6,6 +6,7 @@ import com.wangzan101.mika.MikaApp
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.cap.phone.a11y.ScreenReader
 import com.wangzan101.mika.core.live.LiveDanmakuFilter
+import com.wangzan101.mika.core.live.LiveDanmakuLayout
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.voice.VoicePlayback
 import kotlinx.coroutines.CoroutineScope
@@ -36,6 +37,7 @@ internal class LiveDanmakuRuntime(
     private var jobs: List<Job> = emptyList()
     private var running = false
     private var watcher: Job? = null
+    private var lastObserveLogMs = 0L
 
     /** 进程启动时调用一次;之后声音开关和「完全退出」都由流驱动。 */
     fun start() {
@@ -53,6 +55,7 @@ internal class LiveDanmakuRuntime(
         if (running) return
         running = true
         filter.clear()
+        Log.i(TAG, "enabled")
         drain()
         jobs = listOf(
             scope.launch { observe() },
@@ -63,6 +66,7 @@ internal class LiveDanmakuRuntime(
     private fun disable() {
         if (!running) return
         running = false
+        Log.i(TAG, "disabled")
         jobs.forEach { it.cancel() }
         jobs = emptyList()
         drain()
@@ -91,12 +95,24 @@ internal class LiveDanmakuRuntime(
                 continue
             }
             val now = System.currentTimeMillis()
+            val commentRange = LiveDanmakuLayout.commentRange(metrics.heightPixels)
+            var accepted = 0
+            var sample: String? = null
             for (entry in read.entries) {
                 val e = entry.element
                 if (e.hint || e.secret || e.editable) continue
-                // 顶部标题栏、底部输入框和按钮都不念;评论在中间偏下那一段
-                if (e.centerY !in COMMENT_TOP..COMMENT_BOTTOM) continue
-                filter.accept(e.name, now)?.let { queue.trySend(it) }
+                // 顶部标题栏、底部输入框和按钮都不念;评论按屏高取下方一段
+                if (e.centerY !in commentRange) continue
+                if (sample == null && e.name.isNotBlank()) sample = e.name
+                filter.accept(e.name, now)?.let {
+                    Log.i(TAG, "comment: $it")
+                    queue.trySend(it)
+                    accepted++
+                }
+            }
+            if (now - lastObserveLogMs > 5_000L) {
+                lastObserveLogMs = now
+                Log.d(TAG, "observe pkg=$pkg entries=${read.entries.size} range=$commentRange sample=$sample accepted=$accepted")
             }
             delay(POLL_MS)
         }
@@ -121,8 +137,6 @@ internal class LiveDanmakuRuntime(
         val DOUYIN_PACKAGES = setOf("com.ss.android.ugc.aweme", "com.ss.android.ugc.aweme.lite")
         const val POLL_MS = 700L
         const val IDLE_POLL_MS = 1_500L
-        const val COMMENT_TOP = 300
-        const val COMMENT_BOTTOM = 900
         const val WAIT_PLAYER_MS = 200L
         const val SPEAK_GAP_MS = 250L
     }

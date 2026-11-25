@@ -13,6 +13,10 @@ import java.util.Locale
 object LiveDanmakuText {
     private val WS = Regex("\\s+")
     private val LINKS = Regex("(https?://|www\\.|\\.com/|\\.cn/)", RegexOption.IGNORE_CASE)
+    // 抖音的评论 TextView 常带 U+200E(从右到左标记)和前导星号,不去掉就匹配不到「欢迎」等前缀
+    private val INVISIBLE = Regex("[\\u200B-\\u200F\\u202A-\\u202E\\uFEFF]")
+    // 「* xxx 来了 · …」是进场提示,不是评论;注意「又来了」这种真评论不含空白,不能误杀
+    private val ENTERED = Regex("\\s来了")
 
     /** 直播间的按钮、标签、状态栏文字。整行等于这些就不念。 */
     private val CHROME = setOf(
@@ -33,7 +37,8 @@ object LiveDanmakuText {
     private const val MAX_CHARS = 120
 
     /** 去空白、统一大小写,只用于比较;原句照念。 */
-    fun normalize(text: String): String = WS.replace(text.trim(), " ")
+    fun normalize(text: String): String = WS.replace(INVISIBLE.replace(text, "").trim(), " ")
+        .trimStart('*').trim()
 
     /** 这行字像不像一条观众评论。宁可漏念,不要把界面文字念出来。 */
     fun plausible(text: String): Boolean {
@@ -41,12 +46,23 @@ object LiveDanmakuText {
         if (s.length !in MIN_CHARS..MAX_CHARS) return false
         if (CHROME.contains(s)) return false
         if (EVENT_PREFIXES.any(s::startsWith)) return false
+        if (ENTERED.containsMatchIn(s)) return false
         if (LINKS.containsMatchIn(s)) return false
         // 全数字、全标点、纯表情都没有可念的内容
         if (s.none(Char::isLetterOrDigit)) return false
         if (s.all(Char::isDigit)) return false
         return true
     }
+}
+
+/**
+ * 评论在屏幕上的大致纵向位置。直播间布局是「视频在上、评论列表在下方、输入框在最底部」,
+ * 写死像素会在长屏机上全军覆没(实测 1080x2412 的评论在 y≈1640..2080)。
+ * 按屏高取 60%..90%:避开顶部主播信息和底部输入框,不同分辨率都适用。
+ */
+object LiveDanmakuLayout {
+    fun commentRange(screenHeight: Int): IntRange =
+        (screenHeight * 0.60f).toInt()..(screenHeight * 0.90f).toInt()
 }
 
 /**
