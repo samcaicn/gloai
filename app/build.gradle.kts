@@ -21,7 +21,8 @@ android {
         applicationId = "com.wangzan101.mika"
         minSdk = 29
         targetSdk = 35
-        // 热更新通道:CI 用 -PciRun=<run_number> 注入,与 artifact 名 mika-apk-<run_number>、
+        // 热更新通道:CI 用 -PciRun=<最终 versionCode> 注入(52+run_number,见
+        // .github/workflows/hot-update-apk.yml),与 artifact 名 mika-apk-<versionCode>、
         // Worker 代理回传的 version_code 同一口径,客户端直接比大小判新旧(见 HotUpdate)。
         versionCode = (project.findProperty("ciRun") as? String)?.toIntOrNull() ?: 52
         versionName = "0.1.51"

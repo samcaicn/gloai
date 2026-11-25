@@ -92,7 +92,15 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ env.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ env.SIGNING_KEY_PASSWORD }}
           SIGNING_STORE_PASSWORD: ${{ env.SIGNING_STORE_PASSWORD }}
-        run: ./gradlew :app:assembleRelease -PciRun=${{ github.run_number }} --stacktrace > build_release.log 2>&1 || { tail -80 build_release.log; exit 1; }
+        shell: bash
+        run: |
+          # 上游 Mika 的 versionCode 已到 52,而本 workflow 的 run_number 从 1 起;
+          # 用 52+run_number 保证 versionCode 单调递增且总比上游安装包新。
+          # artifact 名直接带最终 versionCode(mika-apk-<versionCode>),Worker 与客户端按它比大小。
+          VERSION_CODE=$(( 52 + ${{ github.run_number }} ))
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "hot update versionCode=$VERSION_CODE (run_number=${{ github.run_number }})"
+          ./gradlew :app:assembleRelease -PciRun=$VERSION_CODE --stacktrace > build_release.log 2>&1 || { tail -80 build_release.log; exit 1; }
 
       - name: Collect and verify APKs
         shell: bash
@@ -122,7 +130,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: mika-apk-${{ github.run_number }}
+          name: mika-apk-${{ env.VERSION_CODE }}
           path: dist/
           if-no-files-found: error
           retention-days: 30

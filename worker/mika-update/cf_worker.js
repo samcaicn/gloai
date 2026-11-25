@@ -10,8 +10,8 @@
  *   wrangler deploy
  *   可选 vars:UPDATE_REPO_OWNER / UPDATE_REPO_NAME / UPDATE_APK_ARTIFACT_PREFIX(默认 mika-apk*)
  *
- * 版本口径:artifact 名形如 mika-apk-<run_number>,尾部数字是 CI run 号,单调递增;
- * 客户端拿它与自身 versionCode(CI 用 -PciRun 注入的同一个 run 号)比大小判新旧。
+ * 版本口径:artifact 名形如 mika-apk-<versionCode>(CI 侧 52+run_number),尾部数字
+ * 就是客户端 versionCode,单调递增;客户端拿它与自身 versionCode 比大小判新旧。
  */
 
 const ARTIFACT_PREFIX_DEFAULT = "mika-apk*";
@@ -65,7 +65,7 @@ async function updateProxy(req, env) {
       const loc = dl.headers.get("location");
       if (loc) directUrl = loc;
     }
-    // 名形如 mika-apk-<run_number>:尾部数字即 CI run 号,与客户端 versionCode 同一口径
+    // 名形如 mika-apk-<versionCode>:尾部数字即客户端 versionCode,直接比大小判新旧
     const m = (target.name || "").match(/(\d+)\s*$/);
     const versionCode = m ? parseInt(m[1], 10) : 0;
     return json({
