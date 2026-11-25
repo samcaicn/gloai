@@ -46,7 +46,8 @@ android {
             isEnable = gradle.startParameter.taskNames.any { Regex("(?i)(perf|release)").containsMatchIn(it) }
             reset()
             include("arm64-v8a")
-            isUniversalApk = true
+            // 热更新只发 arm64:device ABI 唯一且包体减半;不再产出 universal
+            isUniversalApk = false
         }
     }
     // 自带的运行环境(assets/runtime/rootfs.tar.xz,tools/sandbox/build-runtime.py 生成)已是 xz,不再压一遍
