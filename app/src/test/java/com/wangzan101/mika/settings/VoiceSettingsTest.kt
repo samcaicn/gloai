@@ -85,6 +85,7 @@ class VoiceSettingsTest {
         assertNull(state.choice)
         assertFalse(state.autoRead)
         assertFalse(state.speakTool)
+        assertFalse(state.liveDanmaku)
         assertEquals(VoiceSettingsState.DEFAULT_MAX_CHARS, state.maxCharsPerSpeak)
     }
 
@@ -95,6 +96,7 @@ class VoiceSettingsTest {
         settings.setChoice(choice)
         settings.setAutoRead(true)
         settings.setSpeakTool(true)
+        settings.setLiveDanmaku(true)
         settings.setMaxChars(300)
         settings.setEnabled(false)
 
@@ -102,6 +104,7 @@ class VoiceSettingsTest {
         assertEquals(choice, restarted.choice)
         assertTrue(restarted.autoRead)
         assertTrue(restarted.speakTool)
+        assertTrue(restarted.liveDanmaku)
         assertEquals(300, restarted.maxCharsPerSpeak)
         assertFalse(restarted.enabled)
     }

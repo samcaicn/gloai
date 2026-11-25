@@ -1,0 +1,10 @@
+# Mika 热更新 Worker。部署:wrangler secret put GITHUB_TOKEN(只读 PAT)→ wrangler deploy。
+# 部署后把客户端 HotUpdate.WORKER_BASE 指到这个 Worker 的域名。
+name = "mika-update"
+main = "cf_worker.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# UPDATE_REPO_OWNER = "samcaicn"
+# UPDATE_REPO_NAME = "gloai"
+# UPDATE_APK_ARTIFACT_PREFIX = "mika-apk*"

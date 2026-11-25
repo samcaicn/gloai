@@ -384,6 +384,15 @@
             android:name=".setup.PairingCodeReceiver"
             android:exported="false" />
 
+        <!-- 热更新通知上的「忽略」:只记一个号、撤掉通知 -->
+        <receiver
+            android:name=".update.HotUpdateReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.wangzan101.mika.update.HOT_UPDATE_DISMISS" />
+            </intent-filter>
+        </receiver>
+
         <!-- 内置助手(shell 身份)交接 Binder 的入口:shell 有这个权限,普通 App 没有;
              进入后还要核对调用方 uid、一次性口令和 APK,见 HelperHub.offer -->
         <provider

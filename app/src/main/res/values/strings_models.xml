@@ -240,6 +240,17 @@
     <string name="voice_streaming_note">Requires a compatible provider and 1× speed.</string>
     <string name="voice_auto_read">Read every answer aloud</string>
     <string name="voice_speak_tool">Let Mika speak on its own</string>
+    <string name="voice_live_danmaku">Read Douyin live comments aloud</string>
+    <string name="voice_live_danmaku_note">When a Douyin live room is on screen, speak new comments one by one. Requires accessibility and screen access for Douyin.</string>
+    <string name="hotupdate_channel">App updates</string>
+    <string name="hotupdate_notification_title">Mika update available</string>
+    <string name="hotupdate_notification_text">Build %1$d is ready (about %2$d MB). Tap to download and install.</string>
+    <string name="hotupdate_update_now">Update now</string>
+    <string name="hotupdate_dismiss">Dismiss</string>
+    <string name="hotupdate_downloading">Downloading the update in the background…</string>
+    <string name="hotupdate_no_update">Already up to date.</string>
+    <string name="hotupdate_needs_install_permission">Allow "install unknown apps" first, then tap Update again.</string>
+    <string name="hotupdate_download_failed">Update download failed. Check the update worker address and try again.</string>
     <string name="voice_max_chars">Longest read (characters)</string>
     <string name="voice_test">Say a test line</string>
     <string name="voice_testing">Making a test line…</string>

@@ -19,7 +19,9 @@ android {
         applicationId = "com.wangzan101.mika"
         minSdk = 29
         targetSdk = 35
-        versionCode = 52
+        // 热更新通道:CI 用 -PciRun=<run_number> 注入,与 artifact 名 mika-apk-<run_number>、
+        // Worker 代理回传的 version_code 同一口径,客户端直接比大小判新旧(见 HotUpdate)。
+        versionCode = (project.findProperty("ciRun") as? String)?.toIntOrNull() ?: 52
         versionName = "0.1.51"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GIT_HASH", "\"$gitHash\"")
@@ -55,7 +57,39 @@ android {
     // 评测任务集(仓库根目录 eval/tasks)打进测试包的 assets,真机评测跑器从那里读题
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("eval/tasks"))
 
+    // 热更新通道的固定签名:CI 从 secret SIGNING_KEY(PKCS12 keystore 的 base64)解开写到
+    // SIGNING_STORE_FILE;本地开发可放仓库根 keystore.properties。都没有时保持上游行为
+    // (release 不签名,仅本地构建检查用),不挡编译。
+    signingConfigs {
+        val envStore = System.getenv("SIGNING_STORE_FILE")
+        val propsFile = rootProject.file("keystore.properties")
+        if (!envStore.isNullOrBlank() || propsFile.exists()) {
+            create("hotupdate") {
+                if (!envStore.isNullOrBlank()) {
+                    storeFile = file(envStore)
+                    storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                    keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                    keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+                } else {
+                    val p = java.util.Properties().apply { propsFile.inputStream().use { load(it) } }
+                    storeFile = rootProject.file(p.getProperty("storeFile"))
+                    storePassword = p.getProperty("storePassword")
+                    keyAlias = p.getProperty("keyAlias")
+                    keyPassword = p.getProperty("keyPassword")
+                }
+            }
+        }
+    }
+
     buildTypes {
+        // release 用热更新 keystore(有配置时),保证 CI 产物能覆盖安装已装版本
+        getByName("release") {
+            signingConfigs.findByName("hotupdate")?.let { signingConfig = it }
+        }
+        // DEBUG 构建复用热更新 keystore,使 install -r 能直接覆盖已装版本、保留数据
+        getByName("debug") {
+            signingConfigs.findByName("hotupdate")?.let { signingConfig = it }
+        }
         // 真机验收时并排安装,保留发行版和用户数据;默认构建标识不变。
         if (providers.gradleProperty("devInstall").isPresent) getByName("debug") {
             applicationIdSuffix = ".dev"

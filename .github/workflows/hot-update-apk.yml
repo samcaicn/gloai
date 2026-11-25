@@ -1,0 +1,138 @@
+name: Mika hot update APK
+
+# 热更新通道:推送 mika 分支或手动触发时构建正式签名的 release APK,
+# artifact 名 mika-apk-<run_number>。run_number 注入 versionCode(-PciRun),
+# Worker(仓库 worker/mika-update)与客户端按同一个 run 号比新旧。
+# 签名材料在仓库 secrets:SIGNING_KEY(base64 的 PKCS12 keystore 全文)、
+# SIGNING_KEY_ALIAS、SIGNING_KEY_PASSWORD、SIGNING_STORE_PASSWORD。
+# 用固定 keystore 是为了让 install -r / 系统安装器能直接覆盖已装版本不丢数据;
+# 没有 secrets 就直接失败,不放未签名或每次换签名的包进热更新通道。
+on:
+  push:
+    branches: [mika]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hot-update-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: Build hot update APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Require signing secrets
+        shell: bash
+        run: |
+          if [ -z "${SIGNING_KEY:-}" ] || [ -z "${SIGNING_KEY_ALIAS:-}" ] || \
+             [ -z "${SIGNING_KEY_PASSWORD:-}" ] || [ -z "${SIGNING_STORE_PASSWORD:-}" ]; then
+            echo "::error::热更新构建需要 4 个仓库 secrets:SIGNING_KEY(base64 的 PKCS12 keystore)、SIGNING_KEY_ALIAS、SIGNING_KEY_PASSWORD、SIGNING_STORE_PASSWORD。没有固定签名就没法覆盖安装,不要用 debug 包顶替。"
+            exit 1
+          fi
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools platforms;android-36 build-tools;35.0.0"
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Decode and validate signing keystore
+        id: keystore
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          KS="$RUNNER_TEMP/keystore.p12"
+          printf '%s' "$SIGNING_KEY" | base64 -d > "$KS"
+          if [ ! -s "$KS" ]; then
+            echo "::error::SIGNING_KEY base64 解码后为空或损坏"
+            exit 1
+          fi
+          if keytool -list -keystore "$KS" -storetype PKCS12 \
+              -storepass "$SIGNING_STORE_PASSWORD" -alias "$SIGNING_KEY_ALIAS" > /dev/null 2>&1; then
+            echo "keystore 校验通过,别名 $SIGNING_KEY_ALIAS"
+          else
+            echo "::error::keystore 校验失败(口令错、别名不存在或不是 PKCS12)"
+            exit 1
+          fi
+          {
+            echo "SIGNING_STORE_FILE=$KS"
+            echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS"
+            echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD"
+            echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Build release APK (keystore-signed)
+        env:
+          SIGNING_STORE_FILE: ${{ env.SIGNING_STORE_FILE }}
+          SIGNING_KEY_ALIAS: ${{ env.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ env.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ env.SIGNING_STORE_PASSWORD }}
+        run: ./gradlew :app:assembleRelease -PciRun=${{ github.run_number }} --stacktrace > build_release.log 2>&1 || { tail -80 build_release.log; exit 1; }
+
+      - name: Collect and verify APKs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          ls -la app/build/outputs/apk/release/ || true
+          UNI=$(find app/build/outputs/apk -name 'app-universal-release*.apk' | head -1)
+          ARM=$(find app/build/outputs/apk -name 'app-arm64-v8a-release*.apk' | head -1)
+          if [ -z "$UNI" ]; then echo "::error::没有找到 universal release APK"; exit 1; fi
+          cp "$UNI" dist/app-release.apk
+          if [ -n "$ARM" ]; then cp "$ARM" dist/app-arm64.apk; fi
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::找不到 apksigner,无法校验签名"
+            exit 1
+          fi
+          for APK in dist/*.apk; do
+            "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "apk_verify_$(basename "$APK").log"
+            if ! "$APKSIGNER" verify "$APK" > /dev/null 2>&1; then
+              echo "::error::apksigner 校验不通过:$APK"
+              exit 1
+            fi
+          done
+          ls -la dist/
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: mika-apk-${{ github.run_number }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: hot-update-build-logs
+          path: |
+            build_release.log
+          if-no-files-found: ignore

@@ -144,6 +144,10 @@ internal fun VoiceModelContent(store: ProviderStore, settings: VoiceSettings, on
                 trailing = { MikaSwitch(state.speakTool, settings::setSpeakTool) },
             )
             ListRow(
+                null, tr(R.string.voice_live_danmaku), note = tr(R.string.voice_live_danmaku_note),
+                trailing = { MikaSwitch(state.liveDanmaku, settings::setLiveDanmaku) },
+            )
+            ListRow(
                 null, tr(R.string.voice_save_enabled), note = tr(R.string.voice_save_note),
                 trailing = { MikaSwitch(state.saveEnabled, settings::setSaveEnabled) },
             )
@@ -303,6 +307,10 @@ private fun MigratedVoiceModelContent(
             ListRow(
                 null, tr(R.string.voice_speak_tool),
                 trailing = { MikaSwitch(state.speakTool, settings::setSpeakTool) },
+            )
+            ListRow(
+                null, tr(R.string.voice_live_danmaku), note = tr(R.string.voice_live_danmaku_note),
+                trailing = { MikaSwitch(state.liveDanmaku, settings::setLiveDanmaku) },
             )
             ListRow(
                 null, tr(R.string.voice_save_enabled), note = tr(R.string.voice_save_note),

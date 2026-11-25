@@ -60,6 +60,8 @@ data class VoiceSettingsState(
     val streaming: Boolean = false,
     val autoRead: Boolean = false,
     val speakTool: Boolean = false,
+    /** 抖音直播间的评论弹幕自动念出来;默认关。 */
+    val liveDanmaku: Boolean = false,
     /** 允许把生成的音频存进手机音乐库;默认关。 */
     val saveEnabled: Boolean = false,
     /** 每次保存前是否问用户;默认问。 */
@@ -125,6 +127,8 @@ class VoiceSettings(private val prefs: SharedPreferences) {
 
     fun setSpeakTool(on: Boolean) = update { copy(speakTool = on) }
 
+    fun setLiveDanmaku(on: Boolean) = update { copy(liveDanmaku = on) }
+
     fun setSaveEnabled(on: Boolean) = update { copy(saveEnabled = on) }
 
     fun setAskBeforeSave(on: Boolean) = update { copy(askBeforeSave = on) }
@@ -171,6 +175,7 @@ class VoiceSettings(private val prefs: SharedPreferences) {
         put("enabled", state.enabled)
         put("autoRead", state.autoRead)
         put("speakTool", state.speakTool)
+        put("liveDanmaku", state.liveDanmaku)
         put("saveEnabled", state.saveEnabled)
         put("askBeforeSave", state.askBeforeSave)
         put("maxCharsPerSpeak", state.maxCharsPerSpeak)
@@ -209,6 +214,7 @@ class VoiceSettings(private val prefs: SharedPreferences) {
             streaming = streaming,
             autoRead = bool("autoRead", false),
             speakTool = bool("speakTool", false),
+            liveDanmaku = bool("liveDanmaku", false),
             saveEnabled = bool("saveEnabled", false),
             askBeforeSave = bool("askBeforeSave", true),
             maxCharsPerSpeak = ((obj["maxCharsPerSpeak"] as? JsonPrimitive)?.intOrNull ?: VoiceSettingsState.DEFAULT_MAX_CHARS)

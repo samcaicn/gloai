@@ -439,6 +439,11 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
         com.wangzan101.mika.settings.VoiceSettings(getSharedPreferences(FeatureFlags.PREFS, MODE_PRIVATE))
     }
 
+    /** 抖音直播间评论播报:声音页开关打开时读主屏的无障碍文字,逐条合成语音。 */
+    internal val liveDanmaku by lazy {
+        com.wangzan101.mika.live.LiveDanmakuRuntime(this, scope)
+    }
+
     /** 播放工作区里的一段音频(生成结果);读不到时什么都不做。 */
     private suspend fun playWorkspaceAudio(conversationId: String, path: String) {
         val prefix = com.wangzan101.mika.core.workspace.SandboxPaths.WORKSPACE + "/"
@@ -679,6 +684,12 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
         if (!quit) runRecovery.recover().let { if (it.isNotEmpty()) Log.w("MikaTask", "${it.size} runs interrupted by process restart") }
         // 用户已绑定并打开微信渠道时恢复监听；完全退出期间由各运行入口统一拒绝补起
         wechat.ensureRunning()
+        // 直播间评论播报:只有声音页开关打开、且不在「完全退出」状态时才真正读屏
+        liveDanmaku.start()
+        // 热更新:启动时查一次 Worker 代理的 CI 构建(内部限频 6 小时),有新包发通知
+        if (!quit) {
+            scope.launch(Dispatchers.IO) { runCatching { com.wangzan101.mika.update.HotUpdate.autoCheck(this@MikaApp) } }
+        }
         if (flags.proactive()) proactive.start(paused = quit)
         // 先对一下设备时区;退出期间不排闹钟,重新打开时再补排
         if (!quit) scope.launch(Dispatchers.IO) { runCatching { TriggerRuntime.syncTimeZone(this@MikaApp); TriggerRuntime.rearm(this@MikaApp) } }

@@ -187,6 +187,7 @@ class MainActivity : ComponentActivity() {
         requestedCallHistoryId = intent.getStringExtra(EXTRA_CALL_HISTORY_ID)
         takeVoiceCall(intent)
         takeTeach(intent)
+        takeHotUpdate(intent)
         shareInCurrent = savedInstanceState?.getBoolean(STATE_SHARE_IN_CURRENT, false) ?: false
         shareHandled = savedInstanceState?.getBoolean(STATE_SHARE_HANDLED, false) ?: false
         verifiedShareUris = savedInstanceState?.getStringArrayList(STATE_VERIFIED_SHARE_URIS).orEmpty()
@@ -243,6 +244,7 @@ class MainActivity : ComponentActivity() {
         }
         takeVoiceCall(intent)
         takeTeach(intent)
+        takeHotUpdate(intent)
         requestedSharedDraft?.let { app.sharedDrafts.discard(it.draft.attachments) }
         requestedSharedDraft = null
         // 界面已在后台存活时收到分享:放入当前打开的会话,而不是新建会话。
@@ -418,6 +420,38 @@ class MainActivity : ComponentActivity() {
         intent.removeExtra(EXTRA_OPEN_VOICE_CALL)
     }
 
+    /** 热更新通知点进来:先确认还有新构建,后台下载,然后拉起系统安装器。 */
+    private fun takeHotUpdate(intent: Intent) {
+        if (!intent.getBooleanExtra(EXTRA_OPEN_HOT_UPDATE, false)) return
+        intent.removeExtra(EXTRA_OPEN_HOT_UPDATE)
+        Toast.makeText(this, R.string.hotupdate_downloading, Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val info = runCatching { com.wangzan101.mika.update.HotUpdate.check(this@MainActivity, force = true) }.getOrNull()
+            if (info == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, R.string.hotupdate_no_update, Toast.LENGTH_SHORT).show()
+                }
+                return@launch
+            }
+            try {
+                val apk = com.wangzan101.mika.update.HotUpdate.downloadApk(this@MainActivity)
+                withContext(Dispatchers.Main) {
+                    val hot = com.wangzan101.mika.update.HotUpdate
+                    if (hot.canInstall(this@MainActivity)) hot.install(this@MainActivity, apk)
+                    else {
+                        Toast.makeText(this@MainActivity, R.string.hotupdate_needs_install_permission, Toast.LENGTH_LONG).show()
+                        hot.openInstallPermSettings(this@MainActivity)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "hot update download failed: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, R.string.hotupdate_download_failed, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
     companion object {
         const val EXTRA_OPEN_CONVERSATION = "open_conversation"
         const val EXTRA_OPEN_CALLS = "open_calls"
@@ -425,6 +459,7 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_OPEN_TEACH = "open_teach"
         const val EXTRA_TEACH_GOAL = "teach_goal"
         const val EXTRA_OPEN_VOICE_CALL = "open_voice_call"
+        const val EXTRA_OPEN_HOT_UPDATE = "open_hot_update"
         private const val STATE_SHARE_IN_CURRENT = "share_in_current"
         private const val STATE_SHARE_HANDLED = "share_handled"
         private const val STATE_VERIFIED_SHARE_URIS = "verified_share_uris"
