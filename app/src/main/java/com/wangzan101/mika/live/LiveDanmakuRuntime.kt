@@ -74,21 +74,19 @@ internal class LiveDanmakuRuntime(
 
     /** 只看主屏的无障碍文字,不截图、不 OCR:直播间的评论是原生 TextView,树里就有。 */
     private suspend fun observe() {
-        val metrics = app.resources.displayMetrics
         while (currentCoroutineContext().isActive) {
-            if (ScreenAccessibility.instance.value == null) {
+            val service = ScreenAccessibility.instance.value
+            if (service == null) {
                 delay(IDLE_POLL_MS)
                 continue
             }
+            val metrics = service.resources.displayMetrics
             val read = ScreenReader.read(
-                ScreenAccessibility.windowsOn(Display.DEFAULT_DISPLAY),
+                service.windowsOn(Display.DEFAULT_DISPLAY),
                 metrics.widthPixels, metrics.heightPixels,
             )
-            val pkg = read.topPackage ?: run {
-                delay(IDLE_POLL_MS)
-                continue
-            }
-            if (pkg !in DOUYIN_PACKAGES || !app.appAccess.current().canShare(pkg)) {
+            val pkg = read.topPackage
+            if (pkg == null || pkg !in DOUYIN_PACKAGES || !app.appAccess.current().canShare(pkg)) {
                 delay(IDLE_POLL_MS)
                 continue
             }
