@@ -1,0 +1,134 @@
+name: Speech APK
+
+# 照 mika 的热更新 APK 通道：固定 keystore 签名 + CI run_number 注入 versionCode，
+# 只产出 arm64 release 包，artifact 名带最终 versionCode。签名材料用 gloai 仓库
+# 已配置的 SIGNING_* secrets（与 mika 同一把 key，install -r 可直接覆盖安装）。
+on:
+  push:
+    branches: [ speech-apk ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: speech-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: Build signed arm64 APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Require signing secrets
+        shell: bash
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          if [ -z "${SIGNING_KEY:-}" ] || [ -z "${SIGNING_KEY_ALIAS:-}" ] || \
+             [ -z "${SIGNING_KEY_PASSWORD:-}" ] || [ -z "${SIGNING_STORE_PASSWORD:-}" ]; then
+            echo "::error::构建需要 4 个仓库 secrets：SIGNING_KEY / SIGNING_KEY_ALIAS / SIGNING_KEY_PASSWORD / SIGNING_STORE_PASSWORD"
+            exit 1
+          fi
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0"
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Decode and validate signing keystore
+        id: keystore
+        shell: bash
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KS="$RUNNER_TEMP/keystore.p12"
+          printf '%s' "$SIGNING_KEY" | base64 -d > "$KS"
+          [ -s "$KS" ] || { echo "::error::SIGNING_KEY 解码后为空或损坏"; exit 1; }
+          keytool -list -keystore "$KS" -storetype PKCS12 \
+            -storepass "$SIGNING_STORE_PASSWORD" -alias "$SIGNING_KEY_ALIAS" > /dev/null 2>&1 \
+            || { echo "::error::keystore 校验失败（口令/别名/格式）"; exit 1; }
+          {
+            echo "SIGNING_STORE_FILE=$KS"
+            echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS"
+            echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD"
+            echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Fetch sherpa-onnx AAR (on-device ZipVoice)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p app/libs
+          if [ ! -s app/libs/sherpa-onnx-2.0.3.aar ]; then
+            curl -fsSL --retry 3 -o app/libs/sherpa-onnx-2.0.3.aar \
+              https://github.com/k2-fsa/sherpa-onnx/releases/download/v2.0.3/sherpa-onnx-2.0.3.aar
+          fi
+          test -s app/libs/sherpa-onnx-2.0.3.aar || { echo "::error::sherpa-onnx AAR 下载失败"; exit 1; }
+          echo "AAR size: $(stat -c%s app/libs/sherpa-onnx-2.0.3.aar) bytes"
+
+      - name: Build release APK
+        shell: bash
+        env:
+          SIGNING_STORE_FILE: ${{ env.SIGNING_STORE_FILE }}
+          SIGNING_KEY_ALIAS: ${{ env.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ env.SIGNING_KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ env.SIGNING_STORE_PASSWORD }}
+        run: |
+          VERSION_CODE=$(( 100 + ${{ github.run_number }} ))
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "speech versionCode=$VERSION_CODE (run_number=${{ github.run_number }})"
+          ./gradlew :app:assembleRelease -PciRun=$VERSION_CODE --stacktrace > build_release.log 2>&1 \
+            || { grep -E '^e: ' build_release.log | head -80 || true; tail -60 build_release.log; exit 1; }
+
+      - name: Collect and verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          APK=$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -type f | head -1)
+          if [ -z "$APK" ]; then echo "::error::没有找到 release APK"; exit 1; fi
+          cp "$APK" dist/app-arm64.apk
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          [ -n "$APKSIGNER" ] || { echo "::error::找不到 apksigner"; exit 1; }
+          "$APKSIGNER" verify --verbose --print-certs dist/app-arm64.apk | tee apk_verify.log
+          "$APKSIGNER" verify dist/app-arm64.apk > /dev/null 2>&1 \
+            || { echo "::error::APK 签名校验失败"; exit 1; }
+          ls -lh dist/
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: speech-apk-${{ env.VERSION_CODE }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: speech-build-logs
+          path: build_release.log
+          if-no-files-found: ignore

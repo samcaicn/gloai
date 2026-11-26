@@ -1,0 +1,13 @@
+.gradle/
+build/
+app/build/
+local.properties
+keystore.properties
+*.keystore
+*.p12
+.idea/
+*.iml
+.DS_Store
+
+# sherpa-onnx AAR 由 CI 在构建前下载，不入 git
+app/libs/*.aar
