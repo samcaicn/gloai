@@ -1,6 +1,7 @@
 package com.tuptup.speech.data
 
 import android.content.Context
+import java.security.MessageDigest
 
 /** 本机配置：店铺/产品背景、文本 API、播讲与决策开关。
  *  全部存 SharedPreferences，不上传、不依赖账号。 */
@@ -101,4 +102,23 @@ class Settings(ctx: Context) {
     var liveUrl: String
         get() = sp.getString("liveUrl", "") ?: ""
         set(v) = sp.edit().putString("liveUrl", v).apply()
+
+    // ---- 评论采集登录（本机密码，不联网） ----
+    /** 采集密码的 SHA-256（加固定盐），不存明文 */
+    var collectPinHash: String
+        get() = sp.getString("collectPinHash", "") ?: ""
+        set(v) = sp.edit().putString("collectPinHash", v).apply()
+
+    val hasCollectPin: Boolean get() = collectPinHash.isNotBlank()
+
+    fun setCollectPin(pin: String) { collectPinHash = sha256("tuptup-collect:$pin") }
+
+    fun checkCollectPin(pin: String): Boolean =
+        hasCollectPin && collectPinHash == sha256("tuptup-collect:$pin")
+
+    fun clearCollectPin() { sp.edit().remove("collectPinHash").apply() }
+
+    private fun sha256(s: String): String =
+        MessageDigest.getInstance("SHA-256").digest(s.toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
 }

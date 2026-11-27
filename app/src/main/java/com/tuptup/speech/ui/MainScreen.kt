@@ -43,6 +43,8 @@ fun MainScreen(vm: MainViewModel) {
     val ui by vm.ui.collectAsState()
     val products by vm.products.collectAsState()
     var tab by remember { mutableIntStateOf(0) }
+    // 评论采集解锁态只在内存里，重启 App / 进程被杀都需重新登录
+    var collectUnlocked by remember { mutableStateOf(false) }
 
     val micPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -78,7 +80,8 @@ fun MainScreen(vm: MainViewModel) {
         when (tab) {
             0 -> HomePage(vm, Modifier.padding(pad)) { i -> tab = i }
             1 -> ScriptPage(vm, ui, Modifier.padding(pad))
-            2 -> CommentPage(vm, Modifier.padding(pad))
+            2 -> if (collectUnlocked) CommentPage(vm, Modifier.padding(pad), onLock = { collectUnlocked = false })
+                  else CollectLoginGate(settings, onUnlocked = { collectUnlocked = true }, mod = Modifier.padding(pad))
             3 -> DataPage(Modifier.padding(pad), ui, settings, products) { i -> tab = i }
             4 -> SettingsPage(vm, settings, ui, products, Modifier.padding(pad))
         }
@@ -280,7 +283,7 @@ fun VoicePage(vm: MainViewModel, s: Settings, mod: Modifier) {
     var packReady by remember { mutableStateOf(anchor.isDownloaded) }
     var packBusy by remember { mutableStateOf(false) }
     var packProgress by remember { mutableIntStateOf(0) }
-    var anchorSid by remember { mutableIntStateOf(s.anchorVoiceSid) }
+    var anchorSid by remember { mutableIntStateOf(AnchorVoiceEngine.normalizeSid(s.anchorVoiceSid)) }
     val main = Handler(Looper.getMainLooper())
     fun toast(m: String) = android.widget.Toast.makeText(ctx, m, android.widget.Toast.LENGTH_SHORT).show()
 
@@ -293,8 +296,10 @@ fun VoicePage(vm: MainViewModel, s: Settings, mod: Modifier) {
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = mode == "default", onClick = {
-                    mode = "default"; s.voiceMode = "default"; toast("已切换默认音色")
-                }, label = { Text("默认", fontSize = 12.sp) })
+                    mode = "default"; s.voiceMode = "default"
+                    val voiceName = AnchorVoiceEngine.voice(anchorSid)?.name ?: "主播音色"
+                    toast("已切换：$voiceName")
+                }, label = { Text("主播音色", fontSize = 12.sp) })
                 FilterChip(selected = mode == "mine", onClick = {
                     mode = "mine"; s.voiceMode = "mine"; toast("已切换我的声音")
                 }, label = { Text("我的声音", fontSize = 12.sp) })
@@ -382,7 +387,7 @@ fun VoicePage(vm: MainViewModel, s: Settings, mod: Modifier) {
         // 主播音色（含克隆，按性别筛选；点击即切换）
         CardBox {
             Text("音色列表", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextMain)
-            Hint("点击即切换播讲音色")
+            Hint("点击汉字名称即切换；女声 3 款 / 男声 3 款")
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("全部" to "all", "女声" to "女声", "男声" to "男声").forEach { (label, key) ->
@@ -493,6 +498,8 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
     val scope = rememberCoroutineScope()
     var sub by remember { mutableStateOf("") }
     var advanced by remember { mutableStateOf(false) }
+    var newPin by remember { mutableStateOf("") }
+    var pinMsg by remember { mutableStateOf("") }
     if (sub.isNotBlank()) {
         Box(mod.fillMaxSize().background(Bg)) {
             when (sub) {
@@ -538,6 +545,25 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
                 Checkbox(jevOn, { jevOn = it; s.jevEnabled = it })
                 Text("智能话术", fontSize = 13.sp, color = TextMain)
             }
+        }
+        CardBox {
+            Text("采集登录", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextMain)
+            Hint(if (s.hasCollectPin) "已设密码 · 4-8 位数字，重设后立即生效" else "未设密码 · 首次进入评论采集页时设置")
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(newPin, { newPin = it; pinMsg = "" },
+                label = { Text("新密码（留空则清除）") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+            Spacer(Modifier.height(8.dp))
+            Row {
+                Button(onClick = {
+                    if (newPin.isBlank()) { s.clearCollectPin(); pinMsg = "密码已清除" }
+                    else if (newPin.length !in 4..8 || !newPin.all { it.isDigit() }) pinMsg = "需 4-8 位数字"
+                    else { s.setCollectPin(newPin); pinMsg = "密码已重设" }
+                    newPin = ""
+                }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Accent)) {
+                    Text("保存", color = Color.White, fontSize = 12.sp)
+                }
+            }
+            if (pinMsg.isNotBlank()) { Spacer(Modifier.height(6.dp)); Text(pinMsg, color = Muted, fontSize = 11.sp) }
         }
         CardBox {
             Text("自定义话术接口", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextMain)
