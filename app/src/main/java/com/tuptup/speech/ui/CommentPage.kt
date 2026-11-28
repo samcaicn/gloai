@@ -20,7 +20,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -49,7 +48,7 @@ private val CHANNELS = listOf(
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun CommentPage(vm: MainViewModel, mod: Modifier, onLock: () -> Unit) {
+fun CommentPage(vm: MainViewModel, mod: Modifier) {
     val ctx = LocalContext.current
     val cfg = remember { Settings(ctx) }
     val client = remember { LiveCommentClient.get(ctx) }
@@ -115,10 +114,6 @@ fun CommentPage(vm: MainViewModel, mod: Modifier, onLock: () -> Unit) {
                     color = if (status.contains("已")) AccentDeep else Muted, fontSize = 11.sp,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
             }
-            Spacer(Modifier.width(8.dp))
-            OutlinedButton(onClick = {
-                client.disconnect(); showWebView = false; webViewRef = null; onLock()
-            }) { Text("锁屏", fontSize = 11.sp) }
         }
         Spacer(Modifier.height(16.dp))
 
@@ -293,62 +288,6 @@ fun CommentPage(vm: MainViewModel, mod: Modifier, onLock: () -> Unit) {
         Box(Modifier.fillMaxSize().padding(bottom = 80.dp), contentAlignment = Alignment.BottomCenter) {
             Surface(color = TextMain, shape = RoundedCornerShape(20.dp)) {
                 Text(toast!!, color = Color.White, fontSize = 13.sp, modifier = Modifier.padding(10.dp, 18.dp))
-            }
-        }
-    }
-}
-
-/** 评论采集登录门：首启设 4-8 位数字密码，之后每次进入采集页都要解锁（仅内存态，重启 App 需重新登录） */
-@Composable
-fun CollectLoginGate(cfg: Settings, onUnlocked: () -> Unit, mod: Modifier) {
-    val firstTime = !cfg.hasCollectPin
-    var pin by remember { mutableStateOf("") }
-    var confirm by remember { mutableStateOf("") }
-    var err by remember { mutableStateOf("") }
-    var showResetHint by remember { mutableStateOf(false) }
-
-    Column(mod.fillMaxSize().verticalScroll(rememberScrollState()).background(Bg)) {
-        Spacer(Modifier.height(40.dp))
-        Text(if (firstTime) "采集登录 · 设置密码" else "采集登录",
-            color = TextMain, fontSize = 24.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 20.dp))
-        Spacer(Modifier.height(10.dp))
-        Text(if (firstTime) "首次使用请设置本机密码，之后进入评论采集需登录。" else "输入本机密码，解锁评论采集。",
-            color = Muted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 20.dp))
-        Spacer(Modifier.height(18.dp))
-        CardBox {
-            OutlinedTextField(pin, { pin = it; err = "" },
-                label = { Text(if (firstTime) "设置密码（4-8 位数字）" else "登录密码") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(), singleLine = true)
-            if (firstTime) {
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(confirm, { confirm = it; err = "" },
-                    label = { Text("再输一遍") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(), singleLine = true)
-            }
-            Spacer(Modifier.height(14.dp))
-            Button(onClick = {
-                when {
-                    pin.length !in 4..8 || !pin.all { it.isDigit() } -> err = "密码需 4-8 位数字"
-                    firstTime && pin != confirm -> err = "两次输入不一致"
-                    firstTime -> { cfg.setCollectPin(pin); onUnlocked() }
-                    cfg.checkCollectPin(pin) -> onUnlocked()
-                    else -> err = "密码不对，请重试"
-                }
-            }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Accent)) {
-                Text(if (firstTime) "设置并进入" else "解锁并进入", color = Color.White, fontSize = 13.sp)
-            }
-            if (err.isNotBlank()) {
-                Spacer(Modifier.height(8.dp))
-                Text(err, color = Danger, fontSize = 12.sp)
-            }
-            if (!firstTime) {
-                Spacer(Modifier.height(10.dp))
-                Text("忘记密码？到「设置 → 高级设置」重设", color = Muted, fontSize = 11.sp,
-                    modifier = Modifier.clickable { showResetHint = !showResetHint })
-                if (showResetHint) Hint("重设会清除评论采集密码，设备上的其他人也能进入采集页。")
             }
         }
     }

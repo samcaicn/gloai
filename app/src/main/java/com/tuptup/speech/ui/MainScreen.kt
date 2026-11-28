@@ -43,8 +43,6 @@ fun MainScreen(vm: MainViewModel) {
     val ui by vm.ui.collectAsState()
     val products by vm.products.collectAsState()
     var tab by remember { mutableIntStateOf(0) }
-    // 评论采集解锁态只在内存里，重启 App / 进程被杀都需重新登录
-    var collectUnlocked by remember { mutableStateOf(false) }
 
     val micPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -80,8 +78,7 @@ fun MainScreen(vm: MainViewModel) {
         when (tab) {
             0 -> HomePage(vm, Modifier.padding(pad)) { i -> tab = i }
             1 -> ScriptPage(vm, ui, Modifier.padding(pad))
-            2 -> if (collectUnlocked) CommentPage(vm, Modifier.padding(pad), onLock = { collectUnlocked = false })
-                  else CollectLoginGate(settings, onUnlocked = { collectUnlocked = true }, mod = Modifier.padding(pad))
+            2 -> CommentPage(vm, Modifier.padding(pad))
             3 -> DataPage(Modifier.padding(pad), ui, settings, products) { i -> tab = i }
             4 -> SettingsPage(vm, settings, ui, products, Modifier.padding(pad))
         }
@@ -498,8 +495,6 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
     val scope = rememberCoroutineScope()
     var sub by remember { mutableStateOf("") }
     var advanced by remember { mutableStateOf(false) }
-    var newPin by remember { mutableStateOf("") }
-    var pinMsg by remember { mutableStateOf("") }
     if (sub.isNotBlank()) {
         Box(mod.fillMaxSize().background(Bg)) {
             when (sub) {
@@ -545,25 +540,6 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
                 Checkbox(jevOn, { jevOn = it; s.jevEnabled = it })
                 Text("智能话术", fontSize = 13.sp, color = TextMain)
             }
-        }
-        CardBox {
-            Text("采集登录", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextMain)
-            Hint(if (s.hasCollectPin) "已设密码 · 4-8 位数字，重设后立即生效" else "未设密码 · 首次进入评论采集页时设置")
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(newPin, { newPin = it; pinMsg = "" },
-                label = { Text("新密码（留空则清除）") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-            Spacer(Modifier.height(8.dp))
-            Row {
-                Button(onClick = {
-                    if (newPin.isBlank()) { s.clearCollectPin(); pinMsg = "密码已清除" }
-                    else if (newPin.length !in 4..8 || !newPin.all { it.isDigit() }) pinMsg = "需 4-8 位数字"
-                    else { s.setCollectPin(newPin); pinMsg = "密码已重设" }
-                    newPin = ""
-                }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Accent)) {
-                    Text("保存", color = Color.White, fontSize = 12.sp)
-                }
-            }
-            if (pinMsg.isNotBlank()) { Spacer(Modifier.height(6.dp)); Text(pinMsg, color = Muted, fontSize = 11.sp) }
         }
         CardBox {
             Text("自定义话术接口", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextMain)
