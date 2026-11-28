@@ -50,7 +50,7 @@ fun LoginSheet(settings: Settings, onClose: () -> Unit) {
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         Surface(modifier = Modifier.fillMaxSize(), color = Bg) {
-            Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 16.dp)) {
+            Column(Modifier.fillMaxSize().systemBarsPadding().navigationBarsPadding().padding(horizontal = 16.dp)) {
                 // ---- 顶部：标题 + 关闭 + 说明（固定高度） ----
                 Spacer(Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {

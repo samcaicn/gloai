@@ -66,7 +66,7 @@ fun LiveSheet(vm: MainViewModel, settings: Settings, onClose: () -> Unit) {
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         Surface(modifier = Modifier.fillMaxSize(), color = Bg) {
-            Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 16.dp)) {
+            Column(Modifier.fillMaxSize().systemBarsPadding().navigationBarsPadding().padding(horizontal = 16.dp)) {
                 Spacer(Modifier.height(10.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
