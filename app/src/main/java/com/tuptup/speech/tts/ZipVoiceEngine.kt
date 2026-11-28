@@ -17,11 +17,12 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /**
- * 端侧零样本声音克隆（sherpa-onnx + ZipVoice-distill int8）。
+ * 端侧零样本声音克隆（sherpa-onnx + ZipVoice-distill fp32）。
  * 完全离线：模型放 filesDir/zipvoice/，参考音频 3 秒即可克隆。
+ * fp32 比 int8 音质明显更干净（无量化噪点），代价是体积与耗时（decoder 477MB）。
  *
  * 模型文件（首次用 downloadAll 下载，或 ADB push 到同目录）：
- *   encoder.int8.onnx / decoder.int8.onnx / tokens.txt /
+ *   encoder.onnx / decoder.onnx / tokens.txt /
  *   lexicon.txt / vocos_24khz.onnx / espeak-ng-data/
  */
 class ZipVoiceEngine(private val ctx: Context) {
@@ -40,8 +41,8 @@ class ZipVoiceEngine(private val ctx: Context) {
         /** 生成某文件的三级候选 URL（HF → GitHub/azure → R2） */
         fun sources(name: String): List<String> {
             val hf = when (name) {
-                "encoder.int8.onnx" -> "$HF_BASE/text_encoder_int8.onnx"
-                "decoder.int8.onnx" -> "$HF_BASE/fm_decoder_int8.onnx"
+                "encoder.onnx" -> "$HF_BASE/text_encoder.onnx"
+                "decoder.onnx" -> "$HF_BASE/fm_decoder.onnx"
                 "tokens.txt" -> "$HF_BASE/tokens.txt"
                 "lexicon.txt" -> "$HF_BASE/lexicon.txt"
                 // 注意：不能用 wetdog/vocos-mel-24khz-onnx 的 mel_spec_24khz.onnx——
@@ -98,8 +99,8 @@ class ZipVoiceEngine(private val ctx: Context) {
 
     val modelDir: File get() = dir
     val isDownloaded: Boolean
-        get() = File(dir, "encoder.int8.onnx").length() > 1_000_000 &&
-                File(dir, "decoder.int8.onnx").length() > 10_000_000 &&
+        get() = File(dir, "encoder.onnx").length() > 15_000_000 &&
+                File(dir, "decoder.onnx").length() > 400_000_000 &&
                 File(dir, "vocos_24khz.onnx").length() > 1_000_000
     val isReady: Boolean get() = tts != null
 
@@ -111,7 +112,7 @@ class ZipVoiceEngine(private val ctx: Context) {
     /** 下载全部模型文件；onProgress(已完成项, 总数, 当前文件名) */
     suspend fun downloadAll(onProgress: (Int, Int, String) -> Unit): Boolean = withContext(Dispatchers.IO) {
         val files = listOf(
-            "encoder.int8.onnx", "decoder.int8.onnx", "tokens.txt",
+            "encoder.onnx", "decoder.onnx", "tokens.txt",
             "vocos_24khz.onnx", "lexicon.txt"
         )
         try {
@@ -204,8 +205,8 @@ class ZipVoiceEngine(private val ctx: Context) {
                     modelDir = dir.absolutePath,
                     lexicon = if (lexicon.exists()) "lexicon.txt" else "",
                     isZipvoice = true,
-                    zipvoiceEncoder = "encoder.int8.onnx",
-                    zipvoiceDecoder = "decoder.int8.onnx",
+                    zipvoiceEncoder = "encoder.onnx",
+                    zipvoiceDecoder = "decoder.onnx",
                     zipvoiceVocoder = File(dir, "vocos_24khz.onnx").absolutePath,
                     numThreads = 4
                 )
@@ -238,13 +239,13 @@ class ZipVoiceEngine(private val ctx: Context) {
                 cachedRefRate = wave.sampleRate
                 wave.samples
             }
-            // numSteps 3→8：steps 越多波形越平滑，干涩/金属感明显下降（端侧慢一点但可接受）。
-            // silenceScale 略压缩句间停顿，避免机械拖沓。
+            // fp32 模型本身已无明显量化噪点，4 步（蒸馏模型的优化步数）即可出干净波形；
+            // 再往上加步数对 distill 无增益、耗时翻倍。silenceScale 略压缩句间停顿。
             val cfg = GenerationConfig(
                 referenceAudio = samples,
                 referenceSampleRate = cachedRefRate,
                 referenceText = referenceText,
-                numSteps = 8,
+                numSteps = 4,
                 silenceScale = 0.85f,
                 extra = mapOf("min_char_in_sentence" to "10")
             )

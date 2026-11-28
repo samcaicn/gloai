@@ -16,17 +16,17 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * 主播音色包：kokoro v1.1-zh int8（多音色，男女可选），完全离线。
- * 文件清单来自 csukuangfj/kokoro-int8-multi-lang-v1_1（hf-mirror 可直连），
+ * 主播音色包：kokoro v1.1-zh fp32（多音色，男女可选），完全离线。
+ * 文件清单来自 csukuangfj/kokoro-multi-lang-v1_1（hf-mirror 可直连），
  * 语法合成走 lexicon（v2.0.3 起 dataDir 已废弃，无需 espeak-ng-data）。
  */
 class AnchorVoiceEngine(private val ctx: Context) {
     companion object {
         private const val TAG = "AnchorVoice"
         private const val MODEL_DIR = "anchor"
-        private const val BASE = "https://hf-mirror.com/csukuangfj/kokoro-int8-multi-lang-v1_1/resolve/main"
+        private const val BASE = "https://hf-mirror.com/csukuangfj/kokoro-multi-lang-v1_1/resolve/main"
         val FILES = listOf(
-            "model.int8.onnx", "voices.bin", "tokens.txt",
+            "model.onnx", "voices.bin", "tokens.txt",
             "lexicon-zh.txt", "lexicon-us-en.txt", "lexicon-gb-en.txt",
             "date-zh.fst", "number-zh.fst", "phone-zh.fst"
         )
@@ -67,7 +67,7 @@ class AnchorVoiceEngine(private val ctx: Context) {
     private val initLock = Any()
 
     val isDownloaded: Boolean
-        get() = File(dir, "model.int8.onnx").length() > 50_000_000 &&
+        get() = File(dir, "model.onnx").length() > 300_000_000 &&
                 File(dir, "voices.bin").length() > 20_000_000 &&
                 File(dir, "tokens.txt").length() > 100
 
@@ -133,7 +133,7 @@ class AnchorVoiceEngine(private val ctx: Context) {
                 val config = OfflineTtsConfig(
                     model = OfflineTtsModelConfig(
                         kokoro = OfflineTtsKokoroModelConfig(
-                            model = "$d/model.int8.onnx",
+                            model = "$d/model.onnx",
                             voices = "$d/voices.bin",
                             tokens = "$d/tokens.txt",
                             lexicon = "$d/lexicon-zh.txt,$d/lexicon-us-en.txt,$d/lexicon-gb-en.txt"
