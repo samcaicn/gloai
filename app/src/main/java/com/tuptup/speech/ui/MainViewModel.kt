@@ -48,10 +48,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         // 仅 WiFi 下自动拉取 180MB，避免走流量；成功后置标记不再重复。
         if (!settings.useLocalVoice && !tts.anchor.isDownloaded && !settings.anchorAutoDownloaded) {
             viewModelScope.launch {
-                val cm = app.getSystemService(android.net.ConnectivityManager::class.java)
-                val wifi = cm?.activeNetworkInfo?.let {
-                    it.isConnected && it.type == android.net.ConnectivityManager.TYPE_WIFI
-                } == true
+                // 权限/系统异常一律降级为不自动下载，绝不让后台任务崩掉主线程
+                val wifi = try {
+                    val cm = app.getSystemService(android.net.ConnectivityManager::class.java)
+                    val info = cm?.activeNetworkInfo
+                    info != null && info.isConnected &&
+                        info.type == android.net.ConnectivityManager.TYPE_WIFI
+                } catch (_: Exception) { false }
                 if (!wifi) return@launch
                 if (tts.anchor.downloadAll { _, _, _ -> Unit }) {
                     settings.anchorAutoDownloaded = true
