@@ -12,15 +12,16 @@ object Platforms {
     // 登录页必须用桌面 UA 打开（见 LoginSheet）：移动 UA 下各站只显示「下载APP」、
     // 闪屏或 500，根本没有登录入口。下列 URL 均在真机 Chrome 桌面 UA 下实测能看到登录：
     //   抖音 www.douyin.com → 自动弹「登录后免费畅享高清视频」扫码/验证码登录框
-    //   快手 www.kuaishou.com → 左侧红色「登录」按钮
+    //   快手 passport.kuaishou.com → 302 到 /pc/account/login（扫码/密码/验证码登录）
+    //       （www.kuaishou.com 首页在 WebView 里常卡在骨架屏，登录按钮在侧栏看不到，不可用）
     //   B站 passport.bilibili.com/login → 直接密码/短信/扫码登录页
-    //   视频号 channels.weixin.qq.com/login.html → 视频号助手扫码登录页
+    //   视频号 channels.weixin.qq.com/login.html → 视频号助手扫码登录页（必须桌面 UA，平板 UA 会被踢到「请在电脑上登录」）
     //   淘宝 live.taobao.com → 302 到 login.taobao.com 密码/短信/扫码登录
     // 注意 taobaolive.taobao.com 已返回 500，不可用。
     val ALL = listOf(
         LivePlatform("抖音", "https://www.douyin.com/", "https://live.douyin.com/",
             "[class*=chatroom] [class*=item], [class*=comment], [class*=danmu]"),
-        LivePlatform("快手", "https://www.kuaishou.com/", "https://live.kuaishou.com/",
+        LivePlatform("快手", "https://passport.kuaishou.com/", "https://live.kuaishou.com/",
             "[class*=comment-item], [class*=comment], [class*=danmu]"),
         LivePlatform("B站", "https://passport.bilibili.com/login", "https://live.bilibili.com/",
             ".chat-item, [class*=danmaku], [class*=comment]"),

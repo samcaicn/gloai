@@ -139,6 +139,11 @@ fun LoginSheet(settings: Settings, onClose: () -> Unit) {
                 // ---- 底部按钮：常驻可见 ----
                 if (selected != null) {
                     val platform = Platforms.byName(selected!!)!!
+                    // 页面偶尔加载不全（视频号二维码、快手骨架屏），提供刷新入口重载登录页
+                    OutlinedButton(onClick = { webView?.reload() }, modifier = Modifier.fillMaxWidth()) {
+                        Text("刷新登录页（加载不全时点这里）", fontSize = 12.sp)
+                    }
+                    Spacer(Modifier.height(6.dp))
                     Button(onClick = {
                         CookieManager.getInstance().flush()
                         settings.markPlatformLoggedIn(platform.name)
