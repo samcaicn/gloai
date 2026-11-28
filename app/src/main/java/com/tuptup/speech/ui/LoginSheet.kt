@@ -74,7 +74,7 @@ fun LoginSheet(settings: Settings, onClose: () -> Unit) {
             Spacer(Modifier.height(12.dp))
 
             if (selected == null) {
-                Surface(color = Card2, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().height(280.dp),
+                Box(Modifier.fillMaxWidth().height(280.dp).clip(RoundedCornerShape(16.dp)).background(Card2),
                     contentAlignment = Alignment.Center) {
                     Text("请先选一个平台", color = Muted, fontSize = 13.sp)
                 }
