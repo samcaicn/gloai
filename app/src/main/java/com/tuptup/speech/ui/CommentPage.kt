@@ -54,26 +54,23 @@ fun CommentPage(vm: MainViewModel, mod: Modifier) {
     val client = remember { LiveCommentClient.get(ctx) }
     val comments by client.comments.collectAsState()
     val status by client.status.collectAsState()
-    val rules by client.rules.collectAsState()
-    val replyEvent by client.replyEvents.collectAsState()
 
     var url by remember { mutableStateOf(cfg.liveUrl) }
     var selector by remember { mutableStateOf(cfg.commentSelector) }
-    var keyword by remember { mutableStateOf("") }
-    var reply by remember { mutableStateOf("") }
     var showWebView by remember { mutableStateOf(false) }
-    var autoReply by remember { mutableStateOf(cfg.commentAutoReplyEnabled) }
     var speakComments by remember { mutableStateOf(cfg.commentSpeakEnabled) }
     var toast by remember { mutableStateOf<String?>(null) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
     if (toast != null) LaunchedEffect(toast) { kotlinx.coroutines.delay(1800); toast = null }
 
-    LaunchedEffect(replyEvent) {
-        replyEvent?.let {
-            if (cfg.commentAutoReplyEnabled) {
-                client.sendReplyToPage(it.text)
-                toast = "自动回复：${it.text.take(16)}"
+    val aiReply by vm.aiReply.collectAsState()
+    LaunchedEffect(aiReply) {
+        aiReply?.let {
+            if (cfg.commentSpeakEnabled) {
+                client.sendReplyToPage(it)
+                toast = "AI 回复：${it.take(16)}"
+                vm.consumeAiReply()
             }
         }
     }
@@ -216,48 +213,9 @@ fun CommentPage(vm: MainViewModel, mod: Modifier) {
             Column(Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("读出新评论", color = TextMain, fontSize = 13.sp)
+                        Text("读出新评论 · AI 自动回复", color = TextMain, fontSize = 13.sp)
                     }
                     Switch(speakComments, { speakComments = it; cfg.commentSpeakEnabled = it })
-                }
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("关键词自动回复", color = TextMain, fontSize = 13.sp)
-                    }
-                    Switch(autoReply, { autoReply = it; cfg.commentAutoReplyEnabled = it })
-                }
-            }
-        }
-
-        Spacer(Modifier.height(18.dp))
-        CommentSectionTitle("自动回复规则", "${rules.size} RULES")
-        Surface(color = Card, shape = RoundedCornerShape(16.dp), modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
-            tonalElevation = 1.dp) {
-            Column(Modifier.padding(16.dp)) {
-                if (rules.isEmpty()) Text("暂无规则，命中关键词会自动回复", color = Muted, fontSize = 11.sp)
-                rules.forEach { r ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("「${r.keyword}」→ ${r.reply}", color = TextMain, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                        Icon(Icons.Default.Delete, contentDescription = "删除", tint = Danger,
-                            modifier = Modifier.size(18.dp).clickable {
-                                client.setRules(rules - r); toast = "规则已删除"
-                            })
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(keyword, { keyword = it }, label = { Text("关键词") },
-                    modifier = Modifier.fillMaxWidth(), singleLine = true)
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(reply, { reply = it }, label = { Text("回复内容") },
-                    modifier = Modifier.fillMaxWidth(), singleLine = true)
-                Spacer(Modifier.height(10.dp))
-                Button(onClick = {
-                    if (keyword.isBlank() || reply.isBlank()) { toast = "关键词和回复都要填"; return@Button }
-                    client.setRules(rules + LiveCommentClient.ReplyRule(keyword, reply))
-                    keyword = ""; reply = ""; toast = "规则已添加"
-                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Accent)) {
-                    Text("添加规则", color = Color.White, fontSize = 12.sp)
                 }
             }
         }

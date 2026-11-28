@@ -2,23 +2,20 @@ package com.tuptup.speech.data
 
 import android.content.Context
 
-/** 本机配置：店铺/产品背景、文本 API、播讲与决策开关。
- *  全部存 SharedPreferences，不上传、不依赖账号。 */
+/** 本机配置：工作信息、AI 接口、播讲与音色。全部存 SharedPreferences，不上传、不依赖账号。 */
 class Settings(ctx: Context) {
     private val sp = ctx.applicationContext.getSharedPreferences("tuptup_speech", Context.MODE_PRIVATE)
 
+    /** 基本工作信息 = 店铺名称 + 工作内容，AI 据此生成话术 */
     var shopName: String
         get() = sp.getString("shopName", "") ?: ""
         set(v) = sp.edit().putString("shopName", v).apply()
 
-    var shopLocation: String
-        get() = sp.getString("shopLocation", "") ?: ""
-        set(v) = sp.edit().putString("shopLocation", v).apply()
+    var workInfo: String
+        get() = sp.getString("workInfo", sp.getString("shopFeatures", "") ?: "") ?: ""
+        set(v) = sp.edit().putString("workInfo", v).apply()
 
-    var shopFeatures: String
-        get() = sp.getString("shopFeatures", "") ?: ""
-        set(v) = sp.edit().putString("shopFeatures", v).apply()
-
+    /** 供天气补充信息使用；AI 生成不依赖此项 */
     var city: String
         get() = sp.getString("city", "郑州") ?: "郑州"
         set(v) = sp.edit().putString("city", v).apply()
@@ -58,11 +55,7 @@ class Settings(ctx: Context) {
         get() = sp.getFloat("ttsSpeed", 1.0f)
         set(v) = sp.edit().putFloat("ttsSpeed", v).apply()
 
-    var jevEnabled: Boolean
-        get() = sp.getBoolean("jevEnabled", true)
-        set(v) = sp.edit().putBoolean("jevEnabled", v).apply()
-
-    /** 音色模式：default=默认音色，mine=我的声音（本机复刻） */
+    /** 音色模式：default=主播音色，mine=我的声音（本机复刻） */
     var voiceMode: String
         get() = sp.getString("voiceMode", "default") ?: "default"
         set(v) = sp.edit().putString("voiceMode", v).apply()
@@ -80,25 +73,23 @@ class Settings(ctx: Context) {
         get() = sp.getInt("anchorVoiceSid", 3)
         set(v) = sp.edit().putInt("anchorVoiceSid", v).apply()
 
-    /** 播讲风格：热情/专业/亲切/幽默 */
-    var speakStyle: String
-        get() = sp.getString("speakStyle", "热情") ?: "热情"
-        set(v) = sp.edit().putString("speakStyle", v).apply()
-
     // ---- 评论联动 ----
     var commentSpeakEnabled: Boolean
         get() = sp.getBoolean("commentSpeakEnabled", true)
         set(v) = sp.edit().putBoolean("commentSpeakEnabled", v).apply()
 
-    var commentAutoReplyEnabled: Boolean
-        get() = sp.getBoolean("commentAutoReplyEnabled", true)
-        set(v) = sp.edit().putBoolean("commentAutoReplyEnabled", v).apply()
-
-    var commentSelector: String
-        get() = sp.getString("commentSelector", "[class*=comment], [class*=danmu], .chat-item") ?: "[class*=comment], [class*=danmu], .chat-item"
-        set(v) = sp.edit().putString("commentSelector", v).apply()
-
     var liveUrl: String
         get() = sp.getString("liveUrl", "") ?: ""
         set(v) = sp.edit().putString("liveUrl", v).apply()
+
+    /** 评论采集节点选择器：默认通用，特殊平台可改 */
+    var commentSelector: String
+        get() = sp.getString("commentSelector", "[class*=comment], [class*=danmu], .chat-item")
+            ?: "[class*=comment], [class*=danmu], .chat-item"
+        set(v) = sp.edit().putString("commentSelector", v).apply()
+
+    /** 补充工作/产品信息后是否立即重新生成话术 */
+    var autoRegen: Boolean
+        get() = sp.getBoolean("autoRegen", true)
+        set(v) = sp.edit().putBoolean("autoRegen", v).apply()
 }

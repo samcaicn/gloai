@@ -65,23 +65,7 @@ fun DataPage(mod: Modifier, ui: UiState, settings: Settings, products: List<Prod
             Column(Modifier.padding(16.dp)) {
                 StatusRow("评论采集", liveStatus, liveStatus.contains("已"))
                 StatusRow("运行状态", ui.status, ui.generating)
-                StatusRow("实时信息", if (ui.context != null) "已获取 · ${ui.context!!.time}" else "未获取", ui.context != null)
             }
-        }
-
-        ui.context?.let { c ->
-            Spacer(Modifier.height(16.dp))
-            SectionTitle("实时上下文", "CONTEXT")
-            InfoCard(listOf("天气" to c.weather, "热点" to c.hotspots, "更新时间" to c.time))
-        }
-        ui.decision?.let { d ->
-            Spacer(Modifier.height(16.dp))
-            SectionTitle("最近话术", "LATEST")
-            InfoCard(listOf(
-                "内容" to d.selectedId,
-                "匹配度" to "${(d.confidence * 100).toInt()}%",
-                "耗时" to "${d.latencyMs} ms"
-            ))
         }
 
         Spacer(Modifier.height(16.dp))

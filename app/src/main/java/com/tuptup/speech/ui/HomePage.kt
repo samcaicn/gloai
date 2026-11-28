@@ -52,12 +52,9 @@ fun HomePage(vm: MainViewModel, mod: Modifier, onTab: (Int) -> Unit) {
                 Text(greet, color = Muted, fontSize = 12.sp)
                 Text("Tuptup 直播中控", color = TextMain, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
-            Surface(color = if (ui.jevReady) AccentSoft else Card2, shape = RoundedCornerShape(20.dp)) {
-                Text(
-                    if (ui.jevReady) "已就绪" else "准备中",
-                    color = if (ui.jevReady) AccentDeep else Muted,
-                    fontSize = 11.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
+            Surface(color = AccentSoft, shape = RoundedCornerShape(20.dp)) {
+                Text("AI 主播", color = AccentDeep, fontSize = 11.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
             }
         }
         Spacer(Modifier.height(18.dp))

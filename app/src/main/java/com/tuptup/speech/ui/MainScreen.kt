@@ -100,58 +100,28 @@ fun Hint(text: String) { Text(text, color = Muted, fontSize = 12.sp) }
 
 @Composable
 fun ScriptPage(vm: MainViewModel, ui: UiState, mod: Modifier) {
-    val s = vm.settings()
-    var style by remember { mutableStateOf(s.speakStyle) }
-    var autoSpeak by remember { mutableStateOf(s.commentSpeakEnabled) }
     Column(mod.fillMaxWidth().verticalScroll(rememberScrollState()).background(Bg)) {
         Spacer(Modifier.height(18.dp))
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("直播讲解", color = TextMain, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                Text("有评论先回复，没评论自动讲解", color = Muted, fontSize = 11.sp)
+                Text("直播话术", color = TextMain, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text("策略与风格由 AI 决定，无需手动设置", color = Muted, fontSize = 11.sp)
             }
             StatusDot(ui)
         }
         Spacer(Modifier.height(14.dp))
         CardBox {
-            Text("播讲设置", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextMain)
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("热情", "专业", "亲切", "幽默").forEach { st ->
-                    FilterChip(selected = style == st, onClick = {
-                        style = st; s.speakStyle = st
-                    }, label = { Text(st, fontSize = 12.sp) })
-                }
-            }
-            Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("自动播讲", color = TextMain, fontSize = 13.sp)
-                    Text("评论回复 + 自动讲解，讲完一条再切下一条", color = Muted, fontSize = 10.sp)
+                Button(onClick = { vm.generate() }, modifier = Modifier.weight(1f),
+                    enabled = !ui.generating,
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent)) {
+                    Text(if (ui.generating) "AI 生成中…" else "生成话术", color = Color.White, fontWeight = FontWeight.Bold)
                 }
-                Switch(autoSpeak, {
-                    autoSpeak = it; s.commentSpeakEnabled = it
-                    if (it) vm.resumePlayback() else vm.stopSpeak()
-                })
-            }
-        }
-        ui.context?.let { c ->
-            CardBox {
-                Text("实时上下文", fontWeight = FontWeight.Bold, color = TextMain)
-                Spacer(Modifier.height(6.dp))
-                Chip("时间", c.time); Chip("天气", c.weather); Chip("热点", c.hotspots)
-            }
-        }
-        ui.decision?.let { d ->
-            CardBox {
-                Text("推荐话术", fontWeight = FontWeight.Bold, color = TextMain)
-                val s = vm.jevEngine().strategyById(d.selectedId)
-                Hint("${s.name}（匹配度 ${(d.confidence * 100).toInt()}%）")
             }
         }
         if (ui.lines.isNotEmpty()) {
             CardBox {
-                Text("最近讲解", fontWeight = FontWeight.Bold, color = TextMain)
+                Text("最近话术", fontWeight = FontWeight.Bold, color = TextMain)
                 ui.lines.forEachIndexed { i, line ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("${i + 1}", color = Accent, fontWeight = FontWeight.Bold, modifier = Modifier.width(24.dp))
@@ -183,7 +153,7 @@ fun Chip(label: String, value: String) {
 @Composable
 fun StatusDot(ui: UiState) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(color = if (ui.jevReady) Success else Color(0xFFD69A3C), shape = RoundedCornerShape(4.dp),
+        Surface(color = if (ui.status.contains("已")) Success else Color(0xFFD69A3C), shape = RoundedCornerShape(4.dp),
             modifier = Modifier.size(8.dp)) {}
         Spacer(Modifier.width(6.dp))
         Text(ui.status, color = Muted, fontSize = 11.sp)
@@ -191,33 +161,28 @@ fun StatusDot(ui: UiState) {
 }
 
 @Composable
-fun ShopPage(s: Settings, mod: Modifier) {
+fun ShopPage(vm: MainViewModel, s: Settings, mod: Modifier) {
     var name by remember { mutableStateOf(s.shopName) }
-    var loc by remember { mutableStateOf(s.shopLocation) }
-    var feat by remember { mutableStateOf(s.shopFeatures) }
-    var city by remember { mutableStateOf(s.city) }
+    var work by remember { mutableStateOf(s.workInfo) }
     val ctx = LocalContext.current
     Column(mod.fillMaxWidth().verticalScroll(rememberScrollState()).background(Bg)) {
         Spacer(Modifier.height(16.dp))
         CardBox {
-            Text("店铺设置", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextMain)
-            Hint("保存在本机，作为话术背景")
-            listOf("店铺名称" to name, "店铺地点" to loc, "特色亮点" to feat, "天气城市" to city).forEach { (l, v) ->
-                Spacer(Modifier.height(8.dp))
-                Text(l, color = Muted, fontSize = 12.sp)
-                OutlinedTextField(v, { nv ->
-                    when (l) {
-                        "店铺名称" -> { name = nv; s.shopName = nv }
-                        "店铺地点" -> { loc = nv; s.shopLocation = nv }
-                        "特色亮点" -> { feat = nv; s.shopFeatures = nv }
-                        "天气城市" -> { city = nv; s.city = nv }
-                    }
-                }, modifier = Modifier.fillMaxWidth(), singleLine = l != "特色亮点")
-            }
-            Button(onClick = { android.widget.Toast.makeText(ctx, "已保存到本机", android.widget.Toast.LENGTH_SHORT).show() },
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            Text("工作信息", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextMain)
+            Hint("只填这两项，其余交给 AI；保存后立即用新信息生成话术")
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(name, { name = it }, label = { Text("店铺名称") },
+                modifier = Modifier.fillMaxWidth(), singleLine = true)
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(work, { work = it }, label = { Text("工作内容") },
+                modifier = Modifier.fillMaxWidth(), minLines = 3)
+            Spacer(Modifier.height(12.dp))
+            Button(onClick = {
+                vm.saveWorkInfo(name, work, "")
+                android.widget.Toast.makeText(ctx, "已保存，正在用新信息生成话术", android.widget.Toast.LENGTH_SHORT).show()
+            }, modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Accent)) {
-                Text("保存店铺信息", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("保存并生成", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -490,7 +455,6 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
     var key by remember { mutableStateOf("") }
     var model by remember { mutableStateOf(s.apiModel) }
     var speed by remember { mutableFloatStateOf(s.ttsSpeed) }
-    var jevOn by remember { mutableStateOf(s.jevEnabled) }
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     var sub by remember { mutableStateOf("") }
@@ -498,7 +462,7 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
     if (sub.isNotBlank()) {
         Box(mod.fillMaxSize().background(Bg)) {
             when (sub) {
-                "店铺" -> ShopPage(s, Modifier)
+                "店铺" -> ShopPage(vm, s, Modifier)
                 "产品" -> ProductPage(vm, products, Modifier)
                 "音色" -> VoicePage(vm, s, Modifier)
             }
@@ -535,12 +499,6 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
             }
         }
         if (advanced) {
-        CardBox {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(jevOn, { jevOn = it; s.jevEnabled = it })
-                Text("智能话术", fontSize = 13.sp, color = TextMain)
-            }
-        }
         CardBox {
             Text("自定义话术接口", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextMain)
             Hint("填写接口后话术由它生成，仅保存在本机")

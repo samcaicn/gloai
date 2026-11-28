@@ -66,7 +66,6 @@ android {
     buildFeatures { compose = true }
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
-        // sherpa-onnx AAR 与 onnxruntime-android 都带 libonnxruntime.so；保留一份即可
         jniLibs { pickFirsts += listOf("**/libonnxruntime.so") }
     }
 }
@@ -90,10 +89,6 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
-
-    // ONNX Runtime Android —— Jev 决策模型推理（XNNPACK CPU + NNAPI GPU/NPU）
-    // Maven 坐标是 com.microsoft.onnxruntime（包仍是 ai.onnxruntime.*）；中央仓库最高 1.20.0
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 
     // sherpa-onnx —— 端侧 ZipVoice 零样本声音克隆（本地 AAR，官方 v2.0.3 release）
     implementation(files("libs/sherpa-onnx-2.0.3.aar"))
