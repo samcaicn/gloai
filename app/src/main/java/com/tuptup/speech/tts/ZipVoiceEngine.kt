@@ -238,11 +238,14 @@ class ZipVoiceEngine(private val ctx: Context) {
                 cachedRefRate = wave.sampleRate
                 wave.samples
             }
+            // numSteps 3→8：steps 越多波形越平滑，干涩/金属感明显下降（端侧慢一点但可接受）。
+            // silenceScale 略压缩句间停顿，避免机械拖沓。
             val cfg = GenerationConfig(
                 referenceAudio = samples,
                 referenceSampleRate = cachedRefRate,
                 referenceText = referenceText,
-                numSteps = 3,
+                numSteps = 8,
+                silenceScale = 0.85f,
                 extra = mapOf("min_char_in_sentence" to "10")
             )
             val t0 = System.currentTimeMillis()
@@ -259,11 +262,18 @@ class ZipVoiceEngine(private val ctx: Context) {
     }
 
     private fun writeWav(samples: FloatArray, sampleRate: Int, out: File) {
+        // 峰值归一化 + tanh 软限幅：克隆输出常偏小发虚，硬放大又会削波刺耳
+        var peak = 0f
+        for (s in samples) if (kotlin.math.abs(s) > peak) peak = kotlin.math.abs(s)
+        val gain = if (peak > 0.001f) 0.92f / peak else 1f
         val pcm = ByteArray(samples.size * 2)
         for (i in samples.indices) {
-            val v = (samples[i].coerceIn(-1f, 1f) * 32767).toInt().toShort()
-            pcm[i * 2] = v.toByte()
-            pcm[i * 2 + 1] = (v.toInt() shr 8).toByte()
+            val v = (samples[i] * gain).coerceIn(-1f, 1f)
+            val shaped = if (kotlin.math.abs(v) > 0.75f)
+                kotlin.math.tanh(v * 1.3f) / kotlin.math.tanh(1.3f) else v
+            val sv = (shaped * 32767).toInt().coerceIn(-32768, 32767).toShort()
+            pcm[i * 2] = sv.toByte()
+            pcm[i * 2 + 1] = (sv.toInt() shr 8).toByte()
         }
         FileOutputStream(out).use { f ->
             val dataLen = pcm.size

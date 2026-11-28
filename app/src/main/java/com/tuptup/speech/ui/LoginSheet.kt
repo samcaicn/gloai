@@ -45,6 +45,11 @@ fun LoginSheet(settings: Settings, onClose: () -> Unit) {
         CookieManager.getInstance().apply { setAcceptCookie(true); flush() }
     }
 
+    // 桌面 UA：移动 UA 下抖音/快手只显示「下载APP」、视频号空白、淘宝直播 500，
+    // 完全没有登录入口。实测桌面 UA 下五个平台都能出现「登录」按钮或跳转登录页。
+    val desktopUa = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
     Dialog(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
@@ -92,13 +97,35 @@ fun LoginSheet(settings: Settings, onClose: () -> Unit) {
                                 WebView(c).apply {
                                     this.settings.javaScriptEnabled = true
                                     this.settings.domStorageEnabled = true
-                                    this.settings.userAgentString = this.settings.userAgentString + " TuptupLogin/1.0"
+                                    this.settings.useWideViewPort = true
+                                    this.settings.loadWithOverviewMode = true
+                                    this.settings.builtInZoomControls = true
+                                    this.settings.displayZoomControls = false
+                                    // 关键：桌面 UA 才会渲染出「登录」按钮
+                                    this.settings.userAgentString = desktopUa
                                     CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                                     webView = this
                                     webViewClient = object : android.webkit.WebViewClient() {
                                         override fun onPageFinished(view: WebView?, u: String?) {
                                             super.onPageFinished(view, u)
                                             CookieManager.getInstance().flush()
+                                            // 页面加载完把登录按钮滚到可见处并高亮，避免用户找不到
+                                            view?.evaluateJavascript(
+                                                """(function(){
+                                                  var kws=['登录','登陆','立即登录','扫码登录','登录视频号助手'];
+                                                  var els=document.querySelectorAll('button,a,div,span,[role=button]');
+                                                  for(var i=0;i<els.length;i++){
+                                                    var e=els[i]; var t=(e.innerText||'').trim();
+                                                    if(t.length>10) continue;
+                                                    for(var j=0;j<kws.length;j++){
+                                                      if(t.indexOf(kws[j])>=0){
+                                                        try{e.scrollIntoView({block:'center'});}catch(_){}
+                                                        e.style.outline='3px solid #ff6b35';
+                                                        return;
+                                                      }
+                                                    }
+                                                  }
+                                                })()""", null)
                                         }
                                     }
                                     loadUrl(platform.loginUrl)

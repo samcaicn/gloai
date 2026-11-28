@@ -44,6 +44,21 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         // 空闲预热：我的声音预热克隆模型，默认音色预热主播包
         if (settings.useLocalVoice) tts.local.warmUp() else tts.anchor.warmUp()
         _ui.value = _ui.value.copy(status = "已就绪")
+        // 专业音色包没下过就后台自动下一次：否则默认音色会落到干涩的系统 TTS。
+        // 仅 WiFi 下自动拉取 180MB，避免走流量；成功后置标记不再重复。
+        if (!settings.useLocalVoice && !tts.anchor.isDownloaded && !settings.anchorAutoDownloaded) {
+            viewModelScope.launch {
+                val cm = app.getSystemService(android.net.ConnectivityManager::class.java)
+                val wifi = cm?.activeNetworkInfo?.let {
+                    it.isConnected && it.type == android.net.ConnectivityManager.TYPE_WIFI
+                } == true
+                if (!wifi) return@launch
+                if (tts.anchor.downloadAll { _, _, _ -> Unit }) {
+                    settings.anchorAutoDownloaded = true
+                    tts.anchor.warmUp()
+                }
+            }
+        }
     }
 
     private fun workInfo(): String = listOf(settings.shopName, settings.workInfo)

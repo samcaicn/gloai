@@ -49,12 +49,19 @@ class AnchorVoiceEngine(private val ctx: Context) {
         fun normalizeSid(sid: Int): Int = voice(sid)?.sid ?: VOICES.first().sid
     }
 
+    /**
+     * 优先外部私有目录（可 adb push 预置音色包，且卸载重装不丢），回退内部 filesDir。
+     * 与 ZipVoice 同策略，方便真机直接把 180MB 音色包 push 进去，不用走慢速下载。
+     */
     private val dir: File
         get() {
-            val target = File(ctx.filesDir, MODEL_DIR)
+            val ext = try { ctx.getExternalFilesDir(null) } catch (_: Exception) { null }
+            val target = if (ext != null) File(ext, MODEL_DIR) else File(ctx.filesDir, MODEL_DIR)
             if (!target.exists()) target.mkdirs()
             return target
         }
+
+    val modelDir: File get() = dir
 
     @Volatile private var tts: OfflineTts? = null
     private val initLock = Any()
@@ -165,7 +172,13 @@ class AnchorVoiceEngine(private val ctx: Context) {
                 val t0 = System.currentTimeMillis()
                 // 老版本可能存着已精简掉的 sid，落到第一个可用音色，避免合成报错
                 val effectiveSid = voice(sid)?.sid ?: VOICES.first().sid
-                val cfg = GenerationConfig(sid = effectiveSid, speed = speed)
+                // silenceScale<1 压缩句间停顿，避免机械的拖沓感；speed 保持用户设定，
+                // 不再乘 stylePitch（音高与语速是两回事，之前叠加导致声音忽快忽慢发干）。
+                val cfg = GenerationConfig(
+                    sid = effectiveSid,
+                    speed = speed.coerceIn(0.5f, 1.6f),
+                    silenceScale = 0.85f
+                )
                 val audio = engine.generateWithConfig(text = text, config = cfg)
                 if (audio.samples.isEmpty()) {
                     return@withContext "合成结果为空"
@@ -189,7 +202,15 @@ class AnchorVoiceEngine(private val ctx: Context) {
 }
 
 private object WaveWriter {
+    /**
+     * 峰值归一化 + 软限幅：kokoro int8 输出峰值常只有 0.2~0.4，直接 *32767 会偏小发虚；
+     * 直接放大又会在尖峰硬削波产生毛刺刺耳。这里把峰值拉到 0.92，并用 tanh 软压，
+     * 既保证响度又不破音，明显改善「干涩、发虚」的听感。
+     */
     fun write(out: File, samples: FloatArray, sampleRate: Int) {
+        var peak = 0f
+        for (s in samples) if (kotlin.math.abs(s) > peak) peak = kotlin.math.abs(s)
+        val gain = if (peak > 0.001f) 0.92f / peak else 1f
         val bytes = samples.size * 2
         val header = java.nio.ByteBuffer.allocate(44).order(java.nio.ByteOrder.LITTLE_ENDIAN)
         header.put("RIFF".toByteArray(Charsets.US_ASCII)); header.putInt(36 + bytes)
@@ -201,7 +222,12 @@ private object WaveWriter {
         java.io.FileOutputStream(out).use { fos ->
             fos.write(header.array())
             val bb = java.nio.ByteBuffer.allocate(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-            for (s in samples) bb.putShort((s * 32767f).toInt().coerceIn(-32768, 32767).toShort())
+            for (s in samples) {
+                val v = (s * gain).coerceIn(-1f, 1f)
+                // tanh 软限幅：大信号平滑压缩，避免硬削波毛刺
+                val shaped = if (kotlin.math.abs(v) > 0.75f) kotlin.math.tanh(v * 1.3f) / kotlin.math.tanh(1.3f) else v
+                bb.putShort((shaped * 32767f).toInt().coerceIn(-32768, 32767).toShort())
+            }
             fos.write(bb.array())
         }
     }

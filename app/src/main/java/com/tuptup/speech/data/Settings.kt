@@ -88,6 +88,11 @@ class Settings(ctx: Context) {
             ?: "[class*=comment], [class*=danmu], .chat-item"
         set(v) = sp.edit().putString("commentSelector", v).apply()
 
+    /** 是否已自动下载过专业音色包（成功一次后不再重复拉取 180MB） */
+    var anchorAutoDownloaded: Boolean
+        get() = sp.getBoolean("anchorAutoDownloaded", false)
+        set(v) = sp.edit().putBoolean("anchorAutoDownloaded", v).apply()
+
     /** 补充工作/产品信息后是否立即重新生成话术 */
     var autoRegen: Boolean
         get() = sp.getBoolean("autoRegen", true)

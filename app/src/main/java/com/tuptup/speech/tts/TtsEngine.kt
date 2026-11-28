@@ -156,8 +156,9 @@ class TtsEngine(private val ctx: Context) {
         releasePlayer()
         _engine.value = "正在准备…"
         scope.launch {
+            // 语速只由 ttsSpeed 决定：stylePitch 是音高分析结果，乘进语速会让声音忽快忽慢发干
             val err = anchor.synthesize(text, settings.anchorVoiceSid, File(ctx.cacheDir, "tts_anchor.wav"),
-                speed = speed * stylePitch)
+                speed = speed)
             if (err == null) {
                 local.releaseTts() // 互斥加载
                 _engine.value = "播讲中"
