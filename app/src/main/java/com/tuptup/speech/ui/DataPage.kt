@@ -73,9 +73,8 @@ fun DataPage(mod: Modifier, ui: UiState, settings: Settings, products: List<Prod
         Surface(color = Card, shape = RoundedCornerShape(16.dp), modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
             tonalElevation = 1.dp) {
             Column(Modifier.padding(8.dp)) {
-                ManageRow("评论采集", Icons.Default.Comment) { onTab(1) }
-                ManageRow("音色设置", Icons.Default.RecordVoiceOver) { onTab(3) }
-                ManageRow("系统设置", Icons.Default.Settings) { onTab(3) }
+                ManageRow("音色设置", Icons.Default.RecordVoiceOver) { onTab(2) }
+                ManageRow("系统设置", Icons.Default.Settings) { onTab(2) }
             }
         }
 

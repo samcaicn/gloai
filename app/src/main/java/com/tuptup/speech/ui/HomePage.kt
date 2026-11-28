@@ -36,10 +36,12 @@ class ConnectState(ctx: Context) {
 }
 
 @Composable
-fun HomePage(vm: MainViewModel, mod: Modifier, onTab: (Int) -> Unit) {
+fun HomePage(vm: MainViewModel, mod: Modifier, onTab: (Int) -> Unit, onLive: () -> Unit) {
     val ctx = LocalContext.current
     val client = remember { LiveCommentClient.get(ctx) }
     val settings = remember { Settings(ctx) }
+    val loggedCount = Platforms.ALL.count { settings.isPlatformLoggedIn(it.name) }
+    val loggedInEmpty = loggedCount == 0
     val comments by client.comments.collectAsState()
     val liveStatus by client.status.collectAsState()
     val engine by vm.tts.engineState.collectAsState()
@@ -64,16 +66,16 @@ fun HomePage(vm: MainViewModel, mod: Modifier, onTab: (Int) -> Unit) {
 
         // 两个核心任务
         HeroCard(
-            icon = Icons.Default.Comment, title = "直播评论采集",
-            sub = if (comments.isEmpty()) "打开已登录直播间，自动抓取评论" else "已采集 ${comments.size} 条 · $liveStatus",
-            action = "进入采集", tint = Accent, mod = Modifier.padding(horizontal = 16.dp)
-        ) { onTab(1) }
+            icon = Icons.Default.Comment, title = "开播",
+            sub = if (loggedInEmpty) "登录后自动采集评论，无需手动配置" else "已登录 ${loggedCount} 个平台，点开播自动采集",
+            action = "开播", tint = Accent, mod = Modifier.padding(horizontal = 16.dp)
+        ) { onLive() }
         Spacer(Modifier.height(12.dp))
         HeroCard(
             icon = Icons.Default.RecordVoiceOver, title = "我的声音",
             sub = "录 3 秒，用你的声音播讲评论",
             action = "去设置", tint = Success, mod = Modifier.padding(horizontal = 16.dp)
-        ) { onTab(3) }
+        ) { onTab(2) }
 
         Spacer(Modifier.height(12.dp))
         HomeCardBox {
@@ -117,8 +119,8 @@ fun HomePage(vm: MainViewModel, mod: Modifier, onTab: (Int) -> Unit) {
         Spacer(Modifier.height(18.dp))
         HomeSectionTitle("快捷入口", "SHORTCUTS")
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Shortcut("数据中心", Icons.Default.InsertChart, Modifier.weight(1f)) { onTab(2) }
-            Shortcut("设置", Icons.Default.Settings, Modifier.weight(1f)) { onTab(3) }
+            Shortcut("数据中心", Icons.Default.InsertChart, Modifier.weight(1f)) { onTab(1) }
+            Shortcut("设置", Icons.Default.Settings, Modifier.weight(1f)) { onTab(2) }
         }
         Text(
             "所有数据仅保存在本机 · 克隆他人声音须本人授权",

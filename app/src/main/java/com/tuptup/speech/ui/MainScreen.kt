@@ -43,6 +43,7 @@ fun MainScreen(vm: MainViewModel) {
     val ui by vm.ui.collectAsState()
     val products by vm.products.collectAsState()
     var tab by remember { mutableIntStateOf(0) }
+    var showLive by remember { mutableStateOf(false) }
 
     val micPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -58,8 +59,7 @@ fun MainScreen(vm: MainViewModel) {
                 modifier = Modifier.borderTop(Line)) {
                 val items = listOf(
                     "首页" to Icons.Default.Home,
-                    "评论" to Icons.Default.Comment, "数据" to Icons.Default.BarChart,
-                    "设置" to Icons.Default.Settings
+                    "数据" to Icons.Default.BarChart, "设置" to Icons.Default.Settings
                 )
                 items.forEachIndexed { i, (label, icon) ->
                     NavigationBarItem(
@@ -76,12 +76,12 @@ fun MainScreen(vm: MainViewModel) {
         }
     ) { pad ->
         when (tab) {
-            0 -> HomePage(vm, Modifier.padding(pad)) { i -> tab = i }
-            1 -> CommentPage(vm, Modifier.padding(pad))
-            2 -> DataPage(Modifier.padding(pad), ui, settings, products) { i -> tab = i }
-            3 -> SettingsPage(vm, settings, ui, products, Modifier.padding(pad))
+            0 -> HomePage(vm, Modifier.padding(pad), onTab = { i -> tab = i }, onLive = { showLive = true })
+            1 -> DataPage(Modifier.padding(pad), ui, settings, products) { i -> tab = i }
+            2 -> SettingsPage(vm, settings, ui, products, Modifier.padding(pad))
         }
     }
+    if (showLive) LiveSheet(vm, settings, onClose = { showLive = false })
 }
 
 private fun Modifier.borderTop(color: Color) = this.border(1.dp, color)
