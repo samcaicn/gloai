@@ -20,6 +20,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tuptup.speech.data.Platforms
+import com.tuptup.speech.data.Settings
 import com.tuptup.speech.live.LiveCommentClient
 import com.tuptup.speech.ui.theme.*
 import java.text.SimpleDateFormat
@@ -37,6 +39,7 @@ class ConnectState(ctx: Context) {
 fun HomePage(vm: MainViewModel, mod: Modifier, onTab: (Int) -> Unit) {
     val ctx = LocalContext.current
     val client = remember { LiveCommentClient.get(ctx) }
+    val settings = remember { Settings(ctx) }
     val comments by client.comments.collectAsState()
     val liveStatus by client.status.collectAsState()
     val engine by vm.tts.engineState.collectAsState()
@@ -64,13 +67,36 @@ fun HomePage(vm: MainViewModel, mod: Modifier, onTab: (Int) -> Unit) {
             icon = Icons.Default.Comment, title = "直播评论采集",
             sub = if (comments.isEmpty()) "打开已登录直播间，自动抓取评论" else "已采集 ${comments.size} 条 · $liveStatus",
             action = "进入采集", tint = Accent, mod = Modifier.padding(horizontal = 16.dp)
-        ) { onTab(2) }
+        ) { onTab(1) }
         Spacer(Modifier.height(12.dp))
         HeroCard(
             icon = Icons.Default.RecordVoiceOver, title = "我的声音",
             sub = "录 3 秒，用你的声音播讲评论",
             action = "去设置", tint = Success, mod = Modifier.padding(horizontal = 16.dp)
-        ) { onTab(4) }
+        ) { onTab(3) }
+
+        Spacer(Modifier.height(12.dp))
+        HomeCardBox {
+            val logged = Platforms.ALL.filter { settings.isPlatformLoggedIn(it.name) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("开播平台", color = TextMain, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f))
+                Text("设置 → 平台登录", color = Accent, fontSize = 11.sp)
+            }
+            Spacer(Modifier.height(8.dp))
+            if (logged.isEmpty()) {
+                Hint("还没登录任何平台。到「设置 → 平台登录」里用 WebView 登录并保存，这里会显示。")
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    logged.forEach { p ->
+                        Surface(color = Success.copy(alpha = 0.12f), shape = RoundedCornerShape(12.dp)) {
+                            Text("${p.name} 已登录", color = Success, fontSize = 12.sp,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
+                        }
+                    }
+                }
+            }
+        }
 
         Spacer(Modifier.height(22.dp))
         HomeSectionTitle("使用步骤", "STEPS")
@@ -91,9 +117,8 @@ fun HomePage(vm: MainViewModel, mod: Modifier, onTab: (Int) -> Unit) {
         Spacer(Modifier.height(18.dp))
         HomeSectionTitle("快捷入口", "SHORTCUTS")
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Shortcut("直播讲解", Icons.Default.AutoAwesome, Modifier.weight(1f)) { onTab(1) }
-            Shortcut("数据中心", Icons.Default.InsertChart, Modifier.weight(1f)) { onTab(3) }
-            Shortcut("设置", Icons.Default.Settings, Modifier.weight(1f)) { onTab(4) }
+            Shortcut("数据中心", Icons.Default.InsertChart, Modifier.weight(1f)) { onTab(2) }
+            Shortcut("设置", Icons.Default.Settings, Modifier.weight(1f)) { onTab(3) }
         }
         Text(
             "所有数据仅保存在本机 · 克隆他人声音须本人授权",

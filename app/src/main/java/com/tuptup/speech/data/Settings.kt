@@ -92,4 +92,23 @@ class Settings(ctx: Context) {
     var autoRegen: Boolean
         get() = sp.getBoolean("autoRegen", true)
         set(v) = sp.edit().putBoolean("autoRegen", v).apply()
+
+    /** 已在 WebView 登录并保存 cookie 的平台名（逗号分隔） */
+    var loggedInPlatforms: String
+        get() = sp.getString("loggedInPlatforms", "") ?: ""
+        set(v) = sp.edit().putString("loggedInPlatforms", v).apply()
+
+    fun isPlatformLoggedIn(name: String): Boolean =
+        loggedInPlatforms.split(",").any { it == name }
+
+    fun markPlatformLoggedIn(name: String) {
+        val set = loggedInPlatforms.split(",").filter { it.isNotBlank() }.toMutableSet()
+        set.add(name)
+        loggedInPlatforms = set.joinToString(",")
+    }
+
+    fun clearPlatformLoggedIn(name: String) {
+        val set = loggedInPlatforms.split(",").filter { it.isNotBlank() && it != name }.toMutableSet()
+        loggedInPlatforms = set.joinToString(",")
+    }
 }

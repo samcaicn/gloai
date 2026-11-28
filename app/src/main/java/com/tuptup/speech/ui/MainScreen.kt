@@ -57,7 +57,7 @@ fun MainScreen(vm: MainViewModel) {
             NavigationBar(containerColor = Card, tonalElevation = 2.dp,
                 modifier = Modifier.borderTop(Line)) {
                 val items = listOf(
-                    "首页" to Icons.Default.Home, "直播" to Icons.Default.PlayArrow,
+                    "首页" to Icons.Default.Home,
                     "评论" to Icons.Default.Comment, "数据" to Icons.Default.BarChart,
                     "设置" to Icons.Default.Settings
                 )
@@ -77,10 +77,9 @@ fun MainScreen(vm: MainViewModel) {
     ) { pad ->
         when (tab) {
             0 -> HomePage(vm, Modifier.padding(pad)) { i -> tab = i }
-            1 -> ScriptPage(vm, ui, Modifier.padding(pad))
-            2 -> CommentPage(vm, Modifier.padding(pad))
-            3 -> DataPage(Modifier.padding(pad), ui, settings, products) { i -> tab = i }
-            4 -> SettingsPage(vm, settings, ui, products, Modifier.padding(pad))
+            1 -> CommentPage(vm, Modifier.padding(pad))
+            2 -> DataPage(Modifier.padding(pad), ui, settings, products) { i -> tab = i }
+            3 -> SettingsPage(vm, settings, ui, products, Modifier.padding(pad))
         }
     }
 }
@@ -458,6 +457,7 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     var sub by remember { mutableStateOf("") }
+    var showLogin by remember { mutableStateOf(false) }
     var advanced by remember { mutableStateOf(false) }
     if (sub.isNotBlank()) {
         Box(mod.fillMaxSize().background(Bg)) {
@@ -465,6 +465,7 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
                 "店铺" -> ShopPage(vm, s, Modifier)
                 "产品" -> ProductPage(vm, products, Modifier)
                 "音色" -> VoicePage(vm, s, Modifier)
+                "话术" -> ScriptPage(vm, ui, Modifier)
             }
             Button(onClick = { sub = "" }, modifier = Modifier.align(Alignment.TopEnd).padding(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Accent)) {
@@ -484,6 +485,14 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("店铺", "产品", "音色").forEach { n ->
                     OutlinedButton(onClick = { sub = n }, modifier = Modifier.weight(1f)) { Text(n, fontSize = 12.sp) }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { sub = "话术" }, modifier = Modifier.weight(1f)) { Text("话术", fontSize = 12.sp) }
+                Button(onClick = { showLogin = true }, modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent)) {
+                    Text("平台登录", color = Color.White, fontSize = 12.sp)
                 }
             }
         }
@@ -524,4 +533,5 @@ fun SettingsPage(vm: MainViewModel, s: Settings, ui: UiState, products: List<Pro
         } // advanced
         Spacer(Modifier.height(30.dp))
     }
+    if (showLogin) LoginSheet(s, onClose = { showLogin = false })
 }

@@ -188,6 +188,7 @@ fun CommentPage(vm: MainViewModel, mod: Modifier) {
                         this.settings.javaScriptEnabled = true
                         this.settings.domStorageEnabled = true
                         this.settings.userAgentString = this.settings.userAgentString + " TuptupComment/1.0"
+                        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                         webViewRef = this
                         // 必须在 loadUrl 之前注册 JS 桥
                         client.setupBridge(this)
